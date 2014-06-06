@@ -23,6 +23,11 @@ class Node(object):
         self.__interfaces[ifname] = intf
         return ifname
 
+    def asDict(self):
+        tmp = dict(self.__interfaces)
+        tmp['nodetype'] = self.__class__.__name__
+        return tmp
+
 class Host(Node):
     def __init__(self, *args, **kwargs):
         Node.__init__(self, *args, **kwargs)
@@ -49,16 +54,7 @@ class Encoder(json.JSONEncoder):
         json.JSONEncoder.__init__(self, *args, **kwargs)
 
     def default(self, o):
-        representation = {'nodetype':'unknown'}
-        if isinstance(o, Switch):
-            representation['nodetype'] = 'Switch'
-        elif isinstance(o, Host):
-            representation['nodetype'] = 'Host'
-        elif isinstance(o, Router):
-            representation['nodetype'] = 'Router'
-        else:
-            json.JSONEncoder.default(self, o)
-        return representation
+        return {'nodetype':o.__class__.__name__}
 
 class Topology(object):
     def __init__(self, name="No name topology"):
