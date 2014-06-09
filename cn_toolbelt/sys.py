@@ -5,27 +5,14 @@ import threading
 from Queue import Queue,Empty
 import time
 from importlib import import_module
+from cmd import Cmd
 
 from cn_toolbelt.switchyard.switchy import LLNetBase
-from cn_toolbelt.switchyard.switchy_common import NoPackets
+from cn_toolbelt.switchyard.switchy_common import NoPackets,Shutdown
 from cn_toolbelt.lib.topo.util import load_from_file
 
 __author__ = 'jsommers@colgate.edu'
 __doc__ = 'SwitchYard Substrate Simulator'
-
-'''
-create separate threads for each node simulated?
-create a Queue to represent a link between each node?
-
-once created, throw user into a CLI where they can interact with the network
-    ping from one host to another
-    show the network (in some way)
-        simple view and detailed view (with all addresses/interfaces)
-    go onto fake console for any node?
-    reload code on any node?
-
-    i.e., it will sort of work like mininet :-/
-'''
 
 EgressPipe = namedtuple('EgressPipe', ['queue','delay','capacity','remote_devname'])
 
@@ -51,7 +38,7 @@ class Sim(object):
                 break
 
 class NodeExecutor(LLNetBase):
-    __slots__ = ['__ingress_queue', '__simulator', '__egress_pipes', 'name','__interfaces','__symod']
+    __slots__ = ['__done', '__ingress_queue', '__simulator', '__egress_pipes', 'name','__interfaces','__symod']
     def __init__(self, name, ingress_queue, symod):
         LLNetBase.__init__(self)
         self.__ingress_queue = ingress_queue
@@ -60,6 +47,7 @@ class NodeExecutor(LLNetBase):
         self.__interfaces = {}
         self.__symod = symod
         self.__simulator = Sim()
+        self.__done = False
 
     def addEgressInterface(self, devname, intf, queue, capacity, delay, remote_devname):
         print "{} add interface {} {} {}".format(self.__name, devname, capacity, delay)
@@ -83,13 +71,25 @@ class NodeExecutor(LLNetBase):
         pass
 
     def recv_packet(self, timeout=0.0, timestamp=False):
-        try:
-            devname,packet = self.__ingress_queue.get(block=True, timeout=timeout)
-            if timestamp:
-                return devname,time.time(),packet
-            return devname,packet
-        except Empty:
-            raise NoPackets()
+        #
+        # FIXME: not sure about how best to handle...
+        #
+        giveup_time = time.time() + timeout
+        inner_timeout = 0.1
+         
+        while timeout == 0.0 or time.time() < giveup_time:
+            try:
+                devname,packet = self.__ingress_queue.get(block=True, timeout=inner_timeout)
+                if timestamp:
+                    return devname,time.time(),packet
+                return devname,packet
+            except:
+                pass
+
+            if self.__done:
+                raise Shutdown()
+
+        raise NoPackets()
 
     def send_packet(self, dev, packet):
         egress_pipe = self.__egress_pipes[dev]
@@ -100,7 +100,7 @@ class NodeExecutor(LLNetBase):
         queue.put(data)
 
     def shutdown(self):
-        pass
+        self.__done = True
 
     def run(self):
         for dev,ifx in self.__interfaces.iteritems():
@@ -112,9 +112,49 @@ class NodeExecutor(LLNetBase):
 
 NodePlumbing = namedtuple('NodePlumbing', ['thread','nexec','queue'])
 
-def cli(nodeinfo):
-    while True:
+class Cli(Cmd):
+    def __init__(self, nodedata):
+        self.nodedata = nodedata
+        Cmd.__init__(self)
+        self.prompt = 'sy> '
+        self.doc_header = '''
+This is the documentation header.
+'''
+
+    def emptyline(self):
         pass
+
+    def precmd(self, line):
+        return line
+
+    def postcmd(self, stop, line):
+        return stop
+
+    def do_nodes(self, line):
+        print "Got nodes command with",line
+        for nname,np in self.nodedata.iteritems():
+            print nname,np
+
+    def do_ping(self, line):
+        print "Got ping command with",line
+
+    def do_EOF(self, line):
+        print "Got EOF"
+        return self.do_exit(line)
+
+    def do_exit(self, line):
+        for np in self.nodedata.values():
+            np.nexec.shutdown()
+        return True
+
+    def default(self, line):
+        print "In default: ",line
+
+    def help_nodes(self):
+        print "Help for nodes"
+
+
+
 
 def run_simulation(topo, swycode):
     print topo.nodes
@@ -146,7 +186,8 @@ def run_simulation(topo, swycode):
     for nodename,plumbing in xnode.iteritems():
         plumbing.thread.start()
 
-    cli(xnode)
+    cli = Cli(xnode)
+    cli.cmdloop()
 
 
 def main():
