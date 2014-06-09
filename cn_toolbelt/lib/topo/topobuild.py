@@ -11,10 +11,19 @@ class Node(object):
     def __init__(self, *args, **kwargs):
         self.ifnum = 0
         self.__interfaces = {}
+        if 'interfaces' in kwargs:
+            for ifname,ifstr in kwargs['interfaces'].iteritems():
+                ifcomponents = ifstr.split()
+                mac = ifcomponents[1][4:]
+                ipmask = ifcomponents[2].split(':')[1].split('/')
+                self.__interfaces[ifname] = Interface(ifname, mac, ipmask[0], ipmask[1])
 
     @property
     def interfaces(self):
         return self.__interfaces
+
+    def getInterface(self, devname):
+        return self.__interfaces[devname]
 
     def addInterface(self, ethaddr=None, ipaddr=None, netmask=None):
         ifname = 'eth{}'.format(self.ifnum)
@@ -28,33 +37,31 @@ class Node(object):
         tmp['nodetype'] = self.__class__.__name__
         return tmp
 
+    def __str__(self):
+        return str(self.asDict())
+
+    def asDict(self):
+        ifdict = dict([(ifname,str(ifobj)) for ifname,ifobj in self.__interfaces.iteritems()])
+        return {'nodetype':self.__class__.__name__, 'interfaces':ifdict}
+
 class Host(Node):
     def __init__(self, *args, **kwargs):
         Node.__init__(self, *args, **kwargs)
-
-    def __repr__(self):
-        return 'Host'
 
 class Switch(Node):
     def __init__(self, *args, **kwargs):
         Node.__init__(self, *args, **kwargs)
 
-    def __repr__(self):
-        return 'Switch'
-
 class Router(Node):
     def __init__(self, *args, **kwargs):
         Node.__init__(self, *args, **kwargs)
-
-    def __repr__(self):
-        return 'Router'
 
 class Encoder(json.JSONEncoder):
     def __init__(self, *args, **kwargs):
         json.JSONEncoder.__init__(self, *args, **kwargs)
 
     def default(self, o):
-        return {'nodetype':o.__class__.__name__}
+        return o.asDict()
 
 class Topology(object):
     def __init__(self, name="No name topology"):
@@ -146,7 +153,7 @@ class Topology(object):
             if 'nodetype' not in ndict:
                 raise Exception("Required nodetype information is not present in serialized node {} :{}".format(nodename, ndict))
             cls = ndict['nodetype']
-            xnodes[nname] = eval(cls)(ndict)
+            xnodes[nname] = eval(cls)(**dict(ndict))
         t.nodes = xnodes
         return t
 

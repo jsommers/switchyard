@@ -1,9 +1,17 @@
 import sys
+import heapq
+from collections import namedtuple
+import threading
+from Queue import Queue,Empty
+import time
+from importlib import import_module
+
+from cn_toolbelt.switchyard.switchy import LLNetBase
+from cn_toolbelt.switchyard.switchy_common import NoPackets
 from cn_toolbelt.lib.topo.util import load_from_file
 
 __author__ = 'jsommers@colgate.edu'
 __doc__ = 'SwitchYard Substrate Simulator'
-
 
 '''
 create separate threads for each node simulated?
@@ -19,49 +27,127 @@ once created, throw user into a CLI where they can interact with the network
     i.e., it will sort of work like mininet :-/
 '''
 
-import threading
-from Queue import Queue
-import time
+EgressPipe = namedtuple('EgressPipe', ['queue','delay','capacity','remote_devname'])
 
-class X(object):
-    pass
+class Sim(object):
+    def __init__(self):
+        self.now = 0
+        self.eventqueue = []
 
-class NodeExecutor(object):
-    def __init__(self, name, x):
-        self.queues = {}
-        self.name = name
-        self.x = x
+    def setend(self, endtime):
+        self.endtime = endtime
 
-    def addLink(self, devname, queue, capacity, delay):
-        print "{} add interface {} {} {}".format(self.name, devname, capacity, delay)
-        self.queues[devname] = queue
+    def after(self, delay, fn, *args):
+        ts = self.now + delay
+        heapq.heappush(self.eventqueue, (ts, fn, args))
 
     def run(self):
-        while True:
-            time.sleep(1.0)
-            print "In node thread {}".format(self.name)
+        while len(self.eventqueue):
+            xtime, fn, args = heapq.heappop(self.eventqueue)
+            self.now = xtime
+            # print "Calling:",self.now, fn, args
+            fn(*args)
+            if self.now >= self.endtime:
+                break
 
+class NodeExecutor(LLNetBase):
+    __slots__ = ['__ingress_queue', '__simulator', '__egress_pipes', 'name','__interfaces','__symod']
+    def __init__(self, name, ingress_queue, symod):
+        LLNetBase.__init__(self)
+        self.__ingress_queue = ingress_queue
+        self.__egress_pipes = {}
+        self.__name = name
+        self.__interfaces = {}
+        self.__symod = symod
+        self.__simulator = Sim()
+
+    def addEgressInterface(self, devname, intf, queue, capacity, delay, remote_devname):
+        print "{} add interface {} {} {}".format(self.__name, devname, capacity, delay)
+        self.__egress_pipes[devname] = EgressPipe(queue, delay, capacity, remote_devname)
+        print "adding egr interface",type(intf)
+        self.__interfaces[devname] = intf
+
+    def interfaces(self):
+        return self.__interfaces.values()
+
+    def set_devupdown_callback(self, callback):
+        pass
+
+    def interface_by_name(self, name):
+        return self.__interfaces[name]
+
+    def interface_by_ipaddr(self, ipaddr):
+        pass
+
+    def interface_by_macaddr(self, macaddr):
+        pass
+
+    def recv_packet(self, timeout=0.0, timestamp=False):
+        try:
+            devname,packet = self.__ingress_queue.get(block=True, timeout=timeout)
+            if timestamp:
+                return devname,time.time(),packet
+            return devname,packet
+        except Empty:
+            raise NoPackets()
+
+    def send_packet(self, dev, packet):
+        egress_pipe = self.__egress_pipes[dev]
+        delay = len(packet) / float(egress_pipe.capacity) + egress_pipe.delay
+        self.__simulator.after(delay, self.__pipe_emit, egress_pipe.queue, (egress_pipe.remote_devname, packet) )
+
+    def __pipe_emit(self, queue, data):
+        queue.put(data)
+
+    def shutdown(self):
+        pass
+
+    def run(self):
+        for dev,ifx in self.__interfaces.iteritems():
+            print self.__name,dev,str(ifx)
+
+        print "In node thread {}".format(self.__name)
+        self.__symod.switchy_main(self)
+
+
+NodePlumbing = namedtuple('NodePlumbing', ['thread','nexec','queue'])
+
+def cli(nodeinfo):
+    while True:
+        pass
 
 def run_simulation(topo, swycode):
+    print topo.nodes
     xnode = {}
-    x = X()
+    exec_module = import_module(swycode)
+
+    ingress_queues = {}
+
     for n in topo.nodes:
-        print n,topo.nodes[n].asDict()
-        nexec = NodeExecutor(n, x, swycode)
+        ingress_queues[n] = q = Queue()
+        nexec = NodeExecutor(n, q, exec_module)
         t = threading.Thread(target=nexec.run)
-        xnode[n] = (t,nexec)
-    for thisnode,edgedict in topo.links.iteritems():
-        for nextnode,edgeinfo in edgedict.iteritems():
-            q = Queue()
-            thisnode_dev = edgeinfo[thisnode]
-            nextnode_dev = edgeinfo[nextnode]
+        xnode[n] = NodePlumbing(t,nexec,q)
+
+    for nearnodename,edgedict in topo.links.iteritems():
+        for farnodename,edgeinfo in edgedict.iteritems():
+            nearnode = xnode[nearnodename]
+            farnode = xnode[farnodename]
+
+            nearnode_dev = edgeinfo[nearnodename]
+            farnode_dev = edgeinfo[farnodename]
             cap = edgeinfo['capacity']
             delay = edgeinfo['delay']
-            xnode[thisnode][1].addLink(thisnode_dev, q, cap, delay)
-            xnode[nextnode][1].addLink(nextnode_dev, q, cap, delay)
-    for n,xtup in xnode.iteritems():
-        print n,xtup
-        xtup[0].start()
+            egress_queue = farnode.queue
+            intf =  topo.nodes[nearnodename].getInterface(nearnode_dev)
+
+            nearnode.nexec.addEgressInterface(nearnode_dev, intf, egress_queue, cap, delay, farnode_dev)
+
+    for nodename,plumbing in xnode.iteritems():
+        plumbing.thread.start()
+
+    cli(xnode)
+
 
 def main():
     topofile = None
