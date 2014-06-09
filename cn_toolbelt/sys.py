@@ -9,7 +9,7 @@ from cmd import Cmd
 
 from cn_toolbelt.switchyard.switchy import LLNetBase
 from cn_toolbelt.switchyard.switchy_common import NoPackets,Shutdown
-from cn_toolbelt.lib.topo.util import load_from_file
+from cn_toolbelt.lib.topo.util import load_from_file,show_graph
 from cn_toolbelt.lib.packet import Ethernet
 
 
@@ -119,8 +119,9 @@ class NodeExecutor(LLNetBase):
 NodePlumbing = namedtuple('NodePlumbing', ['thread','nexec','queue'])
 
 class Cli(Cmd):
-    def __init__(self, nodedata):
+    def __init__(self, nodedata, topology):
         self.nodedata = nodedata
+        self.topology = topology
         Cmd.__init__(self)
         self.prompt = 'sy> '
         self.doc_header = '''
@@ -148,6 +149,10 @@ FIXME: this is the documentation header.
 
     def do_links(self, line):
         print "Not implemented"
+
+    def do_topology(self, line):
+        print "Close window in order to proceed"
+        show_graph(self.topology)
 
     def do_sendeth(self, line):
         sourcenode = line.strip()
@@ -177,6 +182,9 @@ FIXME: this is the documentation header.
 
     def help_links(self):
         print "Print a list of links in the network"
+
+    def help_topology(self):
+        print "Show a graph of the network topology"
 
     def help_exit(self):
         print "Really?  You need help for the exit command?"
@@ -218,7 +226,7 @@ def run_simulation(topo, swycode):
     for nodename,plumbing in xnode.iteritems():
         plumbing.thread.start()
 
-    cli = Cli(xnode)
+    cli = Cli(xnode, topo)
     cli.cmdloop()
 
 
