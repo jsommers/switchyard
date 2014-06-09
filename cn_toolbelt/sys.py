@@ -10,6 +10,8 @@ from cmd import Cmd
 from cn_toolbelt.switchyard.switchy import LLNetBase
 from cn_toolbelt.switchyard.switchy_common import NoPackets,Shutdown
 from cn_toolbelt.lib.topo.util import load_from_file
+from cn_toolbelt.lib.packet import Ethernet
+
 
 __author__ = 'jsommers@colgate.edu'
 __doc__ = 'SwitchYard Substrate Simulator'
@@ -38,7 +40,7 @@ class Sim(object):
                 break
 
 class NodeExecutor(LLNetBase):
-    __slots__ = ['__done', '__ingress_queue', '__simulator', '__egress_pipes', 'name','__interfaces','__symod']
+    __slots__ = ['__done', '__ingress_queue', '__simulator', '__egress_pipes', '__name','__interfaces','__symod']
     def __init__(self, name, ingress_queue, symod):
         LLNetBase.__init__(self)
         self.__ingress_queue = ingress_queue
@@ -50,10 +52,12 @@ class NodeExecutor(LLNetBase):
         self.__done = False
 
     def addEgressInterface(self, devname, intf, queue, capacity, delay, remote_devname):
-        print "{} add interface {} {} {}".format(self.__name, devname, capacity, delay)
         self.__egress_pipes[devname] = EgressPipe(queue, delay, capacity, remote_devname)
-        print "adding egr interface",type(intf)
         self.__interfaces[devname] = intf
+
+    @property
+    def name(self):
+        return self.__name
 
     def interfaces(self):
         return self.__interfaces.values()
@@ -83,7 +87,7 @@ class NodeExecutor(LLNetBase):
                 if timestamp:
                     return devname,time.time(),packet
                 return devname,packet
-            except:
+            except Empty:
                 pass
 
             if self.__done:
@@ -94,7 +98,9 @@ class NodeExecutor(LLNetBase):
     def send_packet(self, dev, packet):
         egress_pipe = self.__egress_pipes[dev]
         delay = len(packet) / float(egress_pipe.capacity) + egress_pipe.delay
-        self.__simulator.after(delay, self.__pipe_emit, egress_pipe.queue, (egress_pipe.remote_devname, packet) )
+        # FIXME: actually do some delay (thorny...)
+        # self.__simulator.after(delay, self.__pipe_emit, egress_pipe.queue, (egress_pipe.remote_devname, packet) )
+        self.__pipe_emit(egress_pipe.queue, (egress_pipe.remote_devname, packet) )
 
     def __pipe_emit(self, queue, data):
         queue.put(data)
@@ -103,10 +109,10 @@ class NodeExecutor(LLNetBase):
         self.__done = True
 
     def run(self):
-        for dev,ifx in self.__interfaces.iteritems():
-            print self.__name,dev,str(ifx)
+        # for dev,ifx in self.__interfaces.iteritems():
+        #     print self.__name,dev,str(ifx)
 
-        print "In node thread {}".format(self.__name)
+        # print "In node thread {}".format(self.__name)
         self.__symod.switchy_main(self)
 
 
@@ -118,8 +124,15 @@ class Cli(Cmd):
         Cmd.__init__(self)
         self.prompt = 'sy> '
         self.doc_header = '''
-This is the documentation header.
+FIXME: this is the documentation header.
 '''
+
+        try:
+            import readline
+        except ImportError:
+            pass
+        else:
+            readline.clear_history()
 
     def emptyline(self):
         pass
@@ -131,12 +144,21 @@ This is the documentation header.
         return stop
 
     def do_nodes(self, line):
-        print "Got nodes command with",line
-        for nname,np in self.nodedata.iteritems():
-            print nname,np
+        print ' '.join(self.nodedata.keys())
 
-    def do_ping(self, line):
-        print "Got ping command with",line
+    def do_links(self, line):
+        print "Not implemented"
+
+    def do_sendeth(self, line):
+        sourcenode = line.strip()
+        if sourcenode not in self.nodedata:
+            print "Invalid node name"
+        else:
+            e = Ethernet()
+            e.src = '00:00:00:00:00:01'
+            e.dst = '11:00:00:11:00:11'
+            print "Emitting {} on lo interface to {}".format(e, sourcenode)
+            self.nodedata[sourcenode].queue.put(('lo',e))
 
     def do_EOF(self, line):
         print "Got EOF"
@@ -148,16 +170,26 @@ This is the documentation header.
         return True
 
     def default(self, line):
-        print "In default: ",line
+        print "Unrecognized command '{}'".format(line)
 
     def help_nodes(self):
-        print "Help for nodes"
+        print "Print a list of nodes in the network"
 
+    def help_links(self):
+        print "Print a list of links in the network"
 
+    def help_exit(self):
+        print "Really?  You need help for the exit command?"
+
+    def help_EOF(self):
+        self.help_exit()
+
+    def help_sendeth(self):
+        print "Flood a simple raw Ethernet packet from a node"
 
 
 def run_simulation(topo, swycode):
-    print topo.nodes
+    # print topo.nodes
     xnode = {}
     exec_module = import_module(swycode)
 

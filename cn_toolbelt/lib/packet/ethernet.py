@@ -20,8 +20,7 @@ import mpls
 import ether
 import addrconv
 
-
-class ethernet(packet_base.PacketBase):
+class Ethernet(packet_base.PacketBase):
     """Ethernet header encoder/decoder class.
 
     An instance has the following attributes at least.
@@ -45,9 +44,11 @@ class ethernet(packet_base.PacketBase):
         ]
     }
 
+    # __slots__ = ['dst','src','ethertype']
+
     def __init__(self, dst='ff:ff:ff:ff:ff:ff', src='00:00:00:00:00:00',
                  ethertype=ether.ETH_TYPE_IP):
-        super(ethernet, self).__init__()
+        super(Ethernet, self).__init__()
         self.dst = dst
         self.src = src
         self.ethertype = ethertype
@@ -80,7 +81,7 @@ class ethernet(packet_base.PacketBase):
 
 
 # copy vlan _TYPES
-ethernet._TYPES = vlan.vlan._TYPES
-ethernet.register_packet_type(vlan.vlan, ether.ETH_TYPE_8021Q)
-ethernet.register_packet_type(vlan.svlan, ether.ETH_TYPE_8021AD)
-ethernet.register_packet_type(mpls.mpls, ether.ETH_TYPE_MPLS)
+Ethernet._TYPES = vlan.vlan._TYPES
+Ethernet.register_packet_type(vlan.vlan, ether.ETH_TYPE_8021Q)
+Ethernet.register_packet_type(vlan.svlan, ether.ETH_TYPE_8021AD)
+Ethernet.register_packet_type(mpls.mpls, ether.ETH_TYPE_MPLS)

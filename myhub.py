@@ -19,11 +19,12 @@ def switchy_main(net):
         except Shutdown:
             return
 
+        print "In {} received packet {} on {}".format(net.name, dev, packet)
         if packet.dst in mymacs:
-            log_info("Packet intended for me")
+            print "Packet intended for me"
         else:
-            log_info("Flooding packet")
             for intf in my_interfaces:
                 if dev != intf.name:
+                    print "In {} flooding packet {} to {}".format(net.name, packet, intf.name)
                     net.send_packet(intf.name, packet)
     net.shutdown()

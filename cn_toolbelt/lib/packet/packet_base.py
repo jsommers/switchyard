@@ -21,6 +21,8 @@ import stringify
 @six.add_metaclass(abc.ABCMeta)
 class PacketBase(stringify.StringifyMixin):
     """A base class for a protocol (ethernet, ipv4, ...) header."""
+    # __slots__ = ['_MIN_LEN']
+
     _TYPES = {}
 
     @classmethod
