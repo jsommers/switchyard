@@ -3,6 +3,7 @@
 '''
 Ethernet hub in Python.
 '''
+import time
 import cn_toolbelt.lib.address 
 import cn_toolbelt.lib.packet
 from cn_toolbelt.switchyard.switchy_common import log_info, NoPackets, Shutdown
@@ -19,7 +20,7 @@ def switchy_main(net):
         except Shutdown:
             return
 
-        print "In {} received packet {} on {}".format(net.name, dev, packet)
+        print "{} In {} received packet {} on {}".format(net.name, dev, packet, time.time())
         if packet.dst in mymacs:
             print "Packet intended for me"
         else:

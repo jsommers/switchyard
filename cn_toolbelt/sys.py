@@ -18,29 +18,40 @@ __doc__ = 'SwitchYard Substrate Simulator'
 
 EgressPipe = namedtuple('EgressPipe', ['queue','delay','capacity','remote_devname'])
 
-class Sim(object):
-    def __init__(self):
-        self.now = 0
-        self.eventqueue = []
 
-    def setend(self, endtime):
-        self.endtime = endtime
+class LinkEmulator(object):
+    def __init__(self, inqueue):
+        self.expiryheap = []
+        self.inqueue = inqueue
+        self.__shutdown = False
 
-    def after(self, delay, fn, *args):
-        ts = self.now + delay
-        heapq.heappush(self.eventqueue, (ts, fn, args))
+    def shutdown(self):
+        self.__shutdown = True
 
     def run(self):
-        while len(self.eventqueue):
-            xtime, fn, args = heapq.heappop(self.eventqueue)
-            self.now = xtime
-            # print "Calling:",self.now, fn, args
-            fn(*args)
-            if self.now >= self.endtime:
-                break
+        while not self.__shutdown:
+
+            now = time.time()
+            while len(self.expiryheap) and self.expiryheap[0][0] <= now:
+                expiretime,item,outqueue = heapq.heappop(self.expiryheap)
+                outqueue.put(item)
+
+            if len(self.expiryheap):
+                expiretime,item,outqueue = self.expiryheap[0]
+                timeout = expiretime - time.time()
+            else:
+                timeout = 1.0
+
+            try:
+                expiretime,item,outqueue = self.inqueue.get(timeout=timeout)
+            except Empty:
+                pass
+            else:
+                heapq.heappush(self.expiryheap, (expiretime, item, outqueue))
+
 
 class NodeExecutor(LLNetBase):
-    __slots__ = ['__done', '__ingress_queue', '__simulator', '__egress_pipes', '__name','__interfaces','__symod']
+    __slots__ = ['__done', '__ingress_queue', '__egress_pipes', '__name','__interfaces','__symod', '__linkem', '__tolinkem']
     def __init__(self, name, ingress_queue, symod):
         LLNetBase.__init__(self)
         self.__ingress_queue = ingress_queue
@@ -48,8 +59,9 @@ class NodeExecutor(LLNetBase):
         self.__name = name
         self.__interfaces = {}
         self.__symod = symod
-        self.__simulator = Sim()
         self.__done = False
+        self.__linkem = None
+        self.__tolinkem = None
 
     def addEgressInterface(self, devname, intf, queue, capacity, delay, remote_devname):
         self.__egress_pipes[devname] = EgressPipe(queue, delay, capacity, remote_devname)
@@ -97,24 +109,19 @@ class NodeExecutor(LLNetBase):
 
     def send_packet(self, dev, packet):
         egress_pipe = self.__egress_pipes[dev]
-        delay = len(packet) / float(egress_pipe.capacity) + egress_pipe.delay
-        # FIXME: actually do some delay (thorny...)
-        # self.__simulator.after(delay, self.__pipe_emit, egress_pipe.queue, (egress_pipe.remote_devname, packet) )
-        self.__pipe_emit(egress_pipe.queue, (egress_pipe.remote_devname, packet) )
-
-    def __pipe_emit(self, queue, data):
-        queue.put(data)
+        delay = time.time() + len(packet) / float(egress_pipe.capacity) + egress_pipe.delay
+        self.__tolinkem.put( (delay, (egress_pipe.remote_devname, packet), egress_pipe.queue) )
 
     def shutdown(self):
+        self.__linkem.shutdown()
         self.__done = True
 
     def run(self):
-        # for dev,ifx in self.__interfaces.iteritems():
-        #     print self.__name,dev,str(ifx)
-
-        # print "In node thread {}".format(self.__name)
+        self.__tolinkem = Queue()
+        self.__linkem = LinkEmulator(self.__tolinkem)
+        t = threading.Thread(target=self.__linkem.run)
+        t.start()
         self.__symod.switchy_main(self)
-
 
 NodePlumbing = namedtuple('NodePlumbing', ['thread','nexec','queue'])
 
