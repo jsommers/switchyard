@@ -23,7 +23,6 @@ import binascii
 import packet_base
 import packet_utils
 import addrconv
-import stringify
 
 ICMPV6_DST_UNREACH = 1       # dest unreachable, codes:
 ICMPV6_PACKET_TOO_BIG = 2       # packet too big
@@ -156,7 +155,7 @@ class icmpv6(packet_base.PacketBase):
 
 
 @icmpv6.register_icmpv6_type(ND_NEIGHBOR_SOLICIT, ND_NEIGHBOR_ADVERT)
-class nd_neighbor(stringify.StringifyMixin):
+class nd_neighbor(object):
     """ICMPv6 sub encoder/decoder class for Neighbor Solicitation and
     Neighbor Advertisement messages. (RFC 4861)
 
@@ -235,7 +234,7 @@ class nd_neighbor(stringify.StringifyMixin):
 
 
 @icmpv6.register_icmpv6_type(ND_ROUTER_SOLICIT)
-class nd_router_solicit(stringify.StringifyMixin):
+class nd_router_solicit(object):
     """ICMPv6 sub encoder/decoder class for Router Solicitation messages.
     (RFC 4861)
 
@@ -304,7 +303,7 @@ class nd_router_solicit(stringify.StringifyMixin):
 
 
 @icmpv6.register_icmpv6_type(ND_ROUTER_ADVERT)
-class nd_router_advert(stringify.StringifyMixin):
+class nd_router_advert(object):
     """ICMPv6 sub encoder/decoder class for Router Advertisement messages.
     (RFC 4861)
 
@@ -389,7 +388,7 @@ class nd_router_advert(stringify.StringifyMixin):
 
 
 @six.add_metaclass(abc.ABCMeta)
-class nd_option(stringify.StringifyMixin):
+class nd_option(object):
     @classmethod
     @abc.abstractmethod
     def option_type(cls):
@@ -613,7 +612,7 @@ class nd_option_pi(nd_option):
 
 
 @icmpv6.register_icmpv6_type(ICMPV6_ECHO_REPLY, ICMPV6_ECHO_REQUEST)
-class echo(stringify.StringifyMixin):
+class echo(object):
     """ICMPv6 sub encoder/decoder class for Echo Request and Echo Reply
     messages.
 
@@ -669,7 +668,7 @@ class echo(stringify.StringifyMixin):
 
 @icmpv6.register_icmpv6_type(
     MLD_LISTENER_QUERY, MLD_LISTENER_REPOR, MLD_LISTENER_DONE)
-class mld(stringify.StringifyMixin):
+class mld(object):
     """ICMPv6 sub encoder/decoder class for MLD Lister Query,
     MLD Listener Report, and MLD Listener Done messages. (RFC 2710)
 
@@ -859,7 +858,7 @@ class mldv2_report(mld):
         return self._MIN_LEN + records_len
 
 
-class mldv2_report_group(stringify.StringifyMixin):
+class mldv2_report_group(object):
     """
     ICMPv6 sub encoder/decoder class for MLD v2 Lister Report Group
     Record messages. (RFC 3810)
@@ -941,7 +940,3 @@ class mldv2_report_group(stringify.StringifyMixin):
         return self._MIN_LEN + len(self.srcs) * 16 + self.aux_len * 4
 
 
-icmpv6.set_classes(icmpv6._ICMPV6_TYPES)
-nd_neighbor.set_classes(nd_neighbor._ND_OPTION_TYPES)
-nd_router_solicit.set_classes(nd_router_solicit._ND_OPTION_TYPES)
-nd_router_advert.set_classes(nd_router_advert._ND_OPTION_TYPES)

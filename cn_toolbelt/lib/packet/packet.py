@@ -34,6 +34,8 @@ class Packet(object):
     *data* should be omitted when encoding a packet.
     """
 
+    __slots__ = ['data','protocols']
+
     def __init__(self, data=None, protocols=None, parse_cls=ethernet.ethernet):
         super(Packet, self).__init__()
         self.data = data
@@ -106,6 +108,10 @@ class Packet(object):
         return None
 
     def __div__(self, trailer):
+        self.add_protocol(trailer)
+        return self
+
+    def __add__(self, trailer):
         self.add_protocol(trailer)
         return self
 

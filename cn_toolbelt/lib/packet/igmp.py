@@ -120,7 +120,6 @@ where each Group Record has the following internal format:
 import struct
 
 import addrconv
-import stringify
 import packet_base
 import packet_utils
 
@@ -383,7 +382,7 @@ class igmpv3_report(igmp):
         return self._MIN_LEN + records_len
 
 
-class igmpv3_report_group(stringify.StringifyMixin):
+class igmpv3_report_group(object):
     """
     Internet Group Management Protocol(IGMP, RFC 3376)
     Membership Report Group Record message encoder/decoder class.

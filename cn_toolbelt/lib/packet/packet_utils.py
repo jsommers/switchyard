@@ -14,7 +14,7 @@
 # limitations under the License.
 
 import array
-import socket
+from socket import ntohs
 import struct
 import addrconv
 
@@ -32,7 +32,7 @@ def checksum(data):
     s = sum(array.array('H', data))
     s = (s & 0xffff) + (s >> 16)
     s += (s >> 16)
-    return socket.ntohs(~s & 0xffff)
+    return ntohs(~s & 0xffff)
 
 
 # avoid circular import

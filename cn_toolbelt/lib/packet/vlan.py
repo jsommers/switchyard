@@ -13,8 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import abc
-import six
+from abc import ABCMeta,abstractmethod
 import struct
 import packet_base
 import arp
@@ -24,15 +23,16 @@ import lldp
 import slow
 import llc
 import pbb
-import ether
+import ethernet 
 
 
-@six.add_metaclass(abc.ABCMeta)
 class _vlan(packet_base.PacketBase):
+    __metaclass__ = ABCMeta
+    __slots__ = ['pcp','cfi','vid','ethertype']
     _PACK_STR = "!HH"
     _MIN_LEN = struct.calcsize(_PACK_STR)
 
-    @abc.abstractmethod
+    @abstractmethod
     def __init__(self, pcp, cfi, vid, ethertype):
         super(_vlan, self).__init__()
         self.pcp = pcp
@@ -54,7 +54,7 @@ class _vlan(packet_base.PacketBase):
         return struct.pack(vlan._PACK_STR, tci, self.ethertype)
 
 
-class vlan(_vlan):
+class Vlan(_vlan):
     """VLAN (IEEE 802.1Q) header encoder/decoder class.
 
     An instance has the following attributes at least.
@@ -70,8 +70,9 @@ class vlan(_vlan):
     ethertype      EtherType
     ============== ====================
     """
+    __slots__ = []
 
-    def __init__(self, pcp=0, cfi=0, vid=0, ethertype=ether.ETH_TYPE_IP):
+    def __init__(self, pcp=0, cfi=0, vid=0, ethertype=ethernet.ETH_TYPE_IP):
         super(vlan, self).__init__(pcp, cfi, vid, ethertype)
 
     @classmethod
@@ -82,12 +83,12 @@ class vlan(_vlan):
         If the value of Length/Type field is less than or equal to
         1500 decimal(05DC hexadecimal), it means Length interpretation
         and be passed to the LLC sublayer."""
-        if type_ <= ether.ETH_TYPE_IEEE802_3:
-            type_ = ether.ETH_TYPE_IEEE802_3
+        if type_ <= ethernet.ETH_TYPE_IEEE802_3:
+            type_ = ethernet.ETH_TYPE_IEEE802_3
         return cls._TYPES.get(type_)
 
 
-class svlan(_vlan):
+class SVlan(_vlan):
     """S-VLAN (IEEE 802.1ad) header encoder/decoder class.
 
 
@@ -106,8 +107,9 @@ class svlan(_vlan):
     ethertype      EtherType
     ============== ====================
     """
+    __slots__ = []
 
-    def __init__(self, pcp=0, cfi=0, vid=0, ethertype=ether.ETH_TYPE_8021Q):
+    def __init__(self, pcp=0, cfi=0, vid=0, ethertype=ethernet.ETH_TYPE_8021Q):
         super(svlan, self).__init__(pcp, cfi, vid, ethertype)
 
     @classmethod
@@ -115,12 +117,12 @@ class svlan(_vlan):
         return cls._TYPES.get(type_)
 
 
-vlan.register_packet_type(arp.arp, ether.ETH_TYPE_ARP)
-vlan.register_packet_type(ipv4.ipv4, ether.ETH_TYPE_IP)
-vlan.register_packet_type(ipv6.ipv6, ether.ETH_TYPE_IPV6)
-vlan.register_packet_type(lldp.lldp, ether.ETH_TYPE_LLDP)
-vlan.register_packet_type(slow.slow, ether.ETH_TYPE_SLOW)
-vlan.register_packet_type(llc.llc, ether.ETH_TYPE_IEEE802_3)
+Vlan.register_packet_type(arp.Arp, ethernet.ETH_TYPE_ARP)
+Vlan.register_packet_type(ipv4.IPv4, ethernet.ETH_TYPE_IP)
+Vlan.register_packet_type(ipv6.IPv6, ethernet.ETH_TYPE_IPV6)
+Vlan.register_packet_type(lldp.LLDP, ethernet.ETH_TYPE_LLDP)
+Vlan.register_packet_type(slow.SLOW, ethernet.ETH_TYPE_SLOW)
+Vlan.register_packet_type(llc.LLC, ethernet.ETH_TYPE_IEEE802_3)
 
-svlan.register_packet_type(vlan, ether.ETH_TYPE_8021Q)
-svlan.register_packet_type(pbb.itag, ether.ETH_TYPE_8021AH)
+SVlan.register_packet_type(Vlan, ethernet.ETH_TYPE_8021Q)
+SVlan.register_packet_type(pbb.itag, ethernet.ETH_TYPE_8021AH)

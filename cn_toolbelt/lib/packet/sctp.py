@@ -18,7 +18,6 @@ import six
 import struct
 
 import addrconv
-import stringify
 import packet_base
 
 # Chunk Types
@@ -229,7 +228,7 @@ class sctp(packet_base.PacketBase):
 #
 # =======================================================================
 @six.add_metaclass(abc.ABCMeta)
-class chunk(stringify.StringifyMixin):
+class chunk(object):
     _PACK_STR = '!BBH'
     _MIN_LEN = struct.calcsize(_PACK_STR)
 
@@ -1172,7 +1171,7 @@ class chunk_shutdown_complete(chunk):
 #
 # =======================================================================
 @six.add_metaclass(abc.ABCMeta)
-class cause(stringify.StringifyMixin):
+class cause(object):
     _PACK_STR = '!HH'
     _MIN_LEN = struct.calcsize(_PACK_STR)
 
@@ -1770,7 +1769,7 @@ class cause_protocol_violation(cause_with_value):
 #
 # =======================================================================
 @six.add_metaclass(abc.ABCMeta)
-class param(stringify.StringifyMixin):
+class param(object):
     _PACK_STR = '!HH'
     _MIN_LEN = struct.calcsize(_PACK_STR)
 

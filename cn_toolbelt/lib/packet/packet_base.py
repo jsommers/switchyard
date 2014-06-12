@@ -13,15 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import abc
-import six
-import stringify
+from abc import ABCMeta,abstractmethod
 
-
-@six.add_metaclass(abc.ABCMeta)
-class PacketBase(stringify.StringifyMixin):
+class PacketBase(object):
     """A base class for a protocol (ethernet, ipv4, ...) header."""
-    # __slots__ = ['_MIN_LEN']
+
+    __metaclass__ = ABCMeta
+    __slots__ = ['_MIN_LEN']
 
     _TYPES = {}
 
@@ -52,7 +50,7 @@ class PacketBase(stringify.StringifyMixin):
         return self.__class__.__name__
 
     @classmethod
-    @abc.abstractmethod
+    @abstractmethod
     def parser(cls, buf):
         """Decode a protocol header.
 
@@ -72,6 +70,7 @@ class PacketBase(stringify.StringifyMixin):
         """
         pass
 
+    @abstractmethod
     def serialize(self, payload, prev):
         """Encode a protocol header.
 

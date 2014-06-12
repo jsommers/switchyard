@@ -22,13 +22,11 @@ RFC 4271 BGP-4
 # - notify data
 # - RFC 4364 BGP/MPLS IP Virtual Private Networks (VPNs)
 
-import abc
-import six
+from abc import ABCMeta,abstractmethod
 import struct
 import copy
 
 from ofproto.ofproto_parser import msg_pack_into
-from stringify import StringifyMixin
 import afi
 import safi
 import packet_base
@@ -556,7 +554,7 @@ class OutOfResource(BgpExc):
     SUB_CODE = BGP_ERROR_SUB_OUT_OF_RESOURCES
 
 
-class RouteFamily(StringifyMixin):
+class RouteFamily(object):
     def __init__(self, afi, safi):
         self.afi = afi
         self.safi = safi
@@ -585,7 +583,7 @@ def pad(bin, len_):
     return bin + (len_ - len(bin)) * '\0'
 
 
-class _RouteDistinguisher(StringifyMixin, _TypeDisp, _Value):
+class _RouteDistinguisher( _TypeDisp, _Value):
     _PACK_STR = '!H'
     TWO_OCTET_AS = 0
     IPV4_ADDRESS = 1
@@ -682,7 +680,7 @@ class BGPFourOctetAsRD(_RouteDistinguisher):
 
 
 @six.add_metaclass(abc.ABCMeta)
-class _AddrPrefix(StringifyMixin):
+class _AddrPrefix(object):
     _PACK_STR = '!B'  # length
 
     def __init__(self, length, addr, prefixes=None):
@@ -954,7 +952,7 @@ class LabelledVPNIP6AddrPrefix(_LabelledAddrPrefix, _VPNAddrPrefix,
         return "%s:%s" % (self.route_dist, self.prefix)
 
 
-class RouteTargetMembershipNLRI(StringifyMixin):
+class RouteTargetMembershipNLRI(object):
     """Route Target Membership NLRI.
 
     Route Target membership NLRI is advertised in BGP UPDATE messages using
@@ -1069,7 +1067,7 @@ def _get_addr_class(afi, safi):
         return _BinAddrPrefix
 
 
-class _OptParam(StringifyMixin, _TypeDisp, _Value):
+class _OptParam(_TypeDisp, _Value):
     _PACK_STR = '!BB'  # type, length
 
     def __init__(self, type_, value=None, length=None):
@@ -1239,7 +1237,7 @@ class BGPWithdrawnRoute(IPAddrPrefix):
     pass
 
 
-class _PathAttribute(StringifyMixin, _TypeDisp, _Value):
+class _PathAttribute(_TypeDisp, _Value):
     _PACK_STR = '!BB'  # flags, type
     _PACK_STR_LEN = '!B'  # length
     _PACK_STR_EXT_LEN = '!H'  # length w/ BGP_ATTR_FLAG_EXTENDED_LENGTH
@@ -1656,7 +1654,7 @@ class BGPPathAttributeExtendedCommunities(_PathAttribute):
         return self._community_list(3)
 
 
-class _ExtendedCommunity(StringifyMixin, _TypeDisp, _Value):
+class _ExtendedCommunity(_TypeDisp, _Value):
     _PACK_STR = '!B7s'  # type high (+ type low) + value
     IANA_AUTHORITY = 0x80
     TRANSITIVE = 0x40

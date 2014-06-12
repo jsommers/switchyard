@@ -17,8 +17,6 @@ import struct
 
 import packet_base
 import packet_utils
-import stringify
-
 
 ICMP_ECHO_REPLY = 0
 ICMP_DEST_UNREACH = 3
@@ -33,7 +31,7 @@ ICMP_PORT_UNREACH_CODE = 3
 ICMP_TTL_EXPIRED_CODE = 0
 
 
-class icmp(packet_base.PacketBase):
+class ICMP(packet_base.PacketBase):
     """ICMP (RFC 792) header encoder/decoder class.
 
     An instance has the following attributes at least.
@@ -68,17 +66,18 @@ class icmp(packet_base.PacketBase):
     _PACK_STR = '!BBH'
     _MIN_LEN = struct.calcsize(_PACK_STR)
     _ICMP_TYPES = {}
+    __slots__ = ['type','code','csum','data']
 
     @staticmethod
     def register_icmp_type(*args):
         def _register_icmp_type(cls):
             for type_ in args:
-                icmp._ICMP_TYPES[type_] = cls
+                ICMP._ICMP_TYPES[type_] = cls
             return cls
         return _register_icmp_type
 
     def __init__(self, type_=ICMP_ECHO_REQUEST, code=0, csum=0, data=None):
-        super(icmp, self).__init__()
+        super(ICMP, self).__init__()
         self.type = type_
         self.code = code
         self.csum = csum
@@ -100,11 +99,11 @@ class icmp(packet_base.PacketBase):
         return msg, None, None
 
     def serialize(self, payload, prev):
-        hdr = bytearray(struct.pack(icmp._PACK_STR, self.type,
+        hdr = bytearray(struct.pack(ICMP._PACK_STR, self.type,
                                     self.code, self.csum))
 
         if self.data is not None:
-            if self.type in icmp._ICMP_TYPES:
+            if self.type in ICMP._ICMP_TYPES:
                 hdr += self.data.serialize()
             else:
                 hdr += self.data
@@ -122,8 +121,8 @@ class icmp(packet_base.PacketBase):
         return self._MIN_LEN + len(self.data)
 
 
-@icmp.register_icmp_type(ICMP_ECHO_REPLY, ICMP_ECHO_REQUEST)
-class echo(stringify.StringifyMixin):
+@ICMP.register_icmp_type(ICMP_ECHO_REPLY, ICMP_ECHO_REQUEST)
+class Echo(object):
     """ICMP sub encoder/decoder class for Echo and Echo Reply messages.
 
     This is used with ryu.lib.packet.icmp.icmp for
@@ -143,7 +142,7 @@ class echo(stringify.StringifyMixin):
     data           Internet Header + 64 bits of Original Data Datagram
     ============== ====================
     """
-
+    __slots__ = ['id','seq','data']
     _PACK_STR = '!HH'
     _MIN_LEN = struct.calcsize(_PACK_STR)
 
@@ -180,8 +179,8 @@ class echo(stringify.StringifyMixin):
         return length
 
 
-@icmp.register_icmp_type(ICMP_DEST_UNREACH)
-class dest_unreach(stringify.StringifyMixin):
+@ICMP.register_icmp_type(ICMP_DEST_UNREACH)
+class dest_unreach(object):
     """ICMP sub encoder/decoder class for Destination Unreachable Message.
 
     This is used with ryu.lib.packet.icmp.icmp for
@@ -211,6 +210,7 @@ class dest_unreach(stringify.StringifyMixin):
 
     _PACK_STR = '!xBH'
     _MIN_LEN = struct.calcsize(_PACK_STR)
+    __slots__ = ['data_len','mtu','data']
 
     def __init__(self, data_len=0, mtu=0, data=None):
         super(dest_unreach, self).__init__()
@@ -246,8 +246,8 @@ class dest_unreach(stringify.StringifyMixin):
         return length
 
 
-@icmp.register_icmp_type(ICMP_TIME_EXCEEDED)
-class TimeExceeded(stringify.StringifyMixin):
+@ICMP.register_icmp_type(ICMP_TIME_EXCEEDED)
+class TimeExceeded(object):
     """ICMP sub encoder/decoder class for Time Exceeded Message.
 
     This is used with ryu.lib.packet.icmp.icmp for
@@ -271,6 +271,7 @@ class TimeExceeded(stringify.StringifyMixin):
 
     _PACK_STR = '!xBxx'
     _MIN_LEN = struct.calcsize(_PACK_STR)
+    __slots__ = ['data_len','data']
 
     def __init__(self, data_len=0, data=None):
         self.data_len = data_len
@@ -301,5 +302,3 @@ class TimeExceeded(stringify.StringifyMixin):
             length += len(self.data)
         return length
 
-
-icmp.set_classes(icmp._ICMP_TYPES)

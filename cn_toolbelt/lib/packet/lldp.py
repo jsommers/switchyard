@@ -41,7 +41,6 @@ optional TLV may be inserted in any order
 """
 
 import struct
-import stringify
 import packet_base
 
 
@@ -71,7 +70,7 @@ LLDP_TLV_MANAGEMENT_ADDRESS = 8         # Management Address
 LLDP_TLV_ORGANIZATIONALLY_SPECIFIC = 127  # organizationally Specific TLVs
 
 
-class LLDPBasicTLV(stringify.StringifyMixin):
+class LLDPBasicTLV(object):
     _LEN_MIN = 0
     _LEN_MAX = 511
     tlv_type = None
@@ -483,5 +482,3 @@ class OrganizationallySpecific(LLDPBasicTLV):
     def serialize(self):
         return struct.pack('!H3sB', self.typelen, self.oui, self.subtype)
 
-
-lldp.set_classes(lldp._tlv_parsers)

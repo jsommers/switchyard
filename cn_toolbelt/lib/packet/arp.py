@@ -14,10 +14,9 @@
 # limitations under the License.
 
 import struct
-
-import ether
 import addrconv
 import packet_base
+import ethernet
 
 ARP_HW_TYPE_ETHERNET = 1  # ethernet hardware type
 
@@ -28,7 +27,7 @@ ARP_REV_REQUEST = 3
 ARP_REV_REPLY = 4
 
 
-class arp(packet_base.PacketBase):
+class Arp(packet_base.PacketBase):
     """ARP (RFC 826) header encoder/decoder class.
 
     An instance has the following attributes at least.
@@ -52,13 +51,10 @@ class arp(packet_base.PacketBase):
     ============== ==================== =====================
     """
 
+    __slots__ = ['hwtype','proto','hlen','plen','opcode','src_mac','src_ip','dst_mac','dst_ip']
+
     _PACK_STR = '!HHBBH6s4s6s4s'
     _MIN_LEN = struct.calcsize(_PACK_STR)
-    _TYPE = {
-        'ascii': [
-            'src_mac', 'src_ip', 'dst_mac', 'dst_ip'
-        ]
-    }
 
     def __init__(self, hwtype=ARP_HW_TYPE_ETHERNET, proto=ether.ETH_TYPE_IP,
                  hlen=6, plen=4, opcode=ARP_REQUEST,
@@ -96,7 +92,7 @@ class arp(packet_base.PacketBase):
                            addrconv.ipv4.text_to_bin(self.dst_ip))
 
 
-def arp_ip(opcode, src_mac, src_ip, dst_mac, dst_ip):
+def ArpIP(opcode, src_mac, src_ip, dst_mac, dst_ip):
     """A convenient wrapper for IPv4 ARP for Ethernet.
 
     This is an equivalent of the following code.
@@ -104,7 +100,7 @@ def arp_ip(opcode, src_mac, src_ip, dst_mac, dst_ip):
         arp(ARP_HW_TYPE_ETHERNET, ether.ETH_TYPE_IP, \
                6, 4, opcode, src_mac, src_ip, dst_mac, dst_ip)
     """
-    return arp(ARP_HW_TYPE_ETHERNET, ether.ETH_TYPE_IP,
+    return Arp(ARP_HW_TYPE_ETHERNET, Ethernet.ETH_TYPE_IP,
                6,  # ether mac address length
                4,  # ipv4 address length,
                opcode, src_mac, src_ip, dst_mac, dst_ip)

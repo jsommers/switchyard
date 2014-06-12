@@ -14,11 +14,21 @@
 # limitations under the License.
 
 import struct
-import packet_base
+from packet_base import PacketBase
 import vlan
 import mpls
-import ether
 import addrconv
+
+ETH_TYPE_IP = 0x0800
+ETH_TYPE_ARP = 0x0806
+ETH_TYPE_8021Q = 0x8100
+ETH_TYPE_IPV6 = 0x86dd
+ETH_TYPE_SLOW = 0x8809
+ETH_TYPE_MPLS = 0x8847
+ETH_TYPE_8021AD = 0x88a8
+ETH_TYPE_LLDP = 0x88cc
+ETH_TYPE_8021AH = 0x88e7
+ETH_TYPE_IEEE802_3 = 0x05dc
 
 class Ethernet(packet_base.PacketBase):
     """Ethernet header encoder/decoder class.
@@ -35,19 +45,12 @@ class Ethernet(packet_base.PacketBase):
     ethertype      ether type           0x0800
     ============== ==================== =====================
     """
-
+    __slots__ = ['src','dst','ethertype']
     _PACK_STR = '!6s6sH'
     _MIN_LEN = struct.calcsize(_PACK_STR)
-    _TYPE = {
-        'ascii': [
-            'src', 'dst'
-        ]
-    }
-
-    # __slots__ = ['dst','src','ethertype']
 
     def __init__(self, dst='ff:ff:ff:ff:ff:ff', src='00:00:00:00:00:00',
-                 ethertype=ether.ETH_TYPE_IP):
+                 ethertype=ETH_TYPE_IP):
         super(Ethernet, self).__init__()
         self.dst = dst
         self.src = src
@@ -75,8 +78,8 @@ class Ethernet(packet_base.PacketBase):
         If the value of Length/Type field is less than or equal to
         1500 decimal(05DC hexadecimal), it means Length interpretation
         and be passed to the LLC sublayer."""
-        if type_ <= ether.ETH_TYPE_IEEE802_3:
-            type_ = ether.ETH_TYPE_IEEE802_3
+        if type_ <= ETH_TYPE_IEEE802_3:
+            type_ = ETH_TYPE_IEEE802_3
         return cls._TYPES.get(type_)
 
 

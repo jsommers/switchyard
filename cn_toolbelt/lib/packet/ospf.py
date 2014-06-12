@@ -19,7 +19,6 @@ RFC 2328 OSPF version 2
 
 import struct
 
-from stringify import StringifyMixin
 import packet_base
 import packet_utils
 import stream_parser
@@ -109,7 +108,7 @@ class _TypeDisp(object):
         return cls._REV_TYPES[targ_cls]
 
 
-class LSAHeader(StringifyMixin):
+class LSAHeader(object):
     _HDR_PACK_STR = '!HBB4s4sIHH'
     _HDR_LEN = struct.calcsize(_HDR_PACK_STR)
 
@@ -155,7 +154,7 @@ class LSAHeader(StringifyMixin):
                          self.ls_seqnum, self.checksum, self.length))
 
 
-class LSA(_TypeDisp, StringifyMixin):
+class LSA(_TypeDisp):
     def __init__(self, ls_age=0, options=0, type_=OSPF_UNKNOWN_LSA,
                  id_='0.0.0.0', adv_router='0.0.0.0', ls_seqnum=0,
                  checksum=None, length=None):
@@ -201,7 +200,7 @@ class RouterLSA(LSA):
     _PACK_STR = '!BBH'
     _PACK_LEN = struct.calcsize(_PACK_STR)  # 4bytes
 
-    class Link(StringifyMixin):
+    class Link(object):
         _PACK_STR = '!4s4sBBH'
         _PACK_LEN = struct.calcsize(_PACK_STR)  # 12bytes
 
@@ -321,7 +320,7 @@ class ASBRSummaryLSA(LSA):
 
 @LSA.register_type(OSPF_AS_EXTERNAL_LSA)
 class ASExternalLSA(LSA):
-    class ExternalNetwork(StringifyMixin):
+    class ExternalNetwork(object):
         _PACK_STR = '!4sBBH4sI'
         _PACK_LEN = struct.calcsize(_PACK_STR)
 
@@ -590,7 +589,7 @@ class OSPFDBDesc(OSPFMessage):
 class OSPFLSReq(OSPFMessage):
     _MIN_LEN = OSPFMessage._HDR_LEN
 
-    class Request(StringifyMixin):
+    class Request(object):
         _PACK_STR = '!I4s4s'
         _PACK_LEN = struct.calcsize(_PACK_STR)
 

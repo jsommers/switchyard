@@ -23,7 +23,6 @@ import udp
 import sctp
 import inet
 import addrconv
-import stringify
 
 
 IPV6_ADDRESS_PACK_STR = '!16s'
@@ -149,7 +148,7 @@ ipv6.register_packet_type(sctp.sctp, inet.IPPROTO_SCTP)
 
 
 @six.add_metaclass(abc.ABCMeta)
-class header(stringify.StringifyMixin):
+class header(object):
     """extension header abstract class."""
     def __init__(self, nxt):
         self.nxt = nxt
@@ -269,7 +268,7 @@ class dst_opts(opt_header):
         super(dst_opts, self).__init__(nxt, size, data)
 
 
-class option(stringify.StringifyMixin):
+class option(object):
     """IPv6 (RFC 2460) Options header encoder/decoder class.
 
     This is used with ryu.lib.packet.ipv6.hop_opts or
@@ -596,4 +595,3 @@ class auth(header):
         return auth._get_size(self.size)
 
 
-ipv6.set_classes(ipv6._IPV6_EXT_HEADER_TYPE)
