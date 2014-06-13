@@ -3,7 +3,7 @@ from cn_toolbelt.lib.address import EthAddr
 import struct
 from enum import Enum
 
-class EtherTypes(Enum):
+class EtherType(Enum):
     ETH_TYPE_IP = 0x0800
     ETH_TYPE_ARP = 0x0806
     ETH_TYPE_8021Q = 0x8100
@@ -16,18 +16,42 @@ class EtherTypes(Enum):
     ETH_TYPE_IEEE802_3 = 0x05dc
 
 class Ethernet(PacketHeaderBase):
-    __slots__ = ['src','dst','ethertype']
+    __slots__ = ['__src','__dst','__ethertype']
     __pack__ = '!6s6sH'
 
-    def __init__(self, src='00:00:00:00:00:00',dst='00:00:00:00:00:00',ethertype=EtherTypes.ETH_TYPE_IP):
+    def __init__(self, src='00:00:00:00:00:00',dst='00:00:00:00:00:00',ethertype=EtherType.ETH_TYPE_IP):
         PacketHeaderBase.__init__(self)
-        self.src = EthAddr(src)
-        self.dst = EthAddr(dst)
-        self.ethertype = EtherTypes(ethertype)
+        self.__src = EthAddr(src)
+        self.__dst = EthAddr(dst)
+        self.__ethertype = EtherType(ethertype)
         self.next = NullPacketHeader()
 
     def __len__(self):
         return struct.calcsize(self.__pack__)
+
+    @property
+    def src(self):
+        return self.__src
+
+    @src.setter
+    def src(self, value):
+        self.__src = EthAddr(value)
+
+    @property
+    def dst(self):
+        return self.__dst
+
+    @dst.setter
+    def dst(self, value):
+        self.__dst = EthAddr(value)
+
+    @property
+    def ethertype(self):
+        return self.__ethertype
+
+    @ethertype.setter
+    def ethertype(self, value):
+        self.__ethertype = EtherType(value)
 
     def serialize(self):
         return struct.pack(self.__pack__, self.src.packed, self.dst.packed, self.ethertype) + self.next.serialize()

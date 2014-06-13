@@ -1,5 +1,6 @@
 from cn_toolbelt.lib.packet import Ethernet
 from cn_toolbelt.lib.address import EthAddr, IPAddr
+import netaddr
 import unittest 
 
 class EthernetPacketTests(unittest.TestCase):
@@ -24,10 +25,14 @@ class EthernetPacketTests(unittest.TestCase):
         with self.assertRaises(Exception):
             self.e.xdst = EthAddr()
 
-    def testGetFields(self):
-        fieldnames = self.e.fields
-        self.assertIn('src', fieldnames)
-        self.assertIn('dst', fieldnames)
+    def testBadEType(self):
+        # try to set an invalid ethertype
+        with self.assertRaises(ValueError):
+            self.e.ethertype = 0x01
+
+    def testBadAddr(self):
+        with self.assertRaises(netaddr.core.AddrFormatError):
+            x = EthAddr("a")
 
 if __name__ == '__main__':
     unittest.main()
