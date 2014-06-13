@@ -1,4 +1,4 @@
-from packet_base import PacketHeaderBase, NullPacketHeader
+from cn_toolbelt.lib.packet.packet_base import PacketHeaderBase, NullPacketHeader
 from cn_toolbelt.lib.address import EthAddr
 import struct
 from enum import Enum
@@ -26,8 +26,11 @@ class Ethernet(PacketHeaderBase):
         self.ethertype = EtherTypes(ethertype)
         self.next = NullPacketHeader()
 
+    def __len__(self):
+        return struct.calcsize(self.__pack__)
+
     def serialize(self):
-        return struct.pack(__pack__, self.src.packed, self.dst.packed, self.ethertype) + self.next.serialize()
+        return struct.pack(self.__pack__, self.src.packed, self.dst.packed, self.ethertype) + self.next.serialize()
 
     def parse(self, raw):
         raise Exception("Not implemented yet")

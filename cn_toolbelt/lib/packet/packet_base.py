@@ -11,6 +11,10 @@ class PacketHeaderBase(object):
         pass
 
     @abstractmethod
+    def __len__(self):
+        return 0
+
+    @abstractmethod
     def serialize(self):
         '''
         Abstract method; returns serialized bytes object representing packet

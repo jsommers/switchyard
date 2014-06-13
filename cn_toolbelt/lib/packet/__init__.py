@@ -1,1 +1,1 @@
-from ethernet import *
+from cn_toolbelt.lib.packet.ethernet import *

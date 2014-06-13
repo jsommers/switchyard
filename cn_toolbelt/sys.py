@@ -10,7 +10,7 @@ from cmd import Cmd
 from cn_toolbelt.switchyard.switchy import LLNetBase
 from cn_toolbelt.switchyard.switchy_common import NoPackets,Shutdown
 from cn_toolbelt.lib.topo.util import load_from_file,show_graph
-from cn_toolbelt.lib.packet import Ethernet
+from cn_toolbelt.lib.packet import *
 
 
 __author__ = 'jsommers@colgate.edu'
@@ -216,8 +216,8 @@ def run_simulation(topo, swycode):
         t = threading.Thread(target=nexec.run)
         xnode[n] = NodePlumbing(t,nexec,q)
 
-    for nearnodename,edgedict in topo.links.iteritems():
-        for farnodename,edgeinfo in edgedict.iteritems():
+    for nearnodename,edgedict in topo.links.items():
+        for farnodename,edgeinfo in edgedict.items():
             nearnode = xnode[nearnodename]
             farnode = xnode[farnodename]
 
@@ -230,7 +230,7 @@ def run_simulation(topo, swycode):
 
             nearnode.nexec.addEgressInterface(nearnode_dev, intf, egress_queue, cap, delay, farnode_dev)
 
-    for nodename,plumbing in xnode.iteritems():
+    for nodename,plumbing in xnode.items():
         plumbing.thread.start()
 
     cli = Cli(xnode, topo)

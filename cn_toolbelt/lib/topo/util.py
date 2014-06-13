@@ -1,4 +1,4 @@
-import cn_toolbelt.lib.topo.topobuild
+from cn_toolbelt.lib.topo import topobuild
 import networkx as nx
 import matplotlib.pyplot as pyp
 
