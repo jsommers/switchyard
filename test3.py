@@ -1,6 +1,5 @@
 from cn_toolbelt.lib.packet import Ethernet
 from cn_toolbelt.lib.address import EthAddr, IPAddr
-import netaddr
 import unittest 
 
 class EthernetPacketTests(unittest.TestCase):
@@ -31,7 +30,7 @@ class EthernetPacketTests(unittest.TestCase):
             self.e.ethertype = 0x01
 
     def testBadAddr(self):
-        with self.assertRaises(netaddr.core.AddrFormatError):
+        with self.assertRaises(RuntimeError):
             x = EthAddr("a")
 
 if __name__ == '__main__':

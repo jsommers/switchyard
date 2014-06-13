@@ -26,155 +26,128 @@ import socket
 # limitations under the License.
 
 class EthAddr (object):
-  """
-  An Ethernet (MAC) address type.
-  """
-  __slots__ = ['_value']
-
-  def __init__ (self, addr):
     """
-    Understands Ethernet address is various forms.  Hex strings, raw byte
-    strings, etc.
+    An Ethernet (MAC) address type.
     """
-    # Always stores as a 6 character string
-    if isinstance(addr, bytes) or isinstance(addr, str):
-      if len(addr) == 6:
-        # raw
-        pass
-      elif len(addr) == 17 or len(addr) == 12 or addr.count(':') == 5:
-        # hex
-        if len(addr) == 17:
-          if addr[2::3] != ':::::' and addr[2::3] != '-----':
-            raise RuntimeError("Bad format for ethernet address")
-          # Address of form xx:xx:xx:xx:xx:xx
-          # Pick out the hex digits only
-          addr = ''.join((addr[x*3:x*3+2] for x in range(0,6)))
-        elif len(addr) == 12:
-          pass
-        else:
-          # Assume it's hex digits but they may not all be in two-digit
-          # groupings (e.g., xx:x:x:xx:x:x). This actually comes up.
-          addr = ''.join(["%02x" % (int(x,16),) for x in addr.split(":")])
-        # We should now have 12 hex digits (xxxxxxxxxxxx).
-        # Convert to 6 raw bytes.
-        addr = b''.join((chr(int(addr[x*2:x*2+2], 16)) for x in range(0,6)))
-      else:
-        raise RuntimeError("Expected ethernet address string to be 6 raw "
-                           "bytes or some hex")
-      self._value = addr
-    elif isinstance(addr, EthAddr):
-      self._value = addr.toRaw()
-    elif type(addr) == list or (hasattr(addr, '__len__') and len(addr) == 6
-          and hasattr(addr, '__iter__')):
-      self._value = b''.join( (chr(x) for x in addr) )
-    elif addr is None:
-      self._value = b'\x00' * 6
-    else:
-      raise RuntimeError("Expected ethernet address to be a string of 6 raw "
-                         "bytes or some hex")
+    __slots__ = ['__value']
 
-  def isBridgeFiltered (self):
-    """
-    Checks if address is an IEEE 802.1D MAC Bridge Filtered MAC Group Address
+    def __init__ (self, addr=None):
+      """
+      Understands Ethernet address is various forms.  Hex strings, raw byte
+      strings, etc.
+      """
+      # Always stores as a bytes object of length 6
+      self.__value = None
 
-    This range is 01-80-C2-00-00-00 to 01-80-C2-00-00-0F. MAC frames that
-    have a destination MAC address within this range are not relayed by
-    bridges conforming to IEEE 802.1D
-    """
-    return  ((self._value[0] == 0x01)
-    	and (self._value[1] == 0x80)
-    	and (self._value[2] == 0xC2)
-    	and (self._value[3] == 0x00)
-    	and (self._value[4] == 0x00)
-    	and (self._value[5] <= 0x0F))
+      if isinstance(addr, bytes):
+          self.__value = bytes(addr)
+      elif isinstance(addr, EthAddr):
+          self.__value = addr.raw
+      elif addr is None:
+          self.__value = b'\x00' * 6
+      elif isinstance(addr, str):
+          possible_separators = (':','-')
+          for sep in possible_separators:
+              if addr.count(sep) == 5:
+                  self.__value = bytes([ int(val,base=16) for val in addr.split(sep)])
+                  break
 
-  @property
-  def is_bridge_filtered (self):
-    return self.isBridgeFiltered()
+      if not self.__value:
+          raise RuntimeError("Expected ethernet address string to be 6 raw " 
+                               "bytes or some hex")
+  
+    def isBridgeFiltered (self):
+        """
+        Checks if address is an IEEE 802.1D MAC Bridge Filtered MAC Group Address
 
-  def isGlobal (self):
-    """
-    Returns True if this is a globally unique (OUI enforced) address.
-    """
-    return not self.isLocal()
+        This range is 01-80-C2-00-00-00 to 01-80-C2-00-00-0F. MAC frames that
+        have a destination MAC address within this range are not relayed by
+        bridges conforming to IEEE 802.1D
+        """
+        return  ((self.__value[0] == 0x01)
+    	    and (self.__value[1] == 0x80)
+    	    and (self.__value[2] == 0xC2)
+    	    and (self.__value[3] == 0x00)
+    	    and (self.__value[4] == 0x00)
+    	    and (self.__value[5] <= 0x0F))
 
-  def isLocal (self):
-    """
-    Returns True if this is a locally-administered (non-global) address.
-    """
-    return True if (self._value[0] & 2) else False
+    @property
+    def is_bridge_filtered (self):
+        return self.isBridgeFiltered()
 
-  @property
-  def is_local (self):
-    return self.isLocal()
+    def isGlobal (self):
+        """
+        Returns True if this is a globally unique (OUI enforced) address.
+        """
+        return not self.isLocal()
 
-  @property
-  def is_global (self):
-    return self.isGlobal()
+    def isLocal (self):
+        """
+        Returns True if this is a locally-administered (non-global) address.
+        """
+        return True if (self.__value[0] & 2) else False
 
-  def isMulticast (self):
-    """
-    Returns True if this is a multicast address.
-    """
-    return True if (self._value[0] & 1) else False
+    @property
+    def is_local (self):
+        return self.isLocal()
 
-  @property
-  def is_multicast (self):
-    return self.isMulticast()
+    @property
+    def is_global (self):
+        return self.isGlobal()
 
-  def toRaw (self):
-    return self.raw
+    def isMulticast (self):
+        """
+        Returns True if this is a multicast address.
+        """
+        return True if (self.__value[0] & 1) else False
 
-  @property
-  def raw (self):
-    """
-    Returns the address as a 6-long bytes object.
-    """
-    return self._value
+    @property
+    def is_multicast (self):
+        return self.isMulticast()
 
-  def toTuple (self):
-    """
-    Returns a 6-entry long tuple where each entry is the numeric value
-    of the corresponding byte of the address.
-    """
-    return tuple(self._value)
+    def toRaw (self):
+        return self.raw
 
-  def toStr (self, separator = ':'):
-    """
-    Returns the address as string consisting of 12 hex chars separated
-    by separator.
-    """
-    return separator.join(('{:02x}'.format(x) for x in self._value))
+    @property
+    def raw (self):
+        """
+        Returns the address as a 6-long bytes object.
+        """
+        return self.__value
 
-  def __str__ (self):
-    return self.toStr()
+    def toTuple (self):
+        """
+        Returns a 6-entry long tuple where each entry is the numeric value
+        of the corresponding byte of the address.
+        """
+        return tuple(self.__value)
 
-  def __cmp__ (self, other):
-    try:
-      if isinstance(other, EthAddr):
-        other = other._value
-      elif isinstance(other, bytes):
-        pass
-      else:
-        other = EthAddr(other)._value
-      if self._value == other:
-        return 0
-      if self._value < other:
-        return -1
-      if self._value > other:
-        return -1
-      raise RuntimeError("Objects can not be compared?")
-    except:
-      return -other.__cmp__(self)
+    def toStr (self, separator = ':'):
+        """
+        Returns the address as string consisting of 12 hex chars separated
+        by separator.
+        """
+        return separator.join(('{:02x}'.format(x) for x in self.__value))
 
-  def __hash__ (self):
-    return self._value.__hash__()
+    def __str__ (self):
+        return self.toStr()
 
-  def __repr__ (self):
-    return self.__class__.__name__ + "('" + self.toStr() + "')"
+    def __eq__(self, other):
+        other = EthAddr(other)
+        return self.raw == other.raw
 
-  def __len__ (self):
-    return 6
+    def __lt__(self, other):
+        other = EthAddr(other)
+        return self.raw < other.raw
+
+    def __hash__ (self):
+        return hash(self.__value)
+
+    def __repr__ (self):
+        return self.__class__.__name__ + "('" + self.toStr() + "')"
+
+    def __len__ (self):
+        return 6
 
 
 ethaddr = EthAddr
@@ -315,3 +288,4 @@ if __name__ == '__main__':
     print (list(SpecialIPv6Addr))
     print (list(SpecialIPv4Addr))
     print (list(SpecialEthAddr))
+    print(EthAddr("00:00:00:00:00:00"))
