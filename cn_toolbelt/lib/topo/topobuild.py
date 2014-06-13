@@ -12,7 +12,7 @@ class Node(object):
         self.ifnum = 0
         self.__interfaces = {}
         if 'interfaces' in kwargs:
-            for ifname,ifstr in kwargs['interfaces'].iteritems():
+            for ifname,ifstr in kwargs['interfaces'].items():
                 ifcomponents = ifstr.split()
                 mac = ifcomponents[1][4:]
                 ipmask = ifcomponents[2].split(':')[1].split('/')
@@ -41,7 +41,7 @@ class Node(object):
         return str(self.asDict())
 
     def asDict(self):
-        ifdict = dict([(ifname,str(ifobj)) for ifname,ifobj in self.__interfaces.iteritems()])
+        ifdict = dict([(ifname,str(ifobj)) for ifname,ifobj in self.__interfaces.items()])
         return {'nodetype':self.__class__.__name__, 'interfaces':ifdict}
 
 class Host(Node):
@@ -78,7 +78,7 @@ class Topology(object):
         '''
         if name in self.nodes:
             raise Exception("A node by the name {} already exists.  Can't add a duplicate.".format(name))
-        self.nodes[unicode(name)] = cls()
+        self.nodes[name] = cls()
 
     def addHost(self, name=None):
         '''
@@ -142,14 +142,14 @@ class Topology(object):
         if 'nodes' not in topod:
             raise Exception("No links found in topology")
         if 'name' not in topod:
-            print "No name found in topology; defaulting to 'No name'"
+            print ("No name found in topology; defaulting to 'No name'")
             t.name = 'No name'
         else:
             t.name = topod['name']
         t.nodes = topod['nodes']
         t.links = topod['links']
         xnodes = {}
-        for nname,ndict in t.nodes.iteritems():
+        for nname,ndict in t.nodes.items():
             if 'nodetype' not in ndict:
                 raise Exception("Required nodetype information is not present in serialized node {} :{}".format(nodename, ndict))
             cls = ndict['nodetype']

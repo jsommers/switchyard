@@ -1,4 +1,4 @@
-import topobuild
+import cn_toolbelt.lib.topo.topobuild
 import networkx as nx
 import matplotlib.pyplot as pyp
 
@@ -9,12 +9,12 @@ def convert_to_networkx(cn_topo):
     G = nx.Graph()
     elabels = {}
     nlabels = {}
-    for nodename,nodeobj in cn_topo.nodes.iteritems():
+    for nodename,nodeobj in cn_topo.nodes.items():
         # print nodename,nodeobj.asDict()
         G.add_node(nodename)
         nlabels[nodename] = nodename
-    for nodename,edict in cn_topo.links.iteritems():
-        for nextnode,edgeinfo in edict.iteritems():
+    for nodename,edict in cn_topo.links.items():
+        for nextnode,edgeinfo in edict.items():
             elabels[(nodename,nextnode)] = "{} Mb/s {} sec".format(edgeinfo['capacity']/1000000.0, edgeinfo['delay'])
             # print edgeinfo
             G.add_edge(nodename, nextnode)

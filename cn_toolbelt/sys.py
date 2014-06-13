@@ -2,7 +2,7 @@ import sys
 import heapq
 from collections import namedtuple
 import threading
-from Queue import Queue,Empty
+from queue import Queue,Empty
 import time
 from importlib import import_module
 from cmd import Cmd
@@ -152,28 +152,28 @@ FIXME: this is the documentation header.
         return stop
 
     def do_nodes(self, line):
-        print ' '.join(self.nodedata.keys())
+        print (' '.join(self.nodedata.keys()))
 
     def do_links(self, line):
-        print "Not implemented"
+        print ("Not implemented")
 
     def do_topology(self, line):
-        print "Close window in order to proceed"
+        print ("Close window in order to proceed")
         show_graph(self.topology)
 
     def do_sendeth(self, line):
         sourcenode = line.strip()
         if sourcenode not in self.nodedata:
-            print "Invalid node name"
+            print ("Invalid node name")
         else:
             e = Ethernet()
             e.src = '00:00:00:00:00:01'
             e.dst = '11:00:00:11:00:11'
-            print "Emitting {} on lo interface to {}".format(e, sourcenode)
+            print ("Emitting {} on lo interface to {}".format(e, sourcenode))
             self.nodedata[sourcenode].queue.put(('lo',e))
 
     def do_EOF(self, line):
-        print "Got EOF"
+        print ("Got EOF")
         return self.do_exit(line)
 
     def do_exit(self, line):
@@ -182,25 +182,25 @@ FIXME: this is the documentation header.
         return True
 
     def default(self, line):
-        print "Unrecognized command '{}'".format(line)
+        print ("Unrecognized command '{}'".format(line))
 
     def help_nodes(self):
-        print "Print a list of nodes in the network"
+        print ("Print a list of nodes in the network")
 
     def help_links(self):
-        print "Print a list of links in the network"
+        print ("Print a list of links in the network")
 
     def help_topology(self):
-        print "Show a graph of the network topology"
+        print ("Show a graph of the network topology")
 
     def help_exit(self):
-        print "Really?  You need help for the exit command?"
+        print ("Really?  You need help for the exit command?")
 
     def help_EOF(self):
         self.help_exit()
 
     def help_sendeth(self):
-        print "Flood a simple raw Ethernet packet from a node"
+        print ("Flood a simple raw Ethernet packet from a node")
 
 
 def run_simulation(topo, swycode):
@@ -245,7 +245,7 @@ def main():
     if len(sys.argv) > 2:
         swycode = sys.argv[2]
     if not (topofile and swycode):
-        print "Need topofile and swy code"
+        print ("Need topofile and swy code")
         sys.exit(-1)
 
     topo = load_from_file(topofile)
