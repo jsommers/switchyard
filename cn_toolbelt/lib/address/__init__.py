@@ -1,10 +1,10 @@
 __author__ = 'jsommers@colgate.edu'
 
-from ipaddress import ip_address
+import ipaddress
 from enum import Enum
 
 # make aliases for built-in ip_address class
-IPAddr = IPAddress = ip_address
+IPAddr = ipaddress.IPv4Address 
 
 import struct
 import socket
@@ -37,7 +37,7 @@ class EthAddr (object):
     strings, etc.
     """
     # Always stores as a 6 character string
-    if isinstance(addr, bytes) or isinstance(addr, basestring):
+    if isinstance(addr, bytes) or isinstance(addr, str):
       if len(addr) == 6:
         # raw
         pass
@@ -48,7 +48,7 @@ class EthAddr (object):
             raise RuntimeError("Bad format for ethernet address")
           # Address of form xx:xx:xx:xx:xx:xx
           # Pick out the hex digits only
-          addr = ''.join((addr[x*3:x*3+2] for x in xrange(0,6)))
+          addr = ''.join((addr[x*3:x*3+2] for x in range(0,6)))
         elif len(addr) == 12:
           pass
         else:
@@ -181,15 +181,15 @@ ethaddr = EthAddr
 macaddr = EthAddr
 
 class SpecialIPv6Addr(Enum):
-    UNDEFINED = ip_address('::')
-    ALL_NODES_LINK_LOCAL = ip_address('ff02::1')
-    ALL_ROUTERS_LINK_LOCAL = ip_address('ff02::2')
-    ALL_NODES_INTERFACE_LOCAL = ip_address('ff01::1')
-    ALL_ROUTERS_INTERFACE_LOCAL = ip_address('ff01::2')
+    UNDEFINED = ipaddress.ip_address('::')
+    ALL_NODES_LINK_LOCAL = ipaddress.ip_address('ff02::1')
+    ALL_ROUTERS_LINK_LOCAL = ipaddress.ip_address('ff02::2')
+    ALL_NODES_INTERFACE_LOCAL = ipaddress.ip_address('ff01::1')
+    ALL_ROUTERS_INTERFACE_LOCAL = ipaddress.ip_address('ff01::2')
 
 class SpecialIPv4Addr(Enum):
-    IP_ANY = ip_address("0.0.0.0")
-    IP_BROADCAST = ip_address("255.255.255.255")
+    IP_ANY = ipaddress.ip_address("0.0.0.0")
+    IP_BROADCAST = ipaddress.ip_address("255.255.255.255")
 
 class SpecialEthAddr(Enum):
     ETHER_ANY            = EthAddr(b"\x00\x00\x00\x00\x00\x00")
