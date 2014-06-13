@@ -8,7 +8,7 @@ class PacketHeaderBase(object):
     __slots__ = ['__next']
 
     def __init__(self):
-        pass
+        self.__next = None
 
     @abstractmethod
     def __len__(self):
@@ -76,15 +76,12 @@ class PacketHeaderBase(object):
         '''Alias for set next header in packet'''
         self.addHeader(ph)
 
+    def __iter__(self):
+        return self
 
-class NullPacketHeader(PacketHeaderBase):
-    def __init__(self):
-        PacketHeaderBase.__init__(self)
+    def __next__(self):
+        if not self.next:
+            raise StopIteration()
+        return self.next
 
-    def serialize(self):
-        return bytes()
-
-    @classmethod
-    def parse(self, raw):
-        pass
 

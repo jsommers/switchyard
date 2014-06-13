@@ -1,4 +1,4 @@
-from cn_toolbelt.lib.packet.packet_base import PacketHeaderBase, NullPacketHeader
+from cn_toolbelt.lib.packet.packet_base import PacketHeaderBase
 from cn_toolbelt.lib.address import EthAddr
 import struct
 from enum import Enum
@@ -24,7 +24,6 @@ class Ethernet(PacketHeaderBase):
         self.__src = EthAddr(src)
         self.__dst = EthAddr(dst)
         self.__ethertype = EtherType(ethertype)
-        self.next = NullPacketHeader()
 
     def __len__(self):
         return struct.calcsize(self.__pack__)
@@ -62,4 +61,11 @@ class Ethernet(PacketHeaderBase):
 
 if __name__ == '__main__':
     e = Ethernet()
+    e2 = Ethernet()
     print (e)
+    for x in e:
+        print (x)
+
+    e.addHeader(e2)
+    for x in e:
+        print (x)
