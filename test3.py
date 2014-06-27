@@ -1,4 +1,4 @@
-from cn_toolbelt.lib.packet import Ethernet
+from cn_toolbelt.lib.packet import *
 from cn_toolbelt.lib.address import EthAddr, IPAddr
 import unittest 
 
