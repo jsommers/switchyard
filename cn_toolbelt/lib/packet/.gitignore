@@ -1,2 +1,2 @@
-xryu
 *.pyc
+__pycache__
