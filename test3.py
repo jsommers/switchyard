@@ -33,5 +33,20 @@ class EthernetPacketTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             x = EthAddr("a")
 
+    def testParse(self):
+        raw = b'\x01\x02\x03\x04\x05\x06\x06\x05\x04\x03\x02\x01\x08\x00'
+        astr = '01:02:03:04:05:06'
+        e = Ethernet()
+        e.from_bytes(raw)
+        self.assertEqual(e.src, EthAddr(astr))
+        self.assertEqual(e.dst, EthAddr(':'.join(astr.split(':')[::-1])))
+        self.assertEqual(e.ethertype, EtherType.IP)
+
+    def testBadParse(self):
+        raw = b'x\01'
+        e = Ethernet()
+        with self.assertRaises(Exception):
+            e.from_bytes(raw)
+
 if __name__ == '__main__':
     unittest.main()
