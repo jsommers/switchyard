@@ -97,13 +97,14 @@ class Packet(object):
     def __iter__(self):
         return iter(self.__headers)
 
-    def __checkidx(self, idx):
+    def __checkidx(self, index):
         if not isinstance(index, int):
             raise TypeError("Indexes must be integers")
         if index < 0:
             index = len(self.__headers) - index
         if not (0 <= index < len(self.__headers)):
             raise IndexError("Index out of range")
+        return index
         
     def __getitem__(self, index):
         index = self.__checkidx(index)
