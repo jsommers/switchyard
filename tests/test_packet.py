@@ -22,5 +22,16 @@ class PacketTests(unittest.TestCase):
         self.assertEqual(len(list(p)), 2)
         self.assertEqual(len(p), 28)
 
+    def testIndexing(self):
+        e1 = Ethernet()
+        e2 = Ethernet()
+        p = e1 + e2
+        self.assertEqual(p[0], e1)
+        self.assertEqual(p[1], e2)
+        p[1] = e1
+        self.assertEqual(p[1], e1)
+        with self.assertRaises(IndexError):
+            e = p[2]
+
 if __name__ == '__main__':
     unittest.main()

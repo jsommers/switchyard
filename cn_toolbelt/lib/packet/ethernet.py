@@ -83,6 +83,9 @@ class Ethernet(PacketHeaderBase):
             print ("Warning: no class exists to parse next protocol type: {}".format(self.ethertype))
         return cls
 
+    def __eq__(self, other):
+        return self.src == other.src and self.dst == other.dst and self.ethertype == other.ethertype
+
 
 if __name__ == '__main__':
     e = Ethernet()

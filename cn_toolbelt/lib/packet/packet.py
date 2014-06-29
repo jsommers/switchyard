@@ -97,6 +97,44 @@ class Packet(object):
     def __iter__(self):
         return iter(self.__headers)
 
+    def __checkidx(self, idx):
+        if not isinstance(index, int):
+            raise TypeError("Indexes must be integers")
+        if index < 0:
+            index = len(self.__headers) - index
+        if not (0 <= index < len(self.__headers)):
+            raise IndexError("Index out of range")
+        
+    def __getitem__(self, index):
+        index = self.__checkidx(index)
+        return self.__headers[index]
+
+    def __setitem__(self, index, value):
+        index = self.__checkidx(index)
+        if not isinstance(value, (PacketHeaderBase, bytes)):
+            raise TypeError("Can't assign a non-packet header in a packet")
+        self.__headers[index] = value
+
+    def __contains__(self, obj):
+        for ph in self.__headers:
+            if ph == obj:
+                return True
+        return False
+
+    def __delitem__(self, index):
+        index = self.__checkidx(index)
+        self.__headers = self.__headers[:index] + self.__headers[(index+1):] 
+
+    def __eq__(self, other):
+        if not isinstance(other, Packet):
+            raise TypeError("Can't compare Packet with non-Packet for equality")
+        if len(self) != len(other):
+            return False
+        for i in range(len(other)):
+            if self[i] != other[i]:
+                return False
+        return True
+
 
 class PacketHeaderBase(object, metaclass=ABCMeta):
     '''
@@ -155,3 +193,7 @@ class PacketHeaderBase(object, metaclass=ABCMeta):
         p.add_header(self)
         p.add_header(ph)
         return p
+
+    @abstractmethod
+    def __eq__(self, other):
+        pass
