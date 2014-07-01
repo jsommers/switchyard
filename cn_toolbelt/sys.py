@@ -6,6 +6,7 @@ from queue import Queue,Empty
 import time
 from importlib import import_module
 from cmd import Cmd
+import re
 
 from cn_toolbelt.switchyard.switchy import LLNetBase
 from cn_toolbelt.switchyard.switchy_common import NoPackets,Shutdown
@@ -142,22 +143,70 @@ FIXME: this is the documentation header.
         else:
             readline.clear_history()
 
-    def emptyline(self):
-        pass
+    def do_show(self, line):
+        cmdargs = line.split()
+        if len(cmdargs) < 1:
+            print ("Not enough arguments to show")
+            return
 
-    def precmd(self, line):
-        return line
+        if 'link'.startswith(cmdargs[0]):
+            self.__show_links(cmdargs[1:])
+        elif 'node'.startswith(cmdargs[0]):
+            self.__show_nodes(cmdargs[1:])
+        elif 'topology'.startswith(cmdargs[0]):
+            self.__show_topology(cmdargs[1:])
+        else:
+            print ("Invalid show subcommand {}".format(cmdargs[0]))
 
-    def postcmd(self, stop, line):
-        return stop
+    def do_set(self, line):
+        print ("set commands not implemented yet")
 
-    def do_nodes(self, line):
-        print (' '.join(self.nodedata.keys()))
+    def __show_nodes(self, cmdargs):
+        if len(cmdargs) == 0:
+            # show all node names
+            print (' '.join(self.nodedata.keys()))
+        else:
+            if cmdargs[0] in self.nodedata.keys():
+                xnode = self.topology.nodes[cmdargs[0]]
+                print ("Node {} is a {} and has these interfaces:".format(cmdargs[0], xnode.nodetype))
+                for intf in xnode.interfaces.values():
+                    print ("\t{}".format(intf))
+            else:
+                print ("Node {} does not exist.".format(cmdargs[0]))
 
-    def do_links(self, line):
-        print ("Not implemented")
+    def __printlink(self, ldict):
+        nodes = []
+        delay = capacity = 0.0
+        for key,value in ldict.items():
+            if key == 'delay':
+                delay = value
+            elif key == 'capacity':
+                capacity = value
+            else:
+                nodes.append(':'.join([key,value]))
+        print (' <-> '.join(nodes), end='')
+        print ('; delay={} capacity={}'.format(delay, capacity))
 
-    def do_topology(self, line):
+    def __show_links(self, cmdargs):
+        if len(cmdargs) == 0:
+            # show all links
+            xlinks = set()
+            for nearnode,nearlinks in self.topology.links.items():
+                for farnode, linkinfo in nearlinks.items():
+                    if (nearnode,farnode) in xlinks or (farnode,nearnode) in xlinks:
+                        continue
+                    xlinks.add( (nearnode,farnode) )
+                    xlinks.add( (farnode,nearnode) )
+                    ltup = self.__printlink(linkinfo)
+        else:
+            if cmdargs[0] in self.topology.links: 
+                # show links related to a given node
+                for farnode,linkinfo in self.topology.links[cmdargs[0]].items():
+                    self.__printlink(linkinfo)
+            else:
+                print ("Can't show links for unknown node {}".format(cmdargs[0]))
+
+    def __show_topology(self, cmdargs):
         print ("Close window in order to proceed")
         show_graph(self.topology)
 
@@ -182,16 +231,23 @@ FIXME: this is the documentation header.
         return True
 
     def default(self, line):
-        print ("Unrecognized command '{}'".format(line))
+        '''
+        Implement short-cut commands: any unique command prefix should
+        work.'''
+        cmdargs = line.split()
+        if re.match('^sh', cmdargs[0]):
+            self.do_show(' '.join(cmdargs[1:]))
+        elif re.match('^set', cmdargs[0]):
+            self.do_sendeth(' '.join(cmdargs[1:]))
+        elif re.match('^set', cmdargs[0]):
+            self.do_set(' '.join(cmdargs[1:]))
+        else:
+            print ("Unrecognized command '{}'".format(line))
 
-    def help_nodes(self):
-        print ("Print a list of nodes in the network")
-
-    def help_links(self):
-        print ("Print a list of links in the network")
-
-    def help_topology(self):
-        print ("Show a graph of the network topology")
+    def help_show(self):
+        print ('''
+        show (nodes|links|topology)
+        ''')
 
     def help_exit(self):
         print ("Really?  You need help for the exit command?")

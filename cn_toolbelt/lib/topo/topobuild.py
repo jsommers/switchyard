@@ -19,6 +19,10 @@ class Node(object):
                 self.__interfaces[ifname] = Interface(ifname, mac, ipmask[0], ipmask[1])
 
     @property
+    def nodetype(self):
+        return self.__class__.__name__
+
+    @property
     def interfaces(self):
         return self.__interfaces
 
@@ -64,13 +68,22 @@ class Encoder(json.JSONEncoder):
         return o.asDict()
 
 class Topology(object):
+    __slots__ = ['__name','__nodes','__links','__hnum','__snum','__rnum']
     def __init__(self, name="No name topology"):
-        self.name = name
-        self.nodes = {}
-        self.links = defaultdict(dict)
+        self.__name = name
+        self.__nodes = {}
+        self.__links = defaultdict(dict)
         self.__hnum = 0
         self.__snum = 0
         self.__rnum = 0
+
+    @property
+    def name(self):
+        return self.__name
+
+    @name.setter
+    def name(self, value):
+        self.__name = value
 
     def __addNode(self, name, cls):
         '''
@@ -79,6 +92,22 @@ class Topology(object):
         if name in self.nodes:
             raise Exception("A node by the name {} already exists.  Can't add a duplicate.".format(name))
         self.nodes[name] = cls()
+
+    @property
+    def nodes(self):
+        return self.__nodes
+
+    @nodes.setter
+    def nodes(self, value):
+        self.__nodes = value
+
+    @property
+    def links(self):
+        return self.__links
+
+    @links.setter
+    def links(self, value):
+        self.__links = value
 
     def addHost(self, name=None):
         '''
