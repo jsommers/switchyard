@@ -1,5 +1,5 @@
-from cn_toolbelt.lib.packet.packet import PacketHeaderBase,Packet
-from cn_toolbelt.lib.address import EthAddr
+from switchyard.lib.packet.packet import PacketHeaderBase,Packet
+from switchyard.lib.address import EthAddr
 import struct
 from enum import Enum
 

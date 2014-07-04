@@ -1,5 +1,5 @@
-from cn_toolbelt.lib.packet import *
-from cn_toolbelt.lib.address import EthAddr, IPAddr
+from switchyard.lib.packet import *
+from switchyard.lib.address import EthAddr, IPAddr
 import unittest 
 
 class PacketTests(unittest.TestCase):

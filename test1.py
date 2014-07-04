@@ -1,5 +1,5 @@
-import cn_toolbelt.lib.topo.topobuild as tbuild
-import cn_toolbelt.lib.topo.util as tutil
+import switchyard.lib.topo.topobuild as tbuild
+import switchyard.lib.topo.util as tutil
 
 t = tbuild.Topology()
 h1 = t.addHost()

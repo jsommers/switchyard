@@ -36,7 +36,7 @@ class Packet(object):
         objects (and possible remaining bytes) that are part of this packet.
         '''
         if next_cls is None:
-            from cn_toolbelt.lib.packet import Ethernet
+            from switchyard.lib.packet import Ethernet
             next_cls = Ethernet
 
         self.__headers = []

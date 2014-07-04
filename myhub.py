@@ -4,9 +4,9 @@
 Ethernet hub in Python.
 '''
 import time
-import cn_toolbelt.lib.address 
-import cn_toolbelt.lib.packet
-from cn_toolbelt.switchyard.switchy_common import log_info, NoPackets, Shutdown
+import switchyard.lib.address 
+import switchyard.lib.packet
+from switchyard.switchyard.switchy_common import log_info, NoPackets, Shutdown
 
 def switchy_main(net):
     my_interfaces = net.interfaces() 

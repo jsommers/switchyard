@@ -8,10 +8,10 @@ from importlib import import_module
 from cmd import Cmd
 import re
 
-from cn_toolbelt.switchyard.switchy import LLNetBase
-from cn_toolbelt.switchyard.switchy_common import NoPackets,Shutdown
-from cn_toolbelt.lib.topo.util import load_from_file,show_graph
-from cn_toolbelt.lib.packet import *
+from switchyard.switchyard.switchy import LLNetBase
+from switchyard.switchyard.switchy_common import NoPackets,Shutdown
+from switchyard.lib.topo.util import load_from_file,show_graph
+from switchyard.lib.packet import *
 
 
 __author__ = 'jsommers@colgate.edu'
@@ -149,9 +149,9 @@ FIXME: this is the documentation header.
             print ("Not enough arguments to show")
             return
 
-        if 'link'.startswith(cmdargs[0]):
+        if 'links'.startswith(cmdargs[0]):
             self.__show_links(cmdargs[1:])
-        elif 'node'.startswith(cmdargs[0]):
+        elif 'nodes'.startswith(cmdargs[0]):
             self.__show_nodes(cmdargs[1:])
         elif 'topology'.startswith(cmdargs[0]):
             self.__show_topology(cmdargs[1:])
@@ -222,7 +222,6 @@ FIXME: this is the documentation header.
             self.nodedata[sourcenode].queue.put(('lo',e))
 
     def do_EOF(self, line):
-        print ("Got EOF")
         return self.do_exit(line)
 
     def do_exit(self, line):
@@ -246,7 +245,9 @@ FIXME: this is the documentation header.
 
     def help_show(self):
         print ('''
-        show (nodes|links|topology)
+        show (nodes|node <nodename>)
+        show (links|link <nodename>)
+        show topology 
         ''')
 
     def help_exit(self):
@@ -306,7 +307,6 @@ def main():
 
     topo = load_from_file(topofile)
     run_simulation(topo, swycode)
-
 
 if __name__ == '__main__':
     main()

@@ -4,7 +4,7 @@ import os
 import os.path
 from collections import defaultdict
 sys.path.append(os.getcwd())
-from cn_toolbelt.switchyard.switchy_common import Interface
+from switchyard.switchyard.switchy_common import Interface
 
 class Node(object):
     __slots__ = ['ifnum','__interfaces']
