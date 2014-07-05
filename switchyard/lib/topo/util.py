@@ -109,16 +109,54 @@ def unhumanize_bandwidth(bitsstr):
         - if second character is 'B', quantity is interpreted as bytes/sec
         - any subsequent characters after the first two are ignored, so
           Kb/s Kb/sec Kbps are interpreted identically.
+
+    Returns None if the string doesn't contain anything parseable.
     '''
-    pass
+    mobj = re.match('^\s*([\d\.]+)\s*(.*)\s*$', bitsstr)
+    if not mobj:
+        return None
+    value, units = mobj.groups()
+    value = float(value)
+    multipliers = { 'b':1, 'k':1e3, 'm':1e6, 'g':1e9, 't':1e12 }
+    mult = multipliers.get(units[0].lower(), 0)
+    bits = 1
+    if units[1] == 'B': bits = 8
+    # print (bitsstr, value, mult, bits)
+    return int(value * mult * bits)
 
 def humanize_delay(delay):
     '''
     Accept a floating point number presenting link propagation delay
     in seconds (e.g., 0.1 for 100 milliseconds delay), and return
-    a human(-like) string like '100 milliseconds'.
+    a human(-like) string like '100 milliseconds'.  Handles values as 
+    small as 1 microsecond, but no smaller.
+
+    Because of imprecision in floating point numbers, a relatively easy
+    way to handle this is to convert to string, then slice out sections.
     '''
-    pass
+    delaystr = '{:1.06f}'.format(delay) 
+    decimal = delaystr.find('.') 
+    seconds = int(delaystr[:decimal])
+    millis = int(delaystr[-6:-3])
+    micros = int(delaystr[-3:])
+    # print (delay,delaystr,seconds,millis,micros)
+    units = ''
+    microsecs = micros + 1e3 * millis + 1e6 * seconds
+    if micros > 0:
+        units = ' microsecond'
+        value = int(microsecs)
+    elif millis > 0:
+        units = ' millisecond'
+        value = int(microsecs / 1000)
+    elif seconds > 0:
+        units = ' second'
+        value = int(microsecs / 1000000)
+    else:
+        units = ' seconds'
+        value = 0
+    if value > 1:
+        units += 's'
+    return '{}{}'.format(value, units)
 
 def unhumanize_delay(delaystr):
     '''
@@ -129,4 +167,21 @@ def unhumanize_delay(delaystr):
         - us, usec, micros* all as microseconds
         - ms, msec, millisec* all as milliseconds
         - s, sec* as seconds
+
+    returns None on parse failure.
     '''
+    mobj = re.match('^\s*([\d\.]+)\s*(\w+)', delaystr)
+    if not mobj:
+        return None
+    value, units = mobj.groups()
+    value = float(value)
+
+    if units == 'us' or units == 'usec' or units.startswith('micros'):
+        divisor = 1e6
+    elif units == 'ms' or units == 'msec' or units.startswith('millis'):
+        divisor = 1e3
+    elif units == 's' or units.startswith('sec'):
+        divisor = 1.0
+    else:
+        return None
+    return value / divisor

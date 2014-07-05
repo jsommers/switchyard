@@ -1,10 +1,71 @@
 import json
-import sys
-import os
-import os.path
 from collections import defaultdict
-sys.path.append(os.getcwd())
-from switchyard.switchyard.switchy_common import Interface
+from switchyard.lib.address import EthAddr,IPAddr
+
+class Interface(object):
+    '''
+    Class that models a single logical interface on a network
+    device.  An interface has a name, 48-bit Ethernet MAC address,
+    and a 32-bit IPv4 address and mask.
+    '''
+    def __init__(self, name, ethaddr, ipaddr, netmask):
+        self.__name = name
+        self.ethaddr = ethaddr
+        self.ipaddr = ipaddr
+        self.netmask = netmask
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def ethaddr(self):
+        return self.__ethaddr
+
+    @ethaddr.setter
+    def ethaddr(self, value):
+        if isinstance(value, EthAddr):
+            self.__ethaddr = value
+        elif isinstance(value, str):
+            self.__ethaddr = EthAddr(value)
+        elif value is None:
+            self.__ethaddr = '00:00:00:00:00:00'
+        else:
+            self.__ethaddr = value
+
+    @property 
+    def ipaddr(self):
+        return self.__ipaddr
+
+    @ipaddr.setter
+    def ipaddr(self, value):
+        if isinstance(value, IPAddr):
+            self.__ipaddr = value
+        elif isinstance(value, str):
+            self.__ipaddr = IPAddr(value)
+        elif value is None:
+            self.__ipaddr = '0.0.0.0'
+        else:
+            self.__ipaddr = value
+
+    @property 
+    def netmask(self):
+        return self.__netmask
+
+    @netmask.setter
+    def netmask(self, value):
+        if isinstance(value, IPAddr):
+            self.__netmask = value
+        elif isinstance(value, str):
+            self.__netmask = IPAddr(value)
+        elif value is None:
+            self.__netmask = '255.255.255.255'
+        else:
+            self.__netmask = value
+
+    def __str__(self):
+        return "{} mac:{} ip:{}/{}".format(str(self.name), str(self.ethaddr), str(self.ipaddr), str(self.netmask))
+
 
 class Node(object):
     __slots__ = ['ifnum','__interfaces']
@@ -35,11 +96,6 @@ class Node(object):
         intf = Interface(ifname, ethaddr, ipaddr, netmask)
         self.__interfaces[ifname] = intf
         return ifname
-
-    def asDict(self):
-        tmp = dict(self.__interfaces)
-        tmp['nodetype'] = self.__class__.__name__
-        return tmp
 
     def __str__(self):
         return str(self.asDict())
@@ -192,27 +248,3 @@ class Topology(object):
     def __autoAssignAddresses(self):
         pass
 
-
-import unittest
-class TestTopo(unittest.TestCase):
-    def test_serunser(self):
-        t = Topology()
-        h1 = t.addHost()
-        h2 = t.addHost()
-        s1 = t.addSwitch()
-        t.addLink(h1, s1, 10000000, 0.05)
-        t.addLink(h2, s1, 10000000, 0.05)
-
-        x = t.serialize()
-        tprime = Topology.unserialize(x)
-        y = t.serialize()
-
-        self.assertItemsEqual(t.nodes.keys(), tprime.nodes.keys())
-        # No can do: no ordering for node-class objects
-        # self.assertItemsEqual(t.nodes.values(), tprime.nodes.values())
-        self.assertItemsEqual(t.links.keys(), tprime.links.keys())
-        self.assertItemsEqual(t.links.values(), tprime.links.values())
-
-
-if __name__ == '__main__':
-    unittest.main()
