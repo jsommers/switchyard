@@ -1,12 +1,15 @@
 import json
 from collections import defaultdict
 from switchyard.lib.address import EthAddr,IPAddr
+from switchyard.lib.topo.util import unhumanize_capacity, unhumanize_delay
+from networkx import Graph
+from networkx.readwrite import json_graph
 
 class Interface(object):
     '''
     Class that models a single logical interface on a network
     device.  An interface has a name, 48-bit Ethernet MAC address,
-    and a 32-bit IPv4 address and mask.
+    and (optionally) a 32-bit IPv4 address and mask.
     '''
     def __init__(self, name, ethaddr, ipaddr, netmask):
         self.__name = name
@@ -64,8 +67,10 @@ class Interface(object):
             self.__netmask = value
 
     def __str__(self):
-        return "{} mac:{} ip:{}/{}".format(str(self.name), str(self.ethaddr), str(self.ipaddr), str(self.netmask))
-
+        s =  "{} mac:{}".format(str(self.name), str(self.ethaddr))
+        if str(self.ipaddr) != '0.0.0.0':
+            s += " ip:{}/{}".format(str(self.ipaddr), str(self.netmask))
+        return s            
 
 class Node(object):
     __slots__ = ['ifnum','__interfaces']
@@ -98,7 +103,9 @@ class Node(object):
         return ifname
 
     def __str__(self):
-        return str(self.asDict())
+        s = '{} '.format(self.nodetype)
+        s += ' '.join(sorted([str(intf) for intf in self.interfaces.values()]))
+        return s 
 
     def asDict(self):
         ifdict = dict([(ifname,str(ifobj)) for ifname,ifobj in self.__interfaces.items()])
@@ -124,22 +131,16 @@ class Encoder(json.JSONEncoder):
         return o.asDict()
 
 class Topology(object):
-    __slots__ = ['__name','__nodes','__links','__hnum','__snum','__rnum']
+    __slots__ = ['__nxgraph','__hnum','__snum','__rnum']
     def __init__(self, name="No name topology"):
-        self.__name = name
-        self.__nodes = {}
-        self.__links = defaultdict(dict)
+        self.__nxgraph = Graph(name=name)
         self.__hnum = 0
         self.__snum = 0
         self.__rnum = 0
 
     @property
     def name(self):
-        return self.__name
-
-    @name.setter
-    def name(self, value):
-        self.__name = value
+        return self.__nxgraph['name']
 
     def __addNode(self, name, cls):
         '''
@@ -147,23 +148,16 @@ class Topology(object):
         '''
         if name in self.nodes:
             raise Exception("A node by the name {} already exists.  Can't add a duplicate.".format(name))
-        self.nodes[name] = cls()
+        self.__nxgraph.add_node(name)
+        self.__nxgraph.node[name]['nodeobj'] = cls()
 
     @property
     def nodes(self):
-        return self.__nodes
-
-    @nodes.setter
-    def nodes(self, value):
-        self.__nodes = value
+        return self.__nxgraph.nodes(data=True)
 
     @property
     def links(self):
-        return self.__links
-
-    @links.setter
-    def links(self, value):
-        self.__links = value
+        return self.__nxgraph.edges(data=True)
 
     def addHost(self, name=None):
         '''
@@ -201,25 +195,28 @@ class Topology(object):
         capacity and delay to the topology.
         '''
         for n in (node1, node2):
-            if n not in self.nodes:
+            if not self.__nxgraph.has_node(n):
                 raise Exception("No node {} exists for building a link".format(n))
-        node1if = self.nodes[node1].addInterface()
-        node2if = self.nodes[node2].addInterface()
-        linkdict = {'capacity':capacity, 'delay':delay, node1:node1if, node2:node2if}
-        self.links[node1][node2] = linkdict
-        self.links[node2][node1] = linkdict
+        node1if = self.__nxgraph.node[node1]['nodeobj'].addInterface()
+        node2if = self.__nxgraph.node[node2]['nodeobj'].addInterface()
+        self.__nxgraph.add_edge(node1, node2)
+        self.__nxgraph[node1][node2]['capacity'] = unhumanize_capacity(capacity)
+        self.__nxgraph[node1][node2]['delay'] = unhumanize_delay(delay)
+        self.__nxgraph[node1][node2][node1] = node1if
+        self.__nxgraph[node1][node2][node2] = node2if
 
     def serialize(self):
         '''
         Return a JSON string of the serialized topology
         '''
-        return json.dumps({'nodes':self.nodes, 'links':self.links, 'name':self.name}, cls=Encoder)
+        return json.dumps(json_graph.node_link_data(self.__nxgraph), cls=Encoder)
 
     @staticmethod
     def unserialize(jsonstr):
         '''
         Unserialize a JSON string representation of a topology
         '''
+        # json_graph.node_link_graph()
         topod = json.loads(jsonstr)
         t = Topology()
         if 'links' not in topod:

@@ -1,4 +1,4 @@
-from switchyard.lib.topo import topobuild
+# from switchyard.lib.topo import topobuild
 import networkx as nx
 import matplotlib.pyplot as pyp
 import re
@@ -112,17 +112,27 @@ def unhumanize_bandwidth(bitsstr):
 
     Returns None if the string doesn't contain anything parseable.
     '''
+    if isinstance(bitsstr, int):
+        return bitsstr
+
     mobj = re.match('^\s*([\d\.]+)\s*(.*)\s*$', bitsstr)
     if not mobj:
         return None
     value, units = mobj.groups()
     value = float(value)
     multipliers = { 'b':1, 'k':1e3, 'm':1e6, 'g':1e9, 't':1e12 }
+    if not units:
+        units = 'bits'
     mult = multipliers.get(units[0].lower(), 0)
     bits = 1
-    if units[1] == 'B': bits = 8
+    if len(units) > 1:
+        if units[1] == 'B': bits = 8
     # print (bitsstr, value, mult, bits)
     return int(value * mult * bits)
+
+# a couple aliases
+humanize_capacity = humanize_bandwidth
+unhumanize_capacity = unhumanize_bandwidth
 
 def humanize_delay(delay):
     '''
@@ -170,13 +180,17 @@ def unhumanize_delay(delaystr):
 
     returns None on parse failure.
     '''
-    mobj = re.match('^\s*([\d\.]+)\s*(\w+)', delaystr)
+    if isinstance(delaystr, float):
+        return delaystr
+
+    mobj = re.match('^\s*([\d\.]+)\s*(\w*)', delaystr)
     if not mobj:
         return None
     value, units = mobj.groups()
     value = float(value)
-
-    if units == 'us' or units == 'usec' or units.startswith('micros'):
+    if not units:
+        divisor = 1.0
+    elif units == 'us' or units == 'usec' or units.startswith('micros'):
         divisor = 1e6
     elif units == 'ms' or units == 'msec' or units.startswith('millis'):
         divisor = 1e3

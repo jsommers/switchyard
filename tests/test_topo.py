@@ -33,6 +33,8 @@ class TopologyTests(unittest.TestCase):
         self.assertEqual(unhumanize_bandwidth("1 Gb/s"),    1000000000)
         self.assertEqual(unhumanize_bandwidth("100 Gb/s"),100000000000)
         self.assertEqual(unhumanize_bandwidth("2 Tb/s"), 2000000000000)
+        self.assertEqual(unhumanize_bandwidth("100000"), 100000)
+        self.assertEqual(unhumanize_bandwidth("100000  "), 100000)
         
     def testHumanizeDelay(self):
         self.assertEqual(humanize_delay(0.1), "100 milliseconds")
@@ -51,6 +53,7 @@ class TopologyTests(unittest.TestCase):
         self.assertEqual(unhumanize_delay("200 microseconds"), 0.0002)
         self.assertEqual(unhumanize_delay("1 second"), 1)
         self.assertEqual(unhumanize_delay("1.5 seconds"), 1.5)
+        self.assertEqual(unhumanize_delay("0.1"), 0.1)
 
     def test_serunser(self):
         t = Topology()
@@ -64,7 +67,7 @@ class TopologyTests(unittest.TestCase):
         tprime = Topology.unserialize(x)
         y = t.serialize()
 
-        self.assertListEqual(list(t.nodes.keys()), list(tprime.nodes.keys()))
+        self.assertListEqual(sorted(t.nodes.keys()), sorted(tprime.nodes.keys()))
         self.assertListEqual([str(v) for v in t.nodes.values()], [str(v) for v in tprime.nodes.values()])
         self.assertDictEqual(t.links, tprime.links)
 
