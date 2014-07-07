@@ -1,7 +1,7 @@
 import json
 from collections import defaultdict
 from switchyard.lib.address import EthAddr,IPAddr
-from switchyard.lib.topo.util import unhumanize_capacity, unhumanize_delay
+from switchyard.lib.topo.util import unhumanize_capacity, unhumanize_delay, humanize_capacity, humanize_delay
 from networkx import Graph
 from networkx.readwrite import json_graph
 
@@ -132,8 +132,11 @@ class Encoder(json.JSONEncoder):
 
 class Topology(object):
     __slots__ = ['__nxgraph','__hnum','__snum','__rnum']
-    def __init__(self, name="No name topology"):
-        self.__nxgraph = Graph(name=name)
+    def __init__(self, name="No name topology", nxgraph=None):
+        if nxgraph:
+            self.__nxgraph = nxgraph
+        else:
+            self.__nxgraph = Graph(name=name)
         self.__hnum = 0
         self.__snum = 0
         self.__rnum = 0
@@ -142,6 +145,10 @@ class Topology(object):
     def name(self):
         return self.__nxgraph['name']
 
+    @property
+    def nxgraph(self):
+        return self.__nxgraph
+
     def __addNode(self, name, cls):
         '''
         Add a node to the topology
@@ -149,6 +156,7 @@ class Topology(object):
         if name in self.nodes:
             raise Exception("A node by the name {} already exists.  Can't add a duplicate.".format(name))
         self.__nxgraph.add_node(name)
+        self.__nxgraph.node[name]['label'] = name
         self.__nxgraph.node[name]['nodeobj'] = cls()
 
     @property
@@ -200,6 +208,7 @@ class Topology(object):
         node1if = self.__nxgraph.node[node1]['nodeobj'].addInterface()
         node2if = self.__nxgraph.node[node2]['nodeobj'].addInterface()
         self.__nxgraph.add_edge(node1, node2)
+        self.__nxgraph[node1][node2]['label'] = "{} {}".format(humanize_capacity(capacity), humanize_delay(delay))
         self.__nxgraph[node1][node2]['capacity'] = unhumanize_capacity(capacity)
         self.__nxgraph[node1][node2]['delay'] = unhumanize_delay(delay)
         self.__nxgraph[node1][node2][node1] = node1if
@@ -216,27 +225,17 @@ class Topology(object):
         '''
         Unserialize a JSON string representation of a topology
         '''
-        # json_graph.node_link_graph()
         topod = json.loads(jsonstr)
-        t = Topology()
-        if 'links' not in topod:
-            raise Exception("No links found in topology")
-        if 'nodes' not in topod:
-            raise Exception("No links found in topology")
-        if 'name' not in topod:
-            print ("No name found in topology; defaulting to 'No name'")
-            t.name = 'No name'
-        else:
-            t.name = topod['name']
-        t.nodes = topod['nodes']
-        t.links = topod['links']
-        xnodes = {}
-        for nname,ndict in t.nodes.items():
-            if 'nodetype' not in ndict:
-                raise Exception("Required nodetype information is not present in serialized node {} :{}".format(nodename, ndict))
-            cls = ndict['nodetype']
-            xnodes[nname] = eval(cls)(**dict(ndict))
-        t.nodes = xnodes
+        G = json_graph.node_link_graph(topod)
+        for n,ndict in G.nodes(data=True):
+            print (n,ndict)
+            if 'nodeobj' not in ndict:
+                raise Exception("Required nodetype information is not present in serialized node {} :{}".format(n, ndict))
+            nobj = ndict['nodeobj']
+            cls = eval(nobj['nodetype'])
+            print (nobj['nodetype'], cls)
+            ndict['nodeobj'] = cls(**dict(ndict))
+        t = Topology(nxgraph=G)
         return t
 
     def __str__(self):

@@ -66,10 +66,12 @@ class TopologyTests(unittest.TestCase):
         x = t.serialize()
         tprime = Topology.unserialize(x)
         y = t.serialize()
+        print (x)
+        print (y)
 
-        self.assertListEqual(sorted(t.nodes.keys()), sorted(tprime.nodes.keys()))
-        self.assertListEqual([str(v) for v in t.nodes.values()], [str(v) for v in tprime.nodes.values()])
-        self.assertDictEqual(t.links, tprime.links)
+        self.assertListEqual(sorted(t.nodes), sorted(tprime.nodes))
+        self.assertListEqual([str(v) for v in t.nodes], [str(v) for v in tprime.nodes])
+        self.assertListEqual(t.links, tprime.links)
 
 
 if __name__ == '__main__':

@@ -1,31 +1,13 @@
-# from switchyard.lib.topo import topobuild
 import networkx as nx
 import matplotlib.pyplot as pyp
 import re
 
-def convert_to_networkx(cn_topo):
-    '''
-    Convert the toolbelt topology to a networkx graph.
-    '''
-    G = nx.Graph()
-    elabels = {}
-    nlabels = {}
-    for nodename,nodeobj in cn_topo.nodes.items():
-        # print nodename,nodeobj.asDict()
-        G.add_node(nodename)
-        nlabels[nodename] = nodename
-    for nodename,edict in cn_topo.links.items():
-        for nextnode,edgeinfo in edict.items():
-            elabels[(nodename,nextnode)] = "{} Mb/s {} sec".format(edgeinfo['capacity']/1000000.0, edgeinfo['delay'])
-            # print edgeinfo
-            G.add_edge(nodename, nextnode)
-    return G,nlabels,elabels
-
 def __do_draw(cn_topo):
-    G,nlabels,elabels = convert_to_networkx(cn_topo)
+    G = cn_topo.nxgraph
     pos=nx.spring_layout(G)
-    nx.draw_networkx(G, pos=pos, label=cn_topo.name, with_labels=True, labels=nlabels, edge_labels=elabels)
-    nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=elabels)
+    nx.draw_networkx(G, pos=pos, with_labels=True) #label=cn_topo.name
+    elabels = labels = dict(((u, v), d['label']) for u, v, d in G.edges(data=True))
+    nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=elabels, font_size=8)
 
 def show_graph(cn_topo):
     '''
