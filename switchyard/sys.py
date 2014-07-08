@@ -261,7 +261,6 @@ FIXME: this is the documentation header.
 
 
 def run_simulation(topo, swycode):
-    # print topo.nodes
     xnode = {}
     exec_module = import_module(swycode)
 
@@ -273,19 +272,18 @@ def run_simulation(topo, swycode):
         t = threading.Thread(target=nexec.run)
         xnode[n] = NodePlumbing(t,nexec,q)
 
-    for nearnodename,edgedict in topo.links.items():
-        for farnodename,edgeinfo in edgedict.items():
-            nearnode = xnode[nearnodename]
-            farnode = xnode[farnodename]
-
-            nearnode_dev = edgeinfo[nearnodename]
-            farnode_dev = edgeinfo[farnodename]
-            cap = edgeinfo['capacity']
-            delay = edgeinfo['delay']
-            egress_queue = farnode.queue
-            intf =  topo.nodes[nearnodename].getInterface(nearnode_dev)
-
-            nearnode.nexec.addEgressInterface(nearnode_dev, intf, egress_queue, cap, delay, farnode_dev)
+    for u,v in topo.links:
+        print (u,v)
+        linkdict = topo.getLink(u,v)
+        nearnode = xnode[u]
+        farnode = xnode[v]
+        udev = linkdict[u]
+        vdev = linkdict[v]
+        cap = linkdict['capacity']
+        delay = linkdict['delay']
+        egress_queue = farnode.queue
+        intf = topo.getNode(u)['nodeobj'].getInterface(udev)
+        nearnode.nexec.addEgressInterface(udev, intf, egress_queue, cap, delay, vdev)
 
     for nodename,plumbing in xnode.items():
         plumbing.thread.start()

@@ -119,7 +119,7 @@ class Node(object):
 
     def asDict(self):
         ifdict = dict([(ifname,str(ifobj)) for ifname,ifobj in self.__interfaces.items()])
-        return {'nodetype':self.__class__.__name__, 'interfaces':ifdict}
+        return {'interfaces':ifdict}
 
 class Host(Node):
     def __init__(self, *args, **kwargs):
@@ -304,11 +304,11 @@ class Topology(object):
         topod = json.loads(jsonstr)
         G = json_graph.node_link_graph(topod)
         for n,ndict in G.nodes(data=True):
-            if 'nodeobj' not in ndict:
-                raise Exception("Required nodetype information is not present in serialized node {} :{}".format(n, ndict))
+            if 'nodeobj' not in ndict or 'type' not in ndict:
+                raise Exception("Required type information is not present in serialized node {} :{}".format(n, ndict))
             nobj = ndict['nodeobj']
-            cls = eval(nobj['nodetype'])
-            ndict['nodeobj'] = cls(**dict(ndict))
+            cls = eval(ndict['type'])
+            ndict['nodeobj'] = cls(**dict(nobj))
         t = Topology(nxgraph=G)
         return t
 
@@ -340,7 +340,6 @@ class Topology(object):
             for node in [u,v]:
                 if node in nodes_to_number:
                     ifname = linkdata[node]
-                    # print ("Got node {} ifname {}".format(node, ifname))
                     intf = self.getNode(node)['nodeobj'].getInterface(ifname)
                     intf.ipaddr = next(ipgenerator)
                     intf.netmask = subnet.netmask
