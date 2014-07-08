@@ -10,7 +10,7 @@ import re
 
 from switchyard.switchyard.switchy import LLNetBase
 from switchyard.switchyard.switchy_common import NoPackets,Shutdown
-from switchyard.lib.topo.util import load_from_file,show_graph
+from switchyard.lib.topo import *
 from switchyard.lib.packet import *
 
 

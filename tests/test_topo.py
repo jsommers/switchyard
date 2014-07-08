@@ -55,6 +55,76 @@ class TopologyTests(unittest.TestCase):
         self.assertEqual(unhumanize_delay("1.5 seconds"), 1.5)
         self.assertEqual(unhumanize_delay("0.1"), 0.1)
 
+    def testTopoBuild(self):
+        t = Topology()
+        t.addHost('h1')
+        t.addHost('h2')
+        t.addRouter('r1')
+        t.addSwitch('s1')
+        t.addLink('h1','r1','1 Mb/s','5 milliseconds')
+        t.addLink('h1','s1','1 Mb/s','5 milliseconds')
+        t.addLink('h2','r1','1 Mb/s','5 milliseconds')
+        t.addLink('h2','s1','1 Mb/s','5 milliseconds')
+        self.assertListEqual(sorted(t.nodes), sorted(['h1','h2','r1','s1']))
+        self.assertListEqual(t.routers, ['r1'])
+        self.assertListEqual(t.switches, ['s1'])
+        self.assertListEqual(sorted(t.hosts), ['h1','h2'])
+        self.assertListEqual(sorted([ sorted(tup) for tup in t.links]), sorted([['h1','r1'],['h1','s1'],['h2','r1'],['h2','s1']]))
+
+        self.assertIsInstance(t.getNode('h1'), dict)
+        self.assertIsInstance(t.getLink('h1','s1'), dict)
+
+        with self.assertRaises(KeyError):
+            t.getNode('x1')
+        with self.assertRaises(KeyError):
+            t.getLink('h1','x1')
+        with self.assertRaises(KeyError):
+            t.getLink('x1','h1')
+
+        self.assertListEqual(sorted(t.neighbors('h1')), ['r1','s1'])
+        self.assertListEqual(sorted(t.edges_from('h1')), [('h1','r1'),('h1','s1')])
+        nobj = t.getNode('h1')['nodeobj']
+        self.assertEqual(len(nobj.interfaces), 2)
+        self.assertEqual(str(nobj.interfaces['eth0'].ethaddr), '00:00:00:00:00:01')
+        self.assertEqual(str(nobj.interfaces['eth1'].ethaddr), '00:00:00:00:00:03')
+
+        t.assignIPAddresses(prefix='192.168.1.0/24')
+        self.assertEqual(str(nobj.interfaces['eth0'].ipaddr)[:-1], "192.168.1.")
+        self.assertEqual(str(nobj.interfaces['eth0'].netmask), "255.255.255.0")
+
+        h1ifname,r1ifname = t.getLinkInterfaces('h1','r1')
+        self.assertEqual(h1ifname, 'eth0')
+        self.assertEqual(r1ifname, 'eth0')
+        t.setInterfaceAddresses('h1',h1ifname,ip="10.0.1.1",netmask="255.255.0.0",mac="11:22:33:44:55:66") 
+        ethaddr,ip,mask = t.getInterfaceAddresses('h1',h1ifname)
+        self.assertEqual(ethaddr,EthAddr("11:22:33:44:55:66"))
+        self.assertEqual(ip,IPAddr("10.0.1.1"))
+        self.assertEqual(mask,IPAddr("255.255.0.0"))
+
+    def testTopoCompose(self):
+        t1 = Topology('A')
+        t1.addHost('h1')
+        t1.addSwitch('s1')
+        t1.addHost('h2')
+        t1.addLink('h1','s1','100Mb/s', '50 ms')
+        t1.addLink('h2','s1','100Mb/s', '50 ms')
+        t2 = Topology('B')
+        t2.addHost('h1')
+        t2.addRouter('r1')
+        t2.addHost('h2')
+        t2.addLink('h1','r1','100Mb/s', '50 ms')
+        t2.addLink('h2','r1','100Mb/s', '50 ms')
+        t1.addNodeLabelPrefix("A")
+        self.assertListEqual(sorted(t1.nodes), sorted(['A_h1','A_h2','A_s1']))
+        self.assertListEqual(sorted([sorted(x) for x in t1.links]), sorted([sorted(x) for x in [('A_s1','A_h1'),('A_s1','A_h2')]]))
+        t2.addNodeLabelPrefix("B")
+        t3 = t1.union(t2)
+        t3.addLink('B_r1','A_s1','1Gb/s',0.1)
+        self.assertListEqual(sorted(t3.nodes), sorted(['A_h1','A_h2','A_s1','B_h1','B_h2','B_r1']))
+        self.assertListEqual(sorted([sorted(x) for x in t3.links]), sorted([sorted(x) for x in [('A_h1', 'A_s1'), ('B_h1', 'B_r1'), ('A_h2', 'A_s1'), ('B_r1', 'A_s1'), ('B_r1', 'B_h2')]]))
+        t3.addRouter()
+        self.assertListEqual(sorted(t3.nodes), sorted(['A_h1','A_h2','A_s1','B_h1','B_h2','B_r1','r0']))
+
     def test_serunser(self):
         t = Topology()
         h1 = t.addHost()
@@ -66,12 +136,7 @@ class TopologyTests(unittest.TestCase):
         x = t.serialize()
         tprime = Topology.unserialize(x)
         y = t.serialize()
-        print (x)
-        print (y)
-
-        self.assertListEqual(sorted(t.nodes), sorted(tprime.nodes))
-        self.assertListEqual([str(v) for v in t.nodes], [str(v) for v in tprime.nodes])
-        self.assertListEqual(t.links, tprime.links)
+        self.assertEqual(x,y)
 
 
 if __name__ == '__main__':

@@ -1,45 +1,4 @@
-import networkx as nx
-import matplotlib.pyplot as pyp
 import re
-
-def __do_draw(cn_topo):
-    G = cn_topo.nxgraph
-    pos=nx.spring_layout(G)
-    nx.draw_networkx(G, pos=pos, with_labels=True) #label=cn_topo.name
-    elabels = labels = dict(((u, v), d['label']) for u, v, d in G.edges(data=True))
-    nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=elabels, font_size=8)
-
-def show_graph(cn_topo):
-    '''
-    Display the toolbelt topology (after a conversion to a networkx graph)
-    '''
-    __do_draw(cn_topo)
-    pyp.show()
-
-def save_graph(cn_topo, filename):
-    '''
-    Save the topology to an image file (after conversion to networkx graph)
-    '''
-    __do_draw(cn_topo)
-    pyp.savefig(filename)
-
-def load_from_file(filename):
-    '''
-    Load a toolbelt topology from filename and return it.
-    '''
-    t = None
-    with open(filename, 'rU') as infile:
-        tdata = infile.read()
-        t = topobuild.Topology.unserialize(tdata)
-    return t
-
-def save_to_file(cn_topo, filename):
-    '''
-    Save a toolbelt topology to a file.
-    '''
-    jstr = cn_topo.serialize()
-    with open(filename, 'w') as outfile:
-        outfile.write(jstr)
 
 def humanize_bandwidth(bits):
     '''

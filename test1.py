@@ -1,7 +1,6 @@
-import switchyard.lib.topo.topobuild as tbuild
-import switchyard.lib.topo.util as tutil
+from switchyard.lib.topo import *
 
-t = tbuild.Topology()
+t = Topology()
 h1 = t.addHost()
 h2 = t.addHost()
 s1 = t.addSwitch()
@@ -10,6 +9,6 @@ t.addLink(h1,s1,1000000,0.1)
 t.addLink(h2,s2,1000000,0.1)
 t.addLink(s1,s2,1000000,0.1)
 
-tutil.save_to_file(t, 'xtopo.txt')
-tutil.save_graph(t, 'xtopo.png')
+save_to_file(t, 'xtopo.txt')
+save_graph(t, 'xtopo.png')
 
