@@ -146,7 +146,7 @@ FIXME: this is the documentation header.
     def do_show(self, line):
         cmdargs = line.split()
         if len(cmdargs) < 1:
-            print ("Not enough arguments to show")
+            print ("Not enough arguments to show ('help show' for more info)")
             return
 
         if 'links'.startswith(cmdargs[0]):
@@ -155,6 +155,8 @@ FIXME: this is the documentation header.
             self.__show_nodes(cmdargs[1:])
         elif 'topology'.startswith(cmdargs[0]):
             self.__show_topology(cmdargs[1:])
+        elif '?' == cmdargs[0]:
+            self.help_show() 
         else:
             print ("Invalid show subcommand {}".format(cmdargs[0]))
 
@@ -163,46 +165,34 @@ FIXME: this is the documentation header.
 
     def __show_nodes(self, cmdargs):
         if len(cmdargs) == 0:
-            # show all node names
-            print (' '.join(self.nodedata.keys()))
+            print (' '.join(self.topology.nodes))
         else:
-            if cmdargs[0] in self.nodedata.keys():
-                xnode = self.topology.nodes[cmdargs[0]]
-                print ("Node {} is a {} and has these interfaces:".format(cmdargs[0], xnode.nodetype))
-                for intf in xnode.interfaces.values():
+            if cmdargs[0] in self.topology.nodes:
+                nobj = self.topology.getNode(cmdargs[0])
+                nodeifs = nobj['nodeobj'].interfaces
+                plural = 's'
+                if len(nodeifs) == 1: plural = ''
+                print ("Node {} is a {} and has {} interface{}:".format(cmdargs[0], nobj['type'], len(nodeifs), plural))
+                for ifname,intf in sorted(nodeifs.items()):
                     print ("\t{}".format(intf))
             else:
                 print ("Node {} does not exist.".format(cmdargs[0]))
 
-    def __printlink(self, ldict):
-        nodes = []
-        delay = capacity = 0.0
-        for key,value in ldict.items():
-            if key == 'delay':
-                delay = value
-            elif key == 'capacity':
-                capacity = value
-            else:
-                nodes.append(':'.join([key,value]))
-        print (' <-> '.join(nodes), end='')
-        print ('; delay={} capacity={}'.format(delay, capacity))
+    def __printlink(self, u, v, ldict):
+        print ('{} <-> {} ({})'.format(u,v,ldict['label']))
 
     def __show_links(self, cmdargs):
         if len(cmdargs) == 0:
             # show all links
-            xlinks = set()
-            for nearnode,nearlinks in self.topology.links.items():
-                for farnode, linkinfo in nearlinks.items():
-                    if (nearnode,farnode) in xlinks or (farnode,nearnode) in xlinks:
-                        continue
-                    xlinks.add( (nearnode,farnode) )
-                    xlinks.add( (farnode,nearnode) )
-                    ltup = self.__printlink(linkinfo)
+            for u,v in self.topology.links:
+                linkdict = self.topology.getLink(u,v)
+                self.__printlink(u,v,linkdict)
         else:
-            if cmdargs[0] in self.topology.links: 
+            if cmdargs[0] in self.topology.nodes: 
                 # show links related to a given node
-                for farnode,linkinfo in self.topology.links[cmdargs[0]].items():
-                    self.__printlink(linkinfo)
+                for u,v in self.topology.edges_from(cmdargs[0]):
+                    linkdict = self.topology.getLink(u,v)
+                    self.__printlink(u,v,linkdict)
             else:
                 print ("Can't show links for unknown node {}".format(cmdargs[0]))
 
@@ -261,6 +251,14 @@ FIXME: this is the documentation header.
 
 
 def run_simulation(topo, swycode):
+    '''
+    Get the simulation substrate started.  The key things are to set up
+    a series of queues that connect nodes together and get the link emulation
+    objects started (all inside the NodeExecutor class).  The NodePlumbing
+    named tuples hold together threads for each node, the emulation
+    substrate (NodeExecutors), and the ingress queue that each node receives
+    packets from.
+    '''
     xnode = {}
     exec_module = import_module(swycode)
 
@@ -273,7 +271,6 @@ def run_simulation(topo, swycode):
         xnode[n] = NodePlumbing(t,nexec,q)
 
     for u,v in topo.links:
-        print (u,v)
         linkdict = topo.getLink(u,v)
         nearnode = xnode[u]
         farnode = xnode[v]
