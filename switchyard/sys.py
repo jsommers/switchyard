@@ -198,7 +198,14 @@ FIXME: this is the documentation header.
 
     def __show_topology(self, cmdargs):
         print ("Close window in order to proceed")
-        show_graph(self.topology)
+        showaddrs = showintfs = False
+        for arg in cmdargs:
+            if arg.startswith('addr'):
+                showaddrs = True
+                showintfs = True
+            elif arg.startswith('int'):
+                showintfs = True
+        show_graph(self.topology, showaddrs=showaddrs, showintfs=showintfs)
 
     def do_sendeth(self, line):
         sourcenode = line.strip()

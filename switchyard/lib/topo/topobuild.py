@@ -40,7 +40,7 @@ class Interface(object):
         elif isinstance(value, str):
             self.__ethaddr = EthAddr(value)
         elif value is None:
-            self.__ethaddr = '00:00:00:00:00:00'
+            self.__ethaddr = EthAddr('00:00:00:00:00:00')
         else:
             self.__ethaddr = value
 
@@ -55,7 +55,7 @@ class Interface(object):
         elif isinstance(value, str):
             self.__ipaddr = IPAddr(value)
         elif value is None:
-            self.__ipaddr = '0.0.0.0'
+            self.__ipaddr = IPAddr('0.0.0.0')
         else:
             self.__ipaddr = value
 
@@ -66,13 +66,13 @@ class Interface(object):
     @netmask.setter
     def netmask(self, value):
         if isinstance(value, IPAddr):
-            self.__netmask = value
+            self.__netmask = ipaddress.ip_network(value, strict=False)
         elif isinstance(value, str):
-            self.__netmask = IPAddr(value)
+            self.__netmask = ipaddress.ip_network(value, strict=False)
         elif value is None:
-            self.__netmask = '255.255.255.255'
+            self.__netmask = ipaddress.ip_network('255.255.255.255', strict=False)
         else:
-            self.__netmask = value
+            self.__netmask = ipaddress.ip_network(value, strict=False)
 
     def __str__(self):
         s =  "{} mac:{}".format(str(self.name), str(self.ethaddr))
@@ -432,33 +432,50 @@ class Topology(object):
         newtopo = Topology(nxgraph=nxgraph, name="{}_{}".format(self.name, other.name))
         return newtopo
 
-def __do_draw(cn_topo):
+def __do_draw(cn_topo, showintfs=False, showaddrs=False):
     if nompl:
         raise Exception("Couldn't import matplotlib: can't show or save a topology plot")
 
     G = cn_topo.nxgraph
-    pos=nx.spring_layout(G)
-    nx.draw_networkx(G, pos=pos, with_labels=True) #label=cn_topo.name
-    elabels = labels = dict(((u, v), d['label']) for u, v, d in G.edges(data=True))
-    nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=elabels, font_size=8)
 
-def show_graph(cn_topo):
+    def addrlabel(G, n, intf):
+        if not showaddrs:
+            return ''
+        intf = G.node[n]['nodeobj'].interfaces[intf]
+        addrs = []
+        if intf.ethaddr:
+            addrs.append("{}".format(intf.ethaddr))
+        if intf.ipaddr and str(intf.ipaddr) != '0.0.0.0':
+            addrs.append("{}/{}".format(intf.ipaddr, intf.netmask.prefixlen))
+        return "\n{}".format('\n'.join(addrs))
+
+    pos=nx.spring_layout(G)
+    nx.draw_networkx(G, pos=pos, with_labels=True, alpha=0.9, font_size=10)
+    elabels = labels = dict(((u, v), d['label']) for u, v, d in G.edges_iter(data=True))
+    nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=elabels, font_size=8)
+    if showintfs:
+        if1d = dict(( ((u,v),"{}{}".format(d[u],addrlabel(G,u,d[u]))) for u,v,d in G.edges_iter(data=True)))
+        if2d = dict(( ((u,v),"{}{}".format(d[v],addrlabel(G,u,d[v]))) for u,v,d in G.edges_iter(data=True)))
+        nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=if1d, label_pos=0.1, font_size=6, alpha=0.5, font_color='b')
+        nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=if2d, label_pos=0.9, font_size=6, alpha=0.5, font_color='b')
+
+def show_graph(cn_topo, showintfs=False, showaddrs=False):
     '''
-    Display the toolbelt topology (after a conversion to a networkx graph)
+    Display the topology 
     '''
-    __do_draw(cn_topo)
+    __do_draw(cn_topo, showintfs=showintfs, showaddrs=showaddrs)
     pyp.show()
 
-def save_graph(cn_topo, filename):
+def save_graph(cn_topo, filename, showintfs=False, showaddrs=False):
     '''
-    Save the topology to an image file (after conversion to networkx graph)
+    Save the topology to an image file 
     '''
-    __do_draw(cn_topo)
+    __do_draw(cn_topo, showintfs=showintfs, showaddrs=showaddrs)
     pyp.savefig(filename)
 
 def load_from_file(filename):
     '''
-    Load a toolbelt topology from filename and return it.
+    Load a topology from filename and return it.
     '''
     t = None
     with open(filename, 'rU') as infile:
@@ -468,7 +485,7 @@ def load_from_file(filename):
 
 def save_to_file(cn_topo, filename):
     '''
-    Save a toolbelt topology to a file.
+    Save a topology to a file.
     '''
     jstr = cn_topo.serialize()
     with open(filename, 'w') as outfile:

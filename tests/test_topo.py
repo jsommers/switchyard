@@ -37,13 +37,13 @@ class TopologyTests(unittest.TestCase):
         self.assertEqual(unhumanize_bandwidth("100000  "), 100000)
         
     def testHumanizeDelay(self):
-        self.assertEqual(humanize_delay(0.1), "100 milliseconds")
-        self.assertEqual(humanize_delay(0.01), "10 milliseconds")
-        self.assertEqual(humanize_delay(0.001), "1 millisecond")
-        self.assertEqual(humanize_delay(0.002), "2 milliseconds")
-        self.assertEqual(humanize_delay(0.0002), "200 microseconds")
-        self.assertEqual(humanize_delay(1), "1 second")
-        self.assertEqual(humanize_delay(1.5), "1500 milliseconds")
+        self.assertEqual(humanize_delay(0.1), "100 msecs")
+        self.assertEqual(humanize_delay(0.01), "10 msecs")
+        self.assertEqual(humanize_delay(0.001), "1 msec")
+        self.assertEqual(humanize_delay(0.002), "2 msecs")
+        self.assertEqual(humanize_delay(0.0002), "200 \u00B5secs")
+        self.assertEqual(humanize_delay(1), "1 sec")
+        self.assertEqual(humanize_delay(1.5), "1500 msecs")
 
     def testUnhumanizeDelay(self):
         self.assertEqual(unhumanize_delay("100 milliseconds"), 0.1)

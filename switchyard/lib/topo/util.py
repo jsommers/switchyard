@@ -94,16 +94,16 @@ def humanize_delay(delay):
     units = ''
     microsecs = micros + 1e3 * millis + 1e6 * seconds
     if micros > 0:
-        units = ' microsecond'
+        units = ' \u00B5sec'
         value = int(microsecs)
     elif millis > 0:
-        units = ' millisecond'
+        units = ' msec'
         value = int(microsecs / 1000)
     elif seconds > 0:
-        units = ' second'
+        units = ' sec'
         value = int(microsecs / 1000000)
     else:
-        units = ' seconds'
+        units = ' sec'
         value = 0
     if value > 1:
         units += 's'
