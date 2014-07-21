@@ -12,6 +12,7 @@ from switchyard.switchyard.switchy import LLNetBase
 from switchyard.switchyard.switchy_common import NoPackets,Shutdown
 from switchyard.lib.topo import *
 from switchyard.lib.packet import *
+from switchyard.lib.textcolor import *
 
 
 __author__ = 'jsommers@colgate.edu'
@@ -131,7 +132,7 @@ class Cli(Cmd):
         self.nodedata = nodedata
         self.topology = topology
         Cmd.__init__(self)
-        self.prompt = 'sy> '
+        self.prompt = '{}switchyard>{} '.format(TextColor.CYAN,TextColor.RESET)
         self.doc_header = '''
 FIXME: this is the documentation header.
 '''
@@ -161,7 +162,98 @@ FIXME: this is the documentation header.
             print ("Invalid show subcommand {}".format(cmdargs[0]))
 
     def do_set(self, line):
-        print ("set commands not implemented yet")
+        argerr = "Not enough arguments to set ('help set' for more info)"
+        cmdargs = line.split()
+        if len(cmdargs) < 5:
+            print (argerr)
+            return
+
+        if 'node'.startswith(cmdargs[0]):
+            nodename = cmdargs[1]
+            interface = cmdargs[2]
+            ethaddr = None
+            ipaddr = None
+            netmask = None
+            if 'ethernet'.startswith(cmdargs[3]):
+                ethaddr = cmdargs[4]
+            elif 'inet'.startswith(cmdargs[3]):
+                ipaddr = cmdargs[4]
+                netmask = ''
+                if len(cmdargs) > 5:
+                    if 'netmask'.startswith(cmdargs[5]):
+                        if len(cmdargs) > 6:
+                            netmask = cmdargs[6]
+                        else:
+                            print ("Missing netmask value")
+                            return
+                    elif len(cmdargs) == 6:
+                        netmask = cmdargs[5]
+                    else:
+                        print ("Unrecognized configuration parameter")
+                        return
+                try:
+                    self.topology.setInterfaceAddresses(nodename, interface, mac=ethaddr, ip=ipaddr, netmask=netmask)
+                except Exception as e:
+                    print ("Error setting addresses: {}".format(str(e)))
+            else:
+                print ("Invalid address family: must be ethernet or inet")
+                return
+
+        elif 'link'.startswith(cmdargs[0]):
+            n1,n2 = cmdargs[1:3]
+            bw = delay = ''
+            cmdargs = cmdargs[3:]
+            print ("Remaining cmd args: ",cmdargs)
+            if len(cmdargs) < 2 or len(cmdargs) % 2 != 0:
+                print ("Wrong number of arguments to 'set link'")
+                return
+            for i in range(0,len(cmdargs),2):
+                if cmdargs[i] == 'bw' or 'bandwidth'.startswith(cmdargs[i]) or 'capacity'.startswith(cmdargs[i]):
+                    bw = cmdargs[i+1]
+                elif 'delay'.startswith(cmdargs[i]):
+                    delay = cmdargs[i+1]
+                else:
+                    print ("Unrecognized link parameter {}".format(cmdargs[i]))
+                    return
+            for n in (n1,n2):
+                if n not in self.topology:
+                    print ("Node {} doesn't exist.".format(n))
+                    return
+            if not self.topology.hasLink(n1,n2):
+                print ("No link exists between {} and {}".format(n1,n2))
+                return
+            print ("change link {} {} bw {} delay {}".format(n1,n2,bw,delay))
+            print ("Link: ",self.topology.getLink(n1,n2))
+        else:
+            print ("Invalid set command: must start with 'set node' or 'set link'")
+
+        # set node s0 eth0 ether ethaddr
+        # set node s0 eth0 inet ipaddr netmask netmask
+        # set link s0 s1 bw X
+        # set link s0 s1 delay X
+
+    def do_save(self, line):
+        print ("save commands not implemented yet")
+        # save topology <filename>
+
+    def do_load(self, line):
+        print ("load command not implemented yet")
+
+    def do_add(self, line):
+        print ("add commands not implemented yet")
+        # add <host/switch/router> <name>
+        # add link node0 node1 bw X delay X
+
+    def do_monitor(self, line):
+        print ("monitor commands not implemented yet")
+        # monitor link X Y [filename]
+        # monitor node X [filename]
+        # -- should allow adding simple tcpdump monitor, as well as
+        # adding code that gets a callback when packets arrive (but
+        # doesn't allow sending)
+
+        # show monitor
+        # show monitor link X Y
 
     def __show_nodes(self, cmdargs):
         if len(cmdargs) == 0:
@@ -245,6 +337,13 @@ FIXME: this is the documentation header.
         show (nodes|node <nodename>)
         show (links|link <nodename>)
         show topology 
+        ''')
+
+    def help_set(self):
+        print ('''
+        set node <nodename> <ifacename> ethernet <ethaddr>
+        set node <nodename> <ifacename> inet <ipaddr> [netmask <mask>]
+        set node <nodename> <ifacename> inet <ipaddr>/<prefixlen>
         ''')
 
     def help_exit(self):

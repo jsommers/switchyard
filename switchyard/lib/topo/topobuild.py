@@ -14,16 +14,20 @@ except ImportError:
     nompl = True
 
 class Interface(object):
+    __slots__ = ['__name','__ethaddr','__ipaddr']
     '''
     Class that models a single logical interface on a network
     device.  An interface has a name, 48-bit Ethernet MAC address,
-    and (optionally) a 32-bit IPv4 address and mask.
+    and (optionally) an IP address.  The IP address is stored
+    as an ipaddress.IPv4/6Interface object, which includes
+    the netmask/prefixlen.
     '''
-    def __init__(self, name, ethaddr, ipaddr, netmask):
+    def __init__(self, name, ethaddr, ipaddr, netmask=None):
         self.__name = name
         self.ethaddr = ethaddr
+        if netmask:
+            ipaddr = "{}/{}".format(ipaddr,netmask)
         self.ipaddr = ipaddr
-        self.netmask = netmask
 
     @property
     def name(self):
@@ -46,38 +50,34 @@ class Interface(object):
 
     @property 
     def ipaddr(self):
-        return self.__ipaddr
+        return self.__ipaddr.ip
 
     @ipaddr.setter
     def ipaddr(self, value):
-        if isinstance(value, IPAddr):
-            self.__ipaddr = value
-        elif isinstance(value, str):
-            self.__ipaddr = IPAddr(value)
+        if isinstance(value, (str,IPAddr)):
+            self.__ipaddr = ipaddress.ip_interface(value)
         elif value is None:
-            self.__ipaddr = IPAddr('0.0.0.0')
+            self.__ipaddr = ipaddress.ip_interface('0.0.0.0')
         else:
-            self.__ipaddr = value
+            raise Exception("Invalid type assignment to IP address (must be string or existing IP address)")
 
     @property 
     def netmask(self):
-        return self.__netmask
+        return self.__ipaddr.netmask
 
     @netmask.setter
     def netmask(self, value):
-        if isinstance(value, IPAddr):
-            self.__netmask = ipaddress.ip_network(value, strict=False)
-        elif isinstance(value, str):
-            self.__netmask = ipaddress.ip_network(value, strict=False)
+        if isinstance(value, (IPAddr,str,int)):
+            self.__ipaddr = ipaddress.ip_interface("{}/{}".format(self.__ipaddr.ip, str(value)))
         elif value is None:
-            self.__netmask = ipaddress.ip_network('255.255.255.255', strict=False)
+            self.__ipaddr = ipaddress.ip_interface("{}/32".format(self.__ipaddr.ip))
         else:
-            self.__netmask = ipaddress.ip_network(value, strict=False)
+            raise Exception("Invalid type assignment to netmask (must be IPAddr, string, or int)")
 
     def __str__(self):
         s =  "{} mac:{}".format(str(self.name), str(self.ethaddr))
-        if str(self.ipaddr) != '0.0.0.0':
-            s += " ip:{}/{}".format(str(self.ipaddr), str(self.netmask))
+        if int(self.ipaddr) != 0:
+            s += " ip:{}".format(self.__ipaddr)
         return s            
 
 class Node(object):
@@ -101,6 +101,12 @@ class Node(object):
     @property
     def interfaces(self):
         return self.__interfaces
+
+    def hasInterface(self, intf):
+        return intf in self.__interfaces
+
+    def __contains__(self, intf):
+        return self.hasInterface(intf)
 
     def getInterface(self, devname):
         return self.__interfaces[devname]
@@ -174,6 +180,12 @@ class Topology(object):
         assert(isinstance(value, nx.Graph))
         self.__nxgraph = value
 
+    def __contains__(self, nodename):
+        return nodename in self.__nxgraph
+
+    def hasNode(self, nodename):
+        return nodename in self.__nxgraph
+
     def __addNode(self, name, cls):
         '''
         Add a node to the topology
@@ -191,6 +203,12 @@ class Topology(object):
     def getEdge(self, node1, node2):
         return self.__nxgraph[node1][node2]
 
+    def hasLink(self, node1, node2):
+        return self.__nxgraph.has_edge(node1, node2) 
+
+    def hasEdge(self, node1, node2):
+        return self.__nxgraph.has_edge(node1, node2) 
+            
     def getLink(self, node1, node2):
         return self.getEdge(node1, node2)
 
@@ -358,7 +376,13 @@ class Topology(object):
         Set any one of Ethernet (MAC) address, IP address or IP netmask for
         a given interface on a node.
         '''
-        intf = self.getNode(node)['nodeobj'].getInterface(interface)
+        if not self.hasNode(node):
+            raise Exception("No such node {}".format(node))
+        nobj = self.getNode(node)['nodeobj']
+        if interface not in nobj:
+            raise Exception("No such interface {}".format(interface))
+
+        intf = nobj.getInterface(interface)
         if mac:
             intf.ethaddr = mac
         if ip:
@@ -442,22 +466,17 @@ def __do_draw(cn_topo, showintfs=False, showaddrs=False):
         if not showaddrs:
             return ''
         intf = G.node[n]['nodeobj'].interfaces[intf]
-        addrs = []
-        if intf.ethaddr:
-            addrs.append("{}".format(intf.ethaddr))
-        if intf.ipaddr and str(intf.ipaddr) != '0.0.0.0':
-            addrs.append("{}/{}".format(intf.ipaddr, intf.netmask.prefixlen))
-        return "\n{}".format('\n'.join(addrs))
+        return '\n'.join(str(intf).split())
 
     pos=nx.spring_layout(G)
     nx.draw_networkx(G, pos=pos, with_labels=True, alpha=0.9, font_size=10)
     elabels = labels = dict(((u, v), d['label']) for u, v, d in G.edges_iter(data=True))
     nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=elabels, font_size=8)
     if showintfs:
-        if1d = dict(( ((u,v),"{}{}".format(d[u],addrlabel(G,u,d[u]))) for u,v,d in G.edges_iter(data=True)))
-        if2d = dict(( ((u,v),"{}{}".format(d[v],addrlabel(G,u,d[v]))) for u,v,d in G.edges_iter(data=True)))
-        nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=if1d, label_pos=0.1, font_size=6, alpha=0.5, font_color='b')
-        nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=if2d, label_pos=0.9, font_size=6, alpha=0.5, font_color='b')
+        if1d = dict(( ((u,v),"{}".format(addrlabel(G,u,d[u]))) for u,v,d in G.edges_iter(data=True)))
+        if2d = dict(( ((u,v),"{}".format(addrlabel(G,v,d[v]))) for u,v,d in G.edges_iter(data=True)))
+        nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=if1d, label_pos=0.9, font_size=6, alpha=0.5, font_color='b')
+        nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=if2d, label_pos=0.1, font_size=6, alpha=0.5, font_color='b')
 
 def show_graph(cn_topo, showintfs=False, showaddrs=False):
     '''
