@@ -51,7 +51,6 @@ class LinkEmulator(object):
             else:
                 heapq.heappush(self.expiryheap, (expiretime, item, outqueue))
 
-
 class NodeExecutor(LLNetBase):
     __slots__ = ['__done', '__ingress_queue', '__egress_pipes', '__name','__interfaces','__symod', '__linkem', '__tolinkem']
     def __init__(self, name, ingress_queue, symod):
@@ -128,8 +127,9 @@ class NodeExecutor(LLNetBase):
 NodePlumbing = namedtuple('NodePlumbing', ['thread','nexec','queue'])
 
 class Cli(Cmd):
-    def __init__(self, nodedata, topology):
-        self.nodedata = nodedata
+    def __init__(self, syss_glue, topology):
+        self.syss_glue = syss_glue
+        self.nodedata = syss_glue.xnode
         self.topology = topology
         Cmd.__init__(self)
         self.prompt = '{}switchyard>{} '.format(TextColor.CYAN,TextColor.RESET)
@@ -201,48 +201,87 @@ FIXME: this is the documentation header.
 
         elif 'link'.startswith(cmdargs[0]):
             n1,n2 = cmdargs[1:3]
-            bw = delay = ''
             cmdargs = cmdargs[3:]
-            print ("Remaining cmd args: ",cmdargs)
-            if len(cmdargs) < 2 or len(cmdargs) % 2 != 0:
-                print ("Wrong number of arguments to 'set link'")
-                return
-            for i in range(0,len(cmdargs),2):
-                if cmdargs[i] == 'bw' or 'bandwidth'.startswith(cmdargs[i]) or 'capacity'.startswith(cmdargs[i]):
-                    bw = cmdargs[i+1]
-                elif 'delay'.startswith(cmdargs[i]):
-                    delay = cmdargs[i+1]
-                else:
-                    print ("Unrecognized link parameter {}".format(cmdargs[i]))
-                    return
-            for n in (n1,n2):
-                if n not in self.topology:
-                    print ("Node {} doesn't exist.".format(n))
-                    return
-            if not self.topology.hasLink(n1,n2):
-                print ("No link exists between {} and {}".format(n1,n2))
-                return
-            print ("change link {} {} bw {} delay {}".format(n1,n2,bw,delay))
-            print ("Link: ",self.topology.getLink(n1,n2))
+            settings = self.__gather_link_characteristics(cmdargs)
+
+            try:
+                self.topology.setLinkCharacteristics(n1, n2, capacity=settings['capacity'], delay=settings['delay'])
+            except Exception as e:
+                print ("Error setting link characteristics: {}".format(str(e)))
         else:
             print ("Invalid set command: must start with 'set node' or 'set link'")
 
-        # set node s0 eth0 ether ethaddr
-        # set node s0 eth0 inet ipaddr netmask netmask
-        # set link s0 s1 bw X
-        # set link s0 s1 delay X
+    def __gather_link_characteristics(self, cmdargs):
+        settings = {'capacity': None, 'delay':None}
+        currsetting = ''
+        currval = []
+        while len(cmdargs):
+            cmdval = cmdargs.pop(0)
+            if cmdval == 'bw' or 'bandwidth'.startswith(cmdval) or 'capacity'.startswith(cmdval):
+                if currsetting:
+                    settings[currsetting] = ' '.join(currval)
+                currval = []
+                currsetting = 'capacity'
+            elif 'delay'.startswith(cmdval):
+                if currsetting:
+                    settings[currsetting] = ' '.join(currval)
+                currval = []
+                currsetting = 'delay'
+            else:
+                currval.append(cmdval)
+        if currsetting:
+            settings[currsetting] = ' '.join(currval)
+        return settings
 
     def do_save(self, line):
-        print ("save commands not implemented yet")
-        # save topology <filename>
+        cmdargs = line.split()
+        if len(cmdargs) != 1:
+            print ("Invalid number of arguments.  Only the filename to save topology as should be given.")
+            return
+        save_to_file(self.topology, cmdargs[0])
+        print ("Topology saved to {}".format(cmdargs[0]))
 
     def do_load(self, line):
-        print ("load command not implemented yet")
+        cmdargs = line.split()
+        if len(cmdargs) != 1:
+            print ("Invalid number of arguments.  The filename from which to load the topology is the only required argument.")
+            return
+
+        self.syss_glue.stop()
+        self.topology = load_from_file(cmdargs[0])
+        self.syss_glue = SyssGlue(self.topology, 'myhub') # FIXME myhub!
+        self.syss_glue.start()
 
     def do_add(self, line):
-        print ("add commands not implemented yet")
-        # add <host/switch/router> <name>
-        # add link node0 node1 bw X delay X
+        cmdargs = line.split()
+        cmdval = cmdargs.pop(0)
+        name = None
+        if 'switch'.startswith(cmdval):
+            if cmdargs:
+                name = cmdargs[0]
+            self.topology.addSwitch(name)
+        elif 'router'.startswith(cmdval):
+            if cmdargs:
+                name = cmdargs[0]
+            self.topology.addRouter(name)
+        elif 'host'.startswith(cmdval):
+            if cmdargs:
+                name = cmdargs[0]
+            self.topology.addHost(name)
+        elif 'link'.startswith(cmdval):
+            if len(cmdargs) < 6:
+                print ("Invalid number of arguments to 'set link': need two nodes as well as bandwidth and capacity (see 'help add')")
+                return
+            n1,n2 = cmdargs[:2]
+            cmdargs = cmdargs[2:]
+            settings = self.__gather_link_characteristics(cmdargs)
+            try:
+                self.topology.addLink(n1, n2, capacity=settings['capacity'], delay=settings['delay'])
+            except Exception as e:
+                print ("Error add link: {}".format(str(e)))
+        else:
+            print ("Unrecognized argument to 'add' {}".format(cmdargs[0]))
+            return
 
     def do_monitor(self, line):
         print ("monitor commands not implemented yet")
@@ -314,8 +353,7 @@ FIXME: this is the documentation header.
         return self.do_exit(line)
 
     def do_exit(self, line):
-        for np in self.nodedata.values():
-            np.nexec.shutdown()
+        self.syss_glue.stop()
         return True
 
     def default(self, line):
@@ -332,6 +370,14 @@ FIXME: this is the documentation header.
         else:
             print ("Unrecognized command '{}'".format(line))
 
+    def help_add(self):
+        print ('''
+        add host [<hostname>]
+        add switch [<switchname>]
+        add router [<routername>]
+        add link <node1> <node2> capacity <capacity> delay <delay>
+        ''')
+
     def help_show(self):
         print ('''
         show (nodes|node <nodename>)
@@ -344,6 +390,7 @@ FIXME: this is the documentation header.
         set node <nodename> <ifacename> ethernet <ethaddr>
         set node <nodename> <ifacename> inet <ipaddr> [netmask <mask>]
         set node <nodename> <ifacename> inet <ipaddr>/<prefixlen>
+        set link <node1> <node2> [capacity <capacity>] [delay <delay>]
         ''')
 
     def help_exit(self):
@@ -355,6 +402,39 @@ FIXME: this is the documentation header.
     def help_sendeth(self):
         print ("Flood a simple raw Ethernet packet from a node")
 
+class SyssGlue(object):
+    def __init__(self, topo, swycode):
+        self.xnode = {}
+        exec_module = import_module(swycode)
+
+        ingress_queues = {}
+
+        for n in topo.nodes:
+            ingress_queues[n] = q = Queue()
+            nexec = NodeExecutor(n, q, exec_module)
+            t = threading.Thread(target=nexec.run)
+            self.xnode[n] = NodePlumbing(t,nexec,q)
+
+        for u,v in topo.links:
+            linkdict = topo.getLink(u,v)
+            nearnode = self.xnode[u]
+            farnode = self.xnode[v]
+            udev = linkdict[u]
+            vdev = linkdict[v]
+            cap = linkdict['capacity']
+            delay = linkdict['delay']
+            egress_queue = farnode.queue
+            intf = topo.getNode(u)['nodeobj'].getInterface(udev)
+            nearnode.nexec.addEgressInterface(udev, intf, egress_queue, cap, delay, vdev)
+
+    def start(self):
+        for nodename,plumbing in self.xnode.items():
+            plumbing.thread.start()
+
+    def stop(self):
+        for np in self.xnode.values():
+            np.nexec.shutdown()
+
 
 def run_simulation(topo, swycode):
     '''
@@ -365,33 +445,10 @@ def run_simulation(topo, swycode):
     substrate (NodeExecutors), and the ingress queue that each node receives
     packets from.
     '''
-    xnode = {}
-    exec_module = import_module(swycode)
+    glue = SyssGlue(topo, swycode)
+    glue.start()
 
-    ingress_queues = {}
-
-    for n in topo.nodes:
-        ingress_queues[n] = q = Queue()
-        nexec = NodeExecutor(n, q, exec_module)
-        t = threading.Thread(target=nexec.run)
-        xnode[n] = NodePlumbing(t,nexec,q)
-
-    for u,v in topo.links:
-        linkdict = topo.getLink(u,v)
-        nearnode = xnode[u]
-        farnode = xnode[v]
-        udev = linkdict[u]
-        vdev = linkdict[v]
-        cap = linkdict['capacity']
-        delay = linkdict['delay']
-        egress_queue = farnode.queue
-        intf = topo.getNode(u)['nodeobj'].getInterface(udev)
-        nearnode.nexec.addEgressInterface(udev, intf, egress_queue, cap, delay, vdev)
-
-    for nodename,plumbing in xnode.items():
-        plumbing.thread.start()
-
-    cli = Cli(xnode, topo)
+    cli = Cli(glue, topo)
     cli.cmdloop()
 
 

@@ -300,13 +300,22 @@ class Topology(object):
         node1if = self.__nxgraph.node[node1]['nodeobj'].addInterface(ethaddr=macs[0])
         node2if = self.__nxgraph.node[node2]['nodeobj'].addInterface(ethaddr=macs[1])
         self.__nxgraph.add_edge(node1, node2)
-        capbits = unhumanize_capacity(capacity)
-        delaysec = unhumanize_delay(delay)
-        self.__nxgraph[node1][node2]['label'] = "{} {}".format(humanize_capacity(capbits), humanize_delay(delaysec))
-        self.__nxgraph[node1][node2]['capacity'] = capbits
-        self.__nxgraph[node1][node2]['delay'] = delaysec
         self.__nxgraph[node1][node2][node1] = node1if
         self.__nxgraph[node1][node2][node2] = node2if
+        self.setLinkCharacteristics(node1, node2, capacity, delay)
+
+    def setLinkCharacteristics(self, node1, node2, capacity=None, delay=None):
+        if not self.hasLink(node1, node2):
+            raise Exception("No link {}<->{} exists.".format(node1, node2))
+        if capacity:
+            capbits = unhumanize_capacity(capacity)
+            self.__nxgraph[node1][node2]['capacity'] = capbits
+        if delay:
+            delaysec = unhumanize_delay(delay)
+            self.__nxgraph[node1][node2]['delay'] = delaysec
+        humancap = humanize_capacity(self.__nxgraph[node1][node2]['capacity'])
+        humandel = humanize_delay(self.__nxgraph[node1][node2]['delay'])
+        self.__nxgraph[node1][node2]['label'] = "{} {}".format(humancap, humandel)
 
     def serialize(self):
         '''
