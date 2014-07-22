@@ -252,6 +252,35 @@ FIXME: this is the documentation header.
         self.syss_glue = SyssGlue(self.topology, 'myhub') # FIXME myhub!
         self.syss_glue.start()
 
+    def do_remove(self, line):
+        cmdargs = line.split()
+        if len(cmdargs) < 2:
+            print ("Invalid number of arguments to 'remove'")
+            return
+
+        cmdval = cmdargs.pop(0)
+        if 'node'.startswith(cmdval) or 'switch'.startswith(cmdval) or 'router'.startswith(cmdval) or 'host'.startswith(cmdval):
+            if len(cmdargs) != 1:
+                print ("Invalid number of arguments: just need the node name")
+                return
+            try:
+                self.topology.removeNode(cmdargs[0])
+            except Exception as e:
+                print ("Error removing node: {}".format(str(e)))
+
+        elif 'edge'.startswith(cmdval) or 'link'.startswith(cmdval):
+            if len(cmdargs) != 2:
+                print ("Invalid number of arguments: need two node names to define a link to remove")
+                return
+            try:
+                self.topology.removeLink(*cmdargs)
+            except Exception as e:
+                print ("Error removing link: {}".format(str(e)))
+
+        else:
+            print ("Unrecognized argument {} to remove.".format(cmdval))
+            return
+
     def do_add(self, line):
         cmdargs = line.split()
         cmdval = cmdargs.pop(0)

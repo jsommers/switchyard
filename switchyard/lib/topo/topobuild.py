@@ -256,6 +256,19 @@ class Topology(object):
     def edges_from(self, node):
         return nx.edges(self.__nxgraph, [node])
 
+    def removeNode(self, name):
+        '''
+        Remove a node from the topology, by name.  As a side-effect,
+        remove all incident links on <name>.
+        '''
+        self.__nxgraph.remove_node(name)
+
+    def removeLink(self, node1, node2):
+        '''
+        Remove a link from the topology.
+        '''
+        self.__nxgraph.remove_edge(node1, node2)
+
     def addSwitch(self, name=None):
         '''
         Add a new switch to the topology.
