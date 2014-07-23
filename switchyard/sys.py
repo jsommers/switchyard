@@ -7,9 +7,12 @@ import time
 from importlib import import_module
 from cmd import Cmd
 import re
+from abc import import ABCMeta,abstractmethod
+
 
 from switchyard.switchyard.switchy import LLNetBase
 from switchyard.switchyard.switchy_common import NoPackets,Shutdown
+from switchyard.monitor import *
 from switchyard.lib.topo import *
 from switchyard.lib.packet import *
 from switchyard.lib.textcolor import *
@@ -52,8 +55,8 @@ class LinkEmulator(object):
                 heapq.heappush(self.expiryheap, (expiretime, item, outqueue))
 
 class NodeExecutor(LLNetBase):
-    __slots__ = ['__done', '__ingress_queue', '__egress_pipes', '__name','__interfaces','__symod', '__linkem', '__tolinkem']
-    def __init__(self, name, ingress_queue, symod):
+    __slots__ = ['__done', '__ingress_queue', '__egress_pipes', '__name','__interfaces','__symod', '__linkem', '__tolinkem','__recv_monitor','__send_monitor']
+    def __init__(self, name, ingress_queue, symod=None):
         LLNetBase.__init__(self)
         self.__ingress_queue = ingress_queue
         self.__egress_pipes = {}
@@ -63,10 +66,14 @@ class NodeExecutor(LLNetBase):
         self.__done = False
         self.__linkem = None
         self.__tolinkem = None
+        self.__recv_monitor = {}
+        self.__send_monitor = {}
 
     def addEgressInterface(self, devname, intf, queue, capacity, delay, remote_devname):
         self.__egress_pipes[devname] = EgressPipe(queue, delay, capacity, remote_devname)
         self.__interfaces[devname] = intf
+        self.__recv_monitor[devname] = NullMonitor()
+        self.__send_monitor[devname] = NullMonitor()
 
     @property
     def name(self):
@@ -87,6 +94,18 @@ class NodeExecutor(LLNetBase):
     def interface_by_macaddr(self, macaddr):
         pass
 
+    def attach_recv_monitor(self, interface, monitorobject):
+        self.__recv_monitor[interface] = monitorobject
+
+    def attach_send_monitor(self, interface, monitorobject):
+        self.__send_monitor[interface] = monitorobject
+
+    def remove_recv_monitor(self, interface):
+        self.__recv_monitor[interface] = NullMonitor()
+
+    def remove_send_monitor(self, interface):
+        self.__send_monitor[interface] = NullMonitor()
+
     def recv_packet(self, timeout=0.0, timestamp=False):
         #
         # FIXME: not sure about how best to handle...
@@ -97,8 +116,10 @@ class NodeExecutor(LLNetBase):
         while timeout == 0.0 or time.time() < giveup_time:
             try:
                 devname,packet = self.__ingress_queue.get(block=True, timeout=inner_timeout)
+                now = time.time()
+                self.__recv_monitor[devname](devname,now,packet)
                 if timestamp:
-                    return devname,time.time(),packet
+                    return devname,now,packet
                 return devname,packet
             except Empty:
                 pass
@@ -110,28 +131,45 @@ class NodeExecutor(LLNetBase):
 
     def send_packet(self, dev, packet):
         egress_pipe = self.__egress_pipes[dev]
-        delay = time.time() + len(packet) / float(egress_pipe.capacity) + egress_pipe.delay
+        now = time.time()
+        delay = now + len(packet) / float(egress_pipe.capacity) + egress_pipe.delay
+        self.__send_monitor[dev](dev,now,packet)
         self.__tolinkem.put( (delay, (egress_pipe.remote_devname, packet), egress_pipe.queue) )
 
     def shutdown(self):
         self.__linkem.shutdown()
         self.__done = True
 
+    def __idleloop(self):
+        while not self.__done:
+            time.sleep(0.1)
+
     def run(self):
         self.__tolinkem = Queue()
         self.__linkem = LinkEmulator(self.__tolinkem)
         t = threading.Thread(target=self.__linkem.run)
         t.start()
-        self.__symod.switchy_main(self)
+        self.startcode()
+
+    def resetcode(self, mod=None):
+        self.__symod = mod
+        self.startcode()
+
+    def startcode(self):
+        if self.__symod:
+            self.__symod.switchy_main(self)
+        else:
+            self.__idleloop()
 
 NodePlumbing = namedtuple('NodePlumbing', ['thread','nexec','queue'])
 
 class Cli(Cmd):
     def __init__(self, syss_glue, topology):
         self.syss_glue = syss_glue
-        self.nodedata = syss_glue.xnode
+        # self.nodedata = syss_glue.xnode
         self.topology = topology
         Cmd.__init__(self)
+        self.unsaved_changes = False
         self.prompt = '{}switchyard>{} '.format(TextColor.CYAN,TextColor.RESET)
         self.doc_header = '''
 FIXME: this is the documentation header.
@@ -240,6 +278,7 @@ FIXME: this is the documentation header.
             return
         save_to_file(self.topology, cmdargs[0])
         print ("Topology saved to {}".format(cmdargs[0]))
+        self.unsaved_changes = False
 
     def do_load(self, line):
         cmdargs = line.split()
@@ -247,9 +286,16 @@ FIXME: this is the documentation header.
             print ("Invalid number of arguments.  The filename from which to load the topology is the only required argument.")
             return
 
+        if self.unsaved_changes:
+            prompt = "You have unsaved changes to the topology.  Loading a new topology will destroy those changes.  Are you sure you want to continue? (y/n)"
+            xcontinue = self.__get_yn(prompt)
+            if not xcontinue:
+                return
+
+        self.unsaved_changes = False
         self.syss_glue.stop()
         self.topology = load_from_file(cmdargs[0])
-        self.syss_glue = SyssGlue(self.topology, 'myhub') # FIXME myhub!
+        self.syss_glue.rebuildGlue(self.topology) # FIXME: exec code?
         self.syss_glue.start()
 
     def do_remove(self, line):
@@ -281,22 +327,32 @@ FIXME: this is the documentation header.
             print ("Unrecognized argument {} to remove.".format(cmdval))
             return
 
+        self.unsaved_changes = True
+        self.syss_glue.rebuildGlue(self.topology) # FIXME: exec code?
+        self.syss_glue.start()
+
     def do_add(self, line):
         cmdargs = line.split()
+        if len(cmdargs) < 1:
+            print ("Not enough arguments to 'add'")
+            return
         cmdval = cmdargs.pop(0)
         name = None
         if 'switch'.startswith(cmdval):
             if cmdargs:
                 name = cmdargs[0]
-            self.topology.addSwitch(name)
+            n = self.topology.addSwitch(name)
+            print ("Added switch {}".format(n))
         elif 'router'.startswith(cmdval):
             if cmdargs:
                 name = cmdargs[0]
-            self.topology.addRouter(name)
+            n = self.topology.addRouter(name)
+            print ("Added router {}".format(n))
         elif 'host'.startswith(cmdval):
             if cmdargs:
                 name = cmdargs[0]
-            self.topology.addHost(name)
+            n = self.topology.addHost(name)
+            print ("Added host {}".format(n))
         elif 'link'.startswith(cmdval):
             if len(cmdargs) < 6:
                 print ("Invalid number of arguments to 'set link': need two nodes as well as bandwidth and capacity (see 'help add')")
@@ -306,22 +362,76 @@ FIXME: this is the documentation header.
             settings = self.__gather_link_characteristics(cmdargs)
             try:
                 self.topology.addLink(n1, n2, capacity=settings['capacity'], delay=settings['delay'])
+                n1node = self.topology.getNode(n1)['nodeobj']
+                print("Added link {}<->{} ({})".format(n1, n2, self.topology.getLink(n1,n2)['label']))
             except Exception as e:
                 print ("Error add link: {}".format(str(e)))
         else:
-            print ("Unrecognized argument to 'add' {}".format(cmdargs[0]))
+            print ("Unrecognized argument: '{}'".format(cmdval))
             return
+        self.unsaved_changes = True
+        self.syss_glue.rebuildGlue(self.topology) # FIXME: exec code?
+        self.syss_glue.start()
+
+    def __exec_monitor(self, cmdargs, monitorfn):
+        if len(cmdargs) < 1:
+            print("Not enough arguments to monitor command")
+            return
+        location = []
+        where = cmdargs.pop(0)
+        if 'any'.startswith(where) or 'all'.startswith(where):
+            for n in self.topology.nodes:
+                nobj = self.topology.getNode(n)['nodeobj']
+                for intf in nobj.interfaces.keys():
+                    location.append( (n,intf) )
+        elif 'node'.startswith(where):
+            if len(cmdargs) < 1:
+                print("Not enough arguments to monitor node")
+                return
+            where = cmdargs.pop(0)
+            if self.topology.hasNode(where):
+                location = [ where ]
+                nobj = self.topology.getNode(where)['nodeobj']
+                if len(cmdargs) > 0 and cmdargs[0].startswith('eth'):
+                    interface = cmdargs.pop(0)
+                    if not nobj.hasInterface(interface):
+                        print ("No such interface {} on node {}".format(interface,where))
+                        return
+                    location = [ (where,interface) ]
+                else:
+                    location = [ (where,intf) for intf in nobj.interfaces.keys() ]
+        else:
+            print ("Unrecognized monitor location.  Must be 'any' or 'node <nodename>'.")
+            return
+        how = []
+        if not len(cmdargs):
+            print ("Not enough arguments to monitor command.  Need to know whether to dump, debug, or install monitor code")
+            return
+        cmdval = cmdargs.pop(0)
+        if 'dump'.startswith(cmdval) or 'pcap'.startswith(cmdval) or 'file'.startswith(cmdval):
+            if cmdargs:
+                filebase = cmdargs.pop(0)
+            else:
+                filebase = ''
+            how = ( 'pcap',  filebase)
+        elif 'debug'.startswith(cmdval) or 'inspect'.startswith(cmdval) or 'trace'.startswith(cmdval):
+            how = ( 'debug', )
+        elif 'code'.startswith(cmdval) or 'install'.startswith(cmdval):
+            if not cmdargs:
+                print ("Missing file name for monitor code")
+                return
+            how = ( 'code', cmdargs[0] )
+
+        for node, intf in location:
+            monitorfn(node, intf, how[0], *how[1:])
+
+    def do_unmonitor(self, line):
+        cmdargs = line.split()
+        self.__exec_monitor(cmdargs, self.syss_glue.removeMonitor)
 
     def do_monitor(self, line):
-        print ("monitor commands not implemented yet")
-        # monitor link X Y [filename]
-        # monitor node X [filename]
-        # -- should allow adding simple tcpdump monitor, as well as
-        # adding code that gets a callback when packets arrive (but
-        # doesn't allow sending)
-
-        # show monitor
-        # show monitor link X Y
+        cmdargs = line.split()
+        self.__exec_monitor(cmdargs, self.syss_glue.addMonitor)
 
     def __show_nodes(self, cmdargs):
         if len(cmdargs) == 0:
@@ -381,7 +491,23 @@ FIXME: this is the documentation header.
     def do_EOF(self, line):
         return self.do_exit(line)
 
+    @staticmethod
+    def __get_yn(prompt):
+        while True:
+            value = input(prompt)
+            if 'no'.startswith(value.lower()):
+                return False
+            elif 'yes'.startswith(value.lower()):
+                return True
+
     def do_exit(self, line):
+        if self.unsaved_changes:
+            prompt = "You have unsaved topology changes.  Are you sure you want to exit? (y/n)"
+            xcontinue = self.__get_yn(prompt)
+            if not xcontinue:
+                print ("Not exiting.")                 
+                return
+
         self.syss_glue.stop()
         return True
 
@@ -432,29 +558,53 @@ FIXME: this is the documentation header.
         print ("Flood a simple raw Ethernet packet from a node")
 
 class SyssGlue(object):
-    def __init__(self, topo, swycode):
-        self.xnode = {}
-        exec_module = import_module(swycode)
+    def __init__(self, topo, **kwargs):
+        self.rebuildGlue(topo, **kwargs)
+        self.__monitors = {}
 
-        ingress_queues = {}
+    def rebuildGlue(self, topo, **kwargs):
+        try:
+            self.shutdown()
+        except:
+            pass
+
+        self.xnode = {}
+        self.exec_module = None
+        if 'switchcode' in kwargs:
+            pass
+        if 'routercode' in kwargs:
+            pass
+        if 'hostcode' in kwargs:
+            pass
+        # exec_module = import_module(swycode)
+        self.ingress_queues = {}
 
         for n in topo.nodes:
-            ingress_queues[n] = q = Queue()
-            nexec = NodeExecutor(n, q, exec_module)
-            t = threading.Thread(target=nexec.run)
-            self.xnode[n] = NodePlumbing(t,nexec,q)
+            self.__addNode(n)
 
         for u,v in topo.links:
             linkdict = topo.getLink(u,v)
-            nearnode = self.xnode[u]
-            farnode = self.xnode[v]
-            udev = linkdict[u]
-            vdev = linkdict[v]
-            cap = linkdict['capacity']
-            delay = linkdict['delay']
-            egress_queue = farnode.queue
-            intf = topo.getNode(u)['nodeobj'].getInterface(udev)
-            nearnode.nexec.addEgressInterface(udev, intf, egress_queue, cap, delay, vdev)
+            unode = topo.getNode(u)['nodeobj']
+            self.__addLink(u, v, unode, linkdict)
+
+        self.__monitors = {}
+
+    def __addNode(self, n):
+        self.ingress_queues[n] = q = Queue()
+        nexec = NodeExecutor(n, q, self.exec_module)
+        t = threading.Thread(target=nexec.run)
+        self.xnode[n] = NodePlumbing(t,nexec,q)
+
+    def __addLink(self, u, v, unode, linkdict):
+        nearnode = self.xnode[u]
+        farnode = self.xnode[v]
+        udev = linkdict[u]
+        vdev = linkdict[v]
+        cap = linkdict['capacity']
+        delay = linkdict['delay']
+        egress_queue = farnode.queue
+        intf = unode.getInterface(udev)
+        nearnode.nexec.addEgressInterface(udev, intf, egress_queue, cap, delay, vdev)
 
     def start(self):
         for nodename,plumbing in self.xnode.items():
@@ -463,9 +613,28 @@ class SyssGlue(object):
     def stop(self):
         for np in self.xnode.values():
             np.nexec.shutdown()
+            np.queue.join()
+            np.thread.join()
 
+    def addMonitor(self, node, interface, how, *args):
+        print ("Add monitor {} {} {} {}".format(node, interface, how, args))
+        if (node,interface) in self.__monitors:
+            print ("{}:{} already monitored: stop this monitor before starting a new one".format(node,interface))
+            return
+        if how == 'pcap':
+            pass
+        elif how == 'debug':
+            pass
+        elif how == 'code':
+            pass
 
-def run_simulation(topo, swycode):
+    def removeMonitor(self, node, interface, how, *args):
+        print ("Remove monitor {} {} {} {}".format(node, interface, how, args))
+        if (node,interface) not in self.__monitors:
+            print ("{}:{} not currently monitored, so not doing anything".format(node,interface))
+            return
+
+def run_simulation(topo, **kwargs):
     '''
     Get the simulation substrate started.  The key things are to set up
     a series of queues that connect nodes together and get the link emulation
@@ -474,7 +643,7 @@ def run_simulation(topo, swycode):
     substrate (NodeExecutors), and the ingress queue that each node receives
     packets from.
     '''
-    glue = SyssGlue(topo, swycode)
+    glue = SyssGlue(topo, **kwargs)
     glue.start()
 
     cli = Cli(glue, topo)
