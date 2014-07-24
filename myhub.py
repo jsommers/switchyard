@@ -11,6 +11,7 @@ from switchyard.switchyard.switchy_common import log_info, NoPackets, Shutdown
 def switchy_main(net):
     my_interfaces = net.interfaces() 
     mymacs = [intf.ethaddr for intf in my_interfaces]
+    print ("Entering switchymain: {}".format(mymacs))
 
     while True:
         try:
@@ -20,12 +21,12 @@ def switchy_main(net):
         except Shutdown:
             return
 
-        print ("{} In {} received packet {} on {}".format(net.name, dev, packet, time.time()))
-        if packet.dst in mymacs:
+        print ("In {} received packet {} on {}".format(dev, packet, time.time()))
+        if packet[0].dst in mymacs:
             print ("Packet intended for me")
         else:
             for intf in my_interfaces:
                 if dev != intf.name:
-                    print ("In {} flooding packet {} to {}".format(net.name, packet, intf.name))
+                    print ("Flooding packet {} to {}".format(packet, intf.name))
                     net.send_packet(intf.name, packet)
     net.shutdown()

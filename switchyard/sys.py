@@ -67,7 +67,7 @@ class NodeExecutor(LLNetBase):
         self.__done = False
         self.__linkem = None
         self.__tolinkem = None
-        self.__recv_monitor = {'host': CodeMonitor('xdebug.py')}
+        self.__recv_monitor = {'host': NullMonitor()}
         self.__send_monitor = {'host': NullMonitor()}
 
     def sendHostPacket(self, pkt):

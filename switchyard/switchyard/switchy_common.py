@@ -33,14 +33,15 @@ class PacketFormatter(object):
         if PacketFormatter.__fulldisp:
             cls = None
             
-        if cls:
-            if not pkt.parsed:
-                raw = pkt.pack()
-                pkt.parse(raw)
-            header = pkt.find(cls)
-            if header is not None:
-                return str(header)
-        return str(pkt.dump())
+        # FIXME!!! needs update from POX packet library
+        #if cls:
+        #    if not pkt.parsed:
+        #        raw = pkt.pack()
+        #        pkt.parse(raw)
+        #    header = pkt.find(cls)
+        #    if header is not None:
+        #        return str(header)
+        return str(pkt)
 
 class Interface(object):
     '''

@@ -125,6 +125,20 @@ class TopologyTests(unittest.TestCase):
         t3.addRouter()
         self.assertListEqual(sorted(t3.nodes), sorted(['A_h1','A_h2','A_s1','B_h1','B_h2','B_r1','r0']))
 
+    def testTopoAddRemove(self):
+        t1 = Topology('A')
+        t1.addHost('h1')
+        t1.addSwitch('s1')
+        t1.addHost('h2')
+        t1.addLink('h1','s1','100Mb/s', '50 ms')
+        t1.addLink('h2','s1','1Gb', '0.1 sec')
+        self.assertListEqual(sorted(t1.nodes), sorted(['h1','h2','s1']))
+        self.assertListEqual(sorted([sorted(x) for x in t1.links]), sorted([sorted(x) for x in [('s1','h1'),('s1','h2')]]))
+        # removal of central switch should remove both incident links
+        t1.removeNode('s1')
+        self.assertListEqual(sorted(t1.nodes), sorted(['h1','h2']))
+        self.assertListEqual(t1.links, [])
+
     def test_serunser(self):
         t = Topology()
         h1 = t.addHost()
