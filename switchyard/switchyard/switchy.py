@@ -55,12 +55,10 @@ from switchyard.switchyard.switchy_common import setup_logging, log_info, log_de
 from switchyard.lib.textcolor import *
 
 
-class LLNetBase(object):
+class LLNetBase(metaclass=ABCMeta):
     '''
     Base class for low-level networking library in Python.
     '''
-    __metaclass__ = ABCMeta
-
     def __init__(self):
         self.devupdown_callback = None
         self.devinfo = {} # dict(str -> Interface)

@@ -13,6 +13,7 @@ parser.add_argument('--topology', '-t', type=str, help='Name of topology file to
 parser.add_argument('--switchcode', type=str, help='switchyard module to be executed at each switch in the network')
 parser.add_argument('--routercode', type=str, help='switchyard module to be executed at each router in the network')
 parser.add_argument('--hostcode', type=str, help='switchyard module to be executed at each host in the network')
+parser.add_argument('--nodecode', type=str, help='switchyard module to be executed at all nodes in the network')
 args = parser.parse_args()
 
 if args.topology:
@@ -25,4 +26,4 @@ else:
     # if no topology file specified, create a blank topology
     t = Topology()
 
-syss.run_simulation(t, switch=args.switchcode, router=args.routercode, host=args.hostcode)
+syss.run_simulation(t, node=args.nodecode, switch=args.switchcode, router=args.routercode, host=args.hostcode)

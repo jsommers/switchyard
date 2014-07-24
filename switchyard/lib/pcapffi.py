@@ -118,7 +118,7 @@ class _PcapFfi(object):
             raise PcapException("Don't know how to locate libpcap on this platform: {}".format(sys.platform))
         self.__interfaces = []
         self.discoverdevs()
-        print (self.devices)
+        # print (self.devices)
 
     @staticmethod
     def instance():
@@ -164,11 +164,12 @@ class _PcapFfi(object):
     def close_dumper(self, pcapdump):
         self.__libpcap.pcap_dump_close(pcapdump)
 
-    def write_packet(self, dumper, pkt):
+    def write_packet(self, dumper, pkt, ts=None):
         pkthdr = self.__ffi.new("struct pcap_pkthdr *")
-        now = time()
-        pkthdr.tv_sec = int(now)
-        pkthdr.tv_usec = int(1000000*(now-int(now)))
+        if not ts:
+            ts = time()
+        pkthdr.tv_sec = int(ts)
+        pkthdr.tv_usec = int(1000000*(ts-int(ts)))
         pkthdr.caplen = len(pkt)
         pkthdr.len = len(pkt)
         xpkt = self.__ffi.new("char []", pkt)
@@ -242,10 +243,10 @@ class PcapDumper(object):
         self.__dumper = self.__pcapffi.open_dumper(outfile)
         print ("Got pcap dump device: {}".format(self.__dumper))
 
-    def write_packet(self, pkt):
+    def write_packet(self, pkt, ts=None):
         if not isinstance(pkt, bytes):
             raise PcapException("Packet to be written needs to be a Python bytes object")
-        self.__pcapffi.write_packet(self.__dumper.pcap, pkt)
+        self.__pcapffi.write_packet(self.__dumper.pcap, pkt, ts=ts)
 
     def close(self):
         self.__pcapffi.close_dumper(self.__dumper.pcap)

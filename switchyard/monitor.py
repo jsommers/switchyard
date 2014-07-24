@@ -1,5 +1,49 @@
 from importlib import import_module
-from abc import import ABCMeta,abstractmethod
+from abc import ABCMeta,abstractmethod
+import threading
+import pdb
+import queue
+
+from switchyard.lib.packet import *
+from switchyard.lib.address import EthAddr, IPAddr
+from switchyard.lib import pcapffi
+from switchyard.lib.importcode import import_user_code
+from switchyard.switchyard.switchy import LLNetBase
+from switchyard.switchyard.switchy_common import NoPackets,Shutdown
+from switchyard.lib.topo.topobuild import Interface
+
+class DebugInspector(LLNetBase):
+    def __init__(self, intf, queue):
+        self.__interfaces = {intf.name: intf}
+        self.__done = False
+        self.__queue = queue
+
+    def interfaces(self):
+        return self.__interfaces.values()
+
+    def ports(self):
+        return self.interfaces()
+
+    def recv_packet(self, timeout=0.0, timestamp=False):
+        if self.__done:
+            raise Shutdown()
+
+        try:
+            rv = self.__queue.get(timeout=timeout)
+            if rv[0] is None:
+                raise NoPackets()
+            if timestamp:
+                return rv
+            else:
+                return rv[0],rv[2]
+        except queue.Empty:
+            raise NoPackets()
+
+    def send_packet(self, dev, packet):
+        print ("Packets cannot be sent with a debug monitor")
+
+    def shutdown(self):
+        self.__done = True
 
 class AbstractMonitor(metaclass=ABCMeta):
     @abstractmethod
@@ -11,6 +55,9 @@ class AbstractMonitor(metaclass=ABCMeta):
         pass
 
 class NullMonitor(AbstractMonitor):
+    def __init__(self, *args):
+        pass
+
     def __call__(self, devname, now, packet):
         return
 
@@ -18,29 +65,54 @@ class NullMonitor(AbstractMonitor):
         pass
 
 class PcapMonitor(AbstractMonitor):
-    def __init__(self, outfile):
-        pass
+    def __init__(self, *args):
+        outfile = ''
+        if len(args) > 0:
+            outfile = args[0]
+        if not outfile.endswith('.pcap'):
+            outfile = "{}.pcap".format(outfile)
+        self.dumper = pcapffi.PcapDumper(outfile)
 
     def __call__(self, devname, now, packet):
-        pass
+        self.dumper.write_packet(packet.to_bytes(), ts=now)
 
     def stop(self):
-        pass
+        self.dumper.close()
 
 class InteractiveMonitor(AbstractMonitor):
+    def __init__(self, *args):
+        self.pktlib = __import__('switchyard.lib.packet', fromlist=('packet',))
+
     def __call__(self, devname, now, packet):
+        xlocals = {'packet':packet, 'pktlib':self.pktlib,'EthAddr':EthAddr,'IPAddr':IPAddr}
+        debugstmt = '''
+# Nonstatement to get into the debugger
+'''
+        pdb.run(debugstmt, globals={}, locals=xlocals)
+
+    def stop(self):
         pass
 
 class CodeMonitor(AbstractMonitor):
-    def __init__(self, module):
-        self.__module = module
-        if dir(self.__module)
+    def __init__(self, *args, **kwargs):
+        module = args[0]
+        self.__usercode = import_user_code(module)
+        self.__thread = threading.Thread(target=self.__thread_entry)
+        self.__queue = queue.Queue()
+        self.__debugnet = DebugInspector(Interface('test',None,None), self.__queue)
+        self.__thread.start()
 
     def __call__(self, devname, now, packet):
-        self.__module
+        self.__queue.put((devname,now,packet))
 
     def stop(self):
-        pass
+        self.__queue.put( (None,None,None) )
+        self.__debugnet.shutdown()
+        self.__thread.join()
+
+    def __thread_entry(self):
+        self.__usercode(self.__debugnet)
+        
 
 if __name__ == '__main__':
     pass

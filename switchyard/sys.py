@@ -7,7 +7,7 @@ import time
 from importlib import import_module
 from cmd import Cmd
 import re
-from abc import import ABCMeta,abstractmethod
+from abc import ABCMeta,abstractmethod
 
 
 from switchyard.switchyard.switchy import LLNetBase
@@ -16,6 +16,7 @@ from switchyard.monitor import *
 from switchyard.lib.topo import *
 from switchyard.lib.packet import *
 from switchyard.lib.textcolor import *
+from switchyard.lib.importcode import import_user_code
 
 
 __author__ = 'jsommers@colgate.edu'
@@ -66,14 +67,17 @@ class NodeExecutor(LLNetBase):
         self.__done = False
         self.__linkem = None
         self.__tolinkem = None
-        self.__recv_monitor = {}
-        self.__send_monitor = {}
+        self.__recv_monitor = {'host': CodeMonitor('xdebug.py')}
+        self.__send_monitor = {'host': NullMonitor()}
+
+    def sendHostPacket(self, pkt):
+        self.__ingress_queue.put( ('host', pkt) )
 
     def addEgressInterface(self, devname, intf, queue, capacity, delay, remote_devname):
         self.__egress_pipes[devname] = EgressPipe(queue, delay, capacity, remote_devname)
         self.__interfaces[devname] = intf
         self.__recv_monitor[devname] = NullMonitor()
-        self.__send_monitor[devname] = NullMonitor()
+        # self.__send_monitor[devname] = NullMonitor()
 
     @property
     def name(self):
@@ -97,14 +101,14 @@ class NodeExecutor(LLNetBase):
     def attach_recv_monitor(self, interface, monitorobject):
         self.__recv_monitor[interface] = monitorobject
 
-    def attach_send_monitor(self, interface, monitorobject):
-        self.__send_monitor[interface] = monitorobject
+    #def attach_send_monitor(self, interface, monitorobject):
+    #    self.__send_monitor[interface] = monitorobject
 
     def remove_recv_monitor(self, interface):
         self.__recv_monitor[interface] = NullMonitor()
 
-    def remove_send_monitor(self, interface):
-        self.__send_monitor[interface] = NullMonitor()
+    #def remove_send_monitor(self, interface):
+    #    self.__send_monitor[interface] = NullMonitor()
 
     def recv_packet(self, timeout=0.0, timestamp=False):
         #
@@ -133,7 +137,7 @@ class NodeExecutor(LLNetBase):
         egress_pipe = self.__egress_pipes[dev]
         now = time.time()
         delay = now + len(packet) / float(egress_pipe.capacity) + egress_pipe.delay
-        self.__send_monitor[dev](dev,now,packet)
+        # self.__send_monitor[dev](dev,now,packet)
         self.__tolinkem.put( (delay, (egress_pipe.remote_devname, packet), egress_pipe.queue) )
 
     def shutdown(self):
@@ -142,7 +146,12 @@ class NodeExecutor(LLNetBase):
 
     def __idleloop(self):
         while not self.__done:
-            time.sleep(0.1)
+            try:
+                devname,ts,packet = self.recv_packet(timestamp=True)
+            except Shutdown:
+                break
+            except NoPackets:
+                pass
 
     def run(self):
         self.__tolinkem = Queue()
@@ -171,6 +180,7 @@ class Cli(Cmd):
         Cmd.__init__(self)
         self.unsaved_changes = False
         self.prompt = '{}switchyard>{} '.format(TextColor.CYAN,TextColor.RESET)
+        self.use_rawinput = True
         self.doc_header = '''
 FIXME: this is the documentation header.
 '''
@@ -194,10 +204,26 @@ FIXME: this is the documentation header.
             self.__show_nodes(cmdargs[1:])
         elif 'topology'.startswith(cmdargs[0]):
             self.__show_topology(cmdargs[1:])
+        elif 'monitor'.startswith(cmdargs[0]):
+            print ("show monitor not implemented")
         elif '?' == cmdargs[0]:
             self.help_show() 
         else:
             print ("Invalid show subcommand {}".format(cmdargs[0]))
+
+    def complete_show(self, text, line, begidx, endidx):
+        # print ("text: {} line: {} begidx: {} endidx: {}".format(text,line,begidx,endidx))
+        #if 'nod'.startswith(text):
+        #    return ['node','nodes']
+        #elif 'show node'.startswith(line):
+        #    return [ "node {}".format(n) for n in self.topology.nodes ]
+        #elif 'show link'.startswith(line):
+        #    return [ "link {}".format(n) for n in self.topology.nodes ]
+        #elif 'lin'.startswith(text):
+        #    return ['link','links']
+        #elif 'topology'.startswith(text):
+        #    return ['topology']
+        return []
 
     def do_set(self, line):
         argerr = "Not enough arguments to set ('help set' for more info)"
@@ -292,11 +318,19 @@ FIXME: this is the documentation header.
             if not xcontinue:
                 return
 
+        try:
+            self.topology = load_from_file(cmdargs[0])
+        except FileNotFoundError:
+            print ("No file {} exists.".format(cmdargs[0]))
+            return
+
         self.unsaved_changes = False
         self.syss_glue.stop()
-        self.topology = load_from_file(cmdargs[0])
         self.syss_glue.rebuildGlue(self.topology) # FIXME: exec code?
         self.syss_glue.start()
+
+    def emptyline(self):
+        pass
 
     def do_remove(self, line):
         cmdargs = line.split()
@@ -373,7 +407,7 @@ FIXME: this is the documentation header.
         self.syss_glue.rebuildGlue(self.topology) # FIXME: exec code?
         self.syss_glue.start()
 
-    def __exec_monitor(self, cmdargs, monitorfn):
+    def __exec_monitor(self, cmdargs, monitorfn, unmonitor=False):
         if len(cmdargs) < 1:
             print("Not enough arguments to monitor command")
             return
@@ -403,6 +437,9 @@ FIXME: this is the documentation header.
         else:
             print ("Unrecognized monitor location.  Must be 'any' or 'node <nodename>'.")
             return
+        if unmonitor:
+            return location
+
         how = []
         if not len(cmdargs):
             print ("Not enough arguments to monitor command.  Need to know whether to dump, debug, or install monitor code")
@@ -412,7 +449,7 @@ FIXME: this is the documentation header.
             if cmdargs:
                 filebase = cmdargs.pop(0)
             else:
-                filebase = ''
+                filebase = 'FIXME'
             how = ( 'pcap',  filebase)
         elif 'debug'.startswith(cmdval) or 'inspect'.startswith(cmdval) or 'trace'.startswith(cmdval):
             how = ( 'debug', )
@@ -427,7 +464,7 @@ FIXME: this is the documentation header.
 
     def do_unmonitor(self, line):
         cmdargs = line.split()
-        self.__exec_monitor(cmdargs, self.syss_glue.removeMonitor)
+        self.__exec_monitor(cmdargs, self.syss_glue.removeMonitor, unmonitor=True)
 
     def do_monitor(self, line):
         cmdargs = line.split()
@@ -479,14 +516,14 @@ FIXME: this is the documentation header.
 
     def do_sendeth(self, line):
         sourcenode = line.strip()
-        if sourcenode not in self.nodedata:
-            print ("Invalid node name")
+        if not self.topology.hasNode(sourcenode):
+            print ("Invalid node name: '{}'".format(sourcenode))
         else:
             e = Ethernet()
             e.src = '00:00:00:00:00:01'
             e.dst = '11:00:00:11:00:11'
-            print ("Emitting {} on lo interface to {}".format(e, sourcenode))
-            self.nodedata[sourcenode].queue.put(('lo',e))
+            print ("Emitting {} from host {}".format(e, sourcenode))
+            self.syss_glue.sendHostPacket(sourcenode, e)
 
     def do_EOF(self, line):
         return self.do_exit(line)
@@ -525,6 +562,11 @@ FIXME: this is the documentation header.
         else:
             print ("Unrecognized command '{}'".format(line))
 
+    def help_monitor(self):
+        print ('''
+            FIXME: help on monitor command
+        ''')
+
     def help_add(self):
         print ('''
         add host [<hostname>]
@@ -559,8 +601,15 @@ FIXME: this is the documentation header.
 
 class SyssGlue(object):
     def __init__(self, topo, **kwargs):
+        self.monitors = {}
+        self.monitors['pcap'] = PcapMonitor
+        self.monitors['debug'] = InteractiveMonitor
+        self.monitors['code'] = CodeMonitor
+
         self.rebuildGlue(topo, **kwargs)
-        self.__monitors = {}
+
+    def sendHostPacket(self, node, pkt):
+        self.xnode[node].nexec.sendHostPacket(pkt)
 
     def rebuildGlue(self, topo, **kwargs):
         try:
@@ -570,12 +619,16 @@ class SyssGlue(object):
 
         self.xnode = {}
         self.exec_module = None
-        if 'switchcode' in kwargs:
-            pass
-        if 'routercode' in kwargs:
-            pass
-        if 'hostcode' in kwargs:
-            pass
+        if 'nodecode' in kwargs:
+            self.exec_module = import_user_code(kwargs['nodecode'])     
+        else:
+            if 'switchcode' in kwargs:
+                pass
+            if 'routercode' in kwargs:
+                pass
+            if 'hostcode' in kwargs:
+                pass
+
         # exec_module = import_module(swycode)
         self.ingress_queues = {}
 
@@ -586,8 +639,6 @@ class SyssGlue(object):
             linkdict = topo.getLink(u,v)
             unode = topo.getNode(u)['nodeobj']
             self.__addLink(u, v, unode, linkdict)
-
-        self.__monitors = {}
 
     def __addNode(self, n):
         self.ingress_queues[n] = q = Queue()
@@ -613,26 +664,18 @@ class SyssGlue(object):
     def stop(self):
         for np in self.xnode.values():
             np.nexec.shutdown()
-            np.queue.join()
             np.thread.join()
+            del np
 
-    def addMonitor(self, node, interface, how, *args):
+    def addMonitor(self, node, interface, how, *args, **kwargs):
         print ("Add monitor {} {} {} {}".format(node, interface, how, args))
-        if (node,interface) in self.__monitors:
-            print ("{}:{} already monitored: stop this monitor before starting a new one".format(node,interface))
-            return
-        if how == 'pcap':
-            pass
-        elif how == 'debug':
-            pass
-        elif how == 'code':
-            pass
+        self.xnode[node].nexec.attach_recv_monitor(interface, self.monitors[how](*args))
+        # self.xnode[node].nexec.attach_send_monitor(interface, self.monitors[how](*args))
 
     def removeMonitor(self, node, interface, how, *args):
         print ("Remove monitor {} {} {} {}".format(node, interface, how, args))
-        if (node,interface) not in self.__monitors:
-            print ("{}:{} not currently monitored, so not doing anything".format(node,interface))
-            return
+        self.xnode[node].nexec.remove_recv_monitor(interface)
+        # self.xnode[node].nexec.remove_send_monitor(interface)
 
 def run_simulation(topo, **kwargs):
     '''
