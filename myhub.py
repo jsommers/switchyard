@@ -21,7 +21,7 @@ def switchy_main(net):
         except Shutdown:
             return
 
-        print ("In {} received packet {} on {}".format(dev, packet, time.time()))
+        print ("In {} received packet {} on {}".format(net.name, packet, dev))
         if packet[0].dst in mymacs:
             print ("Packet intended for me")
         else:

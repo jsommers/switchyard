@@ -513,9 +513,9 @@ FIXME: this is the documentation header.
             e = Ethernet()
             e.src = '00:00:00:00:00:01'
             e.dst = '11:00:00:11:00:11'
-            print ("Emitting {} from host {}".format(e, sourcenode))
+            print ("Emitting {} from host {}".format(p, sourcenode))
             p += e
-            self.syss_glue.sendHostPacket(sourcenode, e)
+            self.syss_glue.sendHostPacket(sourcenode, p)
 
     def do_EOF(self, line):
         return self.do_exit(line)
@@ -597,7 +597,6 @@ class SyssGlue(object):
         self.monitors['pcap'] = PcapMonitor
         self.monitors['debug'] = InteractiveMonitor
         self.monitors['code'] = CodeMonitor
-
         self.rebuildGlue(topo, **kwargs)
 
     def sendHostPacket(self, node, pkt):
@@ -631,7 +630,8 @@ class SyssGlue(object):
         for u,v in topo.links:
             linkdict = topo.getLink(u,v)
             unode = topo.getNode(u)['nodeobj']
-            self.__addLink(u, v, unode, linkdict)
+            vnode = topo.getNode(v)['nodeobj']
+            self.__addLink(u, v, unode, vnode, linkdict)
 
         self.__start()
 
@@ -642,16 +642,20 @@ class SyssGlue(object):
         t = threading.Thread(target=nexec.run)
         self.xnode[n] = NodePlumbing(t,nexec,q)
 
-    def __addLink(self, u, v, unode, linkdict):
-        nearnode = self.xnode[u]
-        farnode = self.xnode[v]
+    def __addLink(self, u, v, unode, vnode, linkdict):
+        uplumbing = self.xnode[u]
+        vplumbing = self.xnode[v]
         udev = linkdict[u]
         vdev = linkdict[v]
         cap = linkdict['capacity']
         delay = linkdict['delay']
-        egress_queue = farnode.queue
+        egress_queue = vplumbing.queue
         intf = unode.getInterface(udev)
-        nearnode.nexec.addEgressInterface(udev, intf, egress_queue, cap, delay, vdev)
+        uplumbing.nexec.addEgressInterface(udev, intf, egress_queue, cap, delay, vdev)
+
+        egress_queue = uplumbing.queue
+        intf = vnode.getInterface(vdev)
+        vplumbing.nexec.addEgressInterface(vdev, intf, egress_queue, cap, delay, udev)
 
     def __start(self):
         for nodename,plumbing in self.xnode.items():
