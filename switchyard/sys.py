@@ -56,7 +56,7 @@ class LinkEmulator(object):
                 heapq.heappush(self.expiryheap, (expiretime, item, outqueue))
 
 class NodeExecutor(LLNetBase):
-    __slots__ = ['__done', '__ingress_queue', '__egress_pipes', '__name','__interfaces','__symod', '__linkem', '__tolinkem','__recv_monitor','__send_monitor']
+    __slots__ = ['__done', '__ingress_queue', '__egress_pipes', '__name','__interfaces','__symod', '__linkem', '__tolinkem','__recv_monitor']
     def __init__(self, name, ingress_queue, symod=None):
         LLNetBase.__init__(self)
         self.__ingress_queue = ingress_queue
@@ -68,16 +68,15 @@ class NodeExecutor(LLNetBase):
         self.__linkem = None
         self.__tolinkem = None
         self.__recv_monitor = {'host': NullMonitor()}
-        self.__send_monitor = {'host': NullMonitor()}
 
     def sendHostPacket(self, pkt):
         self.__ingress_queue.put( ('host', pkt) )
 
     def addEgressInterface(self, devname, intf, queue, capacity, delay, remote_devname):
+        print ("Adding egress interface on {} {}".format(self.name, devname))
         self.__egress_pipes[devname] = EgressPipe(queue, delay, capacity, remote_devname)
         self.__interfaces[devname] = intf
         self.__recv_monitor[devname] = NullMonitor()
-        # self.__send_monitor[devname] = NullMonitor()
 
     @property
     def name(self):
@@ -101,14 +100,8 @@ class NodeExecutor(LLNetBase):
     def attach_recv_monitor(self, interface, monitorobject):
         self.__recv_monitor[interface] = monitorobject
 
-    #def attach_send_monitor(self, interface, monitorobject):
-    #    self.__send_monitor[interface] = monitorobject
-
     def remove_recv_monitor(self, interface):
         self.__recv_monitor[interface] = NullMonitor()
-
-    #def remove_send_monitor(self, interface):
-    #    self.__send_monitor[interface] = NullMonitor()
 
     def recv_packet(self, timeout=0.0, timestamp=False):
         #
@@ -137,7 +130,6 @@ class NodeExecutor(LLNetBase):
         egress_pipe = self.__egress_pipes[dev]
         now = time.time()
         delay = now + len(packet) / float(egress_pipe.capacity) + egress_pipe.delay
-        # self.__send_monitor[dev](dev,now,packet)
         self.__tolinkem.put( (delay, (egress_pipe.remote_devname, packet), egress_pipe.queue) )
 
     def shutdown(self):
@@ -166,7 +158,8 @@ class NodeExecutor(LLNetBase):
 
     def startcode(self):
         if self.__symod:
-            self.__symod.switchy_main(self)
+            print ("Starting code {}".format(self.name))
+            self.__symod(self)
         else:
             self.__idleloop()
 
@@ -327,7 +320,6 @@ FIXME: this is the documentation header.
         self.unsaved_changes = False
         self.syss_glue.stop()
         self.syss_glue.rebuildGlue(self.topology) # FIXME: exec code?
-        self.syss_glue.start()
 
     def emptyline(self):
         pass
@@ -363,7 +355,6 @@ FIXME: this is the documentation header.
 
         self.unsaved_changes = True
         self.syss_glue.rebuildGlue(self.topology) # FIXME: exec code?
-        self.syss_glue.start()
 
     def do_add(self, line):
         cmdargs = line.split()
@@ -405,7 +396,6 @@ FIXME: this is the documentation header.
             return
         self.unsaved_changes = True
         self.syss_glue.rebuildGlue(self.topology) # FIXME: exec code?
-        self.syss_glue.start()
 
     def __exec_monitor(self, cmdargs, monitorfn, unmonitor=False):
         if len(cmdargs) < 1:
@@ -519,10 +509,12 @@ FIXME: this is the documentation header.
         if not self.topology.hasNode(sourcenode):
             print ("Invalid node name: '{}'".format(sourcenode))
         else:
+            p = Packet()
             e = Ethernet()
             e.src = '00:00:00:00:00:01'
             e.dst = '11:00:00:11:00:11'
             print ("Emitting {} from host {}".format(e, sourcenode))
+            p += e
             self.syss_glue.sendHostPacket(sourcenode, e)
 
     def do_EOF(self, line):
@@ -612,15 +604,16 @@ class SyssGlue(object):
         self.xnode[node].nexec.sendHostPacket(pkt)
 
     def rebuildGlue(self, topo, **kwargs):
+        print ("In rebuild glue with nodeexec: {}".format(kwargs.get('nodeexec','?')))
         try:
             self.shutdown()
         except:
             pass
 
         self.xnode = {}
-        self.exec_module = None
-        if 'nodecode' in kwargs:
-            self.exec_module = import_user_code(kwargs['nodecode'])     
+        execmodule = None
+        if 'nodeexec' in kwargs:
+            execmodule = import_user_code(kwargs['nodeexec'])
         else:
             if 'switchcode' in kwargs:
                 pass
@@ -633,16 +626,19 @@ class SyssGlue(object):
         self.ingress_queues = {}
 
         for n in topo.nodes:
-            self.__addNode(n)
+            self.__addNode(n, execmodule)
 
         for u,v in topo.links:
             linkdict = topo.getLink(u,v)
             unode = topo.getNode(u)['nodeobj']
             self.__addLink(u, v, unode, linkdict)
 
-    def __addNode(self, n):
+        self.__start()
+
+    def __addNode(self, n, execmodule=None):
+        print ("Adding node with execmod: {}".format(execmodule))
         self.ingress_queues[n] = q = Queue()
-        nexec = NodeExecutor(n, q, self.exec_module)
+        nexec = NodeExecutor(n, q, execmodule)
         t = threading.Thread(target=nexec.run)
         self.xnode[n] = NodePlumbing(t,nexec,q)
 
@@ -657,7 +653,7 @@ class SyssGlue(object):
         intf = unode.getInterface(udev)
         nearnode.nexec.addEgressInterface(udev, intf, egress_queue, cap, delay, vdev)
 
-    def start(self):
+    def __start(self):
         for nodename,plumbing in self.xnode.items():
             plumbing.thread.start()
 
@@ -670,12 +666,10 @@ class SyssGlue(object):
     def addMonitor(self, node, interface, how, *args, **kwargs):
         print ("Add monitor {} {} {} {}".format(node, interface, how, args))
         self.xnode[node].nexec.attach_recv_monitor(interface, self.monitors[how](*args))
-        # self.xnode[node].nexec.attach_send_monitor(interface, self.monitors[how](*args))
 
     def removeMonitor(self, node, interface, how, *args):
         print ("Remove monitor {} {} {} {}".format(node, interface, how, args))
         self.xnode[node].nexec.remove_recv_monitor(interface)
-        # self.xnode[node].nexec.remove_send_monitor(interface)
 
 def run_simulation(topo, **kwargs):
     '''
@@ -686,9 +680,8 @@ def run_simulation(topo, **kwargs):
     substrate (NodeExecutors), and the ingress queue that each node receives
     packets from.
     '''
+    print ("In run simulation with nodeexec: {}".format(kwargs.get('nodeexec','?')))
     glue = SyssGlue(topo, **kwargs)
-    glue.start()
-
     cli = Cli(glue, topo)
     cli.cmdloop()
 

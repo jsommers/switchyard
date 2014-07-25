@@ -26,4 +26,4 @@ else:
     # if no topology file specified, create a blank topology
     t = Topology()
 
-syss.run_simulation(t, node=args.execmod)
+syss.run_simulation(t, nodeexec=args.execmod)
