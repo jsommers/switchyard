@@ -168,14 +168,16 @@ NodePlumbing = namedtuple('NodePlumbing', ['thread','nexec','queue'])
 class Cli(Cmd):
     def __init__(self, syss_glue, topology):
         self.syss_glue = syss_glue
-        # self.nodedata = syss_glue.xnode
         self.topology = topology
         Cmd.__init__(self)
         self.unsaved_changes = False
         self.prompt = '{}switchyard>{} '.format(TextColor.CYAN,TextColor.RESET)
         self.use_rawinput = True
         self.doc_header = '''
-FIXME: this is the documentation header.
+Below are the set of commands available for the Switchyard simulation substrate command-line interface.   Type help <command> for documentation on any of the commands shown.  
+
+Note that any command can be abbreviated by typing enough characters to distinguish it from another command.  Note also that hitting the <tab> key can show possible commands that complete a currently incomplete command line.
+        
 '''
 
         try:
@@ -204,19 +206,33 @@ FIXME: this is the documentation header.
         else:
             print ("Invalid show subcommand {}".format(cmdargs[0]))
 
-    def complete_show(self, text, line, begidx, endidx):
-        # print ("text: {} line: {} begidx: {} endidx: {}".format(text,line,begidx,endidx))
-        #if 'nod'.startswith(text):
-        #    return ['node','nodes']
-        #elif 'show node'.startswith(line):
-        #    return [ "node {}".format(n) for n in self.topology.nodes ]
-        #elif 'show link'.startswith(line):
-        #    return [ "link {}".format(n) for n in self.topology.nodes ]
-        #elif 'lin'.startswith(text):
-        #    return ['link','links']
-        #elif 'topology'.startswith(text):
-        #    return ['topology']
+    def __do_completion(self, matched, unmatched, mdict):
+        for cmd,cmdnext in mdict.items():
+            if matched == cmd:
+                result = []
+                for token in cmdnext:
+                    if token.startswith(unmatched):
+                        result.append(token)
+                return result
         return []
+
+    def complete_show(self, text, line, begidx, endidx):
+        matcher = {'show ':[ 'node', 'nodes', 'link', 'links', 'topology' ],
+                   'show nodes ':[],
+                   'show links ':[],
+                   'show node ': self.topology.nodes,
+                   'show link ': self.topology.nodes,
+                   'show topology ': ['', 'addresses', 'interfaces']}
+        matchedpart = line[:begidx]
+        return self.__do_completion(line[:begidx], text, matcher)
+
+    def do_exec(self, line):
+        cmdargs = line.split()
+        if len(cmdargs) != 1:
+            print ("Wrong number of arguments to exec.  Should just be the name of the switchyard Python module to execute.")
+            return
+        self.syss_glue.stop()
+        self.syss_glue.rebuildGlue(self.topology, nodeexec=cmdargs[0])
 
     def do_set(self, line):
         argerr = "Not enough arguments to set ('help set' for more info)"
@@ -450,7 +466,10 @@ FIXME: this is the documentation header.
             how = ( 'code', cmdargs[0] )
 
         for node, intf in location:
-            monitorfn(node, intf, how[0], *how[1:])
+            try:
+                monitorfn(node, intf, how[0], *how[1:])
+            except Exception as e:
+                print ("Error starting monitor on {}:{} --- {}".format(node, intf, str(e)))
 
     def do_unmonitor(self, line):
         cmdargs = line.split()
@@ -497,10 +516,10 @@ FIXME: this is the documentation header.
         print ("Close window in order to proceed")
         showaddrs = showintfs = False
         for arg in cmdargs:
-            if arg.startswith('addr'):
+            if arg.startswith('addresses'):
                 showaddrs = True
                 showintfs = True
-            elif arg.startswith('int'):
+            elif arg.startswith('interfaces'):
                 showintfs = True
         show_graph(self.topology, showaddrs=showaddrs, showintfs=showintfs)
 
@@ -556,8 +575,37 @@ FIXME: this is the documentation header.
 
     def help_monitor(self):
         print ('''
-            FIXME: help on monitor command
+        monitor <location> <how>
+        unmonitor <location>
+
+        Where <location> can be:
+            all or any --- monitor all nodes, all interfaces in the network
+            node <nodename> --- monitor all interfaces on a specific node
+            node <nodename> <interface>  --- monitor a specific interface on a specific node
+
+        And where <how> can be:
+           (dump | pcap | file) <outfileprefix>
+                Create a tcpdump/libpcap trace.  The output file begins
+                with the <outfileprefix> and is concatenated with the
+                node name and interface name at which packets are traced.
+
+           (debug | inspect | trace) 
+                Start a pdb (Python debugger) command line when a packet
+                arrives.  When pdb is exited, the main switchyard cli
+                interaction resumes.
+                
+           (code | install) <modulename>
+                Install a switchyard Python module that will receive packets.
+                The module must include a main, switchy_main, or srpy_main
+                function, and be structured as any standard Switchyard
+                code plugin. 
+
+        The unmonitor command will stop any ongoing monitor function at
+        the given location.
         ''')
+
+    def help_unmonitor(self):
+        self.help_monitor()
 
     def help_add(self):
         print ('''
@@ -565,13 +613,36 @@ FIXME: this is the documentation header.
         add switch [<switchname>]
         add router [<routername>]
         add link <node1> <node2> capacity <capacity> delay <delay>
+
+        Add a new node (host, switch, or router) to the network.
+        Add a new link to the network, identified by two node endpoints.
+        (At present, it is not possible to have multiple links between
+        the same pair of nodes.)  Capacity and delay can be abbreviated
+        in a variety of ways.  
+
+               Capacity examples: 10 Mb/s, 10mbps, 10g, 1.5m, 100kb/s
+                  Note that "bare" numbers are interpreted as bits per 
+                  second.  
+
+               Delay examples: 0.1ms, 5usec, 0.1sec
+                  Note that "bare" numbers are interpreted as delay
+                  in seconds.
         ''')
 
     def help_show(self):
         print ('''
         show (nodes|node <nodename>)
+
+        Show all node names, or interfaces configured for a given node.
+
         show (links|link <nodename>)
-        show topology 
+
+        Show all links in the network, or all links incident on a given node.
+
+        show topology [addresses | interfaces ]
+
+        Show (graphically) the network topology, optionally including
+        interface names and/or addresses.
         ''')
 
     def help_set(self):
@@ -579,8 +650,21 @@ FIXME: this is the documentation header.
         set node <nodename> <ifacename> ethernet <ethaddr>
         set node <nodename> <ifacename> inet <ipaddr> [netmask <mask>]
         set node <nodename> <ifacename> inet <ipaddr>/<prefixlen>
+
+        Set interface Ethernet or IP addresses on a given interface.
+
         set link <node1> <node2> [capacity <capacity>] [delay <delay>]
+
+        Set link capacity and delay characteristics.
+
+        Note: neither of these commands causes changes to persist in a topology file.  You must use the save command to make changes persist.
         ''')
+
+    def help_exec(self):
+        print ('''
+        exec <pythonmodule>
+        
+        Run the switchyard module <pythonmodule> at each node in the network.  The module must have a 'main', 'switchy_main', or 'srpy_main' function defined.''')
 
     def help_exit(self):
         print ("Really?  You need help for the exit command?")
@@ -588,8 +672,32 @@ FIXME: this is the documentation header.
     def help_EOF(self):
         self.help_exit()
 
+    def help_remove(self):
+        print ('''
+        remove node <nodename>
+        remove link <node1> <node2>
+
+        Remove the named node or link from the network.  When a node is removed, any incident links are also removed.
+        ''')
     def help_sendeth(self):
-        print ("Flood a simple raw Ethernet packet from a node")
+        print ('''
+        sendeth <nodename>
+        
+        Flood a simple raw Ethernet packet from a node.  This is basically a placeholder command until a more sophisticated 'ping' command exists (or something similar)''')
+
+    def help_load(self):
+        print ('''
+        load <filename>
+
+        Load the topology in <filename> and restart the simulator.
+        ''')
+
+    def help_save(self):
+        print ('''
+        save <filename>
+
+        Save the current topology (and all node and link settings) to <filename>.
+        ''')
 
 class SyssGlue(object):
     def __init__(self, topo, **kwargs):
