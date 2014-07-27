@@ -1,2 +1,5 @@
-xenv3
+pox
 *.pyc
+tmp
+xenv3
+xenv2
