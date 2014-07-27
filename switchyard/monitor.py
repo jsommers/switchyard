@@ -13,10 +13,14 @@ from switchyard.switchyard.switchy_common import NoPackets,Shutdown
 from switchyard.lib.topo.topobuild import Interface
 
 class DebugInspector(LLNetBase):
-    def __init__(self, intf, queue):
+    def __init__(self, node, intf, queue):
         self.__interfaces = {intf.name: intf}
         self.__done = False
         self.__queue = queue
+        self.__name = node
+
+    def name(self):
+        return self.__name
 
     def interfaces(self):
         return self.__interfaces.values()
@@ -65,12 +69,12 @@ class NullMonitor(AbstractMonitor):
         pass
 
 class PcapMonitor(AbstractMonitor):
-    def __init__(self, *args):
+    def __init__(self, node, intf, *args):
         outfile = ''
         if len(args) > 0:
             outfile = args[0]
         if not outfile.endswith('.pcap'):
-            outfile = "{}.pcap".format(outfile)
+            outfile = "{}_{}_{}.pcap".format(node,intf,outfile)
         self.dumper = pcapffi.PcapDumper(outfile)
 
     def __call__(self, devname, now, packet):
@@ -80,26 +84,29 @@ class PcapMonitor(AbstractMonitor):
         self.dumper.close()
 
 class InteractiveMonitor(AbstractMonitor):
-    def __init__(self, *args):
+    def __init__(self, node, intf, *args):
         self.pktlib = __import__('switchyard.lib.packet', fromlist=('packet',))
+        self.__node = node
+        self.__intf = intf
 
     def __call__(self, devname, now, packet):
         xlocals = {'packet':packet, 'pktlib':self.pktlib,'EthAddr':EthAddr,'IPAddr':IPAddr}
         debugstmt = '''
 # Nonstatement to get into the debugger
 '''
+        pdb.Pdb.prompt = '{}:{} >'.format(self.__node, self.__intf)
         pdb.run(debugstmt, globals={}, locals=xlocals)
 
     def stop(self):
         pass
 
 class CodeMonitor(AbstractMonitor):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, node, intf, *args, **kwargs):
         module = args[0]
         self.__usercode = import_user_code(module)
         self.__thread = threading.Thread(target=self.__thread_entry)
         self.__queue = queue.Queue()
-        self.__debugnet = DebugInspector(Interface('test',None,None), self.__queue)
+        self.__debugnet = DebugInspector(node, Interface(intf,None,None), self.__queue)
         self.__thread.start()
 
     def __call__(self, devname, now, packet):

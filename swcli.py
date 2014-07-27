@@ -6,7 +6,7 @@ sys.path.append(os.getcwd())
 import argparse
 
 from switchyard.lib.topo import *
-import switchyard.sys as syss
+from switchyard.cli import run_simulation
 
 parser = argparse.ArgumentParser('switchyard cli')
 parser.add_argument('--topology', '-t', type=str, help='Name of topology file to load')
@@ -26,4 +26,4 @@ else:
     # if no topology file specified, create a blank topology
     t = Topology()
 
-syss.run_simulation(t, nodeexec=args.execmod)
+run_simulation(t, nodeexec=args.execmod)

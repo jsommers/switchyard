@@ -1,5 +1,4 @@
 import sys
-import heapq
 from collections import namedtuple, defaultdict
 import threading
 from queue import Queue,Empty
@@ -9,7 +8,6 @@ from cmd import Cmd
 import re
 from abc import ABCMeta,abstractmethod
 
-
 from switchyard.switchyard.switchy import LLNetBase
 from switchyard.switchyard.switchy_common import NoPackets,Shutdown
 from switchyard.monitor import *
@@ -17,151 +15,10 @@ from switchyard.lib.topo import *
 from switchyard.lib.packet import *
 from switchyard.lib.textcolor import *
 from switchyard.lib.importcode import import_user_code
-
+from switchyard.nodeexec import NodeExecutor
 
 __author__ = 'jsommers@colgate.edu'
 __doc__ = 'SwitchYard Substrate Simulator'
-
-EgressPipe = namedtuple('EgressPipe', ['queue','delay','capacity','remote_devname'])
-
-
-class LinkEmulator(object):
-    def __init__(self, inqueue):
-        self.expiryheap = []
-        self.inqueue = inqueue
-        self.__shutdown = False
-
-    def shutdown(self):
-        self.__shutdown = True
-
-    def run(self):
-        while not self.__shutdown:
-
-            now = time.time()
-            while len(self.expiryheap) and self.expiryheap[0][0] <= now:
-                expiretime,item,outqueue = heapq.heappop(self.expiryheap)
-                outqueue.put(item)
-
-            if len(self.expiryheap):
-                expiretime,item,outqueue = self.expiryheap[0]
-                timeout = expiretime - time.time()
-            else:
-                timeout = 1.0
-
-            try:
-                expiretime,item,outqueue = self.inqueue.get(timeout=timeout)
-            except Empty:
-                pass
-            else:
-                heapq.heappush(self.expiryheap, (expiretime, item, outqueue))
-
-class NodeExecutor(LLNetBase):
-    __slots__ = ['__done', '__ingress_queue', '__egress_pipes', '__name','__interfaces','__symod', '__linkem', '__tolinkem','__recv_monitor']
-    def __init__(self, name, ingress_queue, symod=None):
-        LLNetBase.__init__(self)
-        self.__ingress_queue = ingress_queue
-        self.__egress_pipes = {}
-        self.__name = name
-        self.__interfaces = {}
-        self.__symod = symod
-        self.__done = False
-        self.__linkem = None
-        self.__tolinkem = None
-        self.__recv_monitor = {'host': NullMonitor()}
-
-    def sendHostPacket(self, pkt):
-        self.__ingress_queue.put( ('host', pkt) )
-
-    def addEgressInterface(self, devname, intf, queue, capacity, delay, remote_devname):
-        # print ("Adding egress interface on {} {}".format(self.name, devname))
-        self.__egress_pipes[devname] = EgressPipe(queue, delay, capacity, remote_devname)
-        self.__interfaces[devname] = intf
-        self.__recv_monitor[devname] = NullMonitor()
-
-    @property
-    def name(self):
-        return self.__name
-
-    def interfaces(self):
-        return self.__interfaces.values()
-
-    def set_devupdown_callback(self, callback):
-        pass
-
-    def interface_by_name(self, name):
-        return self.__interfaces[name]
-
-    def interface_by_ipaddr(self, ipaddr):
-        pass
-
-    def interface_by_macaddr(self, macaddr):
-        pass
-
-    def attach_recv_monitor(self, interface, monitorobject):
-        self.__recv_monitor[interface] = monitorobject
-
-    def remove_recv_monitor(self, interface):
-        self.__recv_monitor[interface] = NullMonitor()
-
-    def recv_packet(self, timeout=0.0, timestamp=False):
-        #
-        # FIXME: not sure about how best to handle...
-        #
-        giveup_time = time.time() + timeout
-        inner_timeout = 0.1
-         
-        while timeout == 0.0 or time.time() < giveup_time:
-            try:
-                devname,packet = self.__ingress_queue.get(block=True, timeout=inner_timeout)
-                now = time.time()
-                self.__recv_monitor[devname](devname,now,packet)
-                if timestamp:
-                    return devname,now,packet
-                return devname,packet
-            except Empty:
-                pass
-
-            if self.__done:
-                raise Shutdown()
-
-        raise NoPackets()
-
-    def send_packet(self, dev, packet):
-        egress_pipe = self.__egress_pipes[dev]
-        now = time.time()
-        delay = now + len(packet) / float(egress_pipe.capacity) + egress_pipe.delay
-        self.__tolinkem.put( (delay, (egress_pipe.remote_devname, packet), egress_pipe.queue) )
-
-    def shutdown(self):
-        self.__linkem.shutdown()
-        self.__done = True
-
-    def __idleloop(self):
-        while not self.__done:
-            try:
-                devname,ts,packet = self.recv_packet(timestamp=True)
-            except Shutdown:
-                break
-            except NoPackets:
-                pass
-
-    def run(self):
-        self.__tolinkem = Queue()
-        self.__linkem = LinkEmulator(self.__tolinkem)
-        t = threading.Thread(target=self.__linkem.run)
-        t.start()
-        self.startcode()
-
-    def resetcode(self, mod=None):
-        self.__symod = mod
-        self.startcode()
-
-    def startcode(self):
-        if self.__symod:
-            print ("Starting code {}".format(self.name))
-            self.__symod(self)
-        else:
-            self.__idleloop()
 
 NodePlumbing = namedtuple('NodePlumbing', ['thread','nexec','queue'])
 
@@ -858,7 +715,7 @@ class SyssGlue(object):
     def addMonitor(self, node, interface, how, *args, **kwargs):
         # print ("Add monitor {} {} {} {}".format(node, interface, how, args))
         self.__monitors[(node,interface)] = self.monitors[how].__name__
-        self.xnode[node].nexec.attach_recv_monitor(interface, self.monitors[how](*args))
+        self.xnode[node].nexec.attach_recv_monitor(interface, self.monitors[how](node, interface, *args))
 
     def removeMonitor(self, node, interface, how, *args):
         # print ("Remove monitor {} {} {} {}".format(node, interface, how, args))
