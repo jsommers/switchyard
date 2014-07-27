@@ -652,7 +652,7 @@ class SyssGlue(object):
 
         self.xnode = {}
         execmodule = None
-        if 'nodeexec' in kwargs:
+        if 'nodeexec' in kwargs and kwargs['nodeexec'] is not None:
             execmodule = import_user_code(kwargs['nodeexec'])
         else:
             if 'switchcode' in kwargs:
@@ -732,7 +732,7 @@ def run_simulation(topo, **kwargs):
     substrate (NodeExecutors), and the ingress queue that each node receives
     packets from.
     '''
-    print ("In run simulation with nodeexec: {}".format(kwargs.get('nodeexec','?')))
+    # print ("In run simulation with nodeexec: {}".format(kwargs.get('nodeexec','?')))
     glue = SyssGlue(topo, **kwargs)
     cli = Cli(glue, topo)
     cli.cmdloop()

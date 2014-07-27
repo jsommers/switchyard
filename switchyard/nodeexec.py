@@ -13,6 +13,7 @@ from switchyard.switchyard.switchy import LLNetBase
 from switchyard.switchyard.switchy_common import NoPackets,Shutdown
 from switchyard.monitor import *
 from switchyard.lib.topo import *
+from switchyard.linkem import LinkEmulator
 
 
 EgressPipe = namedtuple('EgressPipe', ['queue','delay','capacity','remote_devname'])
@@ -119,7 +120,7 @@ class NodeExecutor(LLNetBase):
 
     def startcode(self):
         if self.__symod:
-            print ("Starting code {}".format(self.name))
+            # print ("Starting code {}".format(self.name))
             self.__symod(self)
         else:
             self.__idleloop()
