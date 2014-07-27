@@ -1,6 +1,6 @@
 import sys
 import heapq
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 import threading
 from queue import Queue,Empty
 import time
@@ -73,7 +73,7 @@ class NodeExecutor(LLNetBase):
         self.__ingress_queue.put( ('host', pkt) )
 
     def addEgressInterface(self, devname, intf, queue, capacity, delay, remote_devname):
-        print ("Adding egress interface on {} {}".format(self.name, devname))
+        # print ("Adding egress interface on {} {}".format(self.name, devname))
         self.__egress_pipes[devname] = EgressPipe(queue, delay, capacity, remote_devname)
         self.__interfaces[devname] = intf
         self.__recv_monitor[devname] = NullMonitor()
@@ -187,6 +187,18 @@ Note that any command can be abbreviated by typing enough characters to distingu
         else:
             readline.clear_history()
 
+    def __show_monitors(self, args):
+        # filter by node 
+        mon = [ (ntup,xtype) for ntup,xtype in self.syss_glue.getMonitors().items() if (not args or ntup[0] in args) ]
+
+        # reorganize (node,intf):xtype into node:(intf,xtype)
+        d = defaultdict(list)
+        for ntup,xtype in mon:
+            d[ntup[0]].append((ntup[1],xtype))
+        for node in sorted(d.keys()):
+            intfs = [ "{} ({})".format(intf,xtype) for intf,xtype in sorted(d[node]) ]
+            print ("{}: {}".format(node, ' '.join(intfs)))
+
     def do_show(self, line):
         cmdargs = line.split()
         if len(cmdargs) < 1:
@@ -200,7 +212,7 @@ Note that any command can be abbreviated by typing enough characters to distingu
         elif 'topology'.startswith(cmdargs[0]):
             self.__show_topology(cmdargs[1:])
         elif 'monitor'.startswith(cmdargs[0]):
-            print ("show monitor not implemented")
+            self.__show_monitors(cmdargs[1:])
         elif '?' == cmdargs[0]:
             self.help_show() 
         else:
@@ -216,14 +228,47 @@ Note that any command can be abbreviated by typing enough characters to distingu
                 return result
         return []
 
+    def complete_unmonitor(self, text, line, begidx, endidx):
+        monnodes = [ xnode for xnode,xintf in self.syss_glue.getMonitors().keys() ]
+        matcher = {'unmonitor ': ['all','any','node'],
+                   'unmonitor node ': monnodes }
+        return self.__do_completion(line[:begidx], text, matcher)
+
+    def complete_monitor(self, text, line, begidx, endidx):
+        xhow = ['debug','dump','code']
+        matcher = {'monitor ': ['all','any','node'],
+                   'monitor all ': xhow,
+                   'monitor any ': xhow,
+                   'monitor node ': self.topology.nodes} 
+        for node in self.topology.nodes:
+            matcher['monitor node {} '.format(node)] = xhow
+        return self.__do_completion(line[:begidx], text, matcher)
+
+    def complete_remove(self, text, line, begidx, endidx):
+        matcher = {'remove ':[ 'node', 'link'],
+                   'remove node ': self.topology.nodes, 
+                   'remove link ': [ '{} {}'.format(x,y) for x,y in self.topology.links ] }
+        return self.__do_completion(line[:begidx], text, matcher)
+
+    def complete_add(self, text, line, begidx, endidx):
+        matcher = {'add ':[ 'node', 'link'] }
+        return self.__do_completion(line[:begidx], text, matcher)
+
+    def complete_set(self, text, line, begidx, endidx):
+        matcher = {'set ':[ 'node', 'link'],
+                   'set node ': self.topology.nodes,
+                   'set link ': [x for x,y in self.topology.links],
+                  }
+        return self.__do_completion(line[:begidx], text, matcher)
+
     def complete_show(self, text, line, begidx, endidx):
-        matcher = {'show ':[ 'node', 'nodes', 'link', 'links', 'topology' ],
+        matcher = {'show ':[ 'node', 'nodes', 'link', 'links', 'topology', 'monitor' ],
                    'show nodes ':[],
                    'show links ':[],
                    'show node ': self.topology.nodes,
                    'show link ': self.topology.nodes,
-                   'show topology ': ['', 'addresses', 'interfaces']}
-        matchedpart = line[:begidx]
+                   'show topology ': ['', 'addresses', 'interfaces'],
+                   'show monitor ': [''] + self.topology.nodes }
         return self.__do_completion(line[:begidx], text, matcher)
 
     def do_exec(self, line):
@@ -275,9 +320,9 @@ Note that any command can be abbreviated by typing enough characters to distingu
         elif 'link'.startswith(cmdargs[0]):
             n1,n2 = cmdargs[1:3]
             cmdargs = cmdargs[3:]
-            settings = self.__gather_link_characteristics(cmdargs)
 
             try:
+                settings = self.__gather_link_characteristics(cmdargs)
                 self.topology.setLinkCharacteristics(n1, n2, capacity=settings['capacity'], delay=settings['delay'])
             except Exception as e:
                 print ("Error setting link characteristics: {}".format(str(e)))
@@ -304,6 +349,10 @@ Note that any command can be abbreviated by typing enough characters to distingu
                 currval.append(cmdval)
         if currsetting:
             settings[currsetting] = ' '.join(currval)
+        if settings['capacity'] is None:
+            raise Exception("Required element 'capacity' is not specified")
+        if settings['delay'] is None:
+            raise Exception("Required element 'delay' is not specified")
         return settings
 
     def do_save(self, line):
@@ -400,8 +449,8 @@ Note that any command can be abbreviated by typing enough characters to distingu
                 return
             n1,n2 = cmdargs[:2]
             cmdargs = cmdargs[2:]
-            settings = self.__gather_link_characteristics(cmdargs)
             try:
+                settings = self.__gather_link_characteristics(cmdargs)
                 self.topology.addLink(n1, n2, capacity=settings['capacity'], delay=settings['delay'])
                 n1node = self.topology.getNode(n1)['nodeobj']
                 print("Added link {}<->{} ({})".format(n1, n2, self.topology.getLink(n1,n2)['label']))
@@ -424,11 +473,12 @@ Note that any command can be abbreviated by typing enough characters to distingu
                 nobj = self.topology.getNode(n)['nodeobj']
                 for intf in nobj.interfaces.keys():
                     location.append( (n,intf) )
-        elif 'node'.startswith(where):
-            if len(cmdargs) < 1:
-                print("Not enough arguments to monitor node")
-                return
-            where = cmdargs.pop(0)
+        elif 'node'.startswith(where) or where in self.topology.nodes:
+            if where not in self.topology.nodes:
+                if len(cmdargs) < 1:
+                    print("Not enough arguments to monitor node")
+                    return
+                where = cmdargs.pop(0)
             if self.topology.hasNode(where):
                 location = [ where ]
                 nobj = self.topology.getNode(where)['nodeobj']
@@ -441,35 +491,46 @@ Note that any command can be abbreviated by typing enough characters to distingu
                 else:
                     location = [ (where,intf) for intf in nobj.interfaces.keys() ]
         else:
-            print ("Unrecognized monitor location.  Must be 'any' or 'node <nodename>'.")
+            print ("Unrecognized monitor location.  Must be 'any', 'all', or 'node <nodename>'.")
             return
-        if unmonitor:
-            return location
 
         how = []
-        if not len(cmdargs):
-            print ("Not enough arguments to monitor command.  Need to know whether to dump, debug, or install monitor code")
-            return
-        cmdval = cmdargs.pop(0)
-        if 'dump'.startswith(cmdval) or 'pcap'.startswith(cmdval) or 'file'.startswith(cmdval):
-            if cmdargs:
-                filebase = cmdargs.pop(0)
-            else:
-                filebase = 'FIXME'
-            how = ( 'pcap',  filebase)
-        elif 'debug'.startswith(cmdval) or 'inspect'.startswith(cmdval) or 'trace'.startswith(cmdval):
-            how = ( 'debug', )
-        elif 'code'.startswith(cmdval) or 'install'.startswith(cmdval):
-            if not cmdargs:
-                print ("Missing file name for monitor code")
+        # if we're installing a monitor (not uninstalling), collect info on how
+        # to set up monitor.
+        if not unmonitor:
+            if not len(cmdargs):
+                print ("Not enough arguments to monitor command.  Need to know whether to dump, debug, or install monitor code")
                 return
-            how = ( 'code', cmdargs[0] )
+            cmdval = cmdargs.pop(0)
+            if 'dump'.startswith(cmdval) or 'pcap'.startswith(cmdval) or 'file'.startswith(cmdval):
+                if cmdargs:
+                    filebase = cmdargs.pop(0)
+                else:
+                    filebase = 'FIXME'
+                how = ( 'pcap',  filebase)
+            elif 'debug'.startswith(cmdval) or 'inspect'.startswith(cmdval) or 'trace'.startswith(cmdval):
+                how = ( 'debug', )
+            elif 'code'.startswith(cmdval) or 'install'.startswith(cmdval):
+                if not cmdargs:
+                    print ("Missing file name for monitor code")
+                    return
+                how = ( 'code', cmdargs[0] )
+
+        xaction = 'starting'
+        howargs = how[1:]
+        if how:
+            howtype = how[0]
+        else:
+            howtype = ''
+
+        if unmonitor:
+            xaction = 'stopping'
 
         for node, intf in location:
             try:
-                monitorfn(node, intf, how[0], *how[1:])
+                monitorfn(node, intf, howtype, howargs)
             except Exception as e:
-                print ("Error starting monitor on {}:{} --- {}".format(node, intf, str(e)))
+                print ("Error {} monitor on {}:{} --- {}".format(xaction, node, intf, str(e)))
 
     def do_unmonitor(self, line):
         cmdargs = line.split()
@@ -564,12 +625,27 @@ Note that any command can be abbreviated by typing enough characters to distingu
         Implement short-cut commands: any unique command prefix should
         work.'''
         cmdargs = line.split()
-        if re.match('^sh', cmdargs[0]):
-            self.do_show(' '.join(cmdargs[1:]))
-        elif re.match('^set', cmdargs[0]):
-            self.do_sendeth(' '.join(cmdargs[1:]))
-        elif re.match('^set', cmdargs[0]):
-            self.do_set(' '.join(cmdargs[1:]))
+        remain = ' '.join(cmdargs[1:])
+        if 'show'.startswith(cmdargs[0]):
+            self.do_show(remain)
+        elif 'set'.startswith(cmdargs[0]):
+            self.do_set(remain)
+        elif 'sendeth'.startswith(cmdargs[0]):
+            self.do_sendeth(remain)
+        elif 'load'.startswith(cmdargs[0]):
+            self.do_load(remain)
+        elif 'save'.startswith(cmdargs[0]):
+            self.do_save(remain)
+        elif 'monitor'.startswith(cmdargs[0]):
+            self.do_monitor(remain)
+        elif 'unmonitor'.startswith(cmdargs[0]):
+            self.do_unmonitor(remain)
+        elif 'exec'.startswith(cmdargs[0]):
+            self.do_exec(remain)
+        elif 'add'.startswith(cmdargs[0]):
+            self.do_add(remain)
+        elif 'remove'.startswith(cmdargs[0]):
+            self.do_remove(remain)
         else:
             print ("Unrecognized command '{}'".format(line))
 
@@ -711,7 +787,7 @@ class SyssGlue(object):
         self.xnode[node].nexec.sendHostPacket(pkt)
 
     def rebuildGlue(self, topo, **kwargs):
-        print ("In rebuild glue with nodeexec: {}".format(kwargs.get('nodeexec','?')))
+        # print ("In rebuild glue with nodeexec: {}".format(kwargs.get('nodeexec','?')))
         try:
             self.shutdown()
         except:
@@ -742,9 +818,10 @@ class SyssGlue(object):
             self.__addLink(u, v, unode, vnode, linkdict)
 
         self.__start()
+        self.__monitors={}
 
     def __addNode(self, n, execmodule=None):
-        print ("Adding node with execmod: {}".format(execmodule))
+        # print ("Adding node with execmod: {}".format(execmodule))
         self.ingress_queues[n] = q = Queue()
         nexec = NodeExecutor(n, q, execmodule)
         t = threading.Thread(target=nexec.run)
@@ -775,12 +852,18 @@ class SyssGlue(object):
             np.thread.join()
             del np
 
+    def getMonitors(self):
+        return self.__monitors
+
     def addMonitor(self, node, interface, how, *args, **kwargs):
-        print ("Add monitor {} {} {} {}".format(node, interface, how, args))
+        # print ("Add monitor {} {} {} {}".format(node, interface, how, args))
+        self.__monitors[(node,interface)] = self.monitors[how].__name__
         self.xnode[node].nexec.attach_recv_monitor(interface, self.monitors[how](*args))
 
     def removeMonitor(self, node, interface, how, *args):
-        print ("Remove monitor {} {} {} {}".format(node, interface, how, args))
+        # print ("Remove monitor {} {} {} {}".format(node, interface, how, args))
+        if (node,interface) in self.__monitors:
+            del self.__monitors[(node,interface)]
         self.xnode[node].nexec.remove_recv_monitor(interface)
 
 def run_simulation(topo, **kwargs):
