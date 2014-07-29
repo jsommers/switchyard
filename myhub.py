@@ -6,7 +6,7 @@ Ethernet hub in Python.
 import time
 import switchyard.lib.address 
 import switchyard.lib.packet
-from switchyard.switchyard.switchy_common import log_info, NoPackets, Shutdown
+from switchyard.lib.common import log_info, NoPackets, Shutdown
 
 def switchy_main(net):
     my_interfaces = net.interfaces() 

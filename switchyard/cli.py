@@ -8,8 +8,7 @@ from cmd import Cmd
 import re
 from abc import ABCMeta,abstractmethod
 
-from switchyard.switchyard.switchy import LLNetBase
-from switchyard.switchyard.switchy_common import NoPackets,Shutdown
+from switchyard.lib.common import *
 from switchyard.monitor import *
 from switchyard.lib.topo import *
 from switchyard.lib.packet import *

@@ -3,7 +3,8 @@
 import sys
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
-from switchyard.switchyard.switchy import *
+from switchyard.lib.common import *
+from switchyard.lib.testing import *
 
 def mk_pkt(hwsrc, hwdst, ipsrc, ipdst, reply=False):
     ether = Ethernet()

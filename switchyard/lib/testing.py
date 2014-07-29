@@ -14,6 +14,7 @@ import pickle
 import base64
 import fnmatch
 import copy
+import textwrap
 from collections import namedtuple
 
 from switchyard.lib.packet import *

@@ -8,8 +8,7 @@ from switchyard.lib.packet import *
 from switchyard.lib.address import EthAddr, IPAddr
 from switchyard.lib import pcapffi
 from switchyard.lib.importcode import import_user_code
-from switchyard.switchyard.switchy import LLNetBase
-from switchyard.switchyard.switchy_common import NoPackets,Shutdown
+from switchyard.lib.common import LLNetBase, NoPackets, Shutdown
 from switchyard.lib.topo.topobuild import Interface
 
 class DebugInspector(LLNetBase):

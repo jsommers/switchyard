@@ -14,13 +14,15 @@ import pickle
 import base64
 import fnmatch
 import copy
+import textwrap
 from collections import namedtuple
 
 from switchyard.lib.packet import *
 from switchyard.lib.address import *
 from switchyard.lib.common import *
 from switchyard.lib.testing import *
-
+from switchyard.lib.importcode import import_user_code
+from switchyard.lib.debug import *
 
 
 class FakePyLLNet(LLNetBase):
@@ -186,14 +188,3 @@ def main_test(compile, scenarios, usercode, dryrun, no_pdb, verbose):
             return
         run_tests(scenarios, usercode_entry_point, no_pdb, verbose)
 
-# decorate the "real" debugger entrypoint by
-# disabling any SIGALRM invocations -- just ignore
-# them if we're going into the debugger
-import pdb
-def setup_debugger(real_debugger):
-    def inner():
-        from switchyard.switchyard.switchy import disable_timer
-        disable_timer()
-        return real_debugger
-    return inner()
-debugger = setup_debugger(pdb.set_trace)

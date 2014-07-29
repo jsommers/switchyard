@@ -4,11 +4,11 @@ import sys
 import argparse
 import os
 
-from switchyard.switchyard.switchy_common import Interface, SwitchyException, Shutdown, NoPackets, ScenarioFailure, PacketFormatter
-from switchyard.switchyard.switchy_common import setup_logging, log_info, log_debug, log_warn, log_failure
+from switchyard.lib.common import *
 from switchyard.lib.textcolor import *
+from switchyard.switchy_test import main_test
+from switchyard.switchy_real import main_real
 import switchyard.lib.pcapffi
-from switchyard.switchyard.switchy import main_real, main_test
 
 if __name__ == '__main__':
     progname = "srpy"
