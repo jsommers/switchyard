@@ -78,6 +78,12 @@ class Packet(object):
         else:
             raise Exception("Invalid operand type for +: can't add {} and {} together".format(type(self), type(pobj)))
 
+    def headers(self):
+        '''
+        Return a list of packet header names in this packet.
+        '''
+        return [ ph.__class__.__name__ for ph in self.__headers ]
+        
     def add_header(self, ph):
         '''
         Add a PacketHeaderBase derived class object, or a raw bytes object

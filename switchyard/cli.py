@@ -43,6 +43,19 @@ Note that any command can be abbreviated by typing enough characters to distingu
         else:
             readline.clear_history()
 
+    def __checkmonitor(self):
+        args = MonitorManager.get_from_debug_queue()        
+        if args is not None:
+            InteractiveMonitor.exec(*args)
+
+    def precmd(self, line):
+        self.__checkmonitor()
+        return line
+
+    def postcmd(self, stop, line):
+        self.__checkmonitor()
+        return stop
+
     def __show_monitors(self, args):
         # filter by node 
         mon = [ (ntup,xtype) for ntup,xtype in self.syss_glue.getMonitors().items() if (not args or ntup[0] in args) ]
@@ -237,7 +250,6 @@ Note that any command can be abbreviated by typing enough characters to distingu
         except FileNotFoundError:
             print ("No file {} exists.".format(cmdargs[0]))
             return
-
         self.unsaved_changes = False
         self.syss_glue.stop()
         self.syss_glue.rebuildGlue(self.topology) # FIXME: exec code?
@@ -675,6 +687,7 @@ class SyssGlue(object):
 
         self.__start()
         self.__monitors={}
+        MonitorManager.reset()
 
     def __addNode(self, n, execmodule=None):
         # print ("Adding node with execmod: {}".format(execmodule))

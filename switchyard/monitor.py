@@ -11,6 +11,37 @@ from switchyard.lib.importcode import import_user_code
 from switchyard.lib.common import LLNetBase, NoPackets, Shutdown
 from switchyard.lib.topo.topobuild import Interface
 
+class MonitorManager(object):
+    _monitors = []
+    _queue = queue.Queue()
+
+    def __init__(self):
+        raise Exception("Don't instantiate me.")
+
+    @staticmethod
+    def add_monitor(monitor):
+        MonitorManager._monitors.append(monitor)
+
+    @staticmethod
+    def reset():
+        for mon in MonitorManager._monitors:
+            mon.stop()
+        MonitorManager._monitors = []
+        MonitorManager._queue = queue.Queue()
+
+    @staticmethod
+    def add_to_debug_queue(node, interface, packet):
+        barrier = threading.Barrier(2)
+        MonitorManager._queue.put( (node,interface,packet,barrier) )
+        barrier.wait()
+
+    @staticmethod
+    def get_from_debug_queue():
+        try:
+            return MonitorManager._queue.get(block=False)
+        except queue.Empty:
+            return None
+
 class DebugInspector(LLNetBase):
     def __init__(self, node, intf, queue):
         self.__interfaces = {intf.name: intf}
@@ -32,6 +63,7 @@ class DebugInspector(LLNetBase):
             raise Shutdown()
 
         try:
+            timeout = max(1.0, timeout)
             rv = self.__queue.get(timeout=timeout)
             if rv[0] is None:
                 raise NoPackets()
@@ -49,6 +81,9 @@ class DebugInspector(LLNetBase):
         self.__done = True
 
 class AbstractMonitor(metaclass=ABCMeta):
+    def __init__(self, *args):
+        MonitorManager.add_monitor(self)
+
     @abstractmethod
     def __call__(self, devname, now, packet):
         pass
@@ -59,7 +94,7 @@ class AbstractMonitor(metaclass=ABCMeta):
 
 class NullMonitor(AbstractMonitor):
     def __init__(self, *args):
-        pass
+        super().__init__(args)
 
     def __call__(self, devname, now, packet):
         return
@@ -69,6 +104,7 @@ class NullMonitor(AbstractMonitor):
 
 class PcapMonitor(AbstractMonitor):
     def __init__(self, node, intf, *args):
+        super().__init__(args)
         outfile = ''
         if len(args) > 0:
             outfile = args[0]
@@ -84,23 +120,30 @@ class PcapMonitor(AbstractMonitor):
 
 class InteractiveMonitor(AbstractMonitor):
     def __init__(self, node, intf, *args):
-        self.pktlib = __import__('switchyard.lib.packet', fromlist=('packet',))
+        super().__init__(args)
         self.__node = node
         self.__intf = intf
 
     def __call__(self, devname, now, packet):
-        xlocals = {'packet':packet, 'pktlib':self.pktlib,'EthAddr':EthAddr,'IPAddr':IPAddr}
+        MonitorManager.add_to_debug_queue(self.__node, devname, packet)
+
+    @staticmethod
+    def exec(node, intf, packet, barrier):
+        pktlib = __import__('switchyard.lib.packet', fromlist=('packet',))
+        xlocals = {'packet':packet, 'pktlib':pktlib,'EthAddr':EthAddr,'IPAddr':IPAddr}
+        print ("Debugging packet object on receive at {}:{}".format(node, intf))
         debugstmt = '''
 # Nonstatement to get into the debugger
 '''
-        pdb.Pdb.prompt = '{}:{} >'.format(self.__node, self.__intf)
         pdb.run(debugstmt, globals={}, locals=xlocals)
+        barrier.wait()
 
     def stop(self):
         pass
 
 class CodeMonitor(AbstractMonitor):
     def __init__(self, node, intf, *args, **kwargs):
+        super().__init__(args)
         module = args[0]
         self.__usercode = import_user_code(module)
         self.__thread = threading.Thread(target=self.__thread_entry)
