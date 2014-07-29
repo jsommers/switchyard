@@ -5,24 +5,16 @@ import unittest
 import copy
 import time
 
-sys.path.append(os.path.join(os.environ['HOME'],'pox'))
-sys.path.append(os.path.join(os.getcwd(),'pox'))
-
-from switchy_common import ScenarioFailure, setup_logging
-from switchy import Scenario,PacketInputEvent,PacketOutputEvent,compile_scenario,uncompile_scenario,get_test_scenario_from_file
-import pox.lib.packet as pktlib
-from pox.lib.packet import ethernet,ETHER_BROADCAST
-from pox.lib.packet import arp
-from pox.lib.addresses import EthAddr,IPAddr
-
+from switchyard.lib.common import ScenarioFailure, setup_logging
+from switchyard.lib.testing import Scenario,PacketInputEvent,PacketOutputEvent,compile_scenario,uncompile_scenario,get_test_scenario_from_file
+from switchyard.lib.packet import *
+from switchyard.lib.address import *
 
 class SrpyCompileTest(unittest.TestCase):
     CONTENTS1 = '''
-from switchy import Scenario,PacketInputEvent,PacketOutputEvent
-import pox.lib.packet as pktlib
-from pox.lib.packet import ethernet,ETHER_BROADCAST
-from pox.lib.packet import arp
-from pox.lib.addresses import EthAddr,IPAddr
+from switchyard.lib.testing import *
+from switchyard.lib.address import *
+from switchyard.lib.packet import *
 
 s = Scenario("ARP request")
 s.add_interface('router-eth0', '40:00:00:00:00:00', '192.168.1.1', '255.255.255.0')

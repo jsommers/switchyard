@@ -5,14 +5,10 @@ import unittest
 import copy
 import time
 
-sys.path.append(os.path.join(os.environ['HOME'],'pox'))
-sys.path.append(os.path.join(os.getcwd(),'pox'))
-
-from switchy import PacketMatcher,setup_logging,ScenarioFailure
-import pox.lib.packet as pktlib
-from pox.lib.packet import ethernet,ETHER_BROADCAST,ipv4,packet_base
-from pox.lib.packet import arp
-from pox.lib.addresses import EthAddr,IPAddr
+from switchyard.lib.common import * 
+from switchyard.lib.testing import *
+from switchyard.lib.address import *
+from switchyard.lib.packet import *
 
 
 class SrpyMatcherTest(unittest.TestCase):
