@@ -10,9 +10,6 @@ from switchyard.cli import run_simulation
 
 parser = argparse.ArgumentParser('switchyard cli')
 parser.add_argument('--topology', '-t', type=str, help='Name of topology file to load')
-#parser.add_argument('--switchcode', type=str, help='switchyard module to be executed at each switch in the network')
-#parser.add_argument('--routercode', type=str, help='switchyard module to be executed at each router in the network')
-#parser.add_argument('--hostcode', type=str, help='switchyard module to be executed at each host in the network')
 parser.add_argument('--execmod', '-m', type=str, help='switchyard module to be executed at all nodes in the network')
 args = parser.parse_args()
 
