@@ -1,22 +1,13 @@
 from switchyard.lib.packet.packet import PacketHeaderBase,Packet
-from switchyard.lib.address import EthAddr
+from switchyard.lib.address import EthAddr,SpecialEthAddr
 import struct
 from enum import Enum
-
-class EtherType(Enum):
-    IP = 0x0800
-    ARP = 0x0806
-    _8021Q = 0x8100
-    IPV6 = 0x86dd
-    SLOW = 0x8809
-    MPLS = 0x8847
-    _8021AD = 0x88a8
-    LLDP = 0x88cc
-    _8021AH = 0x88e7
-    IEEE802_3 = 0x05dc
+from switchyard.lib.packet.arp import Arp
+from switchyard.lib.packet.ethcommon import EtherType
 
 EtherTypeClasses = {
-    EtherType.IP: None
+    EtherType.IP: None,
+    EtherType.ARP: Arp
 }
 
 class Ethernet(PacketHeaderBase):
@@ -24,7 +15,7 @@ class Ethernet(PacketHeaderBase):
     __PACKFMT__ = '!6s6sH'
     __MINSIZE__ = struct.calcsize(__PACKFMT__)
 
-    def __init__(self, src='00:00:00:00:00:00',dst='00:00:00:00:00:00',ethertype=EtherType.IP):
+    def __init__(self, src=SpecialEthAddr.ETHER_ANY, dst=SpecialEthAddr.ETHER_ANY,ethertype=EtherType.IP):
         PacketHeaderBase.__init__(self)
         self.__src = EthAddr(src)
         self.__dst = EthAddr(dst)
@@ -61,7 +52,7 @@ class Ethernet(PacketHeaderBase):
         '''
         Return packed byte representation of the Ethernet header.
         '''
-        return struct.pack(Ethernet.__PACKFMT__, self.__src.raw, self.__dst.raw, self.__ethertype.value)
+        return struct.pack(Ethernet.__PACKFMT__, self.__src.packed, self.__dst.packed, self.__ethertype.value)
 
     def from_bytes(self, raw):
         '''Return an Ethernet object reconstructed from raw bytes, or an
@@ -111,7 +102,14 @@ if __name__ == '__main__':
     b = packet.to_bytes()
     print (b)
 
+
     p = Packet(b)
     print (p)
     for i,ph in enumerate(p):
         print (i,ph)
+
+    a = Arp()
+    e = Ethernet()
+    p = e + a
+    print (p.headers())
+    print (p.to_bytes())

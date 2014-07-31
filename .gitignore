@@ -1,2 +1,4 @@
 xenv3
 *.pyc
+pox
+ryu

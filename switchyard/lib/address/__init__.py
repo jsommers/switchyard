@@ -115,6 +115,10 @@ class EthAddr (object):
         """
         return self.__value
 
+    @property
+    def packed(self):
+        return self.raw
+
     def toTuple (self):
         """
         Returns a 6-entry long tuple where each entry is the numeric value
