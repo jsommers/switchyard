@@ -33,6 +33,9 @@ class Arp(PacketHeaderBase):
     def size(self):
         return struct.calcsize(Arp.__PACKFMT__)
 
+    def tail_serialized(self, raw):
+        pass
+
     def to_bytes(self):
         '''
         Return packed byte representation of the ARP header.
@@ -121,6 +124,11 @@ class Arp(PacketHeaderBase):
         No other headers should follow ARP.
         '''
         return None
+
+    def __str__(self):
+        return '{} {}:{} {}:{}'.format(self.__class__.__name__, 
+            self.senderhwaddr, self.senderprotoaddr,
+            self.targethwaddr, self.targetprotoaddr)
 
 if __name__ == '__main__':
     from switchyard.lib.packet import Ethernet,Packet

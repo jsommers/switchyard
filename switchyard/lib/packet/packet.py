@@ -27,7 +27,13 @@ class Packet(object):
         '''
         Returns serialized bytes object representing all headers/
         payloads in this packet'''
-        self.__raw = b''.join([ph.to_bytes() for ph in self.__headers])
+        rawlist = []
+        i = len(self.__headers)-1
+        while i >= 0:
+            self.__headers[i].tail_serialized(b''.join(rawlist))
+            rawlist.insert(0, self.__headers[i].to_bytes())
+            i -= 1
+        self.__raw = b''.join(rawlist)
         return self.__raw
 
     def __parse(self, raw, next_cls):
@@ -142,6 +148,9 @@ class Packet(object):
                 return False
         return True
 
+    def __str__(self):
+        return ' | '.join([str(ph) for ph in self.__headers if isinstance(ph,PacketHeaderBase)])
+
 
 class PacketHeaderBase(object, metaclass=ABCMeta):
     '''
@@ -170,6 +179,14 @@ class PacketHeaderBase(object, metaclass=ABCMeta):
     @abstractmethod
     def next_header_class(self):
         '''Return class of next header, if known.'''
+        pass
+
+    @abstractmethod
+    def tail_serialized(self, raw):
+        '''
+        Callback into the header class when any subsequent packet headers
+        are serialized.
+        '''
         pass
 
     @abstractmethod
@@ -204,3 +221,6 @@ class PacketHeaderBase(object, metaclass=ABCMeta):
     @abstractmethod
     def __eq__(self, other):
         pass
+
+    def __str__(self):
+        return self.__class__.__name__

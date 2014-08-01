@@ -1,10 +1,13 @@
 import struct
 from abc import ABCMeta, abstractmethod
 import pdb
+from ipaddress import IPv4Address
+from collections import namedtuple
 
 from switchyard.lib.packet.packet import PacketHeaderBase,Packet
 from switchyard.lib.address import EthAddr,IPAddr,SpecialIPv4Addr,SpecialEthAddr
 from switchyard.lib.packet.common import IPProtocol,IPFragmentFlag,IPOptionCopy,IPOptionClass,IPOptionNumber, checksum
+from switchyard.lib.packet.udp import Udp
 
 '''
 References:
@@ -16,8 +19,9 @@ References:
 IPTypeClasses = {
     IPProtocol.ICMP: None,
     IPProtocol.TCP: None,
-    IPProtocol.UDP: None,
+    IPProtocol.UDP: Udp,
 }
+
 
 class IPOption(object, metaclass=ABCMeta):
     __slots__ = ['__optnum']
@@ -36,9 +40,9 @@ class IPOption(object, metaclass=ABCMeta):
     def to_bytes(self):
         return b''
 
-    @staticmethod
-    def from_bytes(raw):
-        raise Exception("Not implemented yet")
+    @abstractmethod
+    def from_bytes(self, raw):
+        return self.length()
 
 
 class IPOptionEndOfOptionList(IPOption):
@@ -53,6 +57,8 @@ class IPOptionEndOfOptionList(IPOption):
     def to_bytes(self):
         return struct.pack(__PACKFMT__, self.optnum.value)
 
+    def from_bytes(self, raw):
+        return self.length()
 
 class IPOptionNoOperation(IPOption):
     __PACKFMT__ = 'B'
@@ -66,33 +72,176 @@ class IPOptionNoOperation(IPOption):
     def to_bytes(self):
         return struct.pack(__PACKFMT__, self.optnum.value)
 
+    def from_bytes(self, raw):
+        return self.length()
+
 class IPOptionSecurity(IPOption):
-    __PACKFMT__ = ''
+    __PACKFMT__ = '!BBHHHBBB'
+    __slots__ = ['secfield','compartments','handling_restrictions','transmission_control_code']
+
     def __init__(self):
         super().__init__(IPOptionNumber.Security)
+        self.secfield = 0x0000
+        self.compartments = 0x0000
+        self.handling_restrictions = 0x0000
+        self.transmission_control_code = 0x000000
 
-    
+    def length(self):
+        return struct.calcsize(__PACKFMT__)
 
-class IPOptionLooseSourceRouting(IPOption):
+    def to_bytes(self):
+        return struct.pack(IPOptionSecurity.__PACKFMT__, 0x82, 0x0b, 
+            self.secfield & 0xffff, self.compartments & 0xffff, 
+            self.handling_restrictions & 0xffff, 
+            (self.transmission_control_code >> 16) & 0xff,
+            (self.transmission_control_code >> 8) & 0xff,
+            (self.transmission_control_code) & 0xff)
+
+    def from_bytes(self, raw):
+        if len(raw) < self.length():
+            raise Exception("Not enough data to unpack {} (need {})".format(self.__class__.__name__, self.length()))
+
+        fields = struct.unpack(IPOptionSecurity.__PACKFMT__,
+            raw[0], raw[1], raw[2:4], raw[4:6], raw[6:8],
+            raw[8], raw[9], raw[10])
+        self.secfield = fields[2]
+        self.compartments = fields[3]
+        self.handling_restrictions = fields[4]
+        self.transmission_control_code = (fields[5] << 16) | (fields[6] << 8) | fields[7]
+        return self.length()
+
+class IPOptionXRouting(IPOption):
+    __slots__ = ['__routedata','__ptr']
+    def __init__(self, ipoptnum):
+        super().__init__(ipoptnum)
+        self.__routedata = []
+
+    def length(self):
+        return 3+len(self.__routedata)*4
+
+    def to_bytes(self):
+        raw = struct.pack('!BBB',(0x80|self.optnum.value),self.length())
+        for ipaddr in self.__routedata:
+            raw += ipaddr.packed
+        return raw
+
+    def from_bytes(self, raw):
+        xtype = raw[0]
+        length = raw[1]
+        pointer = raw[2]
+        numaddrs = (length - 3 // 4)
+        for i in range(numaddrs):
+            self.__routedata.append(IPV4Address(raw[(3+(i*4)):(7+(i*4))]))
+        self.__ptr = (pointer // 4) - 1
+        return length
+
+    @property
+    def pointer(self):
+        return self.__ptr
+
+    @pointer.setter
+    def pointer(self, value):
+        if not (0 <= value < len(self.__routedata)):
+            raise Exception("Invalid pointer value; must be 0..{}".format(len(self.__routedata)-1))
+        self.__ptr = value
+
+    def route_data(self, index):
+        return self.__routedata[index]
+
+class IPOptionLooseSourceRouting(IPOptionXRouting):
     def __init__(self):
         super().__init__(IPOptionNumber.LooseSourceRouting)
 
-class IPOptionStrictSourceRouting(IPOption):
+class IPOptionStrictSourceRouting(IPOptionXRouting):
     def __init__(self):
         super().__init__(IPOptionNumber.StrictSourceRouting)
 
-class IPOptionRecordRoute(IPOption):
+class IPOptionRecordRoute(IPOptionXRouting):
     def __init__(self):
         super().__init__(IPOptionNumber.RecordRoute)
 
-class IPOptionStreamID(IPOption):
+class IPOptionStreamId(IPOption):
+    __PACKFMT__ = '!BBH'
+    __slots__ = ['__streamid']
+
     def __init__(self):
         super().__init__(IPOptionNumber.StreamID)
 
+    def length(self):
+        return struct.calcsize(IPOptionStreamID.__PACKFMT__)
+
+    def to_bytes(self):
+        return struct.pack(IPOptionStreamID.__PACKFMT__,
+            (self.optnum | 0x80), 4, self.__streamid)
+
+    def from_bytes(self, raw):
+        fields = struct.unpack(IPOptionStreamID.__PACKFMT__, raw[:4])
+        self.__streamid = fields[2]
+        return self.length()
+
+    @property
+    def streamid(self):
+        return self.__streamid
+
+    @streamid.setter
+    def streamid(self, value):
+        self.__streamid = value
+
+TimestampEntry = namedtuple('TimestampEntry', ['ipv4addr','timestamp'])
+
 class IPOptionTimestamp(IPOption):
+    __slots__ = ['__entries','__ptr','__flag']
+
     def __init__(self):
         super().__init__(IPOptionNumber.Timestamp)
+        self.__entries = []
+        self.__ptr = 5
+        self.__flag = 0x1
 
+    def length(self):
+        entrysize = 2
+        if self.__flag == 0: entrysize = 1
+        return 4 + len(self.__entries)*entrysize
+
+    def to_bytes(self):
+        raw = struct.pack('!BBBB', 0x40 | self.optnum, self.length(),
+            self.__ptr, self.__flag)
+
+    def from_bytes(self, raw):
+        fields = struct.unpack('!BBBB', raw[:4])
+        self.__ptr = fields[2]
+        self.__flags = fields[3]&0x0f
+        xlen = fields[1]
+        if xlen > len(raw):
+            raise Exception("Not enough data to unpack raw {}: need {} but only have {}".format(self.__class__.__name__, xlen, len(raw)))
+        raw = raw[4:xlen]
+        haveipaddr = self.__flags != 0
+        unpackfmt = '!II'
+        if not haveipaddr:
+            unpackfmt = '!I' 
+        for tstup in struct.iter_unpack(unpackfmt, raw):
+            if haveipaddr:
+                ts = TimestampEntry(*tstup)
+            else:
+                ts = TimestampEntry(None, tstup[0])
+            self.__entries.append(ts)
+
+        return xlen
+
+    def timestamp(self, index):
+        return self.__entries[index]
+
+
+IPOptionClasses = {
+    IPOptionNumber.EndOfOptionList: IPOptionEndOfOptionList,
+    IPOptionNumber.NoOperation: IPOptionNoOperation,
+    IPOptionNumber.Security: IPOptionSecurity,
+    IPOptionNumber.LooseSourceRouting: IPOptionLooseSourceRouting,
+    IPOptionNumber.StrictSourceRouting: IPOptionStrictSourceRouting,
+    IPOptionNumber.RecordRoute: IPOptionRecordRoute,
+    IPOptionNumber.StreamId: IPOptionStreamId,
+    IPOptionNumber.Timestamp: IPOptionTimestamp
+}
 
 class IPOptionList(object):
     def __init__(self):
@@ -104,16 +253,32 @@ class IPOptionList(object):
         Takes a byte string as a parameter and returns a list of
         IPOption objects.
         '''
-        # FIXME
-        return IPOptionList() 
+        ipopts = IPOptionList()
+
+        i = 0
+        while i < len(rawbytes):
+            opttype = rawbytes[i]
+            optcopied = opttype >> 7         # high order 1 bit
+            optclass = (opttype >> 5) & 0x03 # next 2 bits
+            optnum = opttype & 0x1f          # low-order 5 bits are optnum
+            optnum = IPOptionNumber(optnum)
+            obj = IPOptionClasses[optnum]()
+            eaten = obj.from_bytes(rawbytes[i:])
+            i += eaten
+            ipopts.add_option(obj)
+        return ipopts
 
     def to_bytes(optionlist):
         '''
         Takes a list of IPOption objects and returns a packed byte string
         of options, appropriately padded if necessary.
         '''
-        # FIXME
-        return b''
+        raw = b''
+        for ipopt in self.__options:
+            raw += ipopt.to_bytes()
+        padbytes = len(raw) % 4
+        raw += b'\x00'*padbytes
+        return raw
     
     def add_option(self, opt):
         if isinstance(opt, IPOption):
@@ -122,8 +287,7 @@ class IPOptionList(object):
             raise Exception("Option to be added must be an IPOption object")
 
     def raw_length(self):
-        # FIXME
-        return 0
+        return len(self.to_bytes())
 
     def size(self):
         return len(self.__options)
@@ -153,6 +317,9 @@ class IPv4(PacketHeaderBase):
         
     def size(self):
         return struct.calcsize(IPv4.__PACKFMT__) + self.__options.raw_length()
+
+    def tail_serialized(self, raw):
+        self.__totallen = self.size() + len(raw)
 
     def to_bytes(self):
         iphdr = struct.pack(IPv4.__PACKFMT__,
@@ -321,3 +488,5 @@ class IPv4(PacketHeaderBase):
         self.__csum = checksum(data, 0)
         return self.__csum
 
+    def __str__(self):
+        return '{} {}->{} {}'.format(self.__class__.__name__, self.srcip, self.dstip, self.protocol)
