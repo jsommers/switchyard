@@ -164,24 +164,23 @@ class SpecialIPv6Addr(Enum):
     ALL_NODES_INTERFACE_LOCAL = ipaddress.ip_address('ff01::1')
     ALL_ROUTERS_INTERFACE_LOCAL = ipaddress.ip_address('ff01::2')
 
+#ff02::1:3 link local multicast name resolution
+#ff02::1:ff00:0/104 solicited-node
+#ff02::2:ff00:0/104 node information query
+
 class SpecialIPv4Addr(Enum):
     IP_ANY = ipaddress.ip_address("0.0.0.0")
     IP_BROADCAST = ipaddress.ip_address("255.255.255.255")
 
 class SpecialEthAddr(Enum):
-    ETHER_ANY            = EthAddr(b"\x00\x00\x00\x00\x00\x00")
-    ETHER_BROADCAST      = EthAddr(b"\xff\xff\xff\xff\xff\xff")
-    BRIDGE_GROUP_ADDRESS = EthAddr(b"\x01\x80\xC2\x00\x00\x00")
-    LLDP_MULTICAST       = EthAddr(b"\x01\x80\xc2\x00\x00\x0e")
-    PAE_MULTICAST        = EthAddr(b'\x01\x80\xc2\x00\x00\x03') # 802.1x Port
-                                                                #  Access Entity
-    NDP_MULTICAST        = EthAddr(b'\x01\x23\x20\x00\x00\x01') # Nicira discovery
-                                                                #  multicast
-
-#ff02::1:3 link local multicast name resolution
-#ff02::1:ff00:0/104 solicited-node
-#ff02::2:ff00:0/104 node information query
-
+    ETHER_ANY            = EthAddr(b'\x00\x00\x00\x00\x00\x00')
+    ETHER_BROADCAST      = EthAddr(b'\xff\xff\xff\xff\xff\xff')
+    BRIDGE_GROUP_ADDRESS = EthAddr(b'\x01\x80\xC2\x00\x00\x00')
+    LLDP_MULTICAST       = EthAddr(b'\x01\x80\xc2\x00\x00\x0e')
+    PAE_MULTICAST        = EthAddr(b'\x01\x80\xc2\x00\x00\x03') 
+                                                   # 802.1x Port Access Entity
+    NDP_MULTICAST        = EthAddr(b'\x01\x23\x20\x00\x00\x01') 
+                                                   # Nicira discovery multicast
 
 def netmask_to_cidr (dq):
   """

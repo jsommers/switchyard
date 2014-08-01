@@ -8,7 +8,7 @@ from select import select
 
 Interface = namedtuple('Interface', ['name','isloop'])
 PcapStats = namedtuple('PcapStats', ['ps_recv','ps_drop','ps_ifdrop'])
-Packet = namedtuple('Packet', ['timestamp', 'capture_length', 'length', 'packet'])
+Packet = namedtuple('Packet', ['timestamp', 'capture_length', 'length', 'raw'])
 PcapDev = namedtuple('PcapDev', ['dlt','nonblock','snaplen','version','pcap'])
 
 class PcapException(Exception):
@@ -96,6 +96,7 @@ class _PcapFfi(object):
         // live capture
         pcap_t *pcap_create(const char *, char *); // source, errbuf
         pcap_t *pcap_open_live(const char *, int, int, int, char *);
+        pcap_t *pcap_open_offline(const char *fname, char *errbuf);
         int pcap_set_snaplen(pcap_t *, int); // 0 on success
         int pcap_snapshot(pcap_t *);
         int pcap_set_promisc(pcap_t *, int); // 0 on success
@@ -175,6 +176,15 @@ class _PcapFfi(object):
         xpkt = self.__ffi.new("char []", pkt)
         self.__libpcap.pcap_dump(dumper, pkthdr, xpkt)
 
+    def open_pcap_file(self, filename):
+        errbuf = self.__ffi.new("char []", 128)
+        pcap = self.__libpcap.pcap_open_offline(bytes(filename, 'ascii'), errbuf)
+        if pcap == self.__ffi.NULL:
+            raise PcapException("Failed to open pcap file for reading: {}: {}".format(filename, self.__ffi.string(errbuf)))
+        
+        dl = self.__libpcap.pcap_datalink(pcap)
+        return PcapDev(Dlt(dl), 0, 0, self.version, pcap)
+
     def open_live(self, device, snaplen=65535, promisc=1, to_ms=100, nonblock=True):
         errbuf = self.__ffi.new("char []", 128)
         pcap = self.__libpcap.pcap_open_live(bytes(device, 'ascii'), snaplen, promisc, to_ms, errbuf)
@@ -250,6 +260,22 @@ class PcapDumper(object):
 
     def close(self):
         self.__pcapffi.close_dumper(self.__dumper.pcap)
+
+class PcapReader(object):
+    '''
+    Class the represents a reader of an existing pcap capture file.
+    '''
+    __slots__ = ['__pcapffi','__pcapdev']
+
+    def __init__(self, filename):
+        self.__pcapffi = _PcapFfi.instance()
+        self.__pcapdev = self.__pcapffi.open_pcap_file(filename)
+
+    def close(self):
+        self.__pcapffi.close_live(self.__pcapdev.pcap)
+
+    def recv_packet(self):
+        return self.__pcapffi.recv_packet(self.__pcapdev.pcap)
 
 class PcapLiveDevice(object):
     '''

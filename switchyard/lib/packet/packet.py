@@ -135,9 +135,9 @@ class Packet(object):
     def __eq__(self, other):
         if not isinstance(other, Packet):
             raise TypeError("Can't compare Packet with non-Packet for equality")
-        if len(self) != len(other):
+        if len(self.headers()) != len(other.headers()):
             return False
-        for i in range(len(other)):
+        for i in range(len(other.headers())):
             if self[i] != other[i]:
                 return False
         return True

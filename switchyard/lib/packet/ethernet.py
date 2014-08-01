@@ -1,13 +1,14 @@
 from switchyard.lib.packet.packet import PacketHeaderBase,Packet
 from switchyard.lib.address import EthAddr,SpecialEthAddr
 import struct
-from enum import Enum
 from switchyard.lib.packet.arp import Arp
-from switchyard.lib.packet.ethcommon import EtherType
+from switchyard.lib.packet.ipv4 import IPv4
+from switchyard.lib.packet.common import EtherType
 
 EtherTypeClasses = {
-    EtherType.IP: None,
-    EtherType.ARP: Arp
+    EtherType.IP: IPv4,
+    EtherType.ARP: Arp,
+    EtherType.IPv6: None,
 }
 
 class Ethernet(PacketHeaderBase):
@@ -15,7 +16,7 @@ class Ethernet(PacketHeaderBase):
     __PACKFMT__ = '!6s6sH'
     __MINSIZE__ = struct.calcsize(__PACKFMT__)
 
-    def __init__(self, src=SpecialEthAddr.ETHER_ANY, dst=SpecialEthAddr.ETHER_ANY,ethertype=EtherType.IP):
+    def __init__(self, src=SpecialEthAddr.ETHER_ANY.value, dst=SpecialEthAddr.ETHER_ANY.value,ethertype=EtherType.IP):
         PacketHeaderBase.__init__(self)
         self.__src = EthAddr(src)
         self.__dst = EthAddr(dst)
@@ -69,7 +70,6 @@ class Ethernet(PacketHeaderBase):
         if self.ethertype not in EtherTypeClasses:
             raise Exception("No mapping for ethertype {} to a packet header class".format(self.ethertype))
         cls = EtherTypeClasses.get(self.ethertype, None)
-        # FIXME: Warn!!
         if cls is None:
             print ("Warning: no class exists to parse next protocol type: {}".format(self.ethertype))
         return cls

@@ -1,21 +1,16 @@
 from switchyard.lib.packet.packet import PacketHeaderBase,Packet
 from switchyard.lib.address import EthAddr,IPAddr,SpecialIPv4Addr,SpecialEthAddr
 import struct
-from enum import Enum
-from switchyard.lib.packet.ethcommon import EtherType
+from switchyard.lib.packet.common import EtherType, ArpHwType, ArpOperation
 
 '''
 References:
-    Plummer, D., "RFC826", An Ethernet Address Resolution Protocol.
+    Plummer. 
+        "RFC826", An Ethernet Address Resolution Protocol.
+    Finlayson, Mann, Mogul, and Theimer. 
+        "RFC903", A Reverse Address Resolution Protocol.
     http://en.wikipedia.org/wiki/Address_Resolution_Protocol
 '''
-
-class ArpHwType(Enum):
-    Ethernet = 1
-
-class ArpOperation(Enum):
-    Request = 1
-    Reply = 2
 
 class Arp(PacketHeaderBase):
     __slots__ = ['__hwtype','__prototype','__hwaddrlen','__protoaddrlen',
@@ -30,10 +25,10 @@ class Arp(PacketHeaderBase):
         self.__hwaddrlen = 6
         self.__protoaddrlen = 4
         self.operation = ArpOperation.Request
-        self.senderhwaddr = SpecialEthAddr.ETHER_ANY
-        self.senderprotoaddr = SpecialIPv4Addr.IP_ANY
-        self.targethwaddr = SpecialEthAddr.ETHER_BROADCAST
-        self.targetprotoaddr = SpecialIPv4Addr.IP_ANY
+        self.senderhwaddr = SpecialEthAddr.ETHER_ANY.value
+        self.senderprotoaddr = SpecialIPv4Addr.IP_ANY.value
+        self.targethwaddr = SpecialEthAddr.ETHER_BROADCAST.value
+        self.targetprotoaddr = SpecialIPv4Addr.IP_ANY.value
 
     def size(self):
         return struct.calcsize(Arp.__PACKFMT__)
@@ -42,14 +37,14 @@ class Arp(PacketHeaderBase):
         '''
         Return packed byte representation of the ARP header.
         '''
-        return struct.pack(Arp.__PACKFMT__, self.__hwtype.value, self.__prototype.value, self.__hwaddrlen, self.__protoaddrlen, self.__operation, self.__senderhwaddr.packed, self.__senderprotoaddr.packed, self.__targethwaddr.packed, self.__targetprotoaddr.packed)
+        return struct.pack(Arp.__PACKFMT__, self.__hwtype.value, self.__prototype.value, self.__hwaddrlen, self.__protoaddrlen, self.__operation.value, self.__senderhwaddr.packed, self.__senderprotoaddr.packed, self.__targethwaddr.packed, self.__targetprotoaddr.packed)
 
     def from_bytes(self, raw):
         '''Return an Ethernet object reconstructed from raw bytes, or an
            Exception if we can't resurrect the packet.'''
         if len(raw) < Arp.__MINSIZE__:
             raise Exception("Not enough bytes ({}) to reconstruct an Arp object".format(len(raw)))
-        fields = struct.unpack(Ethernet.__PACKFMT__, raw[:Arp.__MINSIZE__])
+        fields = struct.unpack(Arp.__PACKFMT__, raw[:Arp.__MINSIZE__])
         try:
             self.__hwtype = ArpHwType(fields[0])
             self.__prototype = EtherType(fields[1])
@@ -57,9 +52,9 @@ class Arp(PacketHeaderBase):
             self.__protoaddrlen = fields[3]
             self.operation = ArpOperation(fields[4])
             self.senderhwaddr = EthAddr(fields[5])
-            self.senderprotoaddr = EthAddr(fields[6])
+            self.senderprotoaddr = IPAddr(fields[6])
             self.targethwaddr = EthAddr(fields[7])
-            self.targetprotoaddr = EthAddr(fields[8])
+            self.targetprotoaddr = IPAddr(fields[8])
         except Exception as e:
             raise Exception("Error constructing Arp packet object from raw bytes: {}".format(str(e)))
         return raw[Arp.__MINSIZE__:]
@@ -67,8 +62,6 @@ class Arp(PacketHeaderBase):
     def __eq__(self, other):
         return self.hardwaretype == other.hardwaretype and \
                self.protocoltype == other.protocoltype and \
-               self.hwaddrlen == other.hwaddrlen and \
-               self.protoaddrlen == other.protoaddrlen and \
                self.operation == other.operation and \
                self.senderhwaddr == other.senderhwaddr and \
                self.senderprotoaddr == other.senderprotoaddr and \
@@ -130,7 +123,25 @@ class Arp(PacketHeaderBase):
         return None
 
 if __name__ == '__main__':
+    from switchyard.lib.packet import Ethernet,Packet
     a = Arp()
+    e = Ethernet()
     print (a)
     print (a.to_bytes())
+    p = e + a
+    print (p)
+    print (p.headers())
+    p = Packet()
+    p += e
+    p += a
+    print (p.headers())
+    from switchyard.lib.packet.util import create_ip_arp_request
 
+    p = create_ip_arp_request("00:00:00:11:22:33","1.2.3.4","10.11.12.13")
+    x = p.to_bytes()
+    print (p.to_bytes())
+
+    px = Packet(raw=x)
+    print ("px",px.headers())
+    print ("p",p.headers())
+    assert(p == px)
