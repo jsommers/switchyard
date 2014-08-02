@@ -8,6 +8,7 @@ from switchyard.lib.packet.packet import PacketHeaderBase,Packet
 from switchyard.lib.address import EthAddr,IPAddr,SpecialIPv4Addr,SpecialEthAddr
 from switchyard.lib.packet.common import IPProtocol,IPFragmentFlag,IPOptionCopy,IPOptionClass,IPOptionNumber, checksum
 from switchyard.lib.packet.udp import UDP
+from switchyard.lib.packet.tcp import TCP
 from switchyard.lib.packet.icmp import ICMP
 
 '''
@@ -19,7 +20,7 @@ References:
 
 IPTypeClasses = {
     IPProtocol.ICMP: ICMP,
-    IPProtocol.TCP: None,
+    IPProtocol.TCP: TCP,
     IPProtocol.UDP: UDP,
 }
 
