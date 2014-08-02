@@ -106,6 +106,18 @@ class Packet(object):
         '''Alias for add_header'''
         self.add_header(ph)
 
+    def has_header(self, hdrclass):
+        for hdr in self.__headers:
+            if isinstance(hdr, hdrclass):
+                return True
+        return False
+
+    def get_header(self, hdrclass):
+        for hdr in self.__headers:
+            if isinstance(hdr, hdrclass):
+                return hdr
+        return None
+
     def __iter__(self):
         return iter(self.__headers)
 

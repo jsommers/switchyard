@@ -51,23 +51,67 @@ class SwitchyTestEvent(object):
         '''
         return PacketFormatter.format_pkt(pkt, self.display)
 
+class WildcardMatch(object):
+    __slots__ = [ '__lookup', '__matchvals' ]
+
+    def __init__(self, pktobj):
+        self.__lookup = {
+            'dl_src': [(Ethernet,'src')],
+            'dl_dst': [(Ethernet,'dst')],
+            'dl_type': [(Ethernet,'ethertype')],
+            'nw_src': [(IPv4,'srcip'),(IPv6,'srcip')],
+            'nw_dst': [(IPv4,'dstip'),(IPv6,'dstip')],
+            'nw_proto': [(IPv4,'protocol'),(IPv6,'protocol')],
+            'tp_src': [(TCP,'srcport'),(UDP,'srcport'),(ICMP,'icmptype')],
+            'tp_dst': [(TCP,'dstport'),(UDP,'dstport'),(ICMP,'icmpcode')],
+        }
+        self.__matchvals = self.__buildmvals(pktobj)
+
+    def __buildmvals(self, pkt, exclude=False):
+        mvals = {}
+        for key,llist in self.__lookup.items():
+
+            # exclude anything in mvals that doesn't have a key
+            # in __matchvals -- do this only when matching
+            # packet against wildcards
+            if exclude and key not in self.__matchvals:
+                continue
+
+            for cls,field in llist:
+                if pkt.has_header(cls):
+                    header = pkt.get_header(cls)
+                    value = getattr(header,field)
+                    mvals[field] = value
+        return mvals
+
+    def wildcard(self, field):
+        if field in self.__matchvals:
+            del self.__matchvals[field]
+
+    def matches_with_wildcards(self, pkt):
+        mvals = self.__buildmvals(pkt, exclude=True)
+        return mvals == self.__matchvals
+
+    def __getattr__(self, field):
+        return self.__matchvals.get(field, None)
+
 class PacketMatcher(object):
     '''
     Class whose job it is to define a packet template against which
     some other packet is matched, particularly for PacketOutputEvents,
     where we want to verify that a packet emitted by Switchyard app code
     conforms to some expectation.  This class delegates some of the
-    matching work to POX's openflow matcher (ofp_match).
+    matching work to the WildcardMatch class.
     '''
     def __init__(self, template, *predicates, **kwargs):
         '''
         Instantiate the matcher delegate.  template is expected
-        to be a POX packet object.
+        to be a Packet object.
 
         An arbitrary number of predicate functions can also be
         passed.  Each predicate function must be defined as a
         string with a single lambda.  Each lambda must take
-        a single arg (a POX packet object) and return bool.
+        a single arg (a Packet object) and return bool.
 
         Recognized kwargs: exact and wildcard
 
@@ -75,9 +119,9 @@ class PacketMatcher(object):
         against a reference packet, or a more flexible match is done
         based on the fields available in an openflow flow table entry.
 
-        wildcard is a list of strings that must match fields in an
-        ofp_match structure.  this is only used if exact=False, and
-        the effect is to wildcard those fields in the ofp_match.
+        wildcard is a list of strings that must match fields in the
+        WildcardMatch structure.  this is only used if exact=False, and
+        the effect is to wildcard those fields in the WildcardMatch.
         Fields: dl_src, dl_dst, dl_type, dl_vlan, dl_vlan_pcp,
         nw_src, nw_dst, nw_proto, nw_tos, tp_src, tp_dst
         '''
@@ -87,20 +131,16 @@ class PacketMatcher(object):
         if self.exact:
             self.__matchobj = copy.deepcopy(template)
         else:
-            self.__matchobj = ofp_match.from_packet(template)
+            self.__matchobj = WildcardMatch(template)
         self.predicates = predicates
         if self.predicates:
             for predstr in self.predicates:
-                if not isinstance(predstr, basestring):
+                if not isinstance(predstr, str):
                     log_failure("Predicates passed to PacketMatcher must be strings (this is not: {})".format(predstr))
-                    assert(isinstance(predstr, basestring))
+                    assert(isinstance(predstr, str))
         if wildcard is not None and not self.exact:
             for wfield in wildcard:
-                setattr(self.__matchobj, wfield, None)
-
-    @property
-    def ofpmatch(self):
-        return self.__matchobj
+                self.__matchobj.wildcard(wfield)
 
     def __diagnose(self, packet, results):
         '''
@@ -122,9 +162,9 @@ class PacketMatcher(object):
         if firstmatch:
             diagnosis += ["\nThese fields matched: {}.".format(self.show(None))]
         else:
-            diagnosis += ["\nHere is the packet that failed the check: {}.".format(packet.dump())]
+            diagnosis += ["\nHere is the packet that failed the check: {}.".format(packet)]
             if self.exact:
-                diagnosis += ["\nHere is exactly what I expected: {}.".format(self.__matchobj.dump())]
+                diagnosis += ["\nHere is exactly what I expected: {}.".format(self.__matchobj)]
             else:
                 diagnosis += ["\nHere is what I expected to match: {}.".format(self.show(None))]
         return ' '.join(diagnosis)
@@ -132,7 +172,7 @@ class PacketMatcher(object):
     def match(self, packet):
         '''
         Determine whether packet matches our expectation.
-        The packet is only a match if it meets ofp_match
+        The packet is only a match if it meets WildcardMatch
         criteria, and all predicates return True.
         If no match, then construct a "nice" description
             of what doesn't match, and throw an exception.
@@ -142,7 +182,7 @@ class PacketMatcher(object):
             results = [ copy.deepcopy(packet).to_bytes() == self.__matchobj.to_bytes() ]
         else:
             # compare with OFP match + wildcards
-            results = [ self.__matchobj.matches_with_wildcards(ofp_match.from_packet(packet)) ]
+            results = [ self.__matchobj.matches_with_wildcards(WildcardMatch(packet)) ]
         results += [ eval(fn)(packet) for fn in self.predicates ]
         if all(results):
             return True
@@ -153,10 +193,9 @@ class PacketMatcher(object):
         if self.exact:
             return PacketFormatter.format_pkt(self.__matchobj, cls)
         else:
-            # show the ofp_match details.
             # return self.__matchobj.show() is too detailed
             def fmtfield(f, wildcardview='*', convert=None):
-                v = self.__matchobj.__getattr__(f)
+                v = getattr(self.__matchobj, f)
                 if v is None or f.startswith('tp') and v == 0:
                     return wildcardview
                 else:
@@ -164,16 +203,18 @@ class PacketMatcher(object):
                         return convert(v)
                     return v
             dl = nw = tp = ''
-            if cls is None or cls.__name__ == 'ethernet':
+            if cls is None or cls.__name__ == 'Ethernet':
                 dl = "[{}->{} {}]".format(fmtfield('dl_src', '**:**:**:**:**:**'),
                                           fmtfield('dl_dst', '**:**:**:**:**:**'),
-                                          fmtfield('dl_type', convert=ethtype_to_str))
-            if cls is None or cls.__name__ == 'ipv4':
+                                          # fmtfield('dl_type', convert=ethtype_to_str))
+                                          fmtfield('dl_type'))
+            if cls is None or cls.__name__ == 'IPv4':
                 nw = " IP {}->{} ".format(fmtfield('nw_src', '*.*.*.*'),
                                           fmtfield('nw_dst', '*.*.*.*'))
-            if cls is None or cls.__name__ in ['tcp','udp','icmp']:
-                arrow = ':' if cls is None or cls.__name__ == 'icmp' else '->'
-                tp = " {} {}{}{}".format(fmtfield('nw_proto', convert=ipproto_to_str),fmtfield('tp_src'), arrow, fmtfield('tp_dst'))
+            if cls is None or cls.__name__ in ['TCP','UDP','ICMP']:
+                arrow = ':' if cls is None or cls.__name__ == 'ICMP' else '->'
+                # tp = " {} {}{}{}".format(fmtfield('nw_proto', convert=ipproto_to_str),fmtfield('tp_src'), arrow, fmtfield('tp_dst'))
+                tp = " {} {}{}{}".format(fmtfield('nw_proto'),fmtfield('tp_src'), arrow, fmtfield('tp_dst'))
             return dl + nw + tp
             # not including dl_vlan, dl_vlan_pcp
 
