@@ -97,20 +97,21 @@ class ICMP(PacketHeaderBase):
         return struct.calcsize(ICMP.__PACKFMT__) + self.__icmpdata.size()
 
     def checksum(self):
-        return checksum( b''.join( (struct.pack(ICMP.__PACKFMT__, self.__type, self.__code, 0), self.__icmpdata.to_bytes()) ) )
+        return checksum( b''.join( (struct.pack(ICMP.__PACKFMT__, self.__type.value, self.__code.value, 0), self.__icmpdata.to_bytes()) ) )
 
     def to_bytes(self):
         '''
         Return packed byte representation of the UDP header.
         '''
-        return struct.pack(ICMP.__PACKFMT__, self.__type, self.__code, self.checksum())
+        csum = self.checksum()
+        return b''.join( (struct.pack(ICMP.__PACKFMT__, self.__type.value, self.__code.value, csum), self.__icmpdata.to_bytes()) )
 
     def from_bytes(self, raw):
         if len(raw) < ICMP.__MINSIZE__:
             raise Exception("Not enough bytes ({}) to reconstruct an ICMP object".format(len(raw)))
         fields = struct.unpack(ICMP.__PACKFMT__, raw[:ICMP.__MINSIZE__])
-        self.__type = fields[0]
-        self.__code = fields[1]
+        self.__type = ICMPType(fields[0])
+        self.__code = ICMPTypeCodeMap[self.icmptype](fields[1])
         csum = fields[2]
         self.__icmpdata = ICMPClassObjFromType(self.__type)    
         self.__icmpdata.from_bytes(raw[ICMP.__MINSIZE__:])

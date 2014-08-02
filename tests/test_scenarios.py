@@ -23,31 +23,12 @@ s.add_interface('router-eth2', '40:00:00:00:00:02', '10.0.1.2', '255.255.255.0')
 s.add_interface('router-eth3', '40:00:00:00:00:03', '10.1.1.2', '255.255.255.0')
 
 # arp coming from client
-arp_req = arp()
-arp_req.opcode = arp.REQUEST
-arp_req.protosrc = IPAddr("10.1.1.1")
-arp_req.protodst = IPAddr("10.1.1.2")
-arp_req.hwsrc = EthAddr("30:00:00:00:00:01")
-arp_req.hwdst = EthAddr("ff:ff:ff:ff:ff:ff")
-ether = ethernet()
-ether.dst = EthAddr("ff:ff:ff:ff:ff:ff")
-ether.src = EthAddr("30:00:00:00:00:01")
-ether.type = ethernet.ARP_TYPE
-ether.set_payload(arp_req)
-s.expect(PacketInputEvent("router-eth3", ether), "Incoming ARP request")
+arpreq = create_ip_arp_request("30:00:00:00:00:01", "10.1.1.1", "10.1.1.2")
+s.expect(PacketInputEvent("router-eth3", arpreq), "Incoming ARP request")
 
-ether = ethernet()
-ether.src = EthAddr("40:00:00:00:00:03")
-ether.dst = EthAddr("30:00:00:00:00:01")
-ether.type = ethernet.ARP_TYPE
-arp_reply = arp()
-arp_reply.opcode = arp.REPLY
-arp_reply.protosrc = IPAddr("10.1.1.2")
-arp_reply.protodst = IPAddr("10.1.1.1")
-arp_reply.hwsrc = EthAddr("40:00:00:00:00:03")
-arp_reply.hwdst = EthAddr("30:00:00:00:00:01")
-ether.set_payload(arp_reply)
-s.expect(PacketOutputEvent("router-eth3", ether), "Outgoing ARP reply")
+arprep = create_ip_arp_reply("40:00:00:00:00:03", "30:00:00:00:00:01", "10.1.1.2", "10.1.1.1")
+
+s.expect(PacketOutputEvent("router-eth3", arprep), "Outgoing ARP reply")
 scenario = s
 '''
 

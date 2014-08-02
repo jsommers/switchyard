@@ -13,53 +13,48 @@ from switchyard.lib.packet import *
 
 class SrpyMatcherTest(unittest.TestCase):
     def testExactMatch1(self):
-        pkt = ethernet()
+        pkt = Ethernet() + Arp()
         matcher = PacketMatcher(pkt, exact=True)
         self.assertTrue(matcher.match(pkt))
 
     def testExactMatch2(self):
-        pkt = ethernet()
+        pkt = Ethernet() + IPv4()
         matcher = PacketMatcher(pkt, exact=True)
-        pkt.type = pkt.IP_TYPE
+        pkt[0].ethertype = EtherType.IP
         self.assertRaises(ScenarioFailure, matcher.match, pkt)
 
     def testOFPMatch(self):
-        pkt = ethernet()
+        pkt = Ethernet() + IPv4()
         matcher = PacketMatcher(pkt, exact=False)
         self.assertTrue(matcher.match(pkt))
 
     def testPredicateMatch1(self):
-        pkt = ethernet()
-        matcher = PacketMatcher(pkt, '''lambda eth: str(eth.src) == '00:00:00:00:00:00' ''', exact=False)
+        pkt = Ethernet() + IPv4()
+        matcher = PacketMatcher(pkt, '''lambda pkt: pkt[0].src == '00:00:00:00:00:00' ''', exact=False)
         self.assertTrue(matcher.match(pkt))
 
     def testPredicateMatch2(self):
-        pkt = ethernet()
-        matcher = PacketMatcher(pkt, '''lambda eth: str(eth.src) == '00:00:00:00:00:01' ''', exact=False)
+        pkt = Ethernet() + IPv4()
+        matcher = PacketMatcher(pkt, '''lambda pkt: pkt[0].src == '00:00:00:00:00:01' ''', exact=False)
         self.assertRaises(ScenarioFailure, matcher.match, pkt)
 
     def testPredicateMatch3(self):
-        pkt = ethernet()
-        ip = ipv4()
-        pkt.payload = ip
-        pkt.type = pkt.IP_TYPE
+        pkt = Ethernet() + IPv4()
         matcher = PacketMatcher(pkt, 
-            '''lambda eth: str(eth.src) == '00:00:00:00:00:00' ''', 
-            '''lambda eth: isinstance(eth.next, ipv4) and eth.next.ttl > 0 ''',
+            '''lambda pkt: pkt[0].src == '00:00:00:00:00:00' ''', 
+            '''lambda pkt: isinstance(pkt[1], IPv4) and pkt[1].ttl == 0 ''',
             exact=False)
         self.assertTrue(matcher.match(pkt))
 
     def testWildcarding(self):
-        pkt = ethernet()
-        ip = ipv4()
-        ip.srcip = IPAddr("192.168.1.1")
-        ip.dstip = IPAddr("192.168.1.2")
-        ip.ttl = 64
-        pkt.payload = ip
-        pkt.type = pkt.IP_TYPE
+        pkt = Ethernet() + IPv4()
+        pkt[1].srcip = IPAddr("192.168.1.1")
+        pkt[1].dstip = IPAddr("192.168.1.2")
+        pkt[1].ttl = 64
+        
         matcher = PacketMatcher(pkt, wildcard=['dl_dst', 'nw_dst'], exact=False)
-        pkt.dst = EthAddr("11:11:11:11:11:11")
-        ip.dstip = IPAddr("192.168.1.3")
+        pkt[0].dst = "11:11:11:11:11:11"
+        pkt[1].dstip = "192.168.1.3"
         self.assertTrue(matcher.match(copy.deepcopy(pkt)))
 
 

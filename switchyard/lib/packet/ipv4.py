@@ -269,7 +269,7 @@ class IPOptionList(object):
             ipopts.add_option(obj)
         return ipopts
 
-    def to_bytes(optionlist):
+    def to_bytes(self):
         '''
         Takes a list of IPOption objects and returns a packed byte string
         of options, appropriately padded if necessary.
@@ -299,7 +299,7 @@ class IPv4(PacketHeaderBase):
                  '__ipid','__flags','__fragoffset',
                  '__protocol','__csum',
                  '__srcip','__dstip','__options']
-    __PACKFMT__ = '!BBHHHBBHII'
+    __PACKFMT__ = '!BBHHHBBH4s4s'
     __MINSIZE__ = struct.calcsize(__PACKFMT__)
 
     def __init__(self):
@@ -485,9 +485,10 @@ class IPv4(PacketHeaderBase):
                     self.__totallen, self.ipid,
                     (self.flags.value << 13) | self.fragment_offset, 
                     self.ttl,
-                    self.protocol.value, 0, int(self.srcip), int(self.dstip))
+                    self.protocol.value, 0, self.srcip.packed, self.dstip.packed)
         self.__csum = checksum(data, 0)
         return self.__csum
 
     def __str__(self):
         return '{} {}->{} {}'.format(self.__class__.__name__, self.srcip, self.dstip, self.protocol)
+

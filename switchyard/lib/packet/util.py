@@ -1,5 +1,16 @@
 from switchyard.lib.packet import *
 
+def create_ip_arp_reply(srchw, dsthw, srcip, targetip):
+    '''
+    Create an ARP reply (just change what needs to be changed
+    from a request)
+    '''
+    pkt = create_ip_arp_request(srchw, srcip, targetip)
+    pkt[0].dst = dsthw
+    pkt[1].operation = ArpOperation.Reply
+    pkt[1].targethwaddr = dsthw
+    return pkt
+
 def create_ip_arp_request(srchw, srcip, targetip):
     '''
     Create and return a packet containing an Ethernet header

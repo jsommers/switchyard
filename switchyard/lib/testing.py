@@ -20,6 +20,7 @@ from collections import namedtuple
 from switchyard.lib.packet import *
 from switchyard.lib.address import *
 from switchyard.lib.common import *
+import switchyard.lib.debug as sdebug
 
 
 class SwitchyTestEvent(object):
@@ -403,7 +404,7 @@ class Scenario(object):
         Callback method for ensuring that send_packet gets called appropriately
         from user code (i.e., code getting tested).
         '''
-        if in_debugger:
+        if sdebug.in_debugger:
             self.timer = False
             return
 
@@ -546,7 +547,7 @@ class Scenario(object):
             if isinstance(ev.event, PacketInputEvent):
                 if ev.event.device not in self.interface_map:
                     log_warn("PacketInputEvent ({}) refers to a device not part of scenario interface map".format(str(ev.event)))
-                if not isinstance(ev.event.packet, ethernet):
+                if not isinstance(ev.event.packet, Packet):
                     log_warn("PacketInputEvent ({}) refers to a non-packet object ({})".format(str(ev.event), type(ev.event.packet)))
             elif isinstance(ev.event, PacketOutputEvent):
                 if not len(ev.event.device_packet_map):
@@ -604,7 +605,7 @@ def compile_scenario(scenario_file, output_filename=None):
         outname = output_filename
     xfile = open(outname, 'w')
     outstr = dig.digest() + pickle_repr
-    xfile.write(base64.b64encode(bz2.compress(outstr)))
+    xfile.write(base64.b64encode(bz2.compress(outstr)).decode('ascii'))
     xfile.close()
     return outname
 
@@ -617,7 +618,8 @@ def uncompile_scenario(scenario_file):
 
     (str/filename) -> Scenario object
     '''
-    indata = open(scenario_file, 'rU').read()
+    with open(scenario_file, 'r') as infile:
+        indata = infile.read()
     indata = base64.b64decode(indata.strip())
     indata = bz2.decompress(indata)
     dig = hashlib.sha512()
