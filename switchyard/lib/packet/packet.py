@@ -54,7 +54,7 @@ class Packet(object):
             if next_cls is None:
                 break
         if raw:
-            self.add_header(raw)
+            self.add_header(RawPacketContents(raw))
 
     @staticmethod
     def from_bytes(raw, first_header):
@@ -172,10 +172,6 @@ class PacketHeaderBase(object, metaclass=ABCMeta):
         '''Return the packed length of this header'''
         return 0
 
-    def pack(self):
-        '''Alias for to_bytes()'''
-        return self.to_bytes()
-
     @abstractmethod
     def next_header_class(self):
         '''Return class of next header, if known.'''
@@ -199,16 +195,6 @@ class PacketHeaderBase(object, metaclass=ABCMeta):
     def from_bytes(self, raw):
         pass        
 
-    @classmethod
-    def parse(cls, raw):
-        '''Alias for from_bytes'''
-        return cls.from_bytes(raw)
-
-    @classmethod
-    def unpack(cls, raw):
-        '''Alias for from_bytes'''
-        return cls.from_bytes(raw)
-
     def __add__(self, ph):
         '''Add two packet headers together to get a new packet object.'''
         if not isinstance(ph, (bytes,PacketHeaderBase)):
@@ -224,3 +210,34 @@ class PacketHeaderBase(object, metaclass=ABCMeta):
 
     def __str__(self):
         return self.__class__.__name__
+
+class RawPacketContents(PacketHeaderBase):
+    __slots__ = ['__raw'] 
+
+    def __init__(self, raw=None):
+        self.__raw = raw
+
+    def to_bytes(self):
+        return self.__raw    
+
+    def from_bytes(self, raw):
+        self.__raw = bytes(raw)
+
+    def next_header_class(self):
+        return None
+
+    def tail_serialized(self, raw):
+        return
+
+    def size(self):
+        return len(self.__raw)
+
+    def __eq__(self, other):
+        return self.to_bytes() == other.to_bytes()
+
+    def __str__(self):
+        ellipse = '...'
+        if len(self.__raw) < 10:
+            ellipse = ''
+        return '{} ({} bytes) {}{}'.format(self.__class__.__name__,
+            len(self.__raw), self.__raw[:10], ellipse)

@@ -36,16 +36,19 @@ class IPProtocol(Enum):
     IPv6Frag = 44
     RSVP = 46
     GRE = 47
+    EncapsulatingSecurityPayload = 50
+    AuthenticationHeader = 51
     IPMobility = 55
     TLSP = 56
     IPv6ICMP = 58
     IPv6NoNext = 59
-    IPv6Options = 60
+    IPv6DestinationOptions = 60
     EIGRP = 88
     OSPF = 89
     IPIP = 94
     EtherIP = 97
     SCTP = 132
+    IPv6Mobility = 135
     MPLSinIP = 137
 
 class IPFragmentFlag(Enum):

@@ -7,7 +7,8 @@ from collections import namedtuple
 from switchyard.lib.packet.packet import PacketHeaderBase,Packet
 from switchyard.lib.address import EthAddr,IPAddr,SpecialIPv4Addr,SpecialEthAddr
 from switchyard.lib.packet.common import IPProtocol,IPFragmentFlag,IPOptionCopy,IPOptionClass,IPOptionNumber, checksum
-from switchyard.lib.packet.udp import Udp
+from switchyard.lib.packet.udp import UDP
+from switchyard.lib.packet.icmp import ICMP
 
 '''
 References:
@@ -17,9 +18,9 @@ References:
 '''
 
 IPTypeClasses = {
-    IPProtocol.ICMP: None,
+    IPProtocol.ICMP: ICMP,
     IPProtocol.TCP: None,
-    IPProtocol.UDP: Udp,
+    IPProtocol.UDP: UDP,
 }
 
 

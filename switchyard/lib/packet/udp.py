@@ -6,7 +6,7 @@ References:
     IETF RFC 768
 '''
 
-class Udp(PacketHeaderBase):
+class UDP(PacketHeaderBase):
     __slots__ = ['__srcport','__dstport','__len']
     __PACKFMT__ = '!HHHH'
     __MINSIZE__ = struct.calcsize(__PACKFMT__)
@@ -16,7 +16,7 @@ class Udp(PacketHeaderBase):
         self.__len = self.size()
 
     def size(self):
-        return struct.calcsize(Udp.__PACKFMT__)
+        return struct.calcsize(UDP.__PACKFMT__)
 
     def tail_serialized(self, raw):
         pass
@@ -25,19 +25,19 @@ class Udp(PacketHeaderBase):
         '''
         Return packed byte representation of the UDP header.
         '''
-        return struct.pack(Udp.__PACKFMT__, self.__srcport, self.__dstport,
+        return struct.pack(UDP.__PACKFMT__, self.__srcport, self.__dstport,
             self.__len, 0)
 
     def from_bytes(self, raw):
         '''Return an Ethernet object reconstructed from raw bytes, or an
            Exception if we can't resurrect the packet.'''
-        if len(raw) < Udp.__MINSIZE__:
-            raise Exception("Not enough bytes ({}) to reconstruct an Udp object".format(len(raw)))
-        fields = struct.unpack(Udp.__PACKFMT__, raw[:Udp.__MINSIZE__])
+        if len(raw) < UDP.__MINSIZE__:
+            raise Exception("Not enough bytes ({}) to reconstruct an UDP object".format(len(raw)))
+        fields = struct.unpack(UDP.__PACKFMT__, raw[:UDP.__MINSIZE__])
         self.__srcport = fields[0]
         self.__dstport = fields[1]
         self.__len = fields[2]
-        return raw[Udp.__MINSIZE__:]
+        return raw[UDP.__MINSIZE__:]
 
     def __eq__(self, other):
         return self.srcport == other.srcport and \

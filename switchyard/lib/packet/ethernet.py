@@ -3,12 +3,13 @@ from switchyard.lib.address import EthAddr,SpecialEthAddr
 import struct
 from switchyard.lib.packet.arp import Arp
 from switchyard.lib.packet.ipv4 import IPv4
+from switchyard.lib.packet.ipv6 import IPv6
 from switchyard.lib.packet.common import EtherType
 
 EtherTypeClasses = {
     EtherType.IP: IPv4,
     EtherType.ARP: Arp,
-    EtherType.IPv6: None,
+    EtherType.IPv6: IPv6,
 }
 
 class Ethernet(PacketHeaderBase):
