@@ -6,20 +6,19 @@ References:
     IETF RFC 768
 '''
 
+# FIXME: currently does *nothing* about checksum
+
 class UDP(PacketHeaderBase):
     __slots__ = ['__srcport','__dstport','__len']
     __PACKFMT__ = '!HHHH'
     __MINSIZE__ = struct.calcsize(__PACKFMT__)
 
     def __init__(self):
-        self.__srcport = self.__dstport = 0
+        self.srcport = self.dstport = 0
         self.__len = self.size()
 
     def size(self):
         return struct.calcsize(UDP.__PACKFMT__)
-
-    def tail_serialized(self, raw):
-        pass
 
     def to_bytes(self):
         '''
@@ -66,4 +65,4 @@ class UDP(PacketHeaderBase):
         return None
 
     def tail_serialized(self, raw):
-        return
+        self.__len = self.size() + len(raw)

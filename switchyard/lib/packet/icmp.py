@@ -230,7 +230,7 @@ class ICMPDestinationUnreachable(ICMPPacketData):
 class ICMPEchoRequest(PacketHeaderBase):
     __slots__ = ['__identifier','__sequence','__data']
     __PACKFMT__ = '!HH'
-    __MINLEN__ = struct.calcsize(__PACKFMT__)
+    __MINSIZE__ = struct.calcsize(__PACKFMT__)
     
     def __init__(self):
         super().__init__()
@@ -245,14 +245,14 @@ class ICMPEchoRequest(PacketHeaderBase):
         return
 
     def size(self):
-        return self.__MINLEN__ + len(self.__data)
+        return self.__MINSIZE__ + len(self.__data)
 
     def from_bytes(self, raw):
         fields = struct.unpack(ICMPEchoRequest.__PACKFMT__, 
-            raw[:ICMPEchoRequest.__MINLEN__])
+            raw[:ICMPEchoRequest.__MINSIZE__])
         self.__identifier = fields[0]
         self.__sequence = fields[1]
-        self.__data = raw[ICMPEchoRequest.__MINLEN__:]
+        self.__data = raw[ICMPEchoRequest.__MINSIZE__:]
         return b''
 
     def to_bytes(self):
@@ -304,7 +304,7 @@ class ICMPTimeExceeded(ICMPPacketData):
 class ICMPAddressMaskRequest(PacketHeaderBase):
     __slots__ = ['__identifier','__sequence','__addrmask']
     __PACKFMT__ = '!HHI'
-    __MINLEN__ = struct.calcsize(__PACKFMT__)
+    __MINSIZE__ = struct.calcsize(__PACKFMT__)
 
     def __init__(self):
         super().__init__()
@@ -319,7 +319,7 @@ class ICMPAddressMaskRequest(PacketHeaderBase):
         return
 
     def size(self):
-        return ICMPAddressMaskRequest.__MINLEN__
+        return ICMPAddressMaskRequest.__MINSIZE__
 
     def to_bytes(self):
         return struct.pack(ICMPAddressMaskRequest.__PACKFMT__, 

@@ -27,7 +27,7 @@ class IPv6(PacketHeaderBase):
                  '__protocol','__payloadlen',
                  '__srcip','__dstip','__extheaders']
     __PACKFMT__ = '!BBHHBB16s16s'
-    __MINLEN__ = struct.calcsize(__PACKFMT__)
+    __MINSIZE__ = struct.calcsize(__PACKFMT__)
 
     def __init__(self):
         self.trafficclass = 0
@@ -40,7 +40,7 @@ class IPv6(PacketHeaderBase):
         self.__extheaders = []
         
     def size(self):
-        return IPv6.__MINLEN__ + 0 # FIXME extension headers
+        return IPv6.__MINSIZE__ + 0 # FIXME extension headers
 
     def tail_serialized(self, raw):
         self.__payloadlen = len(raw)
@@ -54,9 +54,9 @@ class IPv6(PacketHeaderBase):
             self.ttl, self.srcip.packed, self.dstip.packed)
 
     def from_bytes(self, raw):
-        if len(raw) < IPv6.__MINLEN__:
+        if len(raw) < IPv6.__MINSIZE__:
             raise Exception("Not enough data to unpack IPv6 header (only {} bytes)".format(len(raw)))
-        fields = struct.unpack(IPv6.__PACKFMT__, raw[:IPv6.__MINLEN__])
+        fields = struct.unpack(IPv6.__PACKFMT__, raw[:IPv6.__MINSIZE__])
         ipversion = fields[0] >> 4
         if ipversion != 6:
             raise Exception("Trying to parse IPv6 header, but IP version is not 6! ({})".format(ipversion))
@@ -68,7 +68,7 @@ class IPv6(PacketHeaderBase):
         self.srcip = IPv6Address(fields[6])
         self.dstip = IPv6Address(fields[7])
         # FIXME
-        return raw[IPv6.__MINLEN__:]
+        return raw[IPv6.__MINSIZE__:]
 
     def __eq__(self, other):
         return False # FIXME
