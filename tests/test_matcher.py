@@ -12,6 +12,13 @@ from switchyard.lib.packet import *
 
 
 class SrpyMatcherTest(unittest.TestCase):
+    def testExactMatch0(self):
+        pkt = Ethernet() + Arp()
+        matcher = ExactMatch(pkt)
+        self.assertTrue(matcher.match(pkt))
+        pkt[0].src = '00:00:00:00:01:01'
+        self.assertFalse(matcher.match(pkt))
+
     def testExactMatch1(self):
         pkt = Ethernet() + Arp()
         matcher = PacketMatcher(pkt, exact=True)
@@ -20,10 +27,21 @@ class SrpyMatcherTest(unittest.TestCase):
     def testExactMatch2(self):
         pkt = Ethernet() + IPv4()
         matcher = PacketMatcher(pkt, exact=True)
-        pkt[0].ethertype = EtherType.IP
+        pkt[0].ethertype = EtherType.ARP
         self.assertRaises(ScenarioFailure, matcher.match, pkt)
 
-    def testOFPMatch(self):
+    def testWildcardMatch0(self):
+        pkt = Ethernet() + IPv4()
+        matcher = WildcardMatch(pkt, [])
+        self.assertTrue(matcher.match(pkt))
+        pkt[1].ipid = 100 # ipid isn't checked in wildcard match
+        self.assertTrue(matcher.match(pkt))
+        pkt[0].src = '01:02:03:04:05:06'
+        self.assertFalse(matcher.match(pkt))
+        matcher = WildcardMatch(pkt, ['dl_src'])
+        self.assertTrue(matcher.match(pkt))
+        
+    def testWildcardMatch1(self):
         pkt = Ethernet() + IPv4()
         matcher = PacketMatcher(pkt, exact=False)
         self.assertTrue(matcher.match(pkt))

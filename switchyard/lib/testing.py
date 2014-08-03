@@ -16,6 +16,7 @@ import fnmatch
 import copy
 import textwrap
 from collections import namedtuple
+from abc import ABCMeta, abstractmethod
 
 from switchyard.lib.packet import *
 from switchyard.lib.address import *
@@ -51,10 +52,21 @@ class SwitchyTestEvent(object):
         '''
         return PacketFormatter.format_pkt(pkt, self.display)
 
-class WildcardMatch(object):
-    __slots__ = [ '__lookup', '__matchvals' ]
 
-    def __init__(self, pktobj):
+class AbstractMatch(metaclass=ABCMeta):
+    @abstractmethod
+    def match(self, pkt):
+        return False
+
+class ExactMatch(AbstractMatch):
+    def __init__(self, pkt):
+        self.__reference = pkt.to_bytes()
+
+    def match(self, pkt):
+        return self.__reference == pkt.to_bytes()
+    
+class WildcardMatch(AbstractMatch):
+    def __init__(self, pkt, wildcard_fields):
         self.__lookup = {
             'dl_src': [(Ethernet,'src')],
             'dl_dst': [(Ethernet,'dst')],
@@ -65,16 +77,16 @@ class WildcardMatch(object):
             'tp_src': [(TCP,'srcport'),(UDP,'srcport'),(ICMP,'icmptype')],
             'tp_dst': [(TCP,'dstport'),(UDP,'dstport'),(ICMP,'icmpcode')],
         }
-        self.__matchvals = self.__buildmvals(pktobj)
+        self.__wildcards = list(wildcard_fields)
+        self.__matchvals = self.__buildmvals(pkt)
 
-    def __buildmvals(self, pkt, exclude=False):
+    def __buildmvals(self, pkt):
         mvals = {}
         for key,llist in self.__lookup.items():
 
-            # exclude anything in mvals that doesn't have a key
-            # in __matchvals -- do this only when matching
-            # packet against wildcards
-            if exclude and key not in self.__matchvals:
+            # only build a comparison table of fields that aren't
+            # listed in wildcards
+            if key in self.__wildcards:
                 continue
 
             for cls,field in llist:
@@ -84,16 +96,17 @@ class WildcardMatch(object):
                     mvals[field] = value
         return mvals
 
-    def wildcard(self, field):
-        if field in self.__matchvals:
-            del self.__matchvals[field]
-
-    def matches_with_wildcards(self, pkt):
-        mvals = self.__buildmvals(pkt, exclude=True)
+    def match(self, pkt):
+        mvals = self.__buildmvals(pkt)
         return mvals == self.__matchvals
 
-    def __getattr__(self, field):
-        return self.__matchvals.get(field, None)
+    def __str__(self):
+        return 'Wildcarded fields: {}'.format(' '.join(self.__wildcards))
+
+    def __getattr__(self, attr):
+        if attr in self.__matchvals:
+            return self.__matchvals[attr]
+        return None
 
 class PacketMatcher(object):
     '''
@@ -103,7 +116,7 @@ class PacketMatcher(object):
     conforms to some expectation.  This class delegates some of the
     matching work to the WildcardMatch class.
     '''
-    def __init__(self, template, *predicates, **kwargs):
+    def __init__(self, packet, *predicates, **kwargs):
         '''
         Instantiate the matcher delegate.  template is expected
         to be a Packet object.
@@ -125,22 +138,36 @@ class PacketMatcher(object):
         Fields: dl_src, dl_dst, dl_type, dl_vlan, dl_vlan_pcp,
         nw_src, nw_dst, nw_proto, nw_tos, tp_src, tp_dst
         '''
-        self.exact = kwargs.get('exact', True)
-        wildcard = kwargs.get('wildcard', None)
+        self.exact = bool(kwargs.get('exact', True))
+        wildcard = kwargs.get('wildcard', [])
+
+        if self.exact and wildcard:
+            log_warn("Wildcards given but exact match specified.  Ignoring wildcards.")
+        kws = set(kwargs.keys())
+        kws.discard('exact')
+        kws.discard('wildcard')
+        if len(kws):
+            log_warn("Unrecognized keyword arguments given to PacketMatcher: {}".format(' '.join(kws)))
 
         if self.exact:
-            self.__matchobj = copy.deepcopy(template)
+            self.__matchobj = ExactMatch(packet)
         else:
-            self.__matchobj = WildcardMatch(template)
-        self.predicates = predicates
-        if self.predicates:
-            for predstr in self.predicates:
-                if not isinstance(predstr, str):
-                    log_failure("Predicates passed to PacketMatcher must be strings (this is not: {})".format(predstr))
-                    assert(isinstance(predstr, str))
-        if wildcard is not None and not self.exact:
-            for wfield in wildcard:
-                self.__matchobj.wildcard(wfield)
+            self.__matchobj = WildcardMatch(packet, wildcard)
+
+        self.predicates = []
+        if len(predicates) > 0:
+            for i in range(len(predicates)):
+                if isinstance(predicates[i], str):
+                    self.predicates.append(eval(predicates[i]))
+                elif str(type(self.predicates[i])) == "<class 'function'>":
+                    self.predicates.append(predicates[i])
+                    pass
+                else:
+                    raise Exception("Predicates passed to PacketMatcher must be strings or lambdas ({} is of type {})".format(predicates[i], type(predicates[i])))
+
+        #if wildcard is not None and not self.exact:
+        #    for wfield in wildcard:
+        #        self.__matchobj.wildcard(wfield)
 
     def __diagnose(self, packet, results):
         '''
@@ -177,13 +204,14 @@ class PacketMatcher(object):
         If no match, then construct a "nice" description
             of what doesn't match, and throw an exception.
         '''
-        if self.exact:
-            # compare packed packet contents for exact match
-            results = [ copy.deepcopy(packet).to_bytes() == self.__matchobj.to_bytes() ]
-        else:
-            # compare with OFP match + wildcards
-            results = [ self.__matchobj.matches_with_wildcards(WildcardMatch(packet)) ]
-        results += [ eval(fn)(packet) for fn in self.predicates ]
+        results = [ self.__matchobj.match(packet) ]
+        #if self.exact:
+        #    # compare packed packet contents for exact match
+        #    results = [ copy.deepcopy(packet).to_bytes() == self.__matchobj.to_bytes() ]
+        #else:
+        #    # compare with OFP match + wildcards
+        #    results = [ self.__matchobj.matches_with_wildcards(WildcardMatch(packet)) ]
+        results += [ fn(packet) for fn in self.predicates ]
         if all(results):
             return True
         else:
