@@ -16,5 +16,5 @@ def setup_debugger(real_debugger):
     def inner():
         disable_timer()
         return real_debugger
-    return inner()
+    return inner
 debugger = setup_debugger(pdb.set_trace)
