@@ -115,6 +115,8 @@ class _PcapFfi(object):
         ''')
         if sys.platform == 'darwin':
             self.__libpcap = self.__ffi.dlopen('libpcap.dylib')
+        elif sys.platform == 'linux':
+            self.__libpcap = self.__ffi.dlopen('libpcap.so')
         else:
             raise PcapException("Don't know how to locate libpcap on this platform: {}".format(sys.platform))
         self.__interfaces = []
