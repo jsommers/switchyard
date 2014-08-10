@@ -6,11 +6,81 @@ from switchyard.lib.packet.ipv4 import IPv4
 from switchyard.lib.packet.ipv6 import IPv6
 from switchyard.lib.packet.common import EtherType
 
+
+class Vlan(PacketHeaderBase):
+    '''
+    Strictly speaking this header doesn't fully represent the 802.1Q header, but
+    rather the 2nd half of that header and the "displaced" ethertype
+    field from the Ethernet header.  The first two bytes of the 802.1Q header
+    basically get treated as the ethertype field in the Ethernet header,
+    and that ethertype "points to" this Vlan header for parsing/understanding
+    the next 4 bytes (or more, depending on whether QinQ or QinQinQ 
+    encapsulation is done).
+
+    first 16 bits is TCI: tag control information
+       3 bits: priority code point
+       1 bit: drop eligible indicator
+       12 bits: vlan id
+    '''
+
+    __slots__ = ['__vlanid', '__ethertype']
+    __PACKFMT__ = '!HH'
+    __MINSIZE__ = struct.calcsize(__PACKFMT__)
+
+    def __init__(self, vlan=0, ethertype=EtherType.IPv4):
+        PacketHeaderBase.__init__(self)
+        self.vlan = vlan
+        self.ethertype = ethertype
+
+    @property
+    def vlan(self):
+        return self.__vlanid
+
+    @vlan.setter
+    def vlan(self, value):
+        self.__vlanid = int(value) & 0x0fff # mask out high-order 4 bits
+
+    @property
+    def ethertype(self):
+        return self.__ethertype
+
+    @ethertype.setter
+    def ethertype(self, value):
+        self.__ethertype = EtherType(value)
+
+    def from_bytes(self, raw):
+        if len(raw) < Vlan.__MINSIZE__:
+            raise Exception("Not enough bytes to unpack Vlan header; need {}, only have {}".format(Vlan.__MINSIZE__, len(raw)))
+        fields = struct.unpack(Vlan.__PACKFMT__, raw[:Vlan.__MINSIZE__])
+        self.vlan = fields[0]
+        self.ethertype = fields[1]
+        return raw[Vlan.__MINSIZE__:]
+
+    def to_bytes(self):
+        return struct.pack(Vlan.__PACKFMT__, self.__vlanid, self.__ethertype.value)
+
+    def __eq__(self, other):
+        return self.vlan == other.vlan and self.ethertype == other.ethertype
+
+    def size(self):
+        return Vlan.__MINSIZE__
+
+    def tail_serialized(self, raw):
+        pass
+
+    def next_header_class(self):
+        return EtherTypeClasses[self.ethertype]
+
+    def __str__(self):
+        return '{} {} {}'.format(self.__class__.__name__, self.vlan, self.ethertype)
+
 EtherTypeClasses = {
     EtherType.IP: IPv4,
     EtherType.ARP: Arp,
     EtherType.IPv6: IPv6,
+    EtherType.x8021Q: Vlan,
 }
+
 
 class Ethernet(PacketHeaderBase):
     __slots__ = ['__src','__dst','__ethertype']
@@ -88,35 +158,28 @@ class Ethernet(PacketHeaderBase):
 if __name__ == '__main__':
     e = Ethernet()
     e2 = Ethernet()
-    e3 = Ethernet()
-    print (e,e2,e3)
-    packet = e + e2
+    ip = IPv4()
+    print (e,e2,ip)
+    packet = e + ip
     print (packet)
     for ph in packet:
         print (ph)
-    packet2 = Packet()
-    packet2 += e3
-    packet3 = packet + packet2
-    print ("Packet 1")
-    for ph in packet:
-        print (ph)
-    print ("Packet 2")
-    for ph in packet2:
-        print (ph)
-    print ("Packet 3")
-    for ph in packet3:
-        print (ph)
-    b = packet.to_bytes()
-    print (b)
-
-
-    p = Packet(b)
-    print (p)
-    for i,ph in enumerate(p):
-        print (i,ph)
 
     a = Arp()
     e = Ethernet()
+    e.ethertype = EtherType.ARP
     p = e + a
     print (p.headers())
-    print (p.to_bytes())
+    raw = p.to_bytes()
+    px = Packet(raw)
+
+    e = Ethernet(ethertype=EtherType.x8021Q)
+    v = Vlan(ethertype=EtherType.IP, vlan=10)
+    ip = IPv4()
+    from switchyard.lib.packet import ICMP
+    icmp = ICMP()
+    p = e+v+ip+icmp
+    print (p)
+
+    raw = p.to_bytes()
+    p2 = Packet(raw)

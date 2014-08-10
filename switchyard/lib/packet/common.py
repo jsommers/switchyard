@@ -5,15 +5,16 @@ from socket import ntohs
 
 class EtherType(Enum):
     IP = 0x0800
+    IPv4 = 0x0800
     ARP = 0x0806
-    _8021Q = 0x8100
+    x8021Q = 0x8100
     IPv6 = 0x86dd
     SLOW = 0x8809
     MPLS = 0x8847
-    _8021AD = 0x88a8
+    x8021AD = 0x88a8
     LLDP = 0x88cc
-    _8021AH = 0x88e7
-    IEEE802_3 = 0x05dc
+    x8021AH = 0x88e7
+    IEEE8023 = 0x05dc
 
 class ArpHwType(Enum):
     Ethernet = 1
