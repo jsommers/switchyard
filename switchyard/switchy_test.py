@@ -32,11 +32,19 @@ class FakePyLLNet(LLNetBase):
     packets of various sorts to test whether an IP router using this
     class behaves in what appear to be correct ways.
     '''
-    def __init__(self, scenario):
+    def __init__(self, scenario, name=None):
         LLNetBase.__init__(self)
         self.devinfo = scenario.interfaces()
         self.scenario = scenario
         self.timestamp = 0.0
+        if name:
+            self.__name = name
+        else:
+            self.__name = scenario
+
+    @property
+    def name(self):
+        return self.scenario
 
     def shutdown(self):
         '''

@@ -12,26 +12,19 @@ def mk_pkt(hwsrc, hwdst, ipsrc, ipdst, reply=False):
     ether.dst = EthAddr(hwdst)
     ether.ethertype = EtherType.IP
 
-    #ippkt = ipv4()
-    #ippkt.srcip = IPAddr(ipsrc)
-    #ippkt.dstip = IPAddr(ipdst)
-    #ippkt.protocol = ipv4.ICMP_PROTOCOL
-    #ippkt.ttl = 32
-    #icmppkt = icmp()
-    #if reply:
-    #    icmppkt.type = pktlib.ICMP.TYPE_ECHO_REPLY
-    #else:
-    #    icmppkt.type = pktlib.ICMP.TYPE_ECHO_REQUEST
-    #icmppkt.code = 0
-    #icmppkt.csum = 0
-    #echoreq = pktlib.ICMP.echo()
-    #echoreq.seq = 42
-#
-#    ether.payload = ippkt
-#    ippkt.payload = icmppkt
-#    icmppkt.payload = echoreq
+    ippkt = IPv4()
+    ippkt.srcip = IPAddr(ipsrc)
+    ippkt.dstip = IPAddr(ipdst)
+    ippkt.protocol = IPProtocol.ICMP
+    ippkt.ttl = 32
 
-    return ether
+    icmppkt = ICMP()
+    if reply:
+        icmppkt.icmptype = ICMPType.EchoReply
+    else:
+        icmppkt.icmptype = ICMPType.EchoRequest
+
+    return ether + ippkt + icmppkt
 
 def hub_tests():
     s = Scenario("hub tests")

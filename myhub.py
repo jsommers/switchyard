@@ -11,7 +11,6 @@ from switchyard.lib.common import log_info, NoPackets, Shutdown
 def switchy_main(net):
     my_interfaces = net.interfaces() 
     mymacs = [intf.ethaddr for intf in my_interfaces]
-    # print ("Entering switchymain: {}".format(mymacs))
 
     while True:
         try:

@@ -225,3 +225,7 @@ class LLNetBase(metaclass=ABCMeta):
     @abstractmethod
     def shutdown(self):
         pass
+
+    @abstractmethod
+    def name(self):
+        pass

@@ -318,7 +318,7 @@ class PacketInputEvent(SwitchyTestEvent):
         # ensure that the packet is fully parsed before
         # delivering it.  cost is immaterial since this
         # is just testing code!
-        self.packet = Packet(raw=self.packet.pack())
+        self.packet = Packet(raw=self.packet.to_bytes())
         if use_timestamp:
             return self.device, timestamp, self.packet
         else:
@@ -348,7 +348,7 @@ class PacketOutputEvent(SwitchyTestEvent):
     def match(self, evtype, **kwargs):
         '''
         Does event type match me?  PacketOutputEvent requires
-        two additional keyword args: device (str) nd packet (POX packet object).
+        two additional keyword args: device (str) and packet (packet object).
         '''
         if evtype != SwitchyTestEvent.EVENT_OUTPUT:
             return SwitchyTestEvent.MATCH_FAIL
