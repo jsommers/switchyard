@@ -10,6 +10,7 @@ from switchyard.lib.packet.common import IPProtocol,IPFragmentFlag,IPOptionCopy,
 from switchyard.lib.packet.udp import UDP
 from switchyard.lib.packet.tcp import TCP
 from switchyard.lib.packet.icmp import ICMP
+from switchyard.lib.packet.igmp import IGMP
 
 '''
 References:
@@ -22,6 +23,7 @@ IPTypeClasses = {
     IPProtocol.ICMP: ICMP,
     IPProtocol.TCP: TCP,
     IPProtocol.UDP: UDP,
+    IPProtocol.IGMP: IGMP,
 }
 
 

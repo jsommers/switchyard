@@ -10,6 +10,7 @@ from switchyard.lib.packet.common import IPProtocol
 from switchyard.lib.packet.udp import UDP
 from switchyard.lib.packet.tcp import TCP
 from switchyard.lib.packet.icmp import ICMP
+from switchyard.lib.packet.igmp import IGMP
 from switchyard.lib.packet.icmpv6 import ICMPv6
 
 '''
@@ -82,6 +83,7 @@ IPTypeClasses = {
     IPProtocol.UDP: UDP,
     IPProtocol.IPv6HopOpt: IPv6HopOption,
     IPProtocol.IPv6ICMP: ICMPv6,
+    IPProtocol.IGMP: IGMP,
 }
 
 
