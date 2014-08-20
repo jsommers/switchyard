@@ -125,7 +125,7 @@ class Ethernet(PacketHeaderBase):
         '''
         Return packed byte representation of the Ethernet header.
         '''
-        return struct.pack(Ethernet.__PACKFMT__, self.__src.packed, self.__dst.packed, self.__ethertype.value)
+        return struct.pack(Ethernet.__PACKFMT__, self.__dst.packed, self.__src.packed, self.__ethertype.value)
 
     def from_bytes(self, raw):
         '''Return an Ethernet object reconstructed from raw bytes, or an
