@@ -4,6 +4,7 @@ from enum import Enum
 from socket import ntohs
 
 class EtherType(Enum):
+    NoType = 0xFFFF
     IP = 0x0800
     IPv4 = 0x0800
     ARP = 0x0806
@@ -72,10 +73,14 @@ class IPOptionNumber(Enum):
     NoOperation = 1
     Security = 2
     LooseSourceRouting = 3
-    StrictSourceRouting = 9
+    Timestamp = 4
     RecordRoute = 7
     StreamId = 8
-    Timestamp = 4
+    StrictSourceRouting = 9
+    MTUProbe = 11
+    MTUReply = 12
+    Traceroute = 18
+    RouterAlert = 20
 
 
 # the following checksum function was taken from the POX openflow controller

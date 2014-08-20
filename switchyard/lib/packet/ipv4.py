@@ -233,6 +233,24 @@ class IPOptionTimestamp(IPOption):
     def timestamp(self, index):
         return self.__entries[index]
 
+class IPOptionRouterAlert(IPOption):
+    __slots__ = ['__value']
+
+    def __init__(self):
+        super().__init__(IPOptionNumber.RouterAlert)
+        self.__value = 0
+    
+    def length(self):
+        return 4
+
+    def from_bytes(self, raw):
+        fields = struct.unpack('!BBH', raw[:4])
+        self.__value = fields[2]
+        return self.length()
+
+    def to_bytes(self):
+        return struct.pack('!BBH', 0x80 | self.optnum, self.length(), self.__value)
+
 
 IPOptionClasses = {
     IPOptionNumber.EndOfOptionList: IPOptionEndOfOptionList,
@@ -242,7 +260,11 @@ IPOptionClasses = {
     IPOptionNumber.StrictSourceRouting: IPOptionStrictSourceRouting,
     IPOptionNumber.RecordRoute: IPOptionRecordRoute,
     IPOptionNumber.StreamId: IPOptionStreamId,
-    IPOptionNumber.Timestamp: IPOptionTimestamp
+    IPOptionNumber.Timestamp: IPOptionTimestamp,
+    IPOptionNumber.Traceroute: None,
+    IPOptionNumber.MTUProbe: None,
+    IPOptionNumber.MTUReply: None,
+    IPOptionNumber.RouterAlert: IPOptionRouterAlert,
 }
 
 class IPOptionList(object):

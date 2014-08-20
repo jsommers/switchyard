@@ -79,6 +79,7 @@ EtherTypeClasses = {
     EtherType.ARP: Arp,
     EtherType.IPv6: IPv6,
     EtherType.x8021Q: Vlan,
+    EtherType.NoType: None,
 }
 
 
@@ -131,10 +132,14 @@ class Ethernet(PacketHeaderBase):
         Exception if we can't resurrect the packet.'''
         if len(raw) < Ethernet.__MINSIZE__:
             raise Exception("Not enough bytes ({}) to reconstruct an Ethernet object".format(len(raw)))
-        src,dst,ethertype = struct.unpack(Ethernet.__PACKFMT__, raw[:Ethernet.__MINSIZE__])
+        dst,src,ethertype = struct.unpack(Ethernet.__PACKFMT__, raw[:Ethernet.__MINSIZE__])
         self.src = src
         self.dst = dst
-        self.ethertype = ethertype
+        if ethertype <= 1500:
+            self.ethertype = EtherType.NoType
+        else:
+            self.ethertype = ethertype
+
         return raw[Ethernet.__MINSIZE__:]
 
     def next_header_class(self):

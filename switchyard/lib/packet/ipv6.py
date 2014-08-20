@@ -8,17 +8,80 @@ from switchyard.lib.packet.packet import PacketHeaderBase,Packet
 from switchyard.lib.address import EthAddr,IPAddr,SpecialIPv6Addr,SpecialEthAddr
 from switchyard.lib.packet.common import IPProtocol
 from switchyard.lib.packet.udp import UDP
+from switchyard.lib.packet.tcp import TCP
 from switchyard.lib.packet.icmp import ICMP
+from switchyard.lib.packet.icmpv6 import ICMPv6
 
 '''
 References:
     http://en.wikipedia.org/wiki/IPv6
 '''
 
+class IPv6HopOption(PacketHeaderBase):
+    __slots__ = ['__protocol', '__options' ]
+    __PACKFMT__ = '!BB'
+    __MINLEN__ = struct.calcsize(__PACKFMT__)
+
+    def __init__(self):
+        self.protocol = IPProtocol.ICMP
+        self.__options = []
+
+    @property
+    def protocol(self):
+        return self.__protocol
+
+    @protocol.setter
+    def protocol(self, value):
+        self.__protocol = IPProtocol(value)
+
+    def to_bytes(self):
+        raise Exception("Not implemented")
+
+    def tail_serialized(self, raw):
+        return
+
+    def size(self):
+        raise Exception("Not implemented")
+
+    def __eq__(self, other):
+        raise Exception("Not implemented") # FIXME
+
+    def __str__(self):
+        return "{} ({} options)".format(self.__class__.__name__, len(self.__options))
+
+    def next_header_class(self):
+        if self.protocol not in IPTypeClasses:
+            raise Exception("No mapping for IP Protocol {} to a packet header class".format(self.protocol))
+        cls = IPTypeClasses.get(self.protocol, None)
+        if cls is None:
+            print ("Warning: no class exists to parse next protocol type: {}".format(self.protocol))
+        return cls
+
+    def from_bytes(self, raw):
+        if len(raw) < IPv6HopOption.__MINLEN__:
+            raise Exception("Not enough data to unpack IPv6HopOption")
+
+        self.protocol = IPProtocol(raw[0])
+        full_header_len = (int(raw[1]) + 1) * 8
+        if len(raw) < full_header_len:
+            raise Exception("Not enough data to unpack IPv6HopOption")
+        full_header = raw[:full_header_len]
+        # FIXME: unpack TLVs: type (1), length (1), data (specified in length)
+        while len(full_header) > 0:
+            optnum = full_header[0]
+            optlen = full_header[1]
+            optdata = full_header[2:(2+optlen)]
+            self.__options.append((optnum,optlen,optdata))
+            full_header = full_header[(optlen+2):]
+        return raw[full_header_len:]
+
+
 IPTypeClasses = {
     IPProtocol.ICMP: ICMP,
-    IPProtocol.TCP: None,
+    IPProtocol.TCP: TCP,
     IPProtocol.UDP: UDP,
+    IPProtocol.IPv6HopOpt: IPv6HopOption,
+    IPProtocol.IPv6ICMP: ICMPv6,
 }
 
 
@@ -71,7 +134,7 @@ class IPv6(PacketHeaderBase):
         return raw[IPv6.__MINSIZE__:]
 
     def __eq__(self, other):
-        return False # FIXME
+        raise Exception("Not implemented") # FIXME
 
     def next_header_class(self):
         if self.protocol not in IPTypeClasses:
@@ -104,7 +167,7 @@ class IPv6(PacketHeaderBase):
 
     @protocol.setter
     def protocol(self, value):
-        self.__protocol = value
+        self.__protocol = IPProtocol(value)
 
     @property
     def ttl(self):
