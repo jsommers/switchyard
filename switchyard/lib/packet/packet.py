@@ -223,6 +223,7 @@ class PacketHeaderBase(object, metaclass=ABCMeta):
     def __str__(self):
         return self.__class__.__name__
 
+
 class RawPacketContents(PacketHeaderBase):
     __slots__ = ['__raw'] 
 

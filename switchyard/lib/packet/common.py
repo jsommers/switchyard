@@ -27,22 +27,22 @@ class ArpOperation(Enum):
     ReplyReverse = 4
 
 class IPProtocol(Enum):
-    IPv6HopOpt = 0
+    IPv6HopOption = 0
     ICMP = 1
     IGMP = 2
     IPinIP = 4
     TCP = 6
     UDP = 17
     IPv6Encap = 41
-    IPv6Route = 43
-    IPv6Frag = 44
+    IPv6RouteOption = 43
+    IPv6Fragment = 44
     RSVP = 46
     GRE = 47
     EncapsulatingSecurityPayload = 50
     AuthenticationHeader = 51
     IPMobility = 55
     TLSP = 56
-    IPv6ICMP = 58
+    ICMPv6 = 58
     IPv6NoNext = 59
     IPv6DestinationOptions = 60
     EIGRP = 88

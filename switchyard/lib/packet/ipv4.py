@@ -1,16 +1,15 @@
 import struct
 from abc import ABCMeta, abstractmethod
-import pdb
 from ipaddress import IPv4Address
 from collections import namedtuple
 
 from switchyard.lib.packet.packet import PacketHeaderBase,Packet
 from switchyard.lib.address import EthAddr,IPAddr,SpecialIPv4Addr,SpecialEthAddr
 from switchyard.lib.packet.common import IPProtocol,IPFragmentFlag,IPOptionCopy,IPOptionClass,IPOptionNumber, checksum
-from switchyard.lib.packet.udp import UDP
-from switchyard.lib.packet.tcp import TCP
 from switchyard.lib.packet.icmp import ICMP
 from switchyard.lib.packet.igmp import IGMP
+from switchyard.lib.packet.udp import UDP
+from switchyard.lib.packet.tcp import TCP
 
 '''
 References:
@@ -391,8 +390,6 @@ class IPv4(PacketHeaderBase):
                 self.dstip == other.dstip
 
     def next_header_class(self):
-        if self.protocol not in IPTypeClasses:
-            raise Exception("No mapping for IP Protocol {} to a packet header class".format(self.protocol))
         cls = IPTypeClasses.get(self.protocol, None)
         if cls is None:
             print ("Warning: no class exists to parse next protocol type: {}".format(self.protocol))
