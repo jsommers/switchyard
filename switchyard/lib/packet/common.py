@@ -52,6 +52,7 @@ class IPProtocol(Enum):
     SCTP = 132
     IPv6Mobility = 135
     MPLSinIP = 137
+    IPv6Shim6 = 140
 
 class IPFragmentFlag(Enum):
     NoFragments = 0
