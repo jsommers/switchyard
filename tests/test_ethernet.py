@@ -38,8 +38,8 @@ class EthernetPacketTests(unittest.TestCase):
         astr = '01:02:03:04:05:06'
         e = Ethernet()
         e.from_bytes(raw)
-        self.assertEqual(e.src, EthAddr(astr))
-        self.assertEqual(e.dst, EthAddr(':'.join(astr.split(':')[::-1])))
+        self.assertEqual(e.dst, EthAddr(astr))
+        self.assertEqual(e.src, EthAddr(':'.join(astr.split(':')[::-1])))
         self.assertEqual(e.ethertype, EtherType.IP)
 
     def testBadParse(self):

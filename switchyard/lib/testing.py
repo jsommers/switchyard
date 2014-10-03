@@ -64,6 +64,9 @@ class ExactMatch(AbstractMatch):
 
     def match(self, pkt):
         return self.__reference == pkt.to_bytes()
+
+    def __str__(self):
+        return str(self.__reference)        
     
 class WildcardMatch(AbstractMatch):
     def __init__(self, pkt, wildcard_fields):
