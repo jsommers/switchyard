@@ -1,29 +1,14 @@
 from switchyard.lib.packet.packet import PacketHeaderBase,Packet
-from switchyard.lib.packet.common import checksum
+from switchyard.lib.packet.common import checksum, ICMPType
 import struct
 from enum import Enum
 from ipaddress import IPv4Address
 
 '''
+References: https://www.ietf.org/rfc/rfc792.txt
+TCP/IP Illustrated, Vol 1.
 '''
 
-class ICMPType(Enum):
-    EchoReply = 0
-    DestinationUnreachable = 3
-    SourceQuench = 4
-    Redirect = 5
-    EchoRequest = 8
-    RouterAdvertisement = 9
-    RouterSolicitation = 10
-    TimeExceeded = 11
-    BadIPHeader = 12
-    Timestamp = 13
-    TimestampReply = 14
-    InformationRequest = 15
-    InformationReply = 16
-    AddressMaskRequest = 17
-    AddressMaskReply = 18
-    Traceroute = 30
 
 ICMPTypeCodeMap = {
     ICMPType.EchoReply: Enum('EchoReply', {'EchoReply': 0}),
@@ -59,7 +44,7 @@ ICMPTypeCodeMap = {
         'TTLExpired': 0,
         'FragmentReassemblyTimeExceeded': 1,
     }),
-    ICMPType.BadIPHeader: Enum('BadIPHeader', { 
+    ICMPType.ParameterProblem: Enum('BadIPHeader', { 
         'PointerIndicatesError': 0,
         'MissingRequiredOption': 1,
         'BadLength': 2
@@ -70,41 +55,38 @@ ICMPTypeCodeMap = {
     ICMPType.InformationReply: Enum('InformationReply', { 'InformationReply': 0 }),
     ICMPType.AddressMaskRequest: Enum('AddressMaskRequest', { 'AddressMaskRequest': 0 }),
     ICMPType.AddressMaskReply: Enum('AddressMaskReply', { 'AddressMaskReply': 0 }),
-    ICMPType.Traceroute: Enum('Traceroute', { 'InformationRequest': 0 }),
 }
 
-def ICMPClassObjFromType(xtype):
-    xtype = ICMPType(xtype)
-    clsname = "ICMP{}".format(xtype.name)
-    try:
-        cls = eval(clsname)
-    except Exception as e:
-        raise Exception("Couldn't construct ICMP data object: {}".format(clsname))
-    return cls()
-
-
 class ICMP(PacketHeaderBase):
+    '''
+    A base class for all ICMP message types.  This class isn't normally instantiated, but rather
+    its subclasses are.
+    '''
     __slots__ = ['__type','__code','__icmpdata']
     __PACKFMT__ = '!BBH'
     __MINSIZE__ = struct.calcsize(__PACKFMT__)
 
-    def __init__(self, xtype=ICMPType.EchoRequest, xcode=ICMPTypeCodeMap[ICMPType.EchoRequest].EchoRequest):
-        self.__type = xtype
-        self.__code = xcode
-        self.__icmpdata = ICMPClassObjFromType(self.__type)
+    def __init__(self):
+        self.__type = ICMPType.EchoRequest
+        self.__code = ICMPTypeCodeMap[self.__type].EchoRequest
+        self.__icmpdata = ICMPEchoRequest()
 
     def size(self):
-        return struct.calcsize(ICMP.__PACKFMT__) + self.__icmpdata.size()
+        return struct.calcsize(ICMP.__PACKFMT__) + len(self.__icmpdata.to_bytes())
 
     def checksum(self):
-        return checksum( b''.join( (struct.pack(ICMP.__PACKFMT__, self.__type.value, self.__code.value, 0), self.__icmpdata.to_bytes()) ) )
+        return checksum(b''.join( (struct.pack(ICMP.__PACKFMT__, self.__type.value, self.__code.value, 0),
+                                   self.__icmpdata.to_bytes())))
 
-    def to_bytes(self):
+    def to_bytes(self, dochecksum=True):
         '''
         Return packed byte representation of the UDP header.
         '''
-        csum = self.checksum()
-        return b''.join( (struct.pack(ICMP.__PACKFMT__, self.__type.value, self.__code.value, csum), self.__icmpdata.to_bytes()) )
+        csum = 0
+        if dochecksum:
+            csum = self.checksum()
+        return b''.join((struct.pack(ICMP.__PACKFMT__, self.__type.value, self.__code.value, csum),
+                         self.__icmpdata.to_bytes()))
 
     def from_bytes(self, raw):
         if len(raw) < ICMP.__MINSIZE__:
@@ -113,7 +95,7 @@ class ICMP(PacketHeaderBase):
         self.__type = ICMPType(fields[0])
         self.__code = ICMPTypeCodeMap[self.icmptype](fields[1])
         csum = fields[2]
-        self.__icmpdata = ICMPClassObjFromType(self.__type)    
+        self.__icmpdata = ICMPClassFromType(self.__type)()
         self.__icmpdata.from_bytes(raw[ICMP.__MINSIZE__:])
         if csum != self.checksum():
             print ("Checksum in raw ICMP packet does not match calculated checksum ({} versus {})".format(csum, self.checksum()))
@@ -134,15 +116,18 @@ class ICMP(PacketHeaderBase):
 
     @icmptype.setter
     def icmptype(self,value):
+        if not isinstance(value, ICMPType):
+            raise ValueError("ICMP type must be an ICMPType enumeration")
+        cls = ICMPClassFromType(value)
+        if not isinstance(self.__icmpdata, cls):
+            self.__icmpdata = cls()
         self.__type = value
 
     @icmpcode.setter
     def icmpcode(self,value):
+        if not issubclass(value.__class__, Enum):
+            raise ValueError("ICMP code must be an enumerated type")
         self.__code = value
-
-    @property
-    def icmpdata(self):
-        return self.__icmpdata
 
     def __str__(self):
         return '{} {}:{} {}'.format(self.__class__.__name__, self.icmptype, self.icmpcode, str(self.icmpdata))
@@ -152,6 +137,17 @@ class ICMP(PacketHeaderBase):
 
     def tail_serialized(self, raw):
         return
+
+    @property
+    def icmpdata(self):
+        return self.__icmpdata
+
+    @icmpdata.setter
+    def icmpdata(self, dataobj):
+        if not issubclass(dataobj, ICMPPacketData):
+            raise Exception("ICMP data must be subclass of ICMPPacketData (you gave me {})".format(dataobj.__class__.__name__))
+        self.__icmpdata = dataobj
+        self.__code = ICMPTypeFromClass(dataobj.__class__)
 
 
 class ICMPPacketData(PacketHeaderBase):
@@ -170,7 +166,7 @@ class ICMPPacketData(PacketHeaderBase):
         return 4 + len(self.__rawip)
 
     def to_bytes(self):
-        return self.__rawip
+        return b'\x00\x00\x00\x00' + self.__rawip
 
     def from_bytes(self, raw):
         self.__rawip = raw[4:]
@@ -336,30 +332,51 @@ class ICMPAddressMaskRequest(PacketHeaderBase):
         return '{} {} {} {}'.format(self.__class__.__name__, self.__identifier, self.__sequence, self.__addrmask)
 
 
-#class ICMPAddressMaskReply(ICMPAddressMaskRequest):
-#    pass
-#
-#class ICMPTraceroute(PacketHeaderBase):
-#    pass
-#
-#class ICMPInfoRequest(PacketHeaderBase):
-#    pass
-#
-#class ICMPInfoReply(PacketHeaderBase):
-#    pass
-#
-#class ICMPRouterAdvertisement(PacketHeaderBase):
-#    pass
-#
-#class ICMPRouterSolicitation(PacketHeaderBase):
-#    pass
-#
-#class ICMPBadIPHeader(PacketHeaderBase):
-#    pass
-#
-#class ICMPTimestamp(PacketHeaderBase):
-#    pass
-#
-#class ICMPTimestampReply(PacketHeaderBase):
-#    pass
+class ICMPAddressMaskReply(ICMPAddressMaskRequest):
+    pass
 
+class ICMPInformationRequest(PacketHeaderBase):
+    pass
+
+class ICMPInformationReply(PacketHeaderBase):
+    pass
+
+class ICMPRouterAdvertisement(PacketHeaderBase):
+    pass
+
+class ICMPRouterSolicitation(PacketHeaderBase):
+    pass
+
+class ICMPParameterProblem(PacketHeaderBase):
+    pass
+
+class ICMPTimestamp(PacketHeaderBase):
+    pass
+
+class ICMPTimestampReply(PacketHeaderBase):
+    pass
+
+
+def construct_icmp_class_map():
+    clsmap = {}
+    for xtype in ICMPType:
+        clsname = "ICMP{}".format(xtype.name)
+        cls = eval(clsname)
+        clsmap[xtype] = cls
+    def inner(icmptype):
+        icmptype = ICMPType(icmptype)
+        return clsmap.get(icmptype, None)
+    return inner
+
+def construct_icmp_type_map():
+    typemap = {}
+    for xtype in ICMPType:
+        clsname = "ICMP{}".format(xtype.name)
+        cls = eval(clsname)
+        typemap[cls] = xtype
+    def inner(icmpcls):
+        return typemap.get(icmpcls, None)
+    return inner    
+
+ICMPClassFromType = construct_icmp_class_map()
+ICMPTypeFromClass = construct_icmp_type_map()
