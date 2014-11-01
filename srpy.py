@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 import sys
-import argparse
 import os
+sys.path.append(os.getcwd())
+import argparse
 
 from switchyard.lib.common import *
 from switchyard.lib.textcolor import *
