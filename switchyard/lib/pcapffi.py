@@ -8,7 +8,7 @@ from select import select
 
 Interface = namedtuple('Interface', ['name','isloop'])
 PcapStats = namedtuple('PcapStats', ['ps_recv','ps_drop','ps_ifdrop'])
-Packet = namedtuple('Packet', ['timestamp', 'capture_length', 'length', 'raw'])
+PcapPacket = namedtuple('PcapPacket', ['timestamp', 'capture_length', 'length', 'raw'])
 PcapDev = namedtuple('PcapDev', ['dlt','nonblock','snaplen','version','pcap'])
 
 class PcapException(Exception):
@@ -227,7 +227,7 @@ class _PcapFfi(object):
         if rv == 1:
             rawpkt = bytes(self.__ffi.buffer(pdata[0], phdr[0].caplen))
             ts = float("{}.{}".format(phdr[0].tv_sec, phdr[0].tv_usec))
-            return Packet(ts, phdr[0].caplen, phdr[0].len, rawpkt)
+            return PcapPacket(ts, phdr[0].caplen, phdr[0].len, rawpkt)
         elif rv == 0:
             # timeout; nothing to return
             return None
@@ -288,7 +288,7 @@ class PcapLiveDevice(object):
     def __init__(self, device, snaplen=65535, promisc=1, to_ms=100):
         self.__pcapffi = _PcapFfi.instance()
         self.__pcapdev = self.__pcapffi.open_live(device)
-        print ("Got live pcap device: {}".format(self.__pcapdev))
+        # print ("Got live pcap device: {}".format(self.__pcapdev))
 
     def recv_packet(self, timeout):
         if timeout < 0:

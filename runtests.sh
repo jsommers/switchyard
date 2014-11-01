@@ -1,5 +1,5 @@
 #!/bin/bash -x
 for f in tests/*.py
 do
-    python $f
+    python3 $f
 done

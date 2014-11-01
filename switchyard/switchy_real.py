@@ -6,7 +6,9 @@ import re
 import subprocess
 import time
 import threading
+import textwrap
 from queue import Queue,Empty
+from socket import gethostname
 
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
@@ -14,9 +16,9 @@ from switchyard.lib.pcapffi import *
 from switchyard.lib.importcode import import_user_code
 
 '''
-Low-level-ish packet library for PyRouter project.  Uses libpcap
-for receiving and sending packets, and the POX controller utility
-libraries for packet parsing.  It is Ethernet and IPv4-centric.
+Low-level-ish packet library for PyRouter project.  Uses a FFI-based
+pcap bridge library (pcapffi) for receiving and sending packets, 
+and the Switchyard packet library for packet parsing.
 
 jsommers@colgate.edu
 '''
@@ -34,7 +36,7 @@ class PyLLNet(LLNetBase):
     on which packets can be received and sent.
     '''
 
-    def __init__(self, environment, includelist, excludelist):
+    def __init__(self, environment, includelist, excludelist, name=None):
         LLNetBase.__init__(self)
         signal.signal(signal.SIGINT, PyLLNet.__sig_handler)
         signal.signal(signal.SIGTERM, PyLLNet.__sig_handler)
@@ -46,16 +48,23 @@ class PyLLNet(LLNetBase):
         self.devinfo = self.__assemble_devinfo()
         self.pcaps = {}
         self.__make_pcaps()
-        log_info("Found network devices: {}".format(' '.join(self.devs)))
+        log_info("Using network devices: {}".format(' '.join(self.devs)))
         for devname, intf in self.devinfo.items():
             log_debug("{}: {}".format(devname, str(intf)))
 
         PyLLNet.running = True
         self.__spawn_threads()
 
+        if name:
+            self.__name = name
+        else:
+            self.__name = gethostname()
+
+    def name(self):
+        return self.__name
+
     def __initialize_devices(self, env, includes, excludes):
         devs = self.__get_net_devs(env)
-        print ("Devs: {}".format(devs))
         if not devs:
             raise SwitchyException("No suitable interfaces found.")
 
@@ -138,7 +147,7 @@ class PyLLNet(LLNetBase):
             ipaddr = None
             mask = None
             output = subprocess.check_output(["ifconfig", devname])
-            for line in output.split('\n'):
+            for line in output.decode('ascii','').split('\n'):
                 mobj = hwaddr.search(line)
                 if mobj:
                     macaddr = EthAddr(mobj.groups()[0])
@@ -158,10 +167,9 @@ class PyLLNet(LLNetBase):
         self.pcaps = {}
         for dev in self.devs:
             thismac = self.devinfo[dev].ethaddr
-            pdev = pcap.pcap(name=dev) # default snaplen is 64k
-            pdev.setnonblock(1)
-            pdev.setfilter("not ether src {}".format(thismac))
-            log_debug("Result of setting device {} in non-blocking mode: {}".format(dev, pdev.getnonblock()))
+            pdev = PcapLiveDevice(dev) # default snaplen is 64k
+            # pcap FIXME
+            # pdev.setfilter("not ether src {}".format(thismac))
             self.pcaps[dev] = pdev
 
     @staticmethod
@@ -179,26 +187,21 @@ class PyLLNet(LLNetBase):
         Thread entrypoint for doing low-level receive and dispatch
         for a single pcap device.
         '''
+        count = 0
         while PyLLNet.running:
-            pkts_processed = pcapdev.dispatch(-1, PyLLNet.__low_level_recv, devname, pktqueue)
-            if pkts_processed > 0:
-                log_debug("Receiver thread {} got {} pkts".format(devname, pkts_processed))
-            time.sleep(0.1)
+            pktinfo = pcapdev.recv_packet(timeout=0.2)
+            if pktinfo is None:
+                continue
+            log_debug("Got packet on device {}".format(devname))
+            pktqueue.put( (devname,pktinfo) )
+            count += 1
+            if count % 100 == 0:
+                stats = pcapdev.stats()
+                log_debug("Periodic device statistics {}: {} received, {} dropped, {} dropped/if".format(devname, stats.ps_recv, stats.ps_drop, stats.ps_ifdrop))
 
         log_debug("Receiver thread for {} exiting".format(devname))
-        nreceived, ndropped, ndroppedif = pcapdev.stats()
-        log_debug("Device statistics {}: {} received, {} dropped, {} dropped/if".format(devname, nreceived, ndropped, ndroppedif))
-
-    @staticmethod
-    def __low_level_recv(ts, rawpkt, *args):
-        '''
-        Callback function for pcap dispatch.  Receive packet and
-        enqueue it for the main thread to deliver back to user code.
-        '''
-        devname, pktqueue = args[0],args[1]
-        ethpkt = ethernet(raw=bytes(rawpkt))
-        log_debug("Got packet on device {}".format(devname))
-        pktqueue.put( (devname,ts,ethpkt) )
+        stats = pcapdev.stats()
+        log_debug("Final device statistics {}: {} received, {} dropped, {} dropped/if".format(devname, stats.ps_recv, stats.ps_drop, stats.ps_ifdrop))
 
     def recv_packet(self, timeout=0.0, timestamp=False):
         '''
@@ -210,24 +213,26 @@ class PyLLNet(LLNetBase):
             device: network device name on which packet was received
                     as a string
             timestamp: floating point value of time at which packet
-                    was received
-            packet: POX ethernet packet object
+                    was received (optionally returned; only if
+                    timestamp=True)
+            packet: Switchyard Packet object.
         '''
         while PyLLNet.running:
             try:
-                rv = self.pktqueue.get(timeout=timeout)
+                dev,pktinfo = self.pktqueue.get(timeout=timeout)
+                pkt = Packet(raw=pktinfo.raw)
                 if timestamp:
-                    return rv
+                    return dev,pktinfo.timestamp,pkt
                 else:
-                    return rv[0],rv[2]
+                    return dev,pkt
             except Empty:
                 raise NoPackets()
         raise Shutdown()
 
     def send_packet(self, dev, packet):
         '''
-        Send a POX packet (must be an ethernet packet object) on the
-        given device (string name of device).
+        Send a Switchyard Packet object on the given device 
+        (string name of device).
 
         Raises an exception if packet object isn't valid, or device
         name isn't recognized.
@@ -238,14 +243,14 @@ class PyLLNet(LLNetBase):
         else:
             if packet is None:
                 raise SwitchyException("No packet object given to send_packet")
-            if not isinstance(packet, ethernet):
-                raise SwitchyException("Packet object given to send_packet is not a POX ethernet packet object")
+            if not isinstance(packet, Packet):
+                raise SwitchyException("Object given to send_packet is not a Packet (it is: {})".format(type(packet)))
             # convert packet to bytes and send it
-            rawpkt = packet.pack()
+            rawpkt = packet.to_bytes()
             log_debug("Sending packet on device {}: {}".format(dev, str(packet)))
-            pdev.inject(rawpkt, len(rawpkt))
+            pdev.send_packet(rawpkt)
 
-def main_real(usercode, dryrun, environment, includeintf, excludeintf):
+def main_real(usercode, dryrun, environment, includeintf, excludeintf, nopdb, verbose):
     '''
     Entrypoint function for non-test ("real") mode.  At this point
     we assume that we are running as root and have pcap module.
@@ -260,6 +265,26 @@ def main_real(usercode, dryrun, environment, includeintf, excludeintf):
     try:
         usercode_entry_point(net)
     except Exception as e:
+        import traceback
+
         log_failure("Exception while running your code: {}".format(e))
+        message = '''{0}
+
+This is the Switchyard equivalent of the blue screen of death.
+Here (repeating what's above) is the failure that occurred:
+'''.format('*'*60, textwrap.fill(str(e), 60))
+        with red():
+            print(message)
+            traceback.print_exc(1)
+            print('*'*60)
+
+        if not nopdb:
+            print('''
+I'm throwing you into the Python debugger (pdb) at the point of failure.
+If you don't want pdb, use the --nopdb flag to avoid this fate.
+''')
+            import pdb
+            pdb.post_mortem()
+
         net.shutdown()
 

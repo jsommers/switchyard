@@ -140,7 +140,7 @@ class LLNetBase(metaclass=ABCMeta):
     '''
     Base class for low-level networking library in Python.
     '''
-    def __init__(self):
+    def __init__(self, name=None):
         self.devupdown_callback = None
         self.devinfo = {} # dict(str -> Interface)
 

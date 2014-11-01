@@ -63,7 +63,7 @@ class FakePyLLNet(LLNetBase):
                     as a string
             timestamp: floating point value of time at which packet
                     was received
-            packet: POX ethernet packet object
+            packet: Switchyard Packet object
         '''
         # check if we're done with test scenario
         if self.scenario.done():

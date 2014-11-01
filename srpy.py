@@ -58,4 +58,4 @@ expect errors, but I'm going to continue anyway.''')
             args.exclude = []
         if args.intf is None:
             args.intf = []
-        main_real(args.usercode, args.dryrun, args.environ, args.intf, args.exclude)
+        main_real(args.usercode, args.dryrun, args.environ, args.intf, args.exclude, args.nopdb, args.verbose)
