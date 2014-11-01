@@ -6,6 +6,7 @@ from ipaddress import IPv4Address
 
 '''
 References: https://www.ietf.org/rfc/rfc792.txt
+            https://tools.ietf.org/html/rfc4884 (extension parameters)
 TCP/IP Illustrated, Vol 1.
 '''
 
@@ -130,7 +131,7 @@ class ICMP(PacketHeaderBase):
         self.__code = value
 
     def __str__(self):
-        return '{} {}:{} {}'.format(self.__class__.__name__, self.icmptype, self.icmpcode, str(self.icmpdata))
+        return '{} {}:{} {}'.format(self.__class__.__name__, self.icmptype.name, self.icmpcode.name, str(self.icmpdata))
 
     def next_header_class(self):
         return None
@@ -206,16 +207,18 @@ class ICMPRedirect(ICMPPacketData):
         return '{} RedirectAddress: {}'.format(super().__str__(), self.__redirectto)
     
 class ICMPDestinationUnreachable(ICMPPacketData):
-    __slots__ = ['__nexthopmtu']
+    __slots__ = ('__origdgramlen', '__nexthopmtu')
     def __init__(self):
         super().__init__()
         self.__nexthopmtu = 0
+        self.__origdgramlen = 0
 
     def to_bytes(self):
-        return b''.join( (struct.pack('!HH', self.__nexthopmtu, 0), super().to_bytes()) )
+        return b''.join( (struct.pack('!xBH', self.__origdgramlen, self.__nexthopmtu), super().to_bytes()) )
 
     def from_bytes(self, raw):
-        fields = struct.unpack('!HH', raw[:4])
+        fields = struct.unpack('!xBH', raw[:4])
+        self.__origdgramlen = fields[0]
         self.__nexthopmtu = fields[1]
         super().from_bytes(raw)
 
@@ -295,7 +298,23 @@ class ICMPEchoReply(ICMPEchoRequest):
             self.identifier, self.sequence, len(self.data), self.data[:2])
 
 class ICMPTimeExceeded(ICMPPacketData):
-    pass
+    __slots__ = ('__origdgramlen',)
+    def __init__(self):
+        super().__init__()
+        self.__origdgramlen = 0
+
+    def to_bytes(self):
+        return b''.join( (struct.pack('!xBH', self.__origdgramlen, 0), super().to_bytes()) )
+        # FIXME: origdgram len should be padded to 4 bytes for v4, and 8 bytes for v6
+
+    def from_bytes(self, raw):
+        fields = struct.unpack('!xBH', raw[:4])
+        self.__origdgramlen = fields[0]
+        self.__nexthopmtu = fields[1]
+        super().from_bytes(raw)
+
+    def __str__(self):
+        return '{} NextHopMTU: {}'.format(super().__str__(), self.__nexthopmtu)
 
 class ICMPAddressMaskRequest(PacketHeaderBase):
     __slots__ = ['__identifier','__sequence','__addrmask']
