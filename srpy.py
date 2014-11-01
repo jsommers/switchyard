@@ -14,7 +14,6 @@ if __name__ == '__main__':
     progname = "srpy"
     parser = argparse.ArgumentParser(prog=progname)
     parser.add_argument("-t", "--test", help="Run {} in testing mode.".format(progname), dest="testmode", action="store_true", default=False)
-    parser.add_argument("-e", "--environment", help="Run {} in a live environment.  Valid live environments are 'linux' and 'mininet'.  Default is 'mininet'.".format(progname), dest="environ", type=str, default="mininet", choices=['mininet', 'linux'])
     parser.add_argument("-i", "--include", metavar='INCLUDE_INTF', help="Specify interface names to include/use for data plane traffic (default: all non-loopback interfaces).", dest="intf", action='append')
     parser.add_argument("-x", "--exclude", metavar='EXCLUDE_INTF', help="Specify interface names to exclude in {}.  All other non-loopback interfaces will be used.".format(progname), dest="exclude", action='append')
     parser.add_argument("-c", "--compile", help="Compile scenario to binary format for distribution.", dest="compile", action="store_true", default=False)
@@ -44,11 +43,7 @@ if __name__ == '__main__':
             log_info("You specified user code to run with compile flag, but I'm just doing compile.")
         main_test(args.compile, args.scenario, args.usercode, args.dryrun, args.nopdb, args.verbose)
     else:
-        if args.environ not in ['linux', 'mininet']:
-            log_failure("Runtime environment {} is not valid.  'linux' and 'mininet' are the only valid environments, currently".format(args.environ))
-            sys.exit(-1)
-
-        if os.getuid() != 0:
+        if os.geteuid() != 0:
             with blue():
                 print ('''
 You're running in real mode, but not as root.  You should
@@ -58,4 +53,4 @@ expect errors, but I'm going to continue anyway.''')
             args.exclude = []
         if args.intf is None:
             args.intf = []
-        main_real(args.usercode, args.dryrun, args.environ, args.intf, args.exclude, args.nopdb, args.verbose)
+        main_real(args.usercode, args.dryrun, args.intf, args.exclude, args.nopdb, args.verbose)

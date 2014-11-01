@@ -16,7 +16,7 @@ def switchy_main(net):
     e.src = '08:00:27:d3:9b:7d'
     e.ethertype = EtherType.IP
     ip = IPv4()
-    ip.tstip = '192.168.100.100'
+    ip.dstip = '192.168.100.100'
     icmp = ICMP()
     for intf in my_interfaces:
         net.send_packet(intf.name, e + ip + icmp)

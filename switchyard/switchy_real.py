@@ -8,7 +8,7 @@ import time
 import threading
 import textwrap
 from queue import Queue,Empty
-from socket import gethostname
+from socket import gethostname, if_nameindex
 
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
@@ -36,7 +36,7 @@ class PyLLNet(LLNetBase):
     on which packets can be received and sent.
     '''
 
-    def __init__(self, environment, includelist, excludelist, name=None):
+    def __init__(self, includelist, excludelist, name=None):
         LLNetBase.__init__(self)
         signal.signal(signal.SIGINT, PyLLNet.__sig_handler)
         signal.signal(signal.SIGTERM, PyLLNet.__sig_handler)
@@ -44,7 +44,7 @@ class PyLLNet(LLNetBase):
         signal.signal(signal.SIGUSR1, PyLLNet.__sig_handler)
         signal.signal(signal.SIGUSR2, PyLLNet.__sig_handler)
 
-        self.devs = self.__initialize_devices(environment, includelist, excludelist)
+        self.devs = self.__initialize_devices(includelist, excludelist)
         self.devinfo = self.__assemble_devinfo()
         self.pcaps = {}
         self.__make_pcaps()
@@ -63,8 +63,8 @@ class PyLLNet(LLNetBase):
     def name(self):
         return self.__name
 
-    def __initialize_devices(self, env, includes, excludes):
-        devs = self.__get_net_devs(env)
+    def __initialize_devices(self, includes, excludes):
+        devs = self.__get_net_devs()
         if not devs:
             raise SwitchyException("No suitable interfaces found.")
 
@@ -108,27 +108,13 @@ class PyLLNet(LLNetBase):
             t.start()
             self.threads.append(t)
 
-    def __get_net_devs(self, environment):
+    def __get_net_devs(self):
         '''
         Internal method.  Find all "valid" network devices
         on the host.  Assumes naming convention in
         project mininet code.
         '''
-        devs = set()
-        xlist = open('/proc/net/dev').readlines()
-        xlist.pop(0) # ignore header line
-        # match standard mininet node naming conventions, e.g.,
-        # router0-eth0, s0-eth0, switch-eth0
-        if environment == 'mininet':
-            pattern = re.compile('^[A-Za-z]+\d*-eth\d+')
-        else:
-            pattern = re.compile('^eth\d+')
-
-        for line in xlist:
-            fields = line.split()
-            if pattern.match(fields[0]):
-                devs.add(fields[0].strip(':'))
-        return devs
+        return set([ name for _,name in if_nameindex() if not name.startswith('lo') ])
 
     def __assemble_devinfo(self):
         '''
@@ -140,7 +126,10 @@ class PyLLNet(LLNetBase):
 
         # beautiful/ugly regular expressions
         hwaddr = re.compile("HWaddr ([0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})")
-        ipmask = re.compile("inet addr:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+Bcast:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+Mask:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})")
+        ether = re.compile("ether ([0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})")
+        ipmasklinux = re.compile("inet addr:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+Bcast:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+Mask:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})")
+        ipmaskosx = re.compile("inet (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+netmask (0x[0-9a-f]{8})")
+        # FIXME: ip6
 
         for devname in self.devs:
             macaddr = None
@@ -151,10 +140,19 @@ class PyLLNet(LLNetBase):
                 mobj = hwaddr.search(line)
                 if mobj:
                     macaddr = EthAddr(mobj.groups()[0])
-                mobj = ipmask.search(line)
+                else:
+                    mobj = ether.search(line)
+                    if mobj:
+                        macaddr = EthAddr(mobj.groups()[0])
+                mobj = ipmasklinux.search(line)
                 if mobj:
                     ipaddr = IPAddr(mobj.groups()[0])
                     mask = IPAddr(mobj.groups()[2])
+                else:
+                    mobj = ipmaskosx.search(line)
+                    if mobj:
+                        ipaddr = IPAddr(mobj.groups()[0])
+                        mask = IPAddr(int(mobj.groups()[1], base=16))
             devinfo[devname] = Interface(devname, macaddr, ipaddr, mask)
         return devinfo
 
@@ -250,7 +248,7 @@ class PyLLNet(LLNetBase):
             log_debug("Sending packet on device {}: {}".format(dev, str(packet)))
             pdev.send_packet(rawpkt)
 
-def main_real(usercode, dryrun, environment, includeintf, excludeintf, nopdb, verbose):
+def main_real(usercode, dryrun, includeintf, excludeintf, nopdb, verbose):
     '''
     Entrypoint function for non-test ("real") mode.  At this point
     we assume that we are running as root and have pcap module.
@@ -261,7 +259,7 @@ def main_real(usercode, dryrun, environment, includeintf, excludeintf, nopdb, ve
     if dryrun:
         log_info("Imported your code successfully.  Exiting dry run.")
         return
-    net = PyLLNet(environment, includeintf, excludeintf)
+    net = PyLLNet(includeintf, excludeintf)
     try:
         usercode_entry_point(net)
     except Exception as e:
