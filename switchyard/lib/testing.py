@@ -648,8 +648,13 @@ def get_scenario_object(sfile):
 
     (str) -> Scenario object
     '''
+    modname = os.path.basename(sfile).rstrip('.py')
+    dirname = os.path.dirname(sfile)
+    if dirname:
+        sys.path.append(dirname)
+
     try:
-        mod = importlib.import_module(sfile.rstrip('.py'))
+        mod = importlib.import_module(modname)
         sobj = getattr(mod, 'scenario')
         return sobj
     except ImportError as ie:
