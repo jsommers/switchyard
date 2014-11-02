@@ -235,6 +235,12 @@ class RawPacketContents(PacketHeaderBase):
     __slots__ = ['__raw'] 
 
     def __init__(self, raw=None):
+        if isinstance(raw, str):
+            raw = bytes(raw, 'utf8')
+        elif isinstance(raw, bytes):
+            pass
+        else:
+            raise TypeError("RawPacketContents must be initialized with either str or bytes.  You gave me {}".format(raw.__class__.__name__))
         self.__raw = raw
 
     def to_bytes(self):
