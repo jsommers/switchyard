@@ -90,6 +90,13 @@ class Packet(object):
         '''
         return [ ph.__class__.__name__ for ph in self.__headers ]
         
+    def prepend_header(self, ph):
+        '''
+        Insert a PacketHeader object at the beginning of this packet
+        (i.e., as the first header of the packet).
+        '''
+        self.__headers.insert(0, ph)
+
     def add_header(self, ph):
         '''
         Add a PacketHeaderBase derived class object, or a raw bytes object

@@ -76,8 +76,7 @@ class ICMP(PacketHeaderBase):
         return struct.calcsize(ICMP.__PACKFMT__) + len(self.__icmpdata.to_bytes())
 
     def checksum(self):
-        return checksum(b''.join( (struct.pack(ICMP.__PACKFMT__, self.__type.value, self.__code.value, 0),
-                                   self.__icmpdata.to_bytes())))
+        return checksum(b''.join( (struct.pack(ICMP.__PACKFMT__, self.__type.value, self.__code.value, 0), self.__icmpdata.to_bytes())))
 
     def to_bytes(self, dochecksum=True):
         '''
@@ -86,8 +85,7 @@ class ICMP(PacketHeaderBase):
         csum = 0
         if dochecksum:
             csum = self.checksum()
-        return b''.join((struct.pack(ICMP.__PACKFMT__, self.__type.value, self.__code.value, csum),
-                         self.__icmpdata.to_bytes()))
+        return b''.join((struct.pack(ICMP.__PACKFMT__, self.__type.value, self.__code.value, csum), self.__icmpdata.to_bytes()))
 
     def from_bytes(self, raw):
         if len(raw) < ICMP.__MINSIZE__:
@@ -256,7 +254,7 @@ class ICMPEchoRequest(PacketHeaderBase):
 
     def to_bytes(self):
         return b''.join( (struct.pack(ICMPEchoRequest.__PACKFMT__,
-            self.__identifier, self.__sequence), self.__data) )
+            self.__identifier, self.__sequence), self.__data ) )
 
     def __str__(self):
         return '{} {} {} ({} data bytes)'.format(self.__class__.__name__,
@@ -289,8 +287,10 @@ class ICMPEchoRequest(PacketHeaderBase):
 
     @data.setter
     def data(self, value):
-        self.__data = value
-
+        if not isinstance(value, bytes):
+            self.__data = bytes(value, 'utf8')
+        else:
+            self.__data = value
 
 class ICMPEchoReply(ICMPEchoRequest):
     def __str__(self):

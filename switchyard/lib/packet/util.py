@@ -24,6 +24,6 @@ def create_ip_arp_request(srchw, srcip, targetip):
     arp.operation = ArpOperation.Request
     arp.senderhwaddr = srchw
     arp.senderprotoaddr = srcip
-    arp.targethwaddr = SpecialEthAddr.ETHER_ANY.value
+    arp.targethwaddr = SpecialEthAddr.ETHER_BROADCAST.value
     arp.targetprotoaddr = targetip
     return ether + arp
