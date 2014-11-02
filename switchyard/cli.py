@@ -120,7 +120,7 @@ Note that any command can be abbreviated by typing enough characters to distingu
         return self.__do_completion(line[:begidx], text, matcher)
 
     def complete_add(self, text, line, begidx, endidx):
-        matcher = {'add ':[ 'node', 'link'] }
+        matcher = {'add ':[ 'host', 'router', 'switch', 'link'] }
         return self.__do_completion(line[:begidx], text, matcher)
 
     def complete_set(self, text, line, begidx, endidx):
@@ -477,6 +477,9 @@ Note that any command can be abbreviated by typing enough characters to distingu
             elif 'yes'.startswith(value.lower()):
                 return True
 
+    def stop(self):
+        self.syss_glue.stop()
+
     def do_exit(self, line):
         if self.unsaved_changes:
             prompt = "You have unsaved topology changes.  Are you sure you want to exit? (y/n)"
@@ -484,8 +487,7 @@ Note that any command can be abbreviated by typing enough characters to distingu
             if not xcontinue:
                 print ("Not exiting.")                 
                 return
-
-        self.syss_glue.stop()
+        self.stop()
         return True
 
     def default(self, line):
@@ -730,7 +732,6 @@ class SyssGlue(object):
         self.xnode[node].nexec.attach_recv_monitor(interface, self.monitors[how](node, interface, *args))
 
     def removeMonitor(self, node, interface, how, *args):
-        # print ("Remove monitor {} {} {} {}".format(node, interface, how, args))
         if (node,interface) in self.__monitors:
             del self.__monitors[(node,interface)]
         self.xnode[node].nexec.remove_recv_monitor(interface)
@@ -744,11 +745,13 @@ def run_simulation(topo, **kwargs):
     substrate (NodeExecutors), and the ingress queue that each node receives
     packets from.
     '''
-    # print ("In run simulation with nodeexec: {}".format(kwargs.get('nodeexec','?')))
     glue = SyssGlue(topo, **kwargs)
     cli = Cli(glue, topo)
-    cli.cmdloop()
-
+    try:
+        cli.cmdloop()
+    except KeyboardInterrupt:
+        print("Received SIGINT --- shutting down.")
+        cli.stop()
 
 def main():
     topofile = None

@@ -45,7 +45,7 @@ if __name__ == '__main__':
         main_test(args.compile, args.scenario, args.usercode, args.dryrun, args.nopdb, args.verbose)
     else:
         if os.geteuid() != 0:
-            with blue():
+            with yellow():
                 print ('''
 You're running in real mode, but not as root.  You should
 expect errors, but I'm going to continue anyway.''')

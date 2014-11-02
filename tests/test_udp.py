@@ -18,9 +18,11 @@ class UDPPacketTests(unittest.TestCase):
         udppkt.srcport = 10000
         udppkt.dstport = 9999
         pkt =  ether + ippkt + udppkt + RawPacketContents('hello, world') 
-        import pdb
-        pdb.set_trace()
         b = pkt.to_bytes()
+
+        newpkt = Packet(raw=b)
+        self.assertEqual(b, newpkt.to_bytes())
+
 
 if __name__ == '__main__':
     unittest.main()
