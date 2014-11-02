@@ -134,7 +134,7 @@ def run_tests(scenario_names, usercode_entry_point, no_pdb, verbose):
             if sobj.get_failed_test() is not None:
                 failurecontext = '\n'.join([' ' * 4 + s for s in textwrap.wrap(sobj.get_failed_test().description, 60)])
                 failurecontext += '\n{}In particular:\n'.format(' ' * 4)
-            failurecontext += '\n'.join([' ' * 8 + s for s in textwrap.wrap(str(exc), 60)])
+            failurecontext += '\n'.join([' ' * 8 + s for s in textwrap.wrap(repr(exc), 60)])
 
             with red():
                 print ('''{}

@@ -66,7 +66,7 @@ class ExactMatch(AbstractMatch):
         return self.__reference == pkt.to_bytes()
 
     def __str__(self):
-        return str(self.__reference)        
+        return str(Packet(raw=self.__reference))
     
 class WildcardMatch(AbstractMatch):
     def __init__(self, pkt, wildcard_fields):
@@ -79,6 +79,10 @@ class WildcardMatch(AbstractMatch):
             'nw_proto': [(IPv4,'protocol'),(IPv6,'protocol')],
             'tp_src': [(TCP,'srcport'),(UDP,'srcport'),(ICMP,'icmptype')],
             'tp_dst': [(TCP,'dstport'),(UDP,'dstport'),(ICMP,'icmpcode')],
+            'arp_tpa': [(Arp,'targetprotoaddr')],
+            'arp_spa': [(Arp,'senderprotoaddr')],
+            'arp_tha': [(Arp,'targethwaddr')],
+            'arp_sha': [(Arp,'senderhwaddr')],
         }
         self.__wildcards = list(wildcard_fields)
         self.__matchvals = self.__buildmvals(pkt)
@@ -139,7 +143,8 @@ class PacketMatcher(object):
         WildcardMatch structure.  this is only used if exact=False, and
         the effect is to wildcard those fields in the WildcardMatch.
         Fields: dl_src, dl_dst, dl_type, dl_vlan, dl_vlan_pcp,
-        nw_src, nw_dst, nw_proto, nw_tos, tp_src, tp_dst
+        nw_src, nw_dst, nw_proto, nw_tos, tp_src, tp_dst,
+        arp_tpa, arp_spa, arp_tha, arp_sha
         '''
         self.exact = bool(kwargs.get('exact', True))
         wildcard = kwargs.get('wildcard', [])
@@ -168,9 +173,6 @@ class PacketMatcher(object):
                 else:
                     raise Exception("Predicates passed to PacketMatcher must be strings or lambdas ({} is of type {})".format(predicates[i], type(predicates[i])))
 
-        #if wildcard is not None and not self.exact:
-        #    for wfield in wildcard:
-        #        self.__matchobj.wildcard(wfield)
 
     def __diagnose(self, packet, results):
         '''
@@ -208,12 +210,6 @@ class PacketMatcher(object):
             of what doesn't match, and throw an exception.
         '''
         results = [ self.__matchobj.match(packet) ]
-        #if self.exact:
-        #    # compare packed packet contents for exact match
-        #    results = [ copy.deepcopy(packet).to_bytes() == self.__matchobj.to_bytes() ]
-        #else:
-        #    # compare with OFP match + wildcards
-        #    results = [ self.__matchobj.matches_with_wildcards(WildcardMatch(packet)) ]
         results += [ fn(packet) for fn in self.predicates ]
         if all(results):
             return True
@@ -224,7 +220,6 @@ class PacketMatcher(object):
         if self.exact:
             return PacketFormatter.format_pkt(self.__matchobj, cls)
         else:
-            # return self.__matchobj.show() is too detailed
             def fmtfield(f, wildcardview='*', convert=None):
                 v = getattr(self.__matchobj, f)
                 if v is None or f.startswith('tp') and v == 0:

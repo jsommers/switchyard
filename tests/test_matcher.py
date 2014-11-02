@@ -25,7 +25,7 @@ class SrpyMatcherTest(unittest.TestCase):
         self.assertTrue(matcher.match(pkt))
 
     def testExactMatch2(self):
-        pkt = Ethernet() + IPv4()
+        pkt = Ethernet() + IPv4() + ICMP()
         matcher = PacketMatcher(pkt, exact=True)
         pkt[0].ethertype = EtherType.ARP
         self.assertRaises(ScenarioFailure, matcher.match, pkt)
@@ -75,6 +75,17 @@ class SrpyMatcherTest(unittest.TestCase):
         pkt[1].dstip = "192.168.1.3"
         self.assertTrue(matcher.match(copy.deepcopy(pkt)))
 
+    def testWildcarding2(self):
+        pkt = create_ip_arp_request('11:22:33:44:55:66', '192.168.1.1', '192.168.10.10')
+        xcopy = copy.deepcopy(pkt)
+        pkt[1].targethwaddr = '00:ff:00:ff:00:ff'
+        matcher = PacketMatcher(pkt, wildcard=['arp_tha'], exact=False)
+        self.assertTrue(matcher.match(xcopy))
+
+        with self.assertRaises(ScenarioFailure):
+            pkt[1].senderhwaddr = '00:ff:00:ff:00:ff'
+            matcher = PacketMatcher(pkt, wildcard=['arp_tha'], exact=False)
+            matcher.match(xcopy)
 
 if __name__ == '__main__':
     setup_logging(False)
