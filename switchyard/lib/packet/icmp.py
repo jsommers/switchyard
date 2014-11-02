@@ -121,15 +121,24 @@ class ICMP(PacketHeaderBase):
         if not isinstance(self.__icmpdata, cls):
             self.__icmpdata = cls()
         self.__type = value
+        codes = ICMPTypeCodeMap[value]
+        for code in codes:
+            if code.value == 0:
+                self.__code = code
+                break
 
     @icmpcode.setter
     def icmpcode(self,value):
-        if not issubclass(value.__class__, Enum):
-            raise ValueError("ICMP code must be an enumerated type")
-        self.__code = value
+        if issubclass(value.__class__, Enum):
+            self.__code = value
+        elif isinstance(value, int):
+            self.__code = ICMPTypeCodeMap[self.icmptype](value)
 
     def __str__(self):
-        return '{} {}:{} {}'.format(self.__class__.__name__, self.icmptype.name, self.icmpcode.name, str(self.icmpdata))
+        typecode = self.icmptype.name
+        if self.icmptype.name != self.icmpcode.name:
+            typecode = '{}:{}'.format(self.icmptype.name, self.icmpcode.name)
+        return '{} {} {}'.format(self.__class__.__name__, typecode, str(self.icmpdata))
 
     def next_header_class(self):
         return None
@@ -147,7 +156,6 @@ class ICMP(PacketHeaderBase):
             raise Exception("ICMP data must be subclass of ICMPPacketData (you gave me {})".format(dataobj.__class__.__name__))
         self.__icmpdata = dataobj
         self.__code = ICMPTypeFromClass(dataobj.__class__)
-
 
 class ICMPPacketData(PacketHeaderBase):
     __slots__ = ['__rawip'] 
@@ -182,8 +190,7 @@ class ICMPPacketData(PacketHeaderBase):
         return self.data == other.data
 
     def __str__(self):
-        return '{} {} bytes of IPv4 ({})'.format(self.__class__.__name__, 
-            len(self.__rawip), self.__rawip[:10])
+        return '{} bytes of IPv4 ({})'.format(len(self.__rawip), self.__rawip[:10])
 
 class ICMPSourceQuench(ICMPPacketData):
     pass
@@ -257,8 +264,7 @@ class ICMPEchoRequest(PacketHeaderBase):
             self.__identifier, self.__sequence), self.__data ) )
 
     def __str__(self):
-        return '{} {} {} ({} data bytes)'.format(self.__class__.__name__,
-            self.__identifier, self.__sequence, len(self.__data))
+        return '{} {} ({} data bytes)'.format(self.__identifier, self.__sequence, len(self.__data))
 
     def __eq__(self, other):
         return self.identifier == other.identifier and \
@@ -293,12 +299,13 @@ class ICMPEchoRequest(PacketHeaderBase):
             self.__data = value
 
 class ICMPEchoReply(ICMPEchoRequest):
-    def __str__(self):
-        return '{} {} {} ({} data bytes, starts with: {})'.format(self.__class__.__name__,
-            self.identifier, self.sequence, len(self.data), self.data[:2])
+    pass
+    #def __str__(self):
+    #    return '{} {} {} ({} data bytes, starts with: {})'.format(self.__class__.__name__,
+    #        self.identifier, self.sequence, len(self.data), self.data[:2])
 
 class ICMPTimeExceeded(ICMPPacketData):
-    __slots__ = ('__origdgramlen',)
+    __slots__ = ('__nexthopmtu','__origdgramlen',)
     def __init__(self):
         super().__init__()
         self.__origdgramlen = 0
@@ -313,8 +320,16 @@ class ICMPTimeExceeded(ICMPPacketData):
         self.__nexthopmtu = fields[1]
         super().from_bytes(raw)
 
+    @property
+    def origdgramlen(self):
+        return self.__origdgramlen
+
+    @origdgramlen.setter
+    def origdgramlen(self, value):
+        self.__origdgramlen = int(value)
+
     def __str__(self):
-        return '{} NextHopMTU: {}'.format(super().__str__(), self.__nexthopmtu)
+        return '{} OrigDgramLen: {}'.format(super().__str__(), self.__origdgramlen)
 
 class ICMPAddressMaskRequest(PacketHeaderBase):
     __slots__ = ['__identifier','__sequence','__addrmask']
@@ -348,7 +363,7 @@ class ICMPAddressMaskRequest(PacketHeaderBase):
         return b''
 
     def __str__(self):
-        return '{} {} {} {}'.format(self.__class__.__name__, self.__identifier, self.__sequence, self.__addrmask)
+        return '{} {} {}'.format(self.__identifier, self.__sequence, self.__addrmask)
 
 
 class ICMPAddressMaskReply(ICMPAddressMaskRequest):

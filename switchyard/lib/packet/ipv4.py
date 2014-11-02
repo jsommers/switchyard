@@ -512,5 +512,5 @@ class IPv4(PacketHeaderBase):
         return self.__csum
 
     def __str__(self):
-        return '{} {}->{} {}'.format(self.__class__.__name__, self.srcip, self.dstip, self.protocol)
+        return '{} {}->{} {}'.format(self.__class__.__name__, self.srcip, self.dstip, self.protocol.name)
 

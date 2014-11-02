@@ -130,7 +130,7 @@ class Packet(object):
 
     def __checkidx(self, index):
         if not isinstance(index, int):
-            raise TypeError("Indexes must be integers")
+            raise TypeError("Indexes must be integers; slices are not supported")
         if index < 0:
             index = len(self.__headers) - index
         if not (0 <= index < len(self.__headers)):

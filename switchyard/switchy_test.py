@@ -129,12 +129,12 @@ def run_tests(scenario_names, usercode_entry_point, no_pdb, verbose):
 
         # if we got an exception, print some contextual information
         # and dump the user into pdb to try to see what happened.
-        if exc is not None:
+        if value is not None:
             failurecontext = ''
             if sobj.get_failed_test() is not None:
                 failurecontext = '\n'.join([' ' * 4 + s for s in textwrap.wrap(sobj.get_failed_test().description, 60)])
                 failurecontext += '\n{}In particular:\n'.format(' ' * 4)
-            failurecontext += '\n'.join([' ' * 8 + s for s in textwrap.wrap(repr(exc), 60)])
+            failurecontext += '\n'.join([' ' * 8 + s for s in textwrap.wrap(repr(value), 60)])
 
             with red():
                 print ('''{}

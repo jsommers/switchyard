@@ -84,6 +84,10 @@ class WildcardMatch(AbstractMatch):
             'arp_tha': [(Arp,'targethwaddr')],
             'arp_sha': [(Arp,'senderhwaddr')],
         }
+
+        # FIXME: modify field names to more closely align with
+        # openflow 1.4 spec, e.g., p147 in v1.4.0 spec: oxm_ofb_match_fields
+
         self.__wildcards = list(wildcard_fields)
         self.__matchvals = self.__buildmvals(pkt)
 

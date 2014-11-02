@@ -72,7 +72,7 @@ class Vlan(PacketHeaderBase):
         return EtherTypeClasses[self.ethertype]
 
     def __str__(self):
-        return '{} {} {}'.format(self.__class__.__name__, self.vlan, self.ethertype)
+        return '{} {} {}'.format(self.__class__.__name__, self.vlan, self.ethertype.name)
 
 EtherTypeClasses = {
     EtherType.IP: IPv4,
@@ -157,7 +157,7 @@ class Ethernet(PacketHeaderBase):
         return self.src == other.src and self.dst == other.dst and self.ethertype == other.ethertype
 
     def __str__(self):
-        return '{} {}->{} {}'.format(self.__class__.__name__, self.src, self.dst, self.ethertype)
+        return '{} {}->{} {}'.format(self.__class__.__name__, self.src, self.dst, self.ethertype.name)
 
 
 if __name__ == '__main__':
