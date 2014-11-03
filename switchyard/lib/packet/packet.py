@@ -114,16 +114,29 @@ class Packet(object):
         self.add_header(ph)
 
     def has_header(self, hdrclass):
-        for hdr in self.__headers:
-            if isinstance(hdr, hdrclass):
-                return True
-        return False
+        return self.get_header(hdrclass) is not None
 
     def get_header(self, hdrclass):
+        '''
+        Return the first header object that is of
+        class hdrclass, or None if the header class isn't
+        found.
+        '''
         for hdr in self.__headers:
             if isinstance(hdr, hdrclass):
                 return hdr
         return None
+
+    def get_header_index(self, hdrclass, startidx=0):
+        '''
+        Return the first index of the header class hdrclass
+        starting at startidx (default=0), or -1 if the
+        header class isn't found in the list of headers.
+        '''
+        for hdridx in range(startidx, len(self.__headers)):
+            if isinstance(self.__headers[hdridx], hdrclass):
+                return hdridx
+        return -1
 
     def __iter__(self):
         return iter(self.__headers)
@@ -197,10 +210,17 @@ class PacketHeaderBase(object, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def tail_serialized(self, raw):
+    def pre_serialize(self, packet, i):
         '''
-        Callback into the header class when any subsequent packet headers
-        are serialized.
+        This method is called by the Switchyard framework just before any
+        subsequent packet headers (i.e., headers that come *after* this one)
+        are serialized into a byte sequence.  The main purpose for this callback
+        is to allow the header to compute its checksum, especially if it needs 
+        access to header fields that are outside its scope (e.g., in IPv6, 
+        the checksum includes the IPv6 source/dst addresses).
+
+        The two parameters to this method are the packet object, and the index
+        of the current header.  This method should not return anything.
         '''
         pass
 
@@ -252,7 +272,7 @@ class RawPacketContents(PacketHeaderBase):
     def next_header_class(self):
         return None
 
-    def tail_serialized(self, raw):
+    def pre_serialize(self, pkt, i):
         return
 
     def size(self):
