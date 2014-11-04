@@ -1,112 +1,70 @@
 import struct
 from ipaddress import IPv6Address
-from enum import Enum
-
-from switchyard.lib.packet.packet import PacketHeaderBase,Packet
+from switchyard.lib.packet.icmp import ICMP, ICMPEchoRequest, ICMPEchoReply
+from switchyard.lib.packet.common import ICMPv6Type, ICMPv6TypeCodeMap
+from switchyard.lib.packet.common import checksum as csum
 
 '''
 References:
-    http://en.wikipedia.org/wiki/ICMPv6
+    http://tools.ietf.org/html/rfc4443
+    Stevens, Fall, TCP/IP Illustrated, Vol 1., 2nd Ed.
 '''
 
 
-class ICMPv6Type(Enum):
-    DestinationUnreachable = 1,
-    PacketTooBig = 2,
-    TimeExceeded = 3,
-    ParameterProblem = 4,
-    PrivateExperimentation1 = 100,
-    PrivateExperimentation2 = 101,
-    EchoRequest = 128,
-    EchoReply = 129
-    MulticastListenerQuery = 130
-    MulticastListenerReport = 131
-    MulticastListenerDone = 132
-    RouterSolicitation = 133
-    RouterAdvertisement = 134
-    NeighborSolicitation = 135
-    NeighborAdvertisement = 136
-    RedirectMessage = 137
-    RouterRenumbering = 138
-    ICMPNodeInformationQuery = 139
-    ICMPNodeInformationResponse = 140
-    InverseNeighborDiscoverySolicitationMessage = 141
-    InverseNeighborDiscoveryAdvertisementMessage = 142
-    Version2MulticastListenerReport = 143
-    HomeAgentAddressDiscoveryRequestMessage = 144
-    HomeAgentAddressDiscoveryReplyMessage = 145
-    MobilePrefixSolicitation = 146
-    MobilePrefixAdvertisement = 147
-    CertificationPathSolicitationMessage = 148
-    CertificationPathAdvertisementMessage = 149
-    ICMPmessagesutilizedbyexperimentalmobilityprotocolssuchasSeamoby = 150
-    MulticastRouterAdvertisement = 151
-    MulticastRouterSolicitation = 152
-    MulticastRouterTermination = 153
-    FMIPv6Messages = 154
-    RPLControlMessage = 155
-    ILNPv6LocatorUpdateMessage = 156
-    DuplicateAddressRequest = 157
-    DuplicateAddressConfirmation = 158
-    Privateexperimentation3 = 200
-    Privateexperimentation4 = 201
-
-class ICMPv6(PacketHeaderBase):
-    __slots__ = ['__type', '__code','__csum','__body' ]
-    __PACKFMT__ = '!BBH'
-    __MINLEN__ = struct.calcsize(__PACKFMT__)
-
+class ICMPv6(ICMP):
     def __init__(self):
-        self.icmptype = ICMPv6Type.EchoRequest
-        self.icmpcode = 0
-        self.__csum = 0
-        self.__body = b''
+        self._valid_types = ICMPv6Type
+        self._valid_codes_map = ICMPv6TypeCodeMap
+        self._classtype_from_icmptype = ICMPv6ClassFromType
+        self._icmptype_from_classtype = ICMPv6TypeFromClass
+        self._type = self._valid_types.EchoRequest
+        self._code = self._valid_codes_map[self._type].EchoRequest
+        self._icmpdata = ICMPv6ClassFromType(self._type)()
+        self._checksum = 0
 
-    @property
-    def icmptype(self):
-        return self.__type
+    def checksum(self):
+        return self._checksum
 
-    @icmptype.setter
-    def icmptype(self, value):
-        self.__type = ICMPv6Type(value)
+    def _compute_checksum(self, srcip, dstip, raw):
+        sep = b''
+        databytes = self._icmpdata.to_bytes()
+        icmpsize = ICMP.__MINSIZE__+len(databytes)
+        return csum(sep.join( (srcip.packed, dstip.packed,
+            struct.pack('!I3xBBB', 
+                ICMP.__MINSIZE__+len(databytes), 58, self._type.value, self._code.value), 
+            databytes) ))
 
-    @property
-    def icmpcode(self):
-        return self.__code
+    def pre_serialize(self, raw, pkt, i):
+        ip6hdr = pkt.get_header('IPv6')
+        assert(ip6hdr is not None)
+        self._compute_checksum(ip6hdr.srcip, ip6hdr.dstip, raw)
 
-    @icmpcode.setter
-    def icmpcode(self, value):
-        self.__code = int(value)
+class ICMPv6EchoRequest(ICMPEchoRequest):
+    pass
 
-    @property
-    def body(self):
-        return self.__body
+class ICMPv6EchoReply(ICMPEchoReply):
+    pass
 
-    def to_bytes(self):
-        raise Exception("Not implemented")
+def construct_icmpv6_class_map():
+    clsmap = {}
+    for xtype in ICMPv6Type:
+        clsname = "ICMPv6{}".format(xtype.name)
+        cls = eval(clsname)
+        clsmap[xtype] = cls
+    def inner(icmptype):
+        icmptype = ICMPv6Type(icmptype)
+        return clsmap.get(icmptype, None)
+    return inner
 
-    def tail_serialized(self, raw):
-        return
+def construct_icmpv6_type_map():
+    typemap = {}
+    for xtype in ICMPv6Type:
+        clsname = "ICMPv6{}".format(xtype.name)
+        cls = eval(clsname)
+        typemap[cls] = xtype
+    def inner(icmpcls):
+        return typemap.get(icmpcls, None)
+    return inner    
 
-    def size(self):
-        raise Exception("Not implemented")
-
-    def __eq__(self, other):
-        raise Exception("Not implemented") # FIXME
-
-    def __str__(self):
-        return "{} {}:{} (bodylen {})".format(self.__class__.__name__, self.icmptype, self.icmpcode, len(self.__body))
-
-    def next_header_class(self):
-        return None
-
-    def from_bytes(self, raw):
-        if len(raw) < ICMPv6.__MINLEN__:
-            raise Exception("Not enough data to unpack ICMPv6")
-
-        self.icmptype = raw[0]
-        self.icmpcode = raw[1]
-        self.__csum = raw[2:4]
-        self.__body = raw[4:]
-        return b''
-
+ICMPv6ClassFromType = construct_icmpv6_class_map()
+ICMPv6TypeFromClass = construct_icmpv6_type_map()

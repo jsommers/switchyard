@@ -100,6 +100,100 @@ class ICMPType(Enum):
     AddressMaskRequest = 17
     AddressMaskReply = 18
 
+ICMPTypeCodeMap = {
+    ICMPType.EchoReply: Enum('EchoReply', {'EchoReply': 0}),
+    ICMPType.DestinationUnreachable: Enum('DestinationUnreachable', {
+        'NetworkUnreachable': 0, 
+        'HostUnreachable': 1, 
+        'ProtocolUnreachable': 2, 
+        'PortUnreachable': 3, 
+        'FragmentationRequiredDFSet': 4, 
+        'SourceRouteFailed': 5, 
+        'DestinationNetworkUnknown': 6,
+        'DestinationHostUnknown': 7,
+        'SourceHostIsolated': 8,
+        'NetworkAdministrativelyProhibited': 9,
+        'HostAdministrativelyProhibited': 10,
+        'NetworkUnreachableForTOS': 11,
+        'HostUnreachableForTOS': 12,
+        'CommunicationAdministrativelyProhibited': 13,
+        'HostPrecedenceViolation': 14,
+        'PrecedenceCutoffInEffect': 15,
+    }),
+    ICMPType.SourceQuench: Enum('SourceQuench', { 'SourceQuench': 0 }),
+    ICMPType.Redirect: Enum('Redirect', {
+        'RedirectForNetwork': 0,
+        'RedirectForHost': 1,
+        'RedirectForTOSAndNetwork': 2,
+        'RedirectForTOSAndHost': 3
+    }),
+    ICMPType.EchoRequest: Enum('EchoRequest', { 'EchoRequest': 0 }),
+    ICMPType.RouterAdvertisement: Enum('RouterAdvertisement', { 'RouterAdvertisement': 0 }),
+    ICMPType.RouterSolicitation: Enum('RouterSolicitation', { 'RouterSolicitation': 0 }),
+    ICMPType.TimeExceeded: Enum('TimeExceeded', {
+        'TTLExpired': 0,
+        'FragmentReassemblyTimeExceeded': 1,
+    }),
+    ICMPType.ParameterProblem: Enum('BadIPHeader', { 
+        'PointerIndicatesError': 0,
+        'MissingRequiredOption': 1,
+        'BadLength': 2
+    }),
+    ICMPType.Timestamp: Enum('Timestamp', { 'Timestamp': 0 }),
+    ICMPType.TimestampReply: Enum('TimestampReply', { 'TimestampReply': 0 }),
+    ICMPType.InformationRequest: Enum('InformationRequest', { 'InformationRequest': 0 }),
+    ICMPType.InformationReply: Enum('InformationReply', { 'InformationReply': 0 }),
+    ICMPType.AddressMaskRequest: Enum('AddressMaskRequest', { 'AddressMaskRequest': 0 }),
+    ICMPType.AddressMaskReply: Enum('AddressMaskReply', { 'AddressMaskReply': 0 }),
+}
+
+class ICMPv6Type(Enum):
+    # DestinationUnreachable = 1
+    # PacketTooBig = 2
+    # TimeExceeded = 3
+    # ParameterProblem = 4
+    # PrivateExperimentation1 = 100
+    # PrivateExperimentation2 = 101
+    EchoRequest = 128
+    EchoReply = 129
+    # MulticastListenerQuery = 130
+    # MulticastListenerReport = 131
+    # MulticastListenerDone = 132
+    # RouterSolicitation = 133
+    # RouterAdvertisement = 134
+    # NeighborSolicitation = 135
+    # NeighborAdvertisement = 136
+    # RedirectMessage = 137
+    # RouterRenumbering = 138
+    # ICMPNodeInformationQuery = 139
+    # ICMPNodeInformationResponse = 140
+    # InverseNeighborDiscoverySolicitationMessage = 141
+    # InverseNeighborDiscoveryAdvertisementMessage = 142
+    # Version2MulticastListenerReport = 143
+    # HomeAgentAddressDiscoveryRequestMessage = 144
+    # HomeAgentAddressDiscoveryReplyMessage = 145
+    # MobilePrefixSolicitation = 146
+    # MobilePrefixAdvertisement = 147
+    # CertificationPathSolicitationMessage = 148
+    # CertificationPathAdvertisementMessage = 149
+    # ICMPmessagesutilizedbyexperimentalmobilityprotocolssuchasSeamoby = 150
+    # MulticastRouterAdvertisement = 151
+    # MulticastRouterSolicitation = 152
+    # MulticastRouterTermination = 153
+    # FMIPv6Messages = 154
+    # RPLControlMessage = 155
+    # ILNPv6LocatorUpdateMessage = 156
+    # DuplicateAddressRequest = 157
+    # DuplicateAddressConfirmation = 158
+    # Privateexperimentation3 = 200
+    # Privateexperimentation4 = 201
+
+
+ICMPv6TypeCodeMap = {
+   ICMPv6Type.EchoRequest: Enum('EchoRequest', {'EchoRequest': 0}),    
+   ICMPv6Type.EchoReply: Enum('EchoReply', {'EchoReply': 0}),    
+}
+
 # the following checksum function was taken from the POX openflow controller
 
 # Copyright 2011,2012 James McCauley

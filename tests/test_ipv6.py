@@ -1,5 +1,5 @@
 from switchyard.lib.packet import *
-from switchyard.lib.address import EthAddr, IPAddr, SpecialIPv4Addr
+from switchyard.lib.address import SpecialIPv6Addr
 import unittest 
 
 class IPv6PacketTests(unittest.TestCase):

@@ -33,11 +33,10 @@ IPTypeClasses = {
 }
 
 
-
 class IPv6(PacketHeaderBase):
-    __slots__ = ['__trafficclass','__flowlabel','__ttl',
-                 '__protocol','__payloadlen',
-                 '__srcip','__dstip','__extheaders']
+    __slots__ = ['_trafficclass','_flowlabel','_ttl',
+                 '_protocol','_payloadlen',
+                 '_srcip','_dstip','_extheaders']
     __PACKFMT__ = '!BBHHBB16s16s'
     __MINSIZE__ = struct.calcsize(__PACKFMT__)
 
@@ -46,23 +45,23 @@ class IPv6(PacketHeaderBase):
         self.flowlabel = 0
         self.ttl = 255
         self.protocol = IPProtocol.ICMP
-        self.__payloadlen = 0
+        self._payloadlen = 0
         self.srcip = SpecialIPv6Addr.UNDEFINED.value
         self.dstip = SpecialIPv6Addr.UNDEFINED.value
-        self.__extheaders = []
+        self._extheaders = []
         
     def size(self):
         return IPv6.__MINSIZE__ + 0 # FIXME extension headers
 
-    def tail_serialized(self, raw):
-        self.__payloadlen = len(raw)
+    def pre_serialize(self, raw, pkt, i):
+        self._payloadlen = len(raw)
 
     def to_bytes(self):
         return struct.pack(IPv6.__PACKFMT__,
             6 << 4 | self.trafficclass >> 4,
             (self.trafficclass & 0x0f) << 4 | (self.flowlabel & 0xf0000) >> 16,
             self.flowlabel & 0x0ffff,
-            self.__payloadlen, self.protocol.value,
+            self._payloadlen, self.protocol.value,
             self.ttl, self.srcip.packed, self.dstip.packed)
 
     def from_bytes(self, raw):
@@ -74,7 +73,7 @@ class IPv6(PacketHeaderBase):
             raise Exception("Trying to parse IPv6 header, but IP version is not 6! ({})".format(ipversion))
         self.trafficclass = (fields[0] & 0x0f) << 4 | (fields[1] >> 4)
         self.flowlabel = (fields[1] & 0x0f) << 16 | fields[2]
-        self.__payloadlen = fields[3]
+        self._payloadlen = fields[3]
         self.protocol = IPProtocol(fields[4])
         self.ttl = fields[5]
         self.srcip = IPv6Address(fields[6])
@@ -83,7 +82,13 @@ class IPv6(PacketHeaderBase):
         return raw[IPv6.__MINSIZE__:]
 
     def __eq__(self, other):
-        raise Exception("Not implemented") # FIXME
+        return self._trafficclass == other._trafficclass and \
+            self._flowlabel == other._flowlabel and \
+            self._ttl == other._ttl and \
+            self._protocol == other._protocol and \
+            self._srcip == other._srcip and \
+            self._dstip == other._dstip and \
+            self._extheaders == other._extheaders
 
     def next_header_class(self):
         cls = IPTypeClasses.get(self.protocol, None)
@@ -94,51 +99,51 @@ class IPv6(PacketHeaderBase):
     # accessors and mutators
     @property
     def trafficclass(self):
-        return self.__trafficclass
+        return self._trafficclass
 
     @trafficclass.setter
     def trafficclass(self, value):
-        self.__trafficclass = value
+        self._trafficclass = value
 
     @property
     def flowlabel(self):
-        return self.__flowlabel
+        return self._flowlabel
 
     @flowlabel.setter
     def flowlabel(self, value):
-        self.__flowlabel = value
+        self._flowlabel = value
 
     @property
     def protocol(self):
-        return self.__protocol
+        return self._protocol
 
     @protocol.setter
     def protocol(self, value):
-        self.__protocol = IPProtocol(value)
+        self._protocol = IPProtocol(value)
 
     @property
     def ttl(self):
-        return self.__ttl
+        return self._ttl
 
     @ttl.setter
     def ttl(self, value):
-        self.__ttl = value
+        self._ttl = value
 
     @property
     def srcip(self):
-        return self.__srcip
+        return self._srcip
 
     @srcip.setter
     def srcip(self, value):
-        self.__srcip = IPv6Address(value)
+        self._srcip = IPv6Address(value)
 
     @property
     def dstip(self):
-        return self.__dstip
+        return self._dstip
 
     @dstip.setter
     def dstip(self, value):
-        self.__dstip = IPv6Address(value)
+        self._dstip = IPv6Address(value)
 
     def __str__(self):
         return '{} {}->{} {}'.format(self.__class__.__name__, self.srcip, self.dstip, self.protocol.name) 

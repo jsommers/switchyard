@@ -10,7 +10,17 @@ class ICMPPacketTests(unittest.TestCase):
             i.icmptype = 0
 
         with self.assertRaises(ValueError):
-            i.icmpcode = 0
+            i.icmpcode = ICMPType.EchoRequest
+
+        with self.assertRaises(ValueError):
+            i.icmpcode = 1
+
+    def testValidCode(self):
+        i = ICMP()
+        i.icmpcode = 0
+        self.assertEqual(i.icmpcode, ICMPTypeCodeMap[i.icmptype].EchoRequest)
+        i.icmpcode = ICMPTypeCodeMap[i.icmptype].EchoRequest
+        self.assertEqual(i.icmpcode, ICMPTypeCodeMap[i.icmptype].EchoRequest)
 
     def testSerializeEchoReq(self):
         i = ICMP() # default to EchoRequest with zero seq and ident
@@ -28,7 +38,6 @@ class ICMPPacketTests(unittest.TestCase):
         i.from_bytes(b'\x04\x00\xfb\xff\x00\x00\x00\x00')
         self.assertEqual(i.icmptype, ICMPType.SourceQuench)
         self.assertIsInstance(i.icmpdata, ICMPSourceQuench)
-        print (i)
 
 
 if __name__ == '__main__':

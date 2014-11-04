@@ -32,5 +32,5 @@ class IGMP(PacketHeaderBase):
     def next_header_class(self):
         return None
 
-    def tail_serialized(self, raw):
+    def pre_serialize(self, raw, pkt, i):
         return None

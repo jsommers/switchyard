@@ -5,14 +5,14 @@ class Packet(object):
     '''
     Base class for packet headers.
     '''
-    __slots__ = ['__headers','__raw']
+    __slots__ = ['_headers','_raw']
 
     def __init__(self, raw=None, first_header=None):
-        self.__headers = []
-        self.__raw = None
+        self._headers = []
+        self._raw = None
         if raw:
-            self.__raw = raw
-            self.__parse(raw, first_header)            
+            self._raw = raw
+            self._parse(raw, first_header)            
 
     def __len__(self):
         '''Return the packed length of this packet, and all
@@ -21,22 +21,22 @@ class Packet(object):
 
     def size(self):
         '''Return the packed length of this header'''
-        return sum([len(ph) for ph in self.__headers])
+        return sum([len(ph) for ph in self._headers])
 
     def to_bytes(self):
         '''
         Returns serialized bytes object representing all headers/
         payloads in this packet'''
         rawlist = []
-        i = len(self.__headers)-1
+        i = len(self._headers)-1
         while i >= 0:
-            self.__headers[i].tail_serialized(b''.join(rawlist))
-            rawlist.insert(0, self.__headers[i].to_bytes())
+            self._headers[i].pre_serialize(b''.join(rawlist), self, i)
+            rawlist.insert(0, self._headers[i].to_bytes())
             i -= 1
-        self.__raw = b''.join(rawlist)
-        return self.__raw
+        self._raw = b''.join(rawlist)
+        return self._raw
 
-    def __parse(self, raw, next_cls):
+    def _parse(self, raw, next_cls):
         '''
         Parse a raw bytes object and construct the list of packet header
         objects (and possible remaining bytes) that are part of this packet.
@@ -45,7 +45,7 @@ class Packet(object):
             from switchyard.lib.packet import Ethernet
             next_cls = Ethernet
 
-        self.__headers = []
+        self._headers = []
         while issubclass(next_cls, PacketHeaderBase):
             packet_header_obj = next_cls()
             raw = packet_header_obj.from_bytes(raw)
@@ -88,14 +88,14 @@ class Packet(object):
         '''
         Return a list of packet header names in this packet.
         '''
-        return [ ph.__class__.__name__ for ph in self.__headers ]
+        return [ ph.__class__.__name__ for ph in self._headers ]
         
     def prepend_header(self, ph):
         '''
         Insert a PacketHeader object at the beginning of this packet
         (i.e., as the first header of the packet).
         '''
-        self.__headers.insert(0, ph)
+        self._headers.insert(0, ph)
 
     def add_header(self, ph):
         '''
@@ -105,7 +105,7 @@ class Packet(object):
         considered application payload and not a header per se.
         '''
         if isinstance(ph, PacketHeaderBase) or isinstance(ph, bytes):
-            self.__headers.append(ph)            
+            self._headers.append(ph)            
             return self
         raise Exception("Payload for a packet header must be an object that is a subclass of PacketHeaderBase, or a bytes object.")
 
@@ -114,7 +114,15 @@ class Packet(object):
         self.add_header(ph)
 
     def has_header(self, hdrclass):
+        if isinstance(hdrclass, str):
+            return self.get_header_by_name(hdrclass) is not None
         return self.get_header(hdrclass) is not None
+
+    def get_header_by_name(self, hdrname):
+        for hdr in self._headers:
+            if hdr.__class__.__name__ == hdrname:
+                return hdr
+        return None
 
     def get_header(self, hdrclass):
         '''
@@ -122,7 +130,10 @@ class Packet(object):
         class hdrclass, or None if the header class isn't
         found.
         '''
-        for hdr in self.__headers:
+        if isinstance(hdrclass, str):
+            return self.get_header_by_name(hdrclass)
+
+        for hdr in self._headers:
             if isinstance(hdr, hdrclass):
                 return hdr
         return None
@@ -133,42 +144,42 @@ class Packet(object):
         starting at startidx (default=0), or -1 if the
         header class isn't found in the list of headers.
         '''
-        for hdridx in range(startidx, len(self.__headers)):
-            if isinstance(self.__headers[hdridx], hdrclass):
+        for hdridx in range(startidx, len(self._headers)):
+            if isinstance(self._headers[hdridx], hdrclass):
                 return hdridx
         return -1
 
     def __iter__(self):
-        return iter(self.__headers)
+        return iter(self._headers)
 
-    def __checkidx(self, index):
-        if not isinstance(index, int):
-            raise TypeError("Indexes must be integers; slices are not supported")
-        if index < 0:
-            index = len(self.__headers) - index
-        if not (0 <= index < len(self.__headers)):
-            raise IndexError("Index out of range")
-        return index
+    def _checkidx(self, index):
+        if isinstance(index, int):
+            if index < 0:
+                index = len(self._headers) - index
+            if not (0 <= index < len(self._headers)):
+                raise IndexError("Index out of range")
+            return index
+        raise TypeError("Indexes must be integers (slices are not supported)")
         
     def __getitem__(self, index):
-        index = self.__checkidx(index)
-        return self.__headers[index]
+        index = self._checkidx(index)
+        return self._headers[index]
 
     def __setitem__(self, index, value):
-        index = self.__checkidx(index)
+        index = self._checkidx(index)
         if not isinstance(value, (PacketHeaderBase, bytes)):
             raise TypeError("Can't assign a non-packet header in a packet")
-        self.__headers[index] = value
+        self._headers[index] = value
 
     def __contains__(self, obj):
-        for ph in self.__headers:
+        for ph in self._headers:
             if ph == obj:
                 return True
         return False
 
     def __delitem__(self, index):
-        index = self.__checkidx(index)
-        self.__headers = self.__headers[:index] + self.__headers[(index+1):] 
+        index = self._checkidx(index)
+        self._headers = self._headers[:index] + self._headers[(index+1):] 
 
     def __eq__(self, other):
         if not isinstance(other, Packet):
@@ -181,10 +192,10 @@ class Packet(object):
         return True
 
     def __str__(self):
-        return ' | '.join([str(ph) for ph in self.__headers if isinstance(ph,PacketHeaderBase)])
+        return ' | '.join([str(ph) for ph in self._headers if isinstance(ph,PacketHeaderBase)])
 
 
-class PacketHeaderBase(object, metaclass=ABCMeta):
+class PacketHeaderBase(metaclass=ABCMeta):
     '''
     Base class for packet headers.
     '''
@@ -210,7 +221,7 @@ class PacketHeaderBase(object, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def pre_serialize(self, packet, i):
+    def pre_serialize(self, raw, packet, i):
         '''
         This method is called by the Switchyard framework just before any
         subsequent packet headers (i.e., headers that come *after* this one)
@@ -219,8 +230,10 @@ class PacketHeaderBase(object, metaclass=ABCMeta):
         access to header fields that are outside its scope (e.g., in IPv6, 
         the checksum includes the IPv6 source/dst addresses).
 
-        The two parameters to this method are the packet object, and the index
-        of the current header.  This method should not return anything.
+        The three parameters to this method are the raw (bytes) representation
+        of the "tail" of the packet (i.e., headers that come after this one),
+        a reference to the full packet object, and the index of the current header.  
+        This method should not return anything.
         '''
         pass
 
@@ -252,7 +265,7 @@ class PacketHeaderBase(object, metaclass=ABCMeta):
 
 
 class RawPacketContents(PacketHeaderBase):
-    __slots__ = ['__raw'] 
+    __slots__ = ['_raw'] 
 
     def __init__(self, raw=None):
         if isinstance(raw, str):
@@ -261,29 +274,29 @@ class RawPacketContents(PacketHeaderBase):
             pass
         else:
             raise TypeError("RawPacketContents must be initialized with either str or bytes.  You gave me {}".format(raw.__class__.__name__))
-        self.__raw = raw
+        self._raw = raw
 
     def to_bytes(self):
-        return self.__raw    
+        return self._raw    
 
     def from_bytes(self, raw):
-        self.__raw = bytes(raw)
+        self._raw = bytes(raw)
 
     def next_header_class(self):
         return None
 
-    def pre_serialize(self, pkt, i):
+    def pre_serialize(self, raw, pkt, i):
         return
 
     def size(self):
-        return len(self.__raw)
+        return len(self._raw)
 
     def __eq__(self, other):
         return self.to_bytes() == other.to_bytes()
 
     def __str__(self):
         ellipse = '...'
-        if len(self.__raw) < 10:
+        if len(self._raw) < 10:
             ellipse = ''
         return '{} ({} bytes) {}{}'.format(self.__class__.__name__,
-            len(self.__raw), self.__raw[:10], ellipse)
+            len(self._raw), self._raw[:10], ellipse)

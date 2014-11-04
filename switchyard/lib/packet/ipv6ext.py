@@ -19,44 +19,44 @@ References:
 '''
 
 class IPv6ExtensionHeader(PacketHeaderBase):
-    __slots__ = ['__nextheader','__hdrextlen', '__data']
+    __slots__ = ['_nextheader','_hdrextlen', '_data']
     __PACKFMT__ = '!BB'
     __MINLEN__ = 2
 
     def __init__(self):
-        self.__nextheader = None
-        self.__hdrextlen = 0
-        self.__data = b''
+        self._nextheader = None
+        self._hdrextlen = 0
+        self._data = b''
 
-    def tail_serialized(self):
+    def pre_serialize(self, raw, pkt, i):
         pass
 
     def size(self):
-        return self.__hdrextlen
+        return self._hdrextlen
 
     @property
     def nextheader(self):
-        return self.__nextheader
+        return self._nextheader
 
     @nextheader.setter
     def nextheader(self, value):
-        self.__nextheader = IPProtocol(value)
+        self._nextheader = IPProtocol(value)
 
     @property
     def hdrextlen(self):
-        return self.__hdrextlen
+        return self._hdrextlen
 
     @hdrextlen.setter
     def hdrextlen(self, value):
-        self.__hdrextlen = int(value)
+        self._hdrextlen = int(value)
 
     @property
     def data(self):
-        return self.__data
+        return self._data
 
     @data.setter
     def data(self, value):
-        self.__data = bytes(value) 
+        self._data = bytes(value) 
 
     def next_header_class(self):
         cls = IPTypeClasses.get(self.nextheader, None) 
@@ -76,7 +76,7 @@ class IPv6ExtensionHeader(PacketHeaderBase):
         if len(raw) < self.hdrextlen:
             raise Exception("Not enough data to unpack IPv6ExtensionHeader")
 
-        self.__data = raw[:self.hdrextlen]
+        self._data = raw[:self.hdrextlen]
         return raw[self.hdrextlen:]
 
     def __eq__(self, other):
@@ -84,37 +84,37 @@ class IPv6ExtensionHeader(PacketHeaderBase):
 
 
 class IPv6RouteOption(IPv6ExtensionHeader):
-    __slots__ = ['__routingtype', '__segmentsleft','__addresses']
+    __slots__ = ['_routingtype', '_segmentsleft','_addresses']
     def __init__(self):
         super().__init__()
-        self.__routingtype = 0
-        self.__addresses = []
+        self._routingtype = 0
+        self._addresses = []
 
     def __str__(self):
         return "{} ({} addresses)".format(self.__class__.__name__, len(self.__addresses))
 
     def from_bytes(self, raw):
         remain = super().from_bytes(raw)
-        self.__routingtype = self.data[0]
-        self.__segmentsleft = self.data[1]
-        if self.__routingtype == 0:
+        self._routingtype = self.data[0]
+        self._segmentsleft = self.data[1]
+        if self._routingtype == 0:
             rawaddrs = self.data[8:]
             for i in range(0,len(rawaddrs),16):
-                self.__addresses.append(IPv6Address(addrs[i:(i+16)]))
+                self._addresses.append(IPv6Address(addrs[i:(i+16)]))
         return remain
 
 class IPv6Fragment(IPv6ExtensionHeader):
-    __slots__ = ['__id','__offset','__morefragments']
+    __slots__ = ['_id','_offset','_morefragments']
     __PACKFMT__ = '!BBHI'
     __MINLEN__ = struct.calcsize(__PACKFMT__)
 
     def __init__(self):
         super().__init__()
-        self.__id = self.__offset = 0
-        self.__morefragments = False
+        self._id = self._offset = 0
+        self._morefragments = False
 
     def __str__(self):
-        return "{} (id: {} offset: {} mf: {})".format(self.__class__.__name__, self.__id, self.__offset, self.__morefragments)
+        return "{} (id: {} offset: {} mf: {})".format(self.__class__.__name__, self._id, self._offset, self._morefragments)
 
     def from_bytes(self, raw):
         # can't call super for this one since it doesn't follow standard
@@ -125,20 +125,20 @@ class IPv6Fragment(IPv6ExtensionHeader):
         fields = struct.unpack(IPv6Fragment.__PACKFMT__, raw[:IPv6Fragment.__MINLEN__])
         self.nextheader = fields[0]
         self.exthdrlen = 8 # fake this out; the header is 8 bytes
-        self.__offset = int(fields[2] >> 3)
-        self.__mf = bool(fields[2] & 0x0001)
-        self.__id = fields[3]
+        self._offset = int(fields[2] >> 3)
+        self._mf = bool(fields[2] & 0x0001)
+        self._id = fields[3]
         return raw[IPv6Fragment.__MINLEN__:]
 
 class IPv6HopOption(IPv6ExtensionHeader):
-    __slots__ = ['__options' ]
+    __slots__ = ['_options' ]
 
     def __init__(self):
         super().__init__()
-        self.__options = []
+        self._options = []
 
     def __str__(self):
-        return "{} ({} options)".format(self.__class__.__name__, len(self.__options))
+        return "{} ({} options)".format(self.__class__.__name__, len(self._options))
 
     def from_bytes(self, raw):
         remain = super().from_bytes(raw)
@@ -154,7 +154,7 @@ class IPv6HopOption(IPv6ExtensionHeader):
             optlen = raw[1]
             optdata = raw[2:(optlen+2)]
             if opttype != 1:
-                self.__options.append( (opttype, optlen, optdata) )
+                self._options.append( (opttype, optlen, optdata) )
             raw = raw[(optlen+2):]
         return remain
 

@@ -23,7 +23,7 @@ class Vlan(PacketHeaderBase):
        12 bits: vlan id
     '''
 
-    __slots__ = ['__vlanid', '__ethertype']
+    __slots__ = ['_vlanid', '_ethertype']
     __PACKFMT__ = '!HH'
     __MINSIZE__ = struct.calcsize(__PACKFMT__)
 
@@ -34,19 +34,19 @@ class Vlan(PacketHeaderBase):
 
     @property
     def vlan(self):
-        return self.__vlanid
+        return self._vlanid
 
     @vlan.setter
     def vlan(self, value):
-        self.__vlanid = int(value) & 0x0fff # mask out high-order 4 bits
+        self._vlanid = int(value) & 0x0fff # mask out high-order 4 bits
 
     @property
     def ethertype(self):
-        return self.__ethertype
+        return self._ethertype
 
     @ethertype.setter
     def ethertype(self, value):
-        self.__ethertype = EtherType(value)
+        self._ethertype = EtherType(value)
 
     def from_bytes(self, raw):
         if len(raw) < Vlan.__MINSIZE__:
@@ -57,7 +57,7 @@ class Vlan(PacketHeaderBase):
         return raw[Vlan.__MINSIZE__:]
 
     def to_bytes(self):
-        return struct.pack(Vlan.__PACKFMT__, self.__vlanid, self.__ethertype.value)
+        return struct.pack(Vlan.__PACKFMT__, self._vlanid, self._ethertype.value)
 
     def __eq__(self, other):
         return self.vlan == other.vlan and self.ethertype == other.ethertype
@@ -65,7 +65,7 @@ class Vlan(PacketHeaderBase):
     def size(self):
         return Vlan.__MINSIZE__
 
-    def tail_serialized(self, raw):
+    def pre_serialize(self, raw, pkt, i):
         pass
 
     def next_header_class(self):
@@ -84,48 +84,48 @@ EtherTypeClasses = {
 
 
 class Ethernet(PacketHeaderBase):
-    __slots__ = ['__src','__dst','__ethertype']
+    __slots__ = ['_src','_dst','_ethertype']
     __PACKFMT__ = '!6s6sH'
     __MINSIZE__ = struct.calcsize(__PACKFMT__)
 
     def __init__(self, src=SpecialEthAddr.ETHER_ANY.value, dst=SpecialEthAddr.ETHER_ANY.value,ethertype=EtherType.IP):
         PacketHeaderBase.__init__(self)
-        self.__src = EthAddr(src)
-        self.__dst = EthAddr(dst)
-        self.__ethertype = EtherType(ethertype)
+        self._src = EthAddr(src)
+        self._dst = EthAddr(dst)
+        self._ethertype = EtherType(ethertype)
 
     def size(self):
         return struct.calcsize(Ethernet.__PACKFMT__)
 
     @property
     def src(self):
-        return self.__src
+        return self._src
 
     @src.setter
     def src(self, value):
-        self.__src = EthAddr(value)
+        self._src = EthAddr(value)
 
     @property
     def dst(self):
-        return self.__dst
+        return self._dst
 
     @dst.setter
     def dst(self, value):
-        self.__dst = EthAddr(value)
+        self._dst = EthAddr(value)
 
     @property
     def ethertype(self):
-        return self.__ethertype
+        return self._ethertype
 
     @ethertype.setter
     def ethertype(self, value):
-        self.__ethertype = EtherType(value)
+        self._ethertype = EtherType(value)
 
     def to_bytes(self):
         '''
         Return packed byte representation of the Ethernet header.
         '''
-        return struct.pack(Ethernet.__PACKFMT__, self.__dst.packed, self.__src.packed, self.__ethertype.value)
+        return struct.pack(Ethernet.__PACKFMT__, self._dst.packed, self._src.packed, self._ethertype.value)
 
     def from_bytes(self, raw):
         '''Return an Ethernet object reconstructed from raw bytes, or an
@@ -150,7 +150,7 @@ class Ethernet(PacketHeaderBase):
             print ("Warning: no class exists to parse next protocol type: {}".format(self.ethertype))
         return cls
 
-    def tail_serialized(self, raw):
+    def pre_serialize(self, raw, pkt, i):
         pass
 
     def __eq__(self, other):

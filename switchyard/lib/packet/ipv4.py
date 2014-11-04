@@ -27,13 +27,13 @@ IPTypeClasses = {
 
 
 class IPOption(object, metaclass=ABCMeta):
-    __slots__ = ['__optnum']
+    __slots__ = ['_optnum']
     def __init__(self, optnum):
-        self.__optnum = IPOptionNumber(optnum)
+        self._optnum = IPOptionNumber(optnum)
 
     @property
     def optnum(self):
-        return self.__optnum
+        return self._optnum
 
     @abstractmethod
     def length(self):
@@ -114,17 +114,17 @@ class IPOptionSecurity(IPOption):
         return self.length()
 
 class IPOptionXRouting(IPOption):
-    __slots__ = ['__routedata','__ptr']
+    __slots__ = ['_routedata','_ptr']
     def __init__(self, ipoptnum):
         super().__init__(ipoptnum)
-        self.__routedata = []
+        self._routedata = []
 
     def length(self):
-        return 3+len(self.__routedata)*4
+        return 3+len(self._routedata)*4
 
     def to_bytes(self):
         raw = struct.pack('!BBB',(0x80|self.optnum.value),self.length())
-        for ipaddr in self.__routedata:
+        for ipaddr in self._routedata:
             raw += ipaddr.packed
         return raw
 
@@ -134,22 +134,22 @@ class IPOptionXRouting(IPOption):
         pointer = raw[2]
         numaddrs = (length - 3 // 4)
         for i in range(numaddrs):
-            self.__routedata.append(IPV4Address(raw[(3+(i*4)):(7+(i*4))]))
-        self.__ptr = (pointer // 4) - 1
+            self._routedata.append(IPV4Address(raw[(3+(i*4)):(7+(i*4))]))
+        self._ptr = (pointer // 4) - 1
         return length
 
     @property
     def pointer(self):
-        return self.__ptr
+        return self._ptr
 
     @pointer.setter
     def pointer(self, value):
-        if not (0 <= value < len(self.__routedata)):
-            raise Exception("Invalid pointer value; must be 0..{}".format(len(self.__routedata)-1))
-        self.__ptr = value
+        if not (0 <= value < len(self._routedata)):
+            raise Exception("Invalid pointer value; must be 0..{}".format(len(self._routedata)-1))
+        self._ptr = value
 
     def route_data(self, index):
-        return self.__routedata[index]
+        return self._routedata[index]
 
 class IPOptionLooseSourceRouting(IPOptionXRouting):
     def __init__(self):
@@ -165,7 +165,7 @@ class IPOptionRecordRoute(IPOptionXRouting):
 
 class IPOptionStreamId(IPOption):
     __PACKFMT__ = '!BBH'
-    __slots__ = ['__streamid']
+    __slots__ = ['_streamid']
 
     def __init__(self):
         super().__init__(IPOptionNumber.StreamID)
@@ -175,50 +175,50 @@ class IPOptionStreamId(IPOption):
 
     def to_bytes(self):
         return struct.pack(IPOptionStreamID.__PACKFMT__,
-            (self.optnum | 0x80), 4, self.__streamid)
+            (self.optnum | 0x80), 4, self._streamid)
 
     def from_bytes(self, raw):
         fields = struct.unpack(IPOptionStreamID.__PACKFMT__, raw[:4])
-        self.__streamid = fields[2]
+        self._streamid = fields[2]
         return self.length()
 
     @property
     def streamid(self):
-        return self.__streamid
+        return self._streamid
 
     @streamid.setter
     def streamid(self, value):
-        self.__streamid = value
+        self._streamid = value
 
 TimestampEntry = namedtuple('TimestampEntry', ['ipv4addr','timestamp'])
 
 class IPOptionTimestamp(IPOption):
-    __slots__ = ['__entries','__ptr','__flag']
+    __slots__ = ['_entries','_ptr','_flag']
 
     def __init__(self):
         super().__init__(IPOptionNumber.Timestamp)
-        self.__entries = []
-        self.__ptr = 5
-        self.__flag = 0x1
+        self._entries = []
+        self._ptr = 5
+        self._flag = 0x1
 
     def length(self):
         entrysize = 2
-        if self.__flag == 0: entrysize = 1
-        return 4 + len(self.__entries)*entrysize
+        if self._flag == 0: entrysize = 1
+        return 4 + len(self._entries)*entrysize
 
     def to_bytes(self):
         raw = struct.pack('!BBBB', 0x40 | self.optnum, self.length(),
-            self.__ptr, self.__flag)
+            self._ptr, self._flag)
 
     def from_bytes(self, raw):
         fields = struct.unpack('!BBBB', raw[:4])
-        self.__ptr = fields[2]
-        self.__flags = fields[3]&0x0f
+        self._ptr = fields[2]
+        self._flags = fields[3]&0x0f
         xlen = fields[1]
         if xlen > len(raw):
             raise Exception("Not enough data to unpack raw {}: need {} but only have {}".format(self.__class__.__name__, xlen, len(raw)))
         raw = raw[4:xlen]
-        haveipaddr = self.__flags != 0
+        haveipaddr = self._flags != 0
         unpackfmt = '!II'
         if not haveipaddr:
             unpackfmt = '!I' 
@@ -227,30 +227,30 @@ class IPOptionTimestamp(IPOption):
                 ts = TimestampEntry(*tstup)
             else:
                 ts = TimestampEntry(None, tstup[0])
-            self.__entries.append(ts)
+            self._entries.append(ts)
 
         return xlen
 
     def timestamp(self, index):
-        return self.__entries[index]
+        return self._entries[index]
 
 class IPOptionRouterAlert(IPOption):
-    __slots__ = ['__value']
+    __slots__ = ['_value']
 
     def __init__(self):
         super().__init__(IPOptionNumber.RouterAlert)
-        self.__value = 0
+        self._value = 0
     
     def length(self):
         return 4
 
     def from_bytes(self, raw):
         fields = struct.unpack('!BBH', raw[:4])
-        self.__value = fields[2]
+        self._value = fields[2]
         return self.length()
 
     def to_bytes(self):
-        return struct.pack('!BBH', 0x80 | self.optnum, self.length(), self.__value)
+        return struct.pack('!BBH', 0x80 | self.optnum, self.length(), self._value)
 
 
 IPOptionClasses = {
@@ -270,7 +270,7 @@ IPOptionClasses = {
 
 class IPOptionList(object):
     def __init__(self):
-        self.__options = []
+        self._options = []
 
     @staticmethod
     def from_bytes(rawbytes):
@@ -299,7 +299,7 @@ class IPOptionList(object):
         of options, appropriately padded if necessary.
         '''
         raw = b''
-        for ipopt in self.__options:
+        for ipopt in self._options:
             raw += ipopt.to_bytes()
         padbytes = len(raw) % 4
         raw += b'\x00'*padbytes
@@ -315,44 +315,44 @@ class IPOptionList(object):
         return len(self.to_bytes())
 
     def size(self):
-        return len(self.__options)
+        return len(self._options)
 
 
 class IPv4(PacketHeaderBase):
-    __slots__ = ['__tos','__totallen','__ttl',
-                 '__ipid','__flags','__fragoffset',
-                 '__protocol','__csum',
-                 '__srcip','__dstip','__options']
+    __slots__ = ['_tos','_totallen','_ttl',
+                 '_ipid','_flags','_fragoffset',
+                 '_protocol','_csum',
+                 '_srcip','_dstip','_options']
     __PACKFMT__ = '!BBHHHBBH4s4s'
     __MINSIZE__ = struct.calcsize(__PACKFMT__)
 
     def __init__(self):
         # fill in fields with (essentially) zero values
         self.tos = 0x00
-        self.__totallen = IPv4.__MINSIZE__
+        self._totallen = IPv4.__MINSIZE__
         self.ipid = 0x0000
         self.ttl = 0
-        self.__flags = IPFragmentFlag.NoFragments
-        self.__fragoffset = 0
+        self._flags = IPFragmentFlag.NoFragments
+        self._fragoffset = 0
         self.protocol = IPProtocol.ICMP
-        self.__csum = 0x0000
+        self._csum = 0x0000
         self.srcip = SpecialIPv4Addr.IP_ANY.value
         self.dstip = SpecialIPv4Addr.IP_ANY.value
-        self.__options = IPOptionList()
+        self._options = IPOptionList()
         
     def size(self):
-        return struct.calcsize(IPv4.__PACKFMT__) + self.__options.raw_length()
+        return struct.calcsize(IPv4.__PACKFMT__) + self._options.raw_length()
 
-    def tail_serialized(self, raw):
-        self.__totallen = self.size() + len(raw)
+    def pre_serialize(self, raw, pkt, i):
+        self._totallen = self.size() + len(raw)
 
     def to_bytes(self):
         iphdr = struct.pack(IPv4.__PACKFMT__,
-            4 << 4 | self.hl, self.tos, self.__totallen,
-            self.ipid, self.__flags.value << 13 | self.fragment_offset,
+            4 << 4 | self.hl, self.tos, self._totallen,
+            self.ipid, self._flags.value << 13 | self.fragment_offset,
             self.ttl, self.protocol.value, self.checksum,
             self.srcip.packed, self.dstip.packed)
-        return iphdr + self.__options.to_bytes()
+        return iphdr + self._options.to_bytes()
 
     def from_bytes(self, raw):
         if len(raw) < 20:
@@ -366,16 +366,16 @@ class IPv4(PacketHeaderBase):
             raise Exception("Not enough data to unpack IPv4 header (only {} bytes, but header length field claims {})".format(len(raw), hl))
         optionbytes = raw[20:hl]
         self.tos = headerfields[1]        
-        self.__totallen = headerfields[2]
+        self._totallen = headerfields[2]
         self.ipid = headerfields[3]
         self.flags = IPFragmentFlag(headerfields[4] >> 13)
         self.fragment_offset = headerfields[4] & 0x1fff
         self.ttl = headerfields[5]
         self.protocol = IPProtocol(headerfields[6])
-        self.__csum = headerfields[7]
+        self._csum = headerfields[7]
         self.srcip = headerfields[8]
         self.dstip = headerfields[9]
-        self.__options = IPOptionList.from_bytes(optionbytes)
+        self._options = IPOptionList.from_bytes(optionbytes)
         return raw[hl:]
 
     def __eq__(self, other):
@@ -397,104 +397,104 @@ class IPv4(PacketHeaderBase):
 
     # accessors and mutators
     def options(self):
-        return self.__options
+        return self._options
 
     @property
     def total_length(self):
-        return self.__totallen
+        return self._totallen
 
     @property
     def ttl(self):
-        return self.__ttl
+        return self._ttl
 
     @ttl.setter
     def ttl(self, value):
         value = int(value) 
         if not (0 <= value <= 255):
             raise ValueError("Invalid TTL value {}".format(value))
-        self.__ttl = value
+        self._ttl = value
 
     @property
     def tos(self):
-        return self.__tos
+        return self._tos
 
     @tos.setter
     def tos(self, value):
         if not (0 <= value < 256):
             raise Exception("Invalid type of service value; must be 0-255")
-        self.__tos = value
+        self._tos = value
 
     @property
     def dscp(self):
-        return self.__tos >> 2
+        return self._tos >> 2
 
     @property
     def ecn(self):
-        return (self.__tos & 0x03)
+        return (self._tos & 0x03)
 
     @dscp.setter
     def dscp(self, value):
         if not (0 <= value < 64):
             raise Exception("Invalid DSCP value; must be 0-63")
-        self.__tos = (self.__tos & 0x03) | value << 2
+        self._tos = (self._tos & 0x03) | value << 2
 
     @ecn.setter
     def ecn(self, value):
         if not (0 <= value < 4):
             raise Exeption("Invalid ECN value; must be 0-3")
-        self.__tos = (self.__tos & 0xfa) | value
+        self._tos = (self._tos & 0xfa) | value
 
     @property
     def ipid(self):
-        return self.__ipid
+        return self._ipid
 
     @ipid.setter
     def ipid(self, value):
         if not (0 <= value < 65536):
             raise Exception("Invalid IP ID value; must be 0-65535")
-        self.__ipid = value
+        self._ipid = value
 
     @property
     def protocol(self):
-        return self.__protocol
+        return self._protocol
 
     @protocol.setter
     def protocol(self, value):
-        self.__protocol = IPProtocol(value)
+        self._protocol = IPProtocol(value)
 
     @property
     def srcip(self):
-        return self.__srcip
+        return self._srcip
 
     @srcip.setter
     def srcip(self, value):
-        self.__srcip = IPAddr(value)
+        self._srcip = IPAddr(value)
 
     @property
     def dstip(self):
-        return self.__dstip
+        return self._dstip
 
     @dstip.setter
     def dstip(self, value):
-        self.__dstip = IPAddr(value)
+        self._dstip = IPAddr(value)
 
     @property
     def flags(self):
-        return self.__flags
+        return self._flags
 
     @flags.setter
     def flags(self, value):
-        self.__flags = IPFragmentFlag(value)
+        self._flags = IPFragmentFlag(value)
 
     @property
     def fragment_offset(self):
-        return self.__fragoffset
+        return self._fragoffset
 
     @fragment_offset.setter
     def fragment_offset(self, value):
         if not (0 <= value < 2**13):
             raise Exception("Invalid fragment offset value")
-        self.__fragoffset = value
+        self._fragoffset = value
     
     @property
     def hl(self):
@@ -504,12 +504,12 @@ class IPv4(PacketHeaderBase):
     def checksum(self):
         data = struct.pack(IPv4.__PACKFMT__,
                     (4 << 4) + self.hl, self.tos,
-                    self.__totallen, self.ipid,
+                    self._totallen, self.ipid,
                     (self.flags.value << 13) | self.fragment_offset, 
                     self.ttl,
                     self.protocol.value, 0, self.srcip.packed, self.dstip.packed)
-        self.__csum = checksum(data, 0)
-        return self.__csum
+        self._csum = checksum(data, 0)
+        return self._csum
 
     def __str__(self):
         return '{} {}->{} {}'.format(self.__class__.__name__, self.srcip, self.dstip, self.protocol.name)

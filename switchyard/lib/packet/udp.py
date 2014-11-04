@@ -9,13 +9,13 @@ References:
 # FIXME: currently does *nothing* about checksum
 
 class UDP(PacketHeaderBase):
-    __slots__ = ['__srcport','__dstport','__len']
+    __slots__ = ['_srcport','_dstport','_len']
     __PACKFMT__ = '!HHHH'
     __MINSIZE__ = struct.calcsize(__PACKFMT__)
 
     def __init__(self):
         self.srcport = self.dstport = 0
-        self.__len = self.size()
+        self._len = self.size()
 
     def size(self):
         return struct.calcsize(UDP.__PACKFMT__)
@@ -24,8 +24,8 @@ class UDP(PacketHeaderBase):
         '''
         Return packed byte representation of the UDP header.
         '''
-        return struct.pack(UDP.__PACKFMT__, self.__srcport, self.__dstport,
-            self.__len, 0)
+        return struct.pack(UDP.__PACKFMT__, self._srcport, self._dstport,
+            self._len, 0)
 
     def from_bytes(self, raw):
         '''Return an Ethernet object reconstructed from raw bytes, or an
@@ -33,9 +33,9 @@ class UDP(PacketHeaderBase):
         if len(raw) < UDP.__MINSIZE__:
             raise Exception("Not enough bytes ({}) to reconstruct an UDP object".format(len(raw)))
         fields = struct.unpack(UDP.__PACKFMT__, raw[:UDP.__MINSIZE__])
-        self.__srcport = fields[0]
-        self.__dstport = fields[1]
-        self.__len = fields[2]
+        self._srcport = fields[0]
+        self._dstport = fields[1]
+        self._len = fields[2]
         return raw[UDP.__MINSIZE__:]
 
     def __eq__(self, other):
@@ -44,19 +44,19 @@ class UDP(PacketHeaderBase):
 
     @property
     def srcport(self):
-        return self.__srcport
+        return self._srcport
 
     @property
     def dstport(self):
-        return self.__dstport
+        return self._dstport
 
     @srcport.setter
     def srcport(self,value):
-        self.__srcport = value
+        self._srcport = value
 
     @dstport.setter
     def dstport(self,value):
-        self.__dstport = value
+        self._dstport = value
 
     def __str__(self):
         return '{} {}->{}'.format(self.__class__.__name__, self.srcport, self.dstport)
@@ -64,5 +64,5 @@ class UDP(PacketHeaderBase):
     def next_header_class(self):
         return None
 
-    def tail_serialized(self, raw):
-        self.__len = self.size() + len(raw)
+    def pre_serialize(self, raw, pkt, i):
+        self._len = self.size() + len(raw)
