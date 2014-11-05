@@ -487,6 +487,7 @@ Note that any command can be abbreviated by typing enough characters to distingu
             if not xcontinue:
                 print ("Not exiting.")                 
                 return
+        log_info("Stopping nodes and cleaning up; please wait.")
         self.stop()
         return True
 
@@ -688,10 +689,6 @@ class SyssGlue(object):
         self.__monitors={}
         MonitorManager.reset()
 
-        log_debug("At end of glue, threads that exist:")
-        for t in threading.enumerate():
-            log_debug("\tthread {}".format(t.name))
-
     def __addNode(self, n, execmodule=None):
         # print ("Adding node with execmod: {}".format(execmodule))
         self.ingress_queues[n] = q = Queue()
@@ -721,14 +718,14 @@ class SyssGlue(object):
             plumbing.thread.start()
 
     def stop(self):
-        log_debug("Stopping node threads")
+        log_debug("Stopping node threads; please wait.")
         for np in self.xnode.values():
             log_debug("\tGetting thread {} to stop".format(np.thread.name))
             np.nexec.shutdown()
             np.thread.join()
             log_debug("\tDone stopping thread {}".format(np.thread.name))
             del np
-        log_debug("Threads remaining:")
+        log_debug("Threads remaining at cli stoppage:")
         for t in threading.enumerate():
             log_debug("\tthread {}".format(t.name))
 
@@ -758,6 +755,7 @@ def run_simulation(topo, **kwargs):
     for t in threading.enumerate():
         log_debug("\tthread at startup {}".format(t.name))
 
+    log_info("Starting up switchyard simulation substrate.")
     glue = SyssGlue(topo, **kwargs)
     cli = Cli(glue, topo)
     try:

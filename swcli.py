@@ -25,7 +25,6 @@ else:
     # if no topology file specified, create a blank topology
     t = Topology()
 
-if args.debug:
-    setup_logging(args.debug)
+setup_logging(args.debug)
 
 run_simulation(t, nodeexec=args.execmod)
