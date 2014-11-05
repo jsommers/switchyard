@@ -487,7 +487,7 @@ Note that any command can be abbreviated by typing enough characters to distingu
             if not xcontinue:
                 print ("Not exiting.")                 
                 return
-        log_info("Stopping nodes and cleaning up; please wait.")
+        log_info("{}Stopping nodes and cleaning up; please wait.{}".format(TextColor.YELLOW,TextColor.RESET))
         self.stop()
         return True
 
@@ -755,7 +755,7 @@ def run_simulation(topo, **kwargs):
     for t in threading.enumerate():
         log_debug("\tthread at startup {}".format(t.name))
 
-    log_info("Starting up switchyard simulation substrate.")
+    log_info("{}Starting up switchyard simulation substrate.{}".format(TextColor.YELLOW,TextColor.RESET))
     glue = SyssGlue(topo, **kwargs)
     cli = Cli(glue, topo)
     try:
