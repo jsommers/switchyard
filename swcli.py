@@ -12,6 +12,7 @@ from switchyard.cli import run_simulation
 parser = argparse.ArgumentParser('switchyard cli')
 parser.add_argument('--topology', '-t', type=str, help='Name of topology file to load')
 parser.add_argument('--execmod', '-m', type=str, help='switchyard module to be executed at all nodes in the network')
+parser.add_argument('--debug','-d', action='store_true', help='turn on debugging log output')
 args = parser.parse_args()
 
 if args.topology:
@@ -23,5 +24,8 @@ if args.topology:
 else:
     # if no topology file specified, create a blank topology
     t = Topology()
+
+if args.debug:
+    setup_logging(args.debug)
 
 run_simulation(t, nodeexec=args.execmod)

@@ -648,6 +648,7 @@ Note that any command can be abbreviated by typing enough characters to distingu
 class SyssGlue(object):
     def __init__(self, topo, **kwargs):
         self.monitors = {}
+        self.xnode = {}
         self.monitors['pcap'] = PcapMonitor
         self.monitors['debug'] = InteractiveMonitor
         self.monitors['code'] = CodeMonitor
@@ -657,12 +658,8 @@ class SyssGlue(object):
         self.xnode[node].nexec.sendHostPacket(pkt)
 
     def rebuildGlue(self, topo, **kwargs):
-        # print ("In rebuild glue with nodeexec: {}".format(kwargs.get('nodeexec','?')))
-        try:
-            self.shutdown()
-        except:
-            pass
-
+        log_debug("Rebuilding simulation glue")
+        self.stop()
         self.xnode = {}
         execmodule = None
         if 'nodeexec' in kwargs and kwargs['nodeexec'] is not None:
@@ -691,11 +688,16 @@ class SyssGlue(object):
         self.__monitors={}
         MonitorManager.reset()
 
+        log_debug("At end of glue, threads that exist:")
+        for t in threading.enumerate():
+            log_debug("\tthread {}".format(t.name))
+
     def __addNode(self, n, execmodule=None):
         # print ("Adding node with execmod: {}".format(execmodule))
         self.ingress_queues[n] = q = Queue()
         nexec = NodeExecutor(n, q, execmodule)
         t = threading.Thread(target=nexec.run)
+        log_debug("Creating node thread {}".format(t.name))
         self.xnode[n] = NodePlumbing(t,nexec,q)
 
     def __addLink(self, u, v, unode, vnode, linkdict):
@@ -714,14 +716,21 @@ class SyssGlue(object):
         vplumbing.nexec.addEgressInterface(vdev, intf, egress_queue, cap, delay, udev)
 
     def __start(self):
+        log_debug("Starting node threads")
         for nodename,plumbing in self.xnode.items():
             plumbing.thread.start()
 
     def stop(self):
+        log_debug("Stopping node threads")
         for np in self.xnode.values():
+            log_debug("\tGetting thread {} to stop".format(np.thread.name))
             np.nexec.shutdown()
             np.thread.join()
+            log_debug("\tDone stopping thread {}".format(np.thread.name))
             del np
+        log_debug("Threads remaining:")
+        for t in threading.enumerate():
+            log_debug("\tthread {}".format(t.name))
 
     def getMonitors(self):
         return self.__monitors
@@ -745,6 +754,10 @@ def run_simulation(topo, **kwargs):
     substrate (NodeExecutors), and the ingress queue that each node receives
     packets from.
     '''
+    log_debug("Threads at startup:")
+    for t in threading.enumerate():
+        log_debug("\tthread at startup {}".format(t.name))
+
     glue = SyssGlue(topo, **kwargs)
     cli = Cli(glue, topo)
     try:

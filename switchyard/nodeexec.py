@@ -9,7 +9,7 @@ from cmd import Cmd
 import re
 from abc import ABCMeta,abstractmethod
 
-from switchyard.lib.common import LLNetBase,NoPackets,Shutdown
+from switchyard.lib.common import LLNetBase,NoPackets,Shutdown,log_debug
 from switchyard.monitor import *
 from switchyard.lib.topo import *
 from switchyard.linkem import LinkEmulator
@@ -17,7 +17,7 @@ from switchyard.linkem import LinkEmulator
 
 EgressPipe = namedtuple('EgressPipe', ['queue','delay','capacity','remote_devname'])
 class NodeExecutor(LLNetBase):
-    __slots__ = ['__done', '__ingress_queue', '__egress_pipes', '__name','__interfaces','__symod', '__linkem', '__tolinkem','__recv_monitor']
+    __slots__ = ['__done', '__ingress_queue', '__egress_pipes', '__name','__interfaces','__symod', '__linkem', '__tolinkem','__recv_monitors','__t']
     def __init__(self, name, ingress_queue, symod=None):
         LLNetBase.__init__(self)
         self.__ingress_queue = ingress_queue
@@ -28,7 +28,8 @@ class NodeExecutor(LLNetBase):
         self.__done = False
         self.__linkem = None
         self.__tolinkem = None
-        self.__recv_monitor = {'host': NullMonitor()}
+        self.__recv_monitors = {'host': NullMonitor()}
+        self.__t = None
 
     def sendHostPacket(self, pkt):
         self.__ingress_queue.put( ('host', pkt) )
@@ -37,7 +38,7 @@ class NodeExecutor(LLNetBase):
         # print ("Adding egress interface on {} {}".format(self.name, devname))
         self.__egress_pipes[devname] = EgressPipe(queue, delay, capacity, remote_devname)
         self.__interfaces[devname] = intf
-        self.__recv_monitor[devname] = NullMonitor()
+        self.__recv_monitors[devname] = NullMonitor()
 
     @property
     def name(self):
@@ -59,23 +60,23 @@ class NodeExecutor(LLNetBase):
         pass
 
     def attach_recv_monitor(self, interface, monitorobject):
-        self.__recv_monitor[interface] = monitorobject
+        self.__recv_monitors[interface] = monitorobject
 
     def remove_recv_monitor(self, interface):
-        self.__recv_monitor[interface] = NullMonitor()
+        self.__recv_monitors[interface] = NullMonitor()
 
     def recv_packet(self, timeout=0.0, timestamp=False):
         #
         # FIXME: not sure about how best to handle...
         #
         giveup_time = time.time() + timeout
-        inner_timeout = 0.1
+        inner_timeout = 0.05
          
         while timeout == 0.0 or time.time() < giveup_time:
             try:
                 devname,packet = self.__ingress_queue.get(block=True, timeout=inner_timeout)
                 now = time.time()
-                self.__recv_monitor[devname](devname,now,packet)
+                self.__recv_monitors[devname](devname,now,packet)
                 if timestamp:
                     return devname,now,packet
                 return devname,packet
@@ -96,6 +97,8 @@ class NodeExecutor(LLNetBase):
     def shutdown(self):
         self.__linkem.shutdown()
         self.__done = True
+        log_debug("Joining node codeexec thread {} node {}".format(self.__t.name, self.__name))
+        self.__t.join()
 
     def __idleloop(self):
         while not self.__done:
@@ -109,8 +112,8 @@ class NodeExecutor(LLNetBase):
     def run(self):
         self.__tolinkem = Queue()
         self.__linkem = LinkEmulator(self.__tolinkem)
-        t = threading.Thread(target=self.__linkem.run)
-        t.start()
+        self.__t = threading.Thread(target=self.__linkem.run)
+        self.__t.start()
         self.startcode()
 
     def resetcode(self, mod=None):
@@ -119,8 +122,13 @@ class NodeExecutor(LLNetBase):
 
     def startcode(self):
         if self.__symod:
-            # print ("Starting code {}".format(self.name))
             self.__symod(self)
         else:
             self.__idleloop()
+        self.__t.join()
+        del self.__t
+        del self.__linkem
+        del self.__tolinkem 
+        del self.__egress_pipes
+        del self.__recv_monitors
 

@@ -5,7 +5,6 @@ import signal
 import re
 import subprocess
 import time
-import threading
 from queue import Queue,Empty
 import importlib
 import bz2

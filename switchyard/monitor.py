@@ -26,6 +26,8 @@ class MonitorManager(object):
     def reset():
         for mon in MonitorManager._monitors:
             mon.stop()
+        del MonitorManager._monitors
+        del MonitorManager._queue
         MonitorManager._monitors = []
         MonitorManager._queue = queue.Queue()
 
@@ -158,10 +160,13 @@ class CodeMonitor(AbstractMonitor):
         self.__queue.put( (None,None,None) )
         self.__debugnet.shutdown()
         self.__thread.join()
+        del self.__thread
+        del self.__queue
 
     def __thread_entry(self):
+        log_debug("Code monitor thread start {}".format(threading.current_thread().ident))
         self.__usercode(self.__debugnet)
-        
+        log_debug("Code monitor thread end {}".format(threading.current_thread().ident))
 
 if __name__ == '__main__':
     pass
