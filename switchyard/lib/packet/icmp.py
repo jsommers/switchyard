@@ -116,16 +116,18 @@ class ICMP(PacketHeaderBase):
 
     @icmpdata.setter
     def icmpdata(self, dataobj):
-        if not issubclass(dataobj.__class__, ICMPPacketData):
-            raise Exception("ICMP data must be subclass of ICMPPacketData (you gave me {})".format(dataobj.__class__.__name__))
+        if not issubclass(dataobj.__class__, ICMPData):
+            raise Exception("ICMP data must be subclass of ICMPData (you gave me {})".format(dataobj.__class__.__name__))
         self._icmpdata = dataobj
         self.icmptype = self._icmptype_from_classtype(dataobj.__class__)
 
-class ICMPPacketData(PacketHeaderBase):
-    __slots__ = ['_rawip'] 
+
+class ICMPData(PacketHeaderBase):
+    __slots__ = ('_rawpayload',)
+
     def __init__(self):
         super().__init__()
-        self._rawip = b''
+        self._rawpayload = b''
 
     def next_header_class(self):
         return None
@@ -134,56 +136,84 @@ class ICMPPacketData(PacketHeaderBase):
         return
 
     def size(self):
-        return 4 + len(self._rawip)
+        return len(self._rawpayload)
 
     def to_bytes(self):
-        return b'\x00\x00\x00\x00' + self._rawip
+        return self._rawpayload
 
     def from_bytes(self, raw):
-        self._rawip = raw[4:]
+        self._rawpayload = bytes(raw)
 
     @property
     def data(self):
-        return self._rawip
+        return self._rawpayload
 
     @data.setter
     def data(self, value):
-        self._rawip = bytes(value)
+        if not isinstance(value, bytes):
+            self._data = bytes(value, 'utf8')
+        else:
+            self._data = value
 
     def __eq__(self, other):
         return self.data == other.data
 
     def __hash__(self):
-        return sum(self._rawip)
+        return sum(self._rawpayload)
 
     def __str__(self):
-        return '{} bytes of IPv4 ({})'.format(len(self.__rawip), self.__rawip[:10])
+        return '{} bytes of raw payload ({})'.format(len(self._rawpayload), self._rawpayload[:10])
 
-class ICMPSourceQuench(ICMPPacketData):
-    pass
 
-class ICMPRedirect(ICMPPacketData):
-    __slots__ = ['_redirectto']
+class ICMPSourceQuench(ICMPData):
+    __MINSIZE__ = 4
+
     def __init__(self):
         super().__init__()
 
+    def size(self):
+        return 4 + super().size()
+
     def to_bytes(self):
-        return b''.join( (self.__redirectto.packed,super().to_bytes()) )
+        return b''.join((b'\x00' * 4, super().to_bytes()))
+
+    def from_bytes(self, raw):
+        if len(raw) < ICMPSourceQuench.__MINSIZE__:
+            raise Exception("Not enough bytes ({}) to reconstruct ICMPSourceQuench data object".format(len(raw)))
+        super().from_bytes(raw[4:])       
+
+class ICMPRedirect(ICMPData):
+    __slots__ = ['_redirectto']
+    def __init__(self):
+        super().__init__()
+        self._redirectto = IPv4Address('0.0.0.0')
+
+    def to_bytes(self):
+        return b''.join( (self._redirectto.packed,super().to_bytes()) )
 
     def from_bytes(self, raw):
         fields = struct.unpack('!I', raw[:4])
         self._redirectto = IPv4Address(fields[0])
-        super().from_bytes(raw)
+        super().from_bytes(raw[4:])
 
     def __str__(self):
         return '{} RedirectAddress: {}'.format(super().__str__(), self._redirectto)
+
+    @property
+    def redirectto(self):
+        return self._redirectto
+
+    @redirectto.setter
+    def redirectto(self, value):
+        self._redirectto = IPv4Address(value) 
+
     
-class ICMPDestinationUnreachable(ICMPPacketData):
+class ICMPDestinationUnreachable(ICMPData):
     __slots__ = ('_origdgramlen', '_nexthopmtu')
     def __init__(self):
         super().__init__()
-        self.__nexthopmtu = 0
-        self.__origdgramlen = 0
+        self._nexthopmtu = 0
+        self._origdgramlen = 0
 
     def to_bytes(self):
         return b''.join( (struct.pack('!xBH', self._origdgramlen, self._nexthopmtu), super().to_bytes()) )
@@ -192,14 +222,14 @@ class ICMPDestinationUnreachable(ICMPPacketData):
         fields = struct.unpack('!xBH', raw[:4])
         self._origdgramlen = fields[0]
         self._nexthopmtu = fields[1]
-        super().from_bytes(raw)
+        super().from_bytes(raw[4:])
 
     def __str__(self):
         return '{} NextHopMTU: {}'.format(super().__str__(), self._nexthopmtu)
     
 
-class ICMPEchoRequest(ICMPPacketData):
-    __slots__ = ['_identifier','_sequence','_data']
+class ICMPEchoRequest(ICMPData):
+    __slots__ = ['_identifier','_sequence']
     __PACKFMT__ = '!HH'
     __MINSIZE__ = struct.calcsize(__PACKFMT__)
     
@@ -207,7 +237,6 @@ class ICMPEchoRequest(ICMPPacketData):
         super().__init__()
         self._identifier = 0
         self._sequence = 0
-        self._data = b''
 
     def next_header_class(self):
         return None
@@ -216,22 +245,22 @@ class ICMPEchoRequest(ICMPPacketData):
         return
 
     def size(self):
-        return self.__MINSIZE__ + len(self.__data)
+        return self.__MINSIZE__ + super().size()
 
     def from_bytes(self, raw):
         fields = struct.unpack(ICMPEchoRequest.__PACKFMT__, 
             raw[:ICMPEchoRequest.__MINSIZE__])
         self._identifier = fields[0]
         self._sequence = fields[1]
-        self._data = raw[ICMPEchoRequest.__MINSIZE__:]
+        super().from_bytes(raw[4:])
         return b''
 
     def to_bytes(self):
         return b''.join( (struct.pack(ICMPEchoRequest.__PACKFMT__,
-            self._identifier, self._sequence), self._data ) )
+            self._identifier, self._sequence), super().to_bytes() ) )
 
     def __str__(self):
-        return '{} {} ({} data bytes)'.format(self._identifier, self._sequence, len(self._data))
+        return '{} {} ({} data bytes)'.format(self._identifier, self._sequence, len(self.data))
 
     def __eq__(self, other):
         return self.identifier == other.identifier and \
@@ -245,11 +274,7 @@ class ICMPEchoRequest(ICMPPacketData):
     @property
     def sequence(self):
         return self._sequence
-
-    @property
-    def data(self):
-        return self._data
-
+   
     @identifier.setter
     def identifier(self, value):
         self._identifier = value
@@ -258,53 +283,46 @@ class ICMPEchoRequest(ICMPPacketData):
     def sequence(self, value):
         self._sequence = value
 
-    @data.setter
-    def data(self, value):
-        if not isinstance(value, bytes):
-            self._data = bytes(value, 'utf8')
-        else:
-            self._data = value
-
 class ICMPEchoReply(ICMPEchoRequest):
     pass
 
-class ICMPTimeExceeded(ICMPPacketData):
-    __slots__ = ('__nexthopmtu','__origdgramlen',)
+class ICMPTimeExceeded(ICMPData):
+    __slots__ = ('_nexthopmtu','_origdgramlen',)
     def __init__(self):
         super().__init__()
-        self.__origdgramlen = 0
+        self._origdgramlen = 0
 
     def to_bytes(self):
-        return b''.join( (struct.pack('!xBH', self.__origdgramlen, 0), super().to_bytes()) )
+        return b''.join( (struct.pack('!xBH', self._origdgramlen, 0), super().to_bytes()) )
         # FIXME: origdgram len should be padded to 4 bytes for v4, and 8 bytes for v6
 
     def from_bytes(self, raw):
         fields = struct.unpack('!xBH', raw[:4])
-        self.__origdgramlen = fields[0]
-        self.__nexthopmtu = fields[1]
-        super().from_bytes(raw)
+        self._origdgramlen = fields[0]
+        self._nexthopmtu = fields[1]
+        super().from_bytes(raw[4:])
 
     @property
     def origdgramlen(self):
-        return self.__origdgramlen
+        return self._origdgramlen
 
     @origdgramlen.setter
     def origdgramlen(self, value):
-        self.__origdgramlen = int(value)
+        self._origdgramlen = int(value)
 
     def __str__(self):
-        return '{} OrigDgramLen: {}'.format(super().__str__(), self.__origdgramlen)
+        return '{} OrigDgramLen: {}'.format(super().__str__(), self._origdgramlen)
 
-class ICMPAddressMaskRequest(ICMPPacketData):
-    __slots__ = ['__identifier','__sequence','__addrmask']
-    __PACKFMT__ = '!HHI'
+class ICMPAddressMaskRequest(ICMPData):
+    __slots__ = ['_identifier','_sequence','_addrmask']
+    __PACKFMT__ = '!HH'
     __MINSIZE__ = struct.calcsize(__PACKFMT__)
 
     def __init__(self):
         super().__init__()
-        self.__identifier = 0
-        self.__sequence = 0
-        self.__addrmask = IPv4Address('0.0.0.0')
+        self._identifier = 0
+        self._sequence = 0
+        self._addrmask = IPv4Address('0.0.0.0')
 
     def next_header_class(self):
         return None
@@ -316,42 +334,68 @@ class ICMPAddressMaskRequest(ICMPPacketData):
         return ICMPAddressMaskRequest.__MINSIZE__
 
     def to_bytes(self):
-        return struct.pack(ICMPAddressMaskRequest.__PACKFMT__, 
-            self.__identifier, self.__sequence, self.__addrmask.packed)
+        return b''.join( (struct.pack(ICMPAddressMaskRequest.__PACKFMT__, 
+            self._identifier, self._sequence), self._addrmask.packed))
 
     def from_bytes(self, raw):
-        fields = struct.unpack(ICMPAddressMaskRequest.__PACKFMT__, raw)
-        self.__identifier = fields[0]
-        self.__sequence = fields[1]
-        self.__addrmask = IPv4Address(fields[2])
+        if len(raw) < ICMPAddressMaskRequest.__MINSIZE__:
+            raise Exception("Not enough bytes to unpack ICMPAddressMaskRequest object")
+        fields = struct.unpack(ICMPAddressMaskRequest.__PACKFMT__, raw[:4])
+        self._identifier = fields[0]
+        self._sequence = fields[1]
+        self._addrmask = IPv4Address(raw[4:8])
         return b''
 
+    @property
+    def addrmask(self):
+        return self._addrmask
+
+    @addrmask.setter
+    def addrmask(self, value):
+        self._addrmask = IPv4Address(value)
+
+    @property
+    def identifier(self):
+        return self._identifier
+
+    @identifier.setter
+    def identifier(self, value):
+        self._identifier = int(value)
+
+    @property
+    def sequence(self):
+        return self._sequence
+
+    @sequence.setter
+    def sequence(self, value):
+        self._sequence = int(value)
+
     def __str__(self):
-        return '{} {} {}'.format(self.__identifier, self.__sequence, self.__addrmask)
+        return '{} {} {}'.format(self._identifier, self._sequence, self._addrmask)
 
 
 class ICMPAddressMaskReply(ICMPAddressMaskRequest):
     pass
 
-class ICMPInformationRequest(ICMPPacketData):
+class ICMPInformationRequest(ICMPData):
     pass
 
-class ICMPInformationReply(ICMPPacketData):
+class ICMPInformationReply(ICMPData):
     pass
 
-class ICMPRouterAdvertisement(ICMPPacketData):
+class ICMPRouterAdvertisement(ICMPData):
     pass
 
-class ICMPRouterSolicitation(ICMPPacketData):
+class ICMPRouterSolicitation(ICMPData):
     pass
 
-class ICMPParameterProblem(ICMPPacketData):
+class ICMPParameterProblem(ICMPData):
     pass
 
-class ICMPTimestamp(ICMPPacketData):
+class ICMPTimestamp(ICMPData):
     pass
 
-class ICMPTimestampReply(ICMPPacketData):
+class ICMPTimestampReply(ICMPData):
     pass
 
 
