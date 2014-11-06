@@ -1,4 +1,5 @@
 import sys
+import os
 from collections import namedtuple, defaultdict
 import threading
 from queue import Queue,Empty
@@ -15,6 +16,7 @@ from switchyard.lib.packet import *
 from switchyard.lib.textcolor import *
 from switchyard.lib.importcode import import_user_code
 from switchyard.nodeexec import NodeExecutor
+from switchyard.lib.pcapffi import PcapReader
 
 __author__ = 'jsommers@colgate.edu'
 __doc__ = 'SwitchYard Substrate Simulator'
@@ -139,6 +141,39 @@ Note that any command can be abbreviated by typing enough characters to distingu
                    'show topology ': ['', 'addresses', 'interfaces'],
                    'show monitor ': [''] + self.topology.nodes }
         return self.__do_completion(line[:begidx], text, matcher)
+
+    def do_replay(self, line):
+        cmdargs = line.split()
+        # replay <pcapfile> <node> <interface>
+        if len(cmdargs) != 3:
+            print("Wrong number of arguments to replay.  Command format is replay <pcapfile> <nodename> <interface>")
+            return
+
+        try:
+            os.stat(cmdargs[0])            
+        except:
+            print ("Error: pcap file {} doesn't exist.".format(cmdargs[0]))
+            return
+
+        if not self.topology.hasNode(cmdargs[1]):
+            print ("Error: node {} doesn't exist.".format(cmdargs[1]))
+            return
+
+        node = self.topology.getNode(cmdargs[1])['nodeobj']
+        if not node.hasInterface(cmdargs[2]):
+            print ("Error: node {} has no such interface {}.".format(cmdargs[1], cmdargs[2]))
+            return
+        reader = PcapReader(cmdargs[0])
+        count = 0
+        while True:
+            pkt = reader.recv_packet()
+            if pkt is None:
+                break
+            p = Packet(raw=pkt.raw)
+            self.syss_glue.emitPacketFromNodeInterface(cmdargs[1], cmdargs[2], p)
+            count += 1
+        plural = 's' if count > 1 else ''
+        print ("Replayed {} packet.".format(count))
 
     def do_exec(self, line):
         cmdargs = line.split()
@@ -374,7 +409,8 @@ Note that any command can be abbreviated by typing enough characters to distingu
                 if cmdargs:
                     filebase = cmdargs.pop(0)
                 else:
-                    filebase = 'FIXME'
+                    filebase = ''
+
                 how = ( 'pcap',  filebase)
             elif 'debug'.startswith(cmdval) or 'inspect'.startswith(cmdval) or 'trace'.startswith(cmdval):
                 how = ( 'debug', )
@@ -396,7 +432,7 @@ Note that any command can be abbreviated by typing enough characters to distingu
 
         for node, intf in location:
             try:
-                monitorfn(node, intf, howtype, howargs)
+                monitorfn(node, intf, howtype, *howargs)
             except Exception as e:
                 print ("Error {} monitor on {}:{} --- {}".format(xaction, node, intf, str(e)))
 
@@ -517,6 +553,8 @@ Note that any command can be abbreviated by typing enough characters to distingu
             self.do_add(remain)
         elif 'remove'.startswith(cmdargs[0]):
             self.do_remove(remain)
+        elif 'replay'.startswith(cmdargs[0]):
+            self.do_replay(remain)
         else:
             print ("Unrecognized command '{}'".format(line))
 
@@ -632,6 +670,13 @@ Note that any command can be abbreviated by typing enough characters to distingu
         
         Flood a simple raw Ethernet packet from a node.  This is basically a placeholder command until a more sophisticated 'ping' command exists (or something similar)''')
 
+    def help_replay(self):
+        print ('''
+        replay <pcapfile> <nodename> <interface>
+
+        Replay the contents of a saved pcap file by emitting packets from node <nodename> out interface <interface>.
+        ''')
+
     def help_load(self):
         print ('''
         load <filename>
@@ -657,6 +702,9 @@ class SyssGlue(object):
 
     def sendHostPacket(self, node, pkt):
         self.xnode[node].nexec.sendHostPacket(pkt)
+
+    def emitPacketFromNodeInterface(self, node, dev, pkt):
+        self.xnode[node].nexec.send_packet(dev, pkt)
 
     def rebuildGlue(self, topo, **kwargs):
         log_debug("Rebuilding simulation glue")

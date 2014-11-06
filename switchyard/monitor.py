@@ -111,7 +111,10 @@ class PcapMonitor(AbstractMonitor):
         if len(args) > 0:
             outfile = args[0]
         if not outfile.endswith('.pcap'):
-            outfile = "{}_{}_{}.pcap".format(node,intf,outfile)
+            if outfile:
+                outfile = "{}_{}_{}.pcap".format(node,intf,outfile)
+            else:
+                outfile = "{}_{}.pcap".format(node,intf)
         self.dumper = pcapffi.PcapDumper(outfile)
 
     def __call__(self, devname, now, packet):
