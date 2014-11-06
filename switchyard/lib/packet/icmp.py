@@ -79,7 +79,7 @@ class ICMP(PacketHeaderBase):
         if not isinstance(value, self._valid_types):
             raise ValueError("ICMP type must be an {} enumeration".format(type(self._valid_types)))
         cls = self._classtype_from_icmptype(value)
-        if not isinstance(self.icmpdata, cls):
+        if not issubclass(self.icmpdata.__class__, cls):
             self.icmpdata = cls()
         self._type = value
         codes = self._valid_codes_map[value]
@@ -198,7 +198,7 @@ class ICMPDestinationUnreachable(ICMPPacketData):
         return '{} NextHopMTU: {}'.format(super().__str__(), self._nexthopmtu)
     
 
-class ICMPEchoRequest(PacketHeaderBase):
+class ICMPEchoRequest(ICMPPacketData):
     __slots__ = ['_identifier','_sequence','_data']
     __PACKFMT__ = '!HH'
     __MINSIZE__ = struct.calcsize(__PACKFMT__)

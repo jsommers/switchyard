@@ -15,6 +15,12 @@ class ICMPPacketTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             i.icmpcode = 1
 
+    def testChangeICMPIdentity(self):
+        i = ICMP() # echorequest, by default
+        i.icmptype = ICMPType.EchoReply
+        self.assertEqual(i.icmptype, ICMPType.EchoReply)
+        self.assertEqual(i.icmpcode, ICMPTypeCodeMap[i.icmptype].EchoReply)
+
     def testValidCode(self):
         i = ICMP()
         i.icmpcode = 0
