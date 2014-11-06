@@ -151,9 +151,9 @@ class ICMPData(PacketHeaderBase):
     @data.setter
     def data(self, value):
         if not isinstance(value, bytes):
-            self._data = bytes(value, 'utf8')
+            self._rawpayload = bytes(value, 'utf8')
         else:
-            self._data = value
+            self._rawpayload = value
 
     def __eq__(self, other):
         return self.data == other.data

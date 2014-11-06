@@ -104,6 +104,12 @@ class ICMPPacketTests(unittest.TestCase):
         i = ICMP() # default to EchoRequest with zero seq and ident
         self.assertEqual(i.to_bytes(), b'\x08\x00\xf7\xff\x00\x00\x00\x00')
 
+        i.icmpdata.data = ( b'hello, world ' * 3 )
+        other = ICMP()
+        other.from_bytes(i.to_bytes())
+        self.assertEqual(i, other)
+
+
     def testSetSubtype(self):
         i = ICMP()
         self.assertIsInstance(i.icmpdata, ICMPEchoRequest)
