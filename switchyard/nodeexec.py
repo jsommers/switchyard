@@ -103,7 +103,7 @@ class NodeExecutor(LLNetBase):
     def __idleloop(self):
         while not self.__done:
             try:
-                devname,ts,packet = self.recv_packet(timestamp=True)
+                devname,ts,packet = self.recv_packet(timestamp=True, timeout=0.1)
             except Shutdown:
                 break
             except NoPackets:

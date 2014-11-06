@@ -24,7 +24,7 @@ class LinkEmulator(object):
                 expiretime,item,outqueue = self.expiryheap[0]
                 timeout = expiretime - time.time()
             else:
-                timeout = 1.0
+                timeout = 0.1
 
             try:
                 expiretime,item,outqueue = self.inqueue.get(timeout=timeout)
