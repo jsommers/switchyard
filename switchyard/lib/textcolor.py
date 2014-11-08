@@ -91,18 +91,3 @@ def yellow():
     yield
     TextColor.reset()
 
-if __name__ == '__main__':
-    with green():
-        print ("Hello! (green)")
-    with red():
-        print ("This is red!")
-    with blue():
-        print ("This is blue!")
-    with cyan():
-        print ("This is cyan!")
-    with magenta():
-        print ("This is magenta!")
-    with yellow():
-        print ("This is yellow!")
-    print ("Hello! (uncolored)")
-    
