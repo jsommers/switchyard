@@ -1,10 +1,10 @@
 __author__ = 'jsommers@colgate.edu'
 
-import ipaddress
+from ipaddress import IPv4Address, IPv6Address, ip_address
 from enum import Enum
 
 # make aliases for built-in ip_address class
-IPAddr = ipaddress.IPv4Address 
+IPAddr = IPv4Address 
 
 import struct
 import socket
@@ -158,19 +158,19 @@ ethaddr = EthAddr
 macaddr = EthAddr
 
 class SpecialIPv6Addr(Enum):
-    UNDEFINED = ipaddress.ip_address('::')
-    ALL_NODES_LINK_LOCAL = ipaddress.ip_address('ff02::1')
-    ALL_ROUTERS_LINK_LOCAL = ipaddress.ip_address('ff02::2')
-    ALL_NODES_INTERFACE_LOCAL = ipaddress.ip_address('ff01::1')
-    ALL_ROUTERS_INTERFACE_LOCAL = ipaddress.ip_address('ff01::2')
+    UNDEFINED = ip_address('::')
+    ALL_NODES_LINK_LOCAL = ip_address('ff02::1')
+    ALL_ROUTERS_LINK_LOCAL = ip_address('ff02::2')
+    ALL_NODES_INTERFACE_LOCAL = ip_address('ff01::1')
+    ALL_ROUTERS_INTERFACE_LOCAL = ip_address('ff01::2')
 
 #ff02::1:3 link local multicast name resolution
 #ff02::1:ff00:0/104 solicited-node
 #ff02::2:ff00:0/104 node information query
 
 class SpecialIPv4Addr(Enum):
-    IP_ANY = ipaddress.ip_address("0.0.0.0")
-    IP_BROADCAST = ipaddress.ip_address("255.255.255.255")
+    IP_ANY = ip_address("0.0.0.0")
+    IP_BROADCAST = ip_address("255.255.255.255")
 
 class SpecialEthAddr(Enum):
     ETHER_ANY            = EthAddr(b'\x00\x00\x00\x00\x00\x00')
@@ -189,7 +189,7 @@ def netmask_to_cidr (dq):
   Raise exception if subnet mask is not CIDR-compatible.
   """
   if isinstance(dq, str):
-    dq = IPAddr(dq)
+    dq = IPv4Address(dq)
   v = int(dq)
   c = 0
   while v & 0x80000000:
@@ -281,14 +281,3 @@ def infer_netmask (addr):
     return 32-0 # exact match
   # Must be a Class E (Experimental)
     return 32-0
-
-if __name__ == '__main__':
-    assert (infer_netmask(IPAddr("10.0.0.1")) == 8)
-    assert (infer_netmask(IPAddr("192.168.1.24")) == 24)
-    assert (str(cidr_to_netmask(24)) == "255.255.255.0")
-    print (parse_cidr("149.43.80.25/22", allow_host=True))
-    assert (netmask_to_cidr("255.255.0.0") == 16)
-    print (list(SpecialIPv6Addr))
-    print (list(SpecialIPv4Addr))
-    print (list(SpecialEthAddr))
-    print(EthAddr("00:00:00:00:00:00"))
