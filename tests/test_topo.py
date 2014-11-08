@@ -159,6 +159,23 @@ class TopologyTests(unittest.TestCase):
         y = t.serialize()
         self.assertEqual(x,y)
 
+    def testNodeIfRebuild(self):
+        d = {"eth0": "eth0 mac:00:00:00:00:00:18 ip:192.168.3.3/24"}
+        r = Router(interfaces=d)
+        self.assertTrue(r.hasInterface('eth0'))
+        self.assertEqual(r.nodetype, 'Router')
+        self.assertEqual(r.getInterface('eth0').ethaddr, EthAddr("00:00:00:00:00:18"))
+        self.assertEqual(r.getInterface('eth0').ipaddr, IPv4Address("192.168.3.3"))
+        self.assertEqual(r.getInterface('eth0').netmask, IPv4Address("255.255.255.0"))
+
+        d = {"eth0": "eth0 mac:00:00:00:00:00:18" }
+        r = Router(interfaces=d)
+        self.assertEqual(r.getInterface('eth0').ethaddr, EthAddr("00:00:00:00:00:18"))
+        self.assertEqual(r.getInterface('eth0').ipaddr, IPv4Address("0.0.0.0"))
+        self.assertEqual(r.getInterface('eth0').netmask, IPv4Address("255.255.255.255"))
+        rdict = r.asDict()
+        self.assertEqual(rdict['interfaces'], d)
+
 
 if __name__ == '__main__':
     unittest.main()
