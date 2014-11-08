@@ -26,8 +26,8 @@ class PacketFormatter(object):
     __fulldisp = False
 
     @staticmethod
-    def full_display():
-        PacketFormatter.__fulldisp = True
+    def full_display(value=True):
+        PacketFormatter.__fulldisp = value
 
     @staticmethod
     def format_pkt(pkt, cls=None):
@@ -38,22 +38,22 @@ class PacketFormatter(object):
         '''
         if PacketFormatter.__fulldisp:
             cls = None
-            
-        # FIXME!!! needs update from POX packet library
-        #if cls:
-        #    if not pkt.parsed:
-        #        raw = pkt.pack()
-        #        pkt.parse(raw)
-        #    header = pkt.find(cls)
-        #    if header is not None:
-        #        return str(header)
-        return str(pkt)
+
+        if cls is None:
+            return str(pkt)
+        idx = pkt.get_header_index(cls)
+        if idx == -1:
+            log_warn("PacketFormatter tried to find non-existent header (test scenario probably needs fixing)")
+            return str(pkt)
+        return ' | '.join([str(pkt[i]) for i in range(idx, pkt.num_headers())])
 
 class Interface(object):
     '''
     Class that models a single logical interface on a network
     device.  An interface has a name, 48-bit Ethernet MAC address,
     and a 32-bit IPv4 address and mask.
+
+    Needs overhaul to allow multiple interface addresses, including IPv6.
     '''
     def __init__(self, name, ethaddr, ipaddr, netmask):
         self.__name = name
@@ -135,7 +135,7 @@ def log_debug(s):
 def log_warn(s):
     '''Convenience function for warning message.'''
     with magenta():
-        logging.warn("{}".format(s))
+        logging.warning("{}".format(s))
 
 def log_info(s):
     '''Convenience function for info message.'''

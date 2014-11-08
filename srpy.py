@@ -31,7 +31,7 @@ if __name__ == '__main__':
         args.testmode = True
 
     if args.verbose:
-        PacketFormatter.full_display()
+        PacketFormatter.full_display(True)
 
     setup_logging(args.debug)
 

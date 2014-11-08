@@ -89,6 +89,12 @@ class Packet(object):
         Return a list of packet header names in this packet.
         '''
         return [ ph.__class__.__name__ for ph in self._headers ]
+
+    def num_headers(self):
+        '''
+        Return the number of headers in the packet.
+        '''
+        return len(self._headers)
         
     def prepend_header(self, ph):
         '''

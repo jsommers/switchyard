@@ -1,5 +1,6 @@
 from switchyard.lib.packet import *
 from switchyard.lib.address import EthAddr, IPAddr
+from switchyard.lib.common import PacketFormatter
 import unittest 
 
 class PacketTests(unittest.TestCase):
@@ -32,6 +33,19 @@ class PacketTests(unittest.TestCase):
         self.assertEqual(p[1], e1)
         with self.assertRaises(IndexError):
             e = p[2]
+
+    def testFormatter(self):
+        e = Ethernet()
+        ip = IPv4()
+        icmp = ICMP()
+        fullpkt = e + ip + icmp
+        self.assertEqual(PacketFormatter.format_pkt(fullpkt), str(fullpkt))
+        partial = ip + icmp
+        self.assertEqual(PacketFormatter.format_pkt(fullpkt, cls=IPv4), str(partial))
+        print("Expect a warning from the next test...")
+        self.assertEqual(PacketFormatter.format_pkt(fullpkt, cls=IPv6), str(fullpkt))
+
+
 
 if __name__ == '__main__':
     unittest.main()
