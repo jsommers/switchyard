@@ -17,6 +17,8 @@ class TopologyTests(unittest.TestCase):
         self.assertEqual(humanize_bandwidth(1000000000), "1 Gb/s")
         self.assertEqual(humanize_bandwidth(100000000000), "100 Gb/s")
         self.assertEqual(humanize_bandwidth(2000000000000), "2 Tb/s")
+        with self.assertRaises(Exception):
+            humanize_bandwidth(1e20)
 
     def testUnhumanizeCap(self):
         self.assertEqual(unhumanize_bandwidth("100 bits/s"), 100)
@@ -35,6 +37,8 @@ class TopologyTests(unittest.TestCase):
         self.assertEqual(unhumanize_bandwidth("2 Tb/s"), 2000000000000)
         self.assertEqual(unhumanize_bandwidth("100000"), 100000)
         self.assertEqual(unhumanize_bandwidth("100000  "), 100000)
+        self.assertEqual(unhumanize_bandwidth(10000), 10000)
+        self.assertIsNone(unhumanize_bandwidth(" xyz"))
         
     def testHumanizeDelay(self):
         self.assertEqual(humanize_delay(0.1), "100 msecs")
@@ -54,6 +58,9 @@ class TopologyTests(unittest.TestCase):
         self.assertEqual(unhumanize_delay("1 second"), 1)
         self.assertEqual(unhumanize_delay("1.5 seconds"), 1.5)
         self.assertEqual(unhumanize_delay("0.1"), 0.1)
+        self.assertEqual(unhumanize_delay(0.1), 0.1)
+        self.assertIsNone(unhumanize_delay("ab.32"))
+        self.assertIsNone(unhumanize_delay("1 picosec"))
 
     def testTopoBuild(self):
         t = Topology()

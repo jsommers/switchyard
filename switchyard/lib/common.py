@@ -3,6 +3,7 @@ import logging
 from abc import ABCMeta,abstractmethod
 from switchyard.lib.address import IPAddr,EthAddr
 from switchyard.lib.textcolor import *
+from ipaddress import ip_interface
 
 # version test, for sanity
 if sys.version_info.major < 3 or sys.version_info.minor < 4:
@@ -47,19 +48,22 @@ class PacketFormatter(object):
             return str(pkt)
         return ' | '.join([str(pkt[i]) for i in range(idx, pkt.num_headers())])
 
+
 class Interface(object):
+    __slots__ = ['__name','__ethaddr','__ipaddr']
     '''
     Class that models a single logical interface on a network
     device.  An interface has a name, 48-bit Ethernet MAC address,
-    and a 32-bit IPv4 address and mask.
-
-    Needs overhaul to allow multiple interface addresses, including IPv6.
+    and (optionally) an IP address.  The IP address is stored
+    as an ipaddress.IPv4/6Interface object, which includes
+    the netmask/prefixlen.
     '''
-    def __init__(self, name, ethaddr, ipaddr, netmask):
+    def __init__(self, name, ethaddr, ipaddr, netmask=None):
         self.__name = name
         self.ethaddr = ethaddr
+        if netmask:
+            ipaddr = "{}/{}".format(ipaddr,netmask)
         self.ipaddr = ipaddr
-        self.netmask = netmask
 
     @property
     def name(self):
@@ -76,42 +80,41 @@ class Interface(object):
         elif isinstance(value, str):
             self.__ethaddr = EthAddr(value)
         elif value is None:
-            self.__ethaddr = '00:00:00:00:00:00'
+            self.__ethaddr = EthAddr('00:00:00:00:00:00')
         else:
             self.__ethaddr = value
 
     @property 
     def ipaddr(self):
-        return self.__ipaddr
+        return self.__ipaddr.ip
 
     @ipaddr.setter
     def ipaddr(self, value):
-        if isinstance(value, IPAddr):
-            self.__ipaddr = value
-        elif isinstance(value, str):
-            self.__ipaddr = IPAddr(value)
+        if isinstance(value, (str,IPAddr)):
+            self.__ipaddr = ip_interface(value)
         elif value is None:
-            self.__ipaddr = '0.0.0.0'
+            self.__ipaddr = ip_interface('0.0.0.0')
         else:
-            self.__ipaddr = value
+            raise Exception("Invalid type assignment to IP address (must be string or existing IP address)")
 
     @property 
     def netmask(self):
-        return self.__netmask
+        return self.__ipaddr.netmask
 
     @netmask.setter
     def netmask(self, value):
-        if isinstance(value, IPAddr):
-            self.__netmask = value
-        elif isinstance(value, str):
-            self.__netmask = IPAddr(value)
+        if isinstance(value, (IPAddr,str,int)):
+            self.__ipaddr = ip_interface("{}/{}".format(self.__ipaddr.ip, str(value)))
         elif value is None:
-            self.__netmask = '255.255.255.255'
+            self.__ipaddr = ip_interface("{}/32".format(self.__ipaddr.ip))
         else:
-            self.__netmask = value
+            raise Exception("Invalid type assignment to netmask (must be IPAddr, string, or int)")
 
     def __str__(self):
-        return "{} mac:{} ip:{}/{}".format(str(self.name), str(self.ethaddr), str(self.ipaddr), str(self.netmask))
+        s =  "{} mac:{}".format(str(self.name), str(self.ethaddr))
+        if int(self.ipaddr) != 0:
+            s += " ip:{}".format(self.__ipaddr)
+        return s 
 
 def setup_logging(debug):
     '''

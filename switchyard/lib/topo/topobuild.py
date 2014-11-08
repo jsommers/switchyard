@@ -1,84 +1,17 @@
 import json
 from collections import defaultdict
 from switchyard.lib.address import EthAddr,IPAddr
+from switchyard.lib.common import Interface
 from switchyard.lib.topo.util import *
 import networkx as nx
 from networkx.readwrite import json_graph
 import ipaddress
-import copy
 
 nompl = False
 try:
     import matplotlib.pyplot as pyp
 except ImportError:
     nompl = True
-
-class Interface(object):
-    __slots__ = ['__name','__ethaddr','__ipaddr']
-    '''
-    Class that models a single logical interface on a network
-    device.  An interface has a name, 48-bit Ethernet MAC address,
-    and (optionally) an IP address.  The IP address is stored
-    as an ipaddress.IPv4/6Interface object, which includes
-    the netmask/prefixlen.
-    '''
-    def __init__(self, name, ethaddr, ipaddr, netmask=None):
-        self.__name = name
-        self.ethaddr = ethaddr
-        if netmask:
-            ipaddr = "{}/{}".format(ipaddr,netmask)
-        self.ipaddr = ipaddr
-
-    @property
-    def name(self):
-        return self.__name
-
-    @property
-    def ethaddr(self):
-        return self.__ethaddr
-
-    @ethaddr.setter
-    def ethaddr(self, value):
-        if isinstance(value, EthAddr):
-            self.__ethaddr = value
-        elif isinstance(value, str):
-            self.__ethaddr = EthAddr(value)
-        elif value is None:
-            self.__ethaddr = EthAddr('00:00:00:00:00:00')
-        else:
-            self.__ethaddr = value
-
-    @property 
-    def ipaddr(self):
-        return self.__ipaddr.ip
-
-    @ipaddr.setter
-    def ipaddr(self, value):
-        if isinstance(value, (str,IPAddr)):
-            self.__ipaddr = ipaddress.ip_interface(value)
-        elif value is None:
-            self.__ipaddr = ipaddress.ip_interface('0.0.0.0')
-        else:
-            raise Exception("Invalid type assignment to IP address (must be string or existing IP address)")
-
-    @property 
-    def netmask(self):
-        return self.__ipaddr.netmask
-
-    @netmask.setter
-    def netmask(self, value):
-        if isinstance(value, (IPAddr,str,int)):
-            self.__ipaddr = ipaddress.ip_interface("{}/{}".format(self.__ipaddr.ip, str(value)))
-        elif value is None:
-            self.__ipaddr = ipaddress.ip_interface("{}/32".format(self.__ipaddr.ip))
-        else:
-            raise Exception("Invalid type assignment to netmask (must be IPAddr, string, or int)")
-
-    def __str__(self):
-        s =  "{} mac:{}".format(str(self.name), str(self.ethaddr))
-        if int(self.ipaddr) != 0:
-            s += " ip:{}".format(self.__ipaddr)
-        return s            
 
 class Node(object):
     __slots__ = ['ifnum','__interfaces']
