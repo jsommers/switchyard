@@ -253,9 +253,11 @@ def parse_cidr (addr, infer=True, allow_host=False):
     if m & 0x7fffffff != 0:
       raise RuntimeError("Netmask " + str(addr[1]) + " is not CIDR-compatible")
     wild = 32-b
-    assert wild >= 0 and wild <= 32
+    if not (wild >= 0 and wild <= 32):
+      raise RuntimeError("Invalid mask length")
     return check(IPAddr(addr[0]), wild)
-  assert wild >= 0 and wild <= 32
+  if not (wild >= 0 and wild <= 32):
+    raise RuntimeError("Invalid mask length")
   return check(IPAddr(addr[0]), wild)
 
 

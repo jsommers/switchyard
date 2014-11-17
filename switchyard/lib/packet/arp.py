@@ -129,27 +129,3 @@ class Arp(PacketHeaderBase):
         return '{} {}:{} {}:{}'.format(self.__class__.__name__, 
             self.senderhwaddr, self.senderprotoaddr,
             self.targethwaddr, self.targetprotoaddr)
-
-if __name__ == '__main__':
-    from switchyard.lib.packet import Ethernet,Packet
-    a = Arp()
-    e = Ethernet()
-    print (a)
-    print (a.to_bytes())
-    p = e + a
-    print (p)
-    print (p.headers())
-    p = Packet()
-    p += e
-    p += a
-    print (p.headers())
-    from switchyard.lib.packet.util import create_ip_arp_request
-
-    p = create_ip_arp_request("00:00:00:11:22:33","1.2.3.4","10.11.12.13")
-    x = p.to_bytes()
-    print (p.to_bytes())
-
-    px = Packet(raw=x)
-    print ("px",px.headers())
-    print ("p",p.headers())
-    assert(p == px)
