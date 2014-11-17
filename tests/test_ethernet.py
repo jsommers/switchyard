@@ -48,5 +48,27 @@ class EthernetPacketTests(unittest.TestCase):
         with self.assertRaises(Exception):
             e.from_bytes(raw)
 
+    def testVlan(self):
+        e = Ethernet()
+        e.src = "00:11:22:33:44:55"
+        e.dst = "aa:bb:cc:dd:ee:ff"
+        e.ethertype = EtherType.x8021Q
+
+        v = Vlan()
+        v.vlan = 42
+        v.ethertype = EtherType.IP
+
+        ip = IPv4()
+        icmp = ICMP()
+
+        packet = e + v + ip + icmp
+        self.assertEqual(packet.num_headers(), 4)
+        self.assertEqual(packet[1].vlan, 42)
+        self.assertEqual(len(packet), 46)
+        serialized = packet.to_bytes()
+
+        other = Packet(raw=serialized)
+        self.assertEqual(packet, other)
+
 if __name__ == '__main__':
     unittest.main()
