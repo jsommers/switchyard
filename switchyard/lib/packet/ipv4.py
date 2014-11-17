@@ -123,7 +123,7 @@ class IPOptionXRouting(IPOption):
         return 3+len(self._routedata)*4
 
     def to_bytes(self):
-        raw = struct.pack('!BBB',(0x80|self.optnum.value),self.length())
+        raw = struct.pack('!xBB',(0x80|self.optnum.value),self.length())
         for ipaddr in self._routedata:
             raw += ipaddr.packed
         return raw
@@ -307,7 +307,7 @@ class IPOptionList(object):
     
     def add_option(self, opt):
         if isinstance(opt, IPOption):
-            self.__options.append(opt)
+            self._options.append(opt)
         else:
             raise Exception("Option to be added must be an IPOption object")
 
@@ -396,6 +396,7 @@ class IPv4(PacketHeaderBase):
         return cls
 
     # accessors and mutators
+    @property
     def options(self):
         return self._options
 
