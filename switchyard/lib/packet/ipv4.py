@@ -55,10 +55,10 @@ class IPOptionEndOfOptionList(IPOption):
         super().__init__(IPOptionNumber.EndOfOptionList)
 
     def length(self):
-        return struct.calcsize(__PACKFMT__)
+        return struct.calcsize(IPOptionEndOfOptionList.__PACKFMT__)
 
     def to_bytes(self):
-        return struct.pack(__PACKFMT__, self.optnum.value)
+        return struct.pack(IPOptionEndOfOptionList.__PACKFMT__, self.optnum.value)
 
     def from_bytes(self, raw):
         return self.length()
@@ -70,10 +70,10 @@ class IPOptionNoOperation(IPOption):
         super().__init__(IPOptionNumber.NoOperation)
 
     def length(self):
-        return struct.calcsize(__PACKFMT__)
+        return struct.calcsize(IPOptionNoOperation.__PACKFMT__)
 
     def to_bytes(self):
-        return struct.pack(__PACKFMT__, self.optnum.value)
+        return struct.pack(IPOptionNoOperation.__PACKFMT__, self.optnum.value)
 
     def from_bytes(self, raw):
         return self.length()
@@ -90,7 +90,7 @@ class IPOptionSecurity(IPOption):
         self.transmission_control_code = 0x000000
 
     def length(self):
-        return struct.calcsize(__PACKFMT__)
+        return struct.calcsize(IPOptionSecurity.__PACKFMT__)
 
     def to_bytes(self):
         return struct.pack(IPOptionSecurity.__PACKFMT__, 0x82, 0x0b, 
@@ -114,16 +114,20 @@ class IPOptionSecurity(IPOption):
         return self.length()
 
 class IPOptionXRouting(IPOption):
+    __PACKFMT__ = 'BBB'
     __slots__ = ['_routedata','_ptr']
-    def __init__(self, ipoptnum):
+    def __init__(self, ipoptnum, numaddrs=9):
         super().__init__(ipoptnum)
-        self._routedata = []
+        if numaddrs < 1 or numaddrs > 9:
+            raise Exception("Invalid number of addresses for IP routing-type option (must be 1-9)")
+        self._routedata = [IPv4Address("0.0.0.0")] * numaddrs
+        self._ptr = 4
 
     def length(self):
         return 3+len(self._routedata)*4
 
     def to_bytes(self):
-        raw = struct.pack('!xBB',(0x80|self.optnum.value),self.length())
+        raw = struct.pack(IPOptionXRouting.__PACKFMT__,self.optnum.value,self.length(), self._ptr)
         for ipaddr in self._routedata:
             raw += ipaddr.packed
         return raw
@@ -144,12 +148,18 @@ class IPOptionXRouting(IPOption):
 
     @pointer.setter
     def pointer(self, value):
-        if not (0 <= value < len(self._routedata)):
+        if not (value % 4 == 0 and 1 <= value//4 <= 9):
             raise Exception("Invalid pointer value; must be 0..{}".format(len(self._routedata)-1))
         self._ptr = value
 
-    def route_data(self, index):
+    def num_addrs(self):
+        return len(self._routedata)
+
+    def get_route_data(self, index):
         return self._routedata[index]
+
+    def set_route_data(self, index, addr):
+        self._routedata[index] = IPv4Address(addr)
 
 class IPOptionLooseSourceRouting(IPOptionXRouting):
     def __init__(self):
@@ -299,9 +309,11 @@ class IPOptionList(object):
         of options, appropriately padded if necessary.
         '''
         raw = b''
+        if not self._options:
+            return raw
         for ipopt in self._options:
             raw += ipopt.to_bytes()
-        padbytes = len(raw) % 4
+        padbytes = 4 - (len(raw) % 4)
         raw += b'\x00'*padbytes
         return raw
     
@@ -310,6 +322,15 @@ class IPOptionList(object):
             self._options.append(opt)
         else:
             raise Exception("Option to be added must be an IPOption object")
+
+    def __len__(self):
+        return len(self._options)
+
+    def __getitem__(self, i):
+        pass
+
+    def __setitem__(self, i, val):
+        pass
 
     def raw_length(self):
         return len(self.to_bytes())
@@ -385,9 +406,9 @@ class IPv4(PacketHeaderBase):
                 self.fragment_offset == other.fragment_offset and \
                 self.ttl == other.ttl and \
                 self.protocol == other.protocol and \
-                self.checksum == other.checksum and \
                 self.srcip == other.srcip and \
                 self.dstip == other.dstip
+                # self.checksum == other.checksum and \
 
     def next_header_class(self):
         cls = IPTypeClasses.get(self.protocol, None)
@@ -509,6 +530,7 @@ class IPv4(PacketHeaderBase):
                     (self.flags.value << 13) | self.fragment_offset, 
                     self.ttl,
                     self.protocol.value, 0, self.srcip.packed, self.dstip.packed)
+        data += self._options.to_bytes()
         self._csum = checksum(data, 0)
         return self._csum
 

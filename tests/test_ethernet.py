@@ -59,6 +59,8 @@ class EthernetPacketTests(unittest.TestCase):
         v.ethertype = EtherType.IP
 
         ip = IPv4()
+        ip.srcip = "1.2.3.4"
+        ip.dstip = "5.6.7.8"
         icmp = ICMP()
 
         packet = e + v + ip + icmp

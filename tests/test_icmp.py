@@ -109,7 +109,6 @@ class ICMPPacketTests(unittest.TestCase):
         other.from_bytes(i.to_bytes())
         self.assertEqual(i, other)
 
-
     def testSetSubtype(self):
         i = ICMP()
         self.assertIsInstance(i.icmpdata, ICMPEchoRequest)
@@ -122,7 +121,6 @@ class ICMPPacketTests(unittest.TestCase):
         i.from_bytes(b'\x04\x00\xfb\xff\x00\x00\x00\x00')
         self.assertEqual(i.icmptype, ICMPType.SourceQuench)
         self.assertIsInstance(i.icmpdata, ICMPSourceQuench)
-
 
 
 if __name__ == '__main__':

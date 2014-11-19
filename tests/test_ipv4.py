@@ -2,6 +2,8 @@ from switchyard.lib.packet import *
 from switchyard.lib.address import EthAddr, IPAddr, SpecialIPv4Addr
 import unittest 
 
+from switchyard.lib.pcapffi import *
+
 class IPv4PacketTests(unittest.TestCase):
     def setUp(self):
         self.e = Ethernet()
@@ -14,7 +16,6 @@ class IPv4PacketTests(unittest.TestCase):
         xbytes = self.pkt.to_bytes()
         pkt2 = Packet(raw=xbytes)
         self.assertEqual(self.pkt, pkt2)
-        self.assertEqual(self.pkt[1].ttl, 0)
 
     def testBlankAddrs(self):
         self.assertEqual(self.ip.srcip, SpecialIPv4Addr.IP_ANY.value)
@@ -47,16 +48,29 @@ class IPv4PacketTests(unittest.TestCase):
         self.assertEqual(iphdr.ecn, 1)
         self.assertEqual(iphdr.tos, (0x2E<<2) | 0x1)
 
+    def testOptionContainer(self):
+        opts = IPOptionList()
+        self.assertEqual(opts.to_bytes(), b'')
+
     def testRecordRouteOpt(self):
         rr = IPOptionRecordRoute()
         iphdr = self.pkt[1]
         iphdr.options.add_option(rr)
-        print (iphdr)
-        print (iphdr.to_bytes())
-        self.assertEqual(iphdr.hl, 6)
-        # FIXME
-        # self.assertEqual(len(iphdr), 24)
-        # self.assertEqual(iphdr.total_length, 24)
+        iphdr.srcip = "1.2.3.4"
+        iphdr.dstip = "4.5.6.7"
+        iphdr.tos = 0x11
+        # print (iphdr)
+        # print (iphdr.to_bytes())
+        # print (len(iphdr))
+        self.assertEqual(iphdr.hl, 15)
+
+        # writer = PcapDumper("testdump.pcap")
+        # p = Ethernet() + iphdr + ICMP()
+        # p[2].icmpdata.identifier = 7
+        # p[2].icmpdata.sequence = 42
+        # writer.write_packet(p.to_bytes())
+        # writer.close()
+
 
 if __name__ == '__main__':
     unittest.main()
