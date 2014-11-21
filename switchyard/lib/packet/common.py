@@ -59,28 +59,15 @@ class IPFragmentFlag(Enum):
     DontFragment = 2
     MoreFragments = 4
 
-class IPOptionCopy(Enum):
-    NotCopied = 0
-    Copied = 1
-
-class IPOptionClass(Enum):
-    Control = 0
-    Reserved1 = 1
-    DebuggingMeasurement = 2
-    Reserved3 = 3
-
 class IPOptionNumber(Enum):
     EndOfOptionList = 0
     NoOperation = 1
-    Security = 2
     LooseSourceRouting = 3
     Timestamp = 4
     RecordRoute = 7
-    StreamId = 8
     StrictSourceRouting = 9
     MTUProbe = 11
     MTUReply = 12
-    Traceroute = 18
     RouterAlert = 20
 
 class ICMPType(Enum):
