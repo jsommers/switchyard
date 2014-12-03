@@ -72,6 +72,7 @@ class IPv6PacketTests(unittest.TestCase):
         xraw = pkt.to_bytes()
         p = Packet(raw=xraw)
         self.assertEqual(pkt, p)
+        self.assertEqual(p[idx+1][0].limit, 0x13)
 
     def testHopOptRouterAlert(self):
         pkt = deepcopy(self.pkt)
@@ -85,6 +86,7 @@ class IPv6PacketTests(unittest.TestCase):
         xraw = pkt.to_bytes()
         p = Packet(raw=xraw)
         self.assertEqual(pkt, p)
+        self.assertEqual(hopopt[0].value, 0x13)
 
     def testHopOptHomeAddr(self):
         pkt = deepcopy(self.pkt)
@@ -104,12 +106,56 @@ class IPv6PacketTests(unittest.TestCase):
         hopopt = IPv6HopOption()
         hopopt.nextheader = IPProtocol.ICMPv6
         hopopt.add_option(HomeAddress(IPv6Address("fc00::2")))
-        # hopopt.add_option(PadN(4))
         idx = pkt.get_header_index(IPv6)
         pkt.insert_header(idx+1, hopopt)
         pkt[idx].nextheader = IPProtocol.IPv6HopOption
         print ("Expect a warning for the next call to to_bytes()...")
         xraw = pkt.to_bytes()
+        hopopt.add_option(PadN(4))
+        xraw = pkt.to_bytes()
+        p = Packet(raw=xraw)
+        self.assertEqual(p, pkt)
+        self.assertEqual(len(hopopt), 2)
+        self.assertEqual(hopopt[0].address, IPv6Address("fc00::2"))
+        with self.assertRaises(TypeError):
+            x = hopopt[:1]
+        with self.assertRaises(IndexError):
+            x = hopopt[2]
+        with self.assertRaises(IndexError):
+            x = hopopt[-1]
+
+    def testJumboPayload(self):
+        pkt = deepcopy(self.pkt)
+        destopt = IPv6DestinationOption()
+        destopt.add_option(JumboPayload(10000))
+        destopt.nextheader = IPProtocol.ICMPv6
+        idx = pkt.get_header_index(IPv6)
+        pkt.insert_header(idx+1, destopt)
+        pkt[idx].nextheader = IPProtocol.IPv6DestinationOption
+        xraw = pkt.to_bytes()
+        p = Packet(raw=xraw)
+        self.assertEqual(pkt, p)
+        self.assertEqual(len(destopt), 1)
+        self.assertEqual(destopt[0].len, 10000)
+
+    def testNoNextHdr(self):
+        pkt = deepcopy(self.pkt)
+        idx = pkt.get_header_index(IPv6)
+        pkt[idx].nextheader = IPProtocol.IPv6NoNext
+        pkt[idx].srcip = IPv6Address("fc00::a")
+        pkt[idx].dstip = IPv6Address("fc00::b")
+        del pkt[idx+1] 
+        self.assertEqual(pkt.num_headers(), 2)
+        xraw = pkt.to_bytes()
+        p = Packet(raw=xraw)
+        self.assertEqual(p, pkt)
+
+    def testMobilityHeader(self):
+        pass
+
+
+# mobility
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -19,7 +19,6 @@ References:
     IETF RFC 6564 http://tools.ietf.org/html/rfc6564 (uniform format for ipv6 extension headers)
     IETF RFC 7045 http://tools.ietf.org/html/rfc7045 (transmission and processing of ipv6 extension headers)
     IETF RFC 6275 IPv6 mobility
-    IETF RFC 5533 Shim6
 '''
 
 class IPv6ExtensionHeader(PacketHeaderBase):
@@ -58,7 +57,7 @@ class IPv6ExtensionHeader(PacketHeaderBase):
 
     def next_header_class(self):
         cls = IPTypeClasses.get(self.nextheader, None) 
-        if cls is None:
+        if cls is None and self.nextheader not in IPTypeClasses:
             print ("Warning: no class exists to parse next protocol type: {}".format(self.protocol))
         return cls
 
@@ -191,6 +190,10 @@ class PadN(IPv6Option):
     def to_bytes(self):
         return struct.pack('BB', 1, self._n) + b'\x00' * self._n
 
+    @property 
+    def n(self):
+        return self._n
+
     @staticmethod
     def from_bytes(raw):
         p = PadN()
@@ -207,6 +210,10 @@ class JumboPayload(IPv6Option):
 
     def to_bytes(self):
         return struct.pack('!BBI', 0xc2, 4, self._len)
+
+    @property 
+    def len(self):
+        return self._len
 
     @staticmethod
     def from_bytes(raw):
@@ -225,6 +232,10 @@ class TunnelEncapsulationLimit(IPv6Option):
     def to_bytes(self):
         return struct.pack('BBB', 4, 1, self._limit)
 
+    @property 
+    def limit(self):
+        return self._limit
+
     @staticmethod
     def from_bytes(raw):
         assert(len(raw) == 1)
@@ -242,6 +253,10 @@ class RouterAlert(IPv6Option):
     def to_bytes(self):
         return struct.pack('!BBH', 5, 2, self._value)
 
+    @property 
+    def value(self):
+        return self._value
+
     @staticmethod
     def from_bytes(raw):
         assert(len(raw) == 2)
@@ -258,6 +273,10 @@ class HomeAddress(IPv6Option):
 
     def to_bytes(self):
         return struct.pack('!BB', 201, 16) + self._addr.packed
+
+    @property 
+    def address(self):
+        return self._addr
 
     @staticmethod
     def from_bytes(raw):
@@ -289,8 +308,8 @@ class IPv6HopOption(IPv6ExtensionHeader):
         xopt = b''.join([o.to_bytes() for o in self._options])
         hdrlen = len(xopt) + 2
         if hdrlen % 8 != 0:
-            log_warn("Number of bytes in {} is not an even multiple of 8; " 
-                     "padding must be explicitly added to correctly form the packet".format(self.__class__.__name__))
+            log_warn("Number of bytes in {} is not an even multiple of 8 ({}); " 
+                     "padding must be explicitly added to correctly form the packet".format(self.__class__.__name__, hdrlen))
         self._optdatalen = hdrlen // 8 - 1
         common = super().to_bytes()
         return common + xopt
@@ -309,6 +328,16 @@ class IPv6HopOption(IPv6ExtensionHeader):
         if not issubclass(optobj.__class__, IPv6Option):
             raise Exception("IPv6 option object isn't derived from IPv6Option class.")
         self._options.append(optobj)
+
+    def __getitem__(self, idx):
+        if not isinstance(idx, int):
+            raise TypeError("indexing in IPv6 option requires an int")
+        if not 0 <= idx < len(self._options):
+            raise IndexError("Bad index in IPv6 option access")
+        return self._options[idx]
+
+    def __len__(self):
+        return len(self._options)
 
     def _parseTLVOptions(self, raw):
         self._options = []
@@ -331,16 +360,6 @@ class IPv6HopOption(IPv6ExtensionHeader):
 class IPv6DestinationOption(IPv6HopOption):
     pass
 
-class IPv6NoNext(IPv6ExtensionHeader):
-    def __init__(self):
-        super().__init__()
-        self.data = b''
-
-    def __str__(self):
-        return "IPv6NoNext"
-
-    def from_bytes(self, raw):
-        pass
 
 class IPv6Mobility(IPv6ExtensionHeader):
     def __init__(self):
@@ -348,16 +367,6 @@ class IPv6Mobility(IPv6ExtensionHeader):
 
     def __str__(self):
         return "IPv6Mobility"
-
-    def from_bytes(self, raw):
-        raise Exception("Not implemented")
-
-class IPv6Shim6(IPv6ExtensionHeader):
-    def __init__(self):
-        super().__init__()
-
-    def __str__(self):
-        return "IPv6Shim6"
 
     def from_bytes(self, raw):
         raise Exception("Not implemented")
@@ -374,9 +383,8 @@ IPTypeClasses = {
     IPProtocol.IPv6RouteOption: IPv6RouteOption,
     IPProtocol.IPv6Fragment: IPv6Fragment,
     IPProtocol.IPv6DestinationOption: IPv6DestinationOption,
-    IPProtocol.IPv6NoNext: IPv6NoNext,
+    IPProtocol.IPv6NoNext: None,
     IPProtocol.IPv6Mobility: IPv6Mobility,
-    IPProtocol.IPv6Shim6: IPv6Shim6,
 }
 
 
@@ -390,7 +398,7 @@ class IPv6(PacketHeaderBase):
     def __init__(self):
         self.trafficclass = 0
         self.flowlabel = 0
-        self.ttl = 255
+        self.ttl = 128
         self.nextheader = IPProtocol.ICMP
         self._payloadlen = 0
         self.srcip = SpecialIPv6Addr.UNDEFINED.value
@@ -439,7 +447,7 @@ class IPv6(PacketHeaderBase):
 
     def next_header_class(self):
         cls = IPTypeClasses.get(self.nextheader, None)
-        if cls is None:
+        if cls is None and self.nextheader not in IPTypeClasses:
             print ("Warning: no class exists to parse next header type: {}".format(self.nextheader))
         return cls
 
@@ -474,9 +482,17 @@ class IPv6(PacketHeaderBase):
 
     @ttl.setter
     def ttl(self, value):
-        self._ttl = value
+        self._ttl = int(value)
 
-    @property
+    @property 
+    def hopcount(self):
+        return self.ttl
+
+    @hopcount.setter
+    def hopcount(self, value):
+        self.ttl = value
+
+    @property 
     def srcip(self):
         return self._srcip
 
