@@ -7,7 +7,6 @@ from switchyard.lib.packet.dhcp import *
 
 from switchyard.lib.packet.ipv4 import *
 from switchyard.lib.packet.ipv6 import *
-from switchyard.lib.packet.ipv6ext import *
 from switchyard.lib.packet.icmpv6 import *
 
 from switchyard.lib.packet.udp import *

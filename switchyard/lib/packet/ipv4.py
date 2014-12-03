@@ -28,7 +28,7 @@ IPTypeClasses = {
 
 
 class IPOption(object, metaclass=ABCMeta):
-    __PACKFMT__ = 'B'
+    _PACKFMT = 'B'
     __slots__ = ['_optnum']
     def __init__(self, optnum):
         self._optnum = IPOptionNumber(optnum)
@@ -38,10 +38,10 @@ class IPOption(object, metaclass=ABCMeta):
         return self._optnum
 
     def length(self):
-        return struct.calcsize(IPOption.__PACKFMT__)
+        return struct.calcsize(IPOption._PACKFMT)
 
     def to_bytes(self):
-        return struct.pack(IPOption.__PACKFMT__, self._optnum.value)
+        return struct.pack(IPOption._PACKFMT, self._optnum.value)
 
     def from_bytes(self, raw):
         return self.length()
@@ -61,7 +61,7 @@ class IPOptionEndOfOptionList(IPOption):
 
 
 class IPOptionXRouting(IPOption):
-    __PACKFMT__ = 'BBB'
+    _PACKFMT = 'BBB'
     __slots__ = ['_routedata','_ptr']
     def __init__(self, ipoptnum, numaddrs=9):
         super().__init__(ipoptnum)
@@ -71,13 +71,13 @@ class IPOptionXRouting(IPOption):
         self._ptr = 4
 
     def length(self):
-        return struct.calcsize(IPOptionXRouting.__PACKFMT__)+len(self._routedata)*4
+        return struct.calcsize(IPOptionXRouting._PACKFMT)+len(self._routedata)*4
 
     def __len__(self):
         return len(self._routedata)
 
     def to_bytes(self):
-        raw = struct.pack(IPOptionXRouting.__PACKFMT__,self.optnum.value,self.length(), self._ptr)
+        raw = struct.pack(IPOptionXRouting._PACKFMT,self.optnum.value,self.length(), self._ptr)
         for ipaddr in self._routedata:
             raw += ipaddr.packed
         return raw
@@ -207,7 +207,7 @@ class IPOptionTimestamp(IPOption):
 
 class IPOption4Bytes(IPOption):
     __slots__ = ['_value', '_copyflag']
-    __PACKFMT__ = '!BBH'
+    _PACKFMT = '!BBH'
 
     def __init__(self, optnum, value=0, copyflag=False):
         super().__init__(optnum)
@@ -217,15 +217,15 @@ class IPOption4Bytes(IPOption):
             self._copyflag = 0x80
     
     def length(self):
-        return struct.calcsize(IPOption4Bytes.__PACKFMT__)
+        return struct.calcsize(IPOption4Bytes._PACKFMT)
 
     def from_bytes(self, raw):
-        fields = struct.unpack(IPOption4Bytes.__PACKFMT__, raw[:4])
+        fields = struct.unpack(IPOption4Bytes._PACKFMT, raw[:4])
         self._value = fields[2]
         return self.length()
 
     def to_bytes(self):
-        return struct.pack(IPOption4Bytes.__PACKFMT__, 
+        return struct.pack(IPOption4Bytes._PACKFMT, 
             self._copyflag | self.optnum.value, self.length(), self._value)
 
     def __eq__(self, other):
@@ -351,13 +351,13 @@ class IPv4(PacketHeaderBase):
                  '_ipid','_flags','_fragoffset',
                  '_protocol','_csum',
                  '_srcip','_dstip','_options']
-    __PACKFMT__ = '!BBHHHBBH4s4s'
-    __MINSIZE__ = struct.calcsize(__PACKFMT__)
+    _PACKFMT = '!BBHHHBBH4s4s'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
         # fill in fields with (essentially) zero values
         self.tos = 0x00
-        self._totallen = IPv4.__MINSIZE__
+        self._totallen = IPv4._MINLEN
         self.ipid = 0x0000
         self.ttl = 0
         self._flags = IPFragmentFlag.NoFragments
@@ -369,13 +369,13 @@ class IPv4(PacketHeaderBase):
         self._options = IPOptionList()
         
     def size(self):
-        return struct.calcsize(IPv4.__PACKFMT__) + self._options.raw_length()
+        return struct.calcsize(IPv4._PACKFMT) + self._options.raw_length()
 
     def pre_serialize(self, raw, pkt, i):
         self._totallen = self.size() + len(raw)
 
     def to_bytes(self):
-        iphdr = struct.pack(IPv4.__PACKFMT__,
+        iphdr = struct.pack(IPv4._PACKFMT,
             4 << 4 | self.hl, self.tos, self._totallen,
             self.ipid, self._flags.value << 13 | self.fragment_offset,
             self.ttl, self.protocol.value, self.checksum,
@@ -385,7 +385,7 @@ class IPv4(PacketHeaderBase):
     def from_bytes(self, raw):
         if len(raw) < 20:
             raise Exception("Not enough data to unpack IPv4 header (only {} bytes)".format(len(raw)))
-        headerfields = struct.unpack(IPv4.__PACKFMT__, raw[:20])
+        headerfields = struct.unpack(IPv4._PACKFMT, raw[:20])
         v = headerfields[0] >> 4
         if v != 4:
             raise Exception("Version in raw bytes for IPv4 isn't 4!")
@@ -531,7 +531,7 @@ class IPv4(PacketHeaderBase):
 
     @property
     def checksum(self):
-        data = struct.pack(IPv4.__PACKFMT__,
+        data = struct.pack(IPv4._PACKFMT,
                     (4 << 4) + self.hl, self.tos,
                     self._totallen, self.ipid,
                     (self.flags.value << 13) | self.fragment_offset, 

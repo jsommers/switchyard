@@ -19,8 +19,8 @@ class ICMP(PacketHeaderBase):
     __slots__ = ('_type', '_code', '_icmpdata', '_valid_types', 
                  '_valid_codes_map', '_classtype_from_icmptype', 
                  '_icmptype_from_classtype', '_checksum')
-    __PACKFMT__ = '!BBH'
-    __MINSIZE__ = struct.calcsize(__PACKFMT__)
+    _PACKFMT = '!BBH'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
         self._valid_types = ICMPType
@@ -33,10 +33,10 @@ class ICMP(PacketHeaderBase):
         self._checksum = 0
 
     def size(self):
-        return struct.calcsize(ICMP.__PACKFMT__) + len(self._icmpdata.to_bytes())
+        return struct.calcsize(ICMP._PACKFMT) + len(self._icmpdata.to_bytes())
 
     def checksum(self):
-        self._checksum = checksum(b''.join( (struct.pack(ICMP.__PACKFMT__, self._type.value, self._code.value, 0), self._icmpdata.to_bytes())))
+        self._checksum = checksum(b''.join( (struct.pack(ICMP._PACKFMT, self._type.value, self._code.value, 0), self._icmpdata.to_bytes())))
         return self._checksum
 
     def to_bytes(self, dochecksum=True):
@@ -46,19 +46,17 @@ class ICMP(PacketHeaderBase):
         csum = 0
         if dochecksum:
             csum = self.checksum()
-        return b''.join((struct.pack(ICMP.__PACKFMT__, self._type.value, self._code.value, csum), self._icmpdata.to_bytes()))
+        return b''.join((struct.pack(ICMP._PACKFMT, self._type.value, self._code.value, csum), self._icmpdata.to_bytes()))
 
     def from_bytes(self, raw):
-        if len(raw) < ICMP.__MINSIZE__:
+        if len(raw) < ICMP._MINLEN:
             raise Exception("Not enough bytes ({}) to reconstruct an ICMP object".format(len(raw)))
-        fields = struct.unpack(ICMP.__PACKFMT__, raw[:ICMP.__MINSIZE__])
+        fields = struct.unpack(ICMP._PACKFMT, raw[:ICMP._MINLEN])
         self._type = self._valid_types(fields[0])
         self._code = self._valid_codes_map[self.icmptype](fields[1])
-        csum = fields[2]
+        self._checksum = fields[2]
         self._icmpdata = self._classtype_from_icmptype(self._type)()
-        self._icmpdata.from_bytes(raw[ICMP.__MINSIZE__:])
-        if csum != self.checksum():
-            print ("Checksum in raw ICMP packet does not match calculated checksum ({} versus {})".format(csum, self.checksum()))
+        self._icmpdata.from_bytes(raw[ICMP._MINLEN:])
         return raw[self.size():]
 
     def __eq__(self, other):
@@ -166,7 +164,7 @@ class ICMPData(PacketHeaderBase):
 
 
 class ICMPSourceQuench(ICMPData):
-    __MINSIZE__ = 4
+    _MINLEN = 4
 
     def __init__(self):
         super().__init__()
@@ -178,7 +176,7 @@ class ICMPSourceQuench(ICMPData):
         return b''.join((b'\x00' * 4, super().to_bytes()))
 
     def from_bytes(self, raw):
-        if len(raw) < ICMPSourceQuench.__MINSIZE__:
+        if len(raw) < ICMPSourceQuench._MINLEN:
             raise Exception("Not enough bytes ({}) to reconstruct ICMPSourceQuench data object".format(len(raw)))
         super().from_bytes(raw[4:])       
 
@@ -230,8 +228,8 @@ class ICMPDestinationUnreachable(ICMPData):
 
 class ICMPEchoRequest(ICMPData):
     __slots__ = ['_identifier','_sequence']
-    __PACKFMT__ = '!HH'
-    __MINSIZE__ = struct.calcsize(__PACKFMT__)
+    _PACKFMT = '!HH'
+    _MINLEN = struct.calcsize(_PACKFMT)
     
     def __init__(self):
         super().__init__()
@@ -245,18 +243,18 @@ class ICMPEchoRequest(ICMPData):
         return
 
     def size(self):
-        return self.__MINSIZE__ + super().size()
+        return self._MINLEN + super().size()
 
     def from_bytes(self, raw):
-        fields = struct.unpack(ICMPEchoRequest.__PACKFMT__, 
-            raw[:ICMPEchoRequest.__MINSIZE__])
+        fields = struct.unpack(ICMPEchoRequest._PACKFMT, 
+            raw[:ICMPEchoRequest._MINLEN])
         self._identifier = fields[0]
         self._sequence = fields[1]
         super().from_bytes(raw[4:])
         return b''
 
     def to_bytes(self):
-        return b''.join( (struct.pack(ICMPEchoRequest.__PACKFMT__,
+        return b''.join( (struct.pack(ICMPEchoRequest._PACKFMT,
             self._identifier, self._sequence), super().to_bytes() ) )
 
     def __str__(self):
@@ -315,8 +313,8 @@ class ICMPTimeExceeded(ICMPData):
 
 class ICMPAddressMaskRequest(ICMPData):
     __slots__ = ['_identifier','_sequence','_addrmask']
-    __PACKFMT__ = '!HH'
-    __MINSIZE__ = struct.calcsize(__PACKFMT__)
+    _PACKFMT = '!HH'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
         super().__init__()
@@ -331,16 +329,16 @@ class ICMPAddressMaskRequest(ICMPData):
         return
 
     def size(self):
-        return ICMPAddressMaskRequest.__MINSIZE__
+        return ICMPAddressMaskRequest._MINLEN
 
     def to_bytes(self):
-        return b''.join( (struct.pack(ICMPAddressMaskRequest.__PACKFMT__, 
+        return b''.join( (struct.pack(ICMPAddressMaskRequest._PACKFMT, 
             self._identifier, self._sequence), self._addrmask.packed))
 
     def from_bytes(self, raw):
-        if len(raw) < ICMPAddressMaskRequest.__MINSIZE__:
+        if len(raw) < ICMPAddressMaskRequest._MINLEN:
             raise Exception("Not enough bytes to unpack ICMPAddressMaskRequest object")
-        fields = struct.unpack(ICMPAddressMaskRequest.__PACKFMT__, raw[:4])
+        fields = struct.unpack(ICMPAddressMaskRequest._PACKFMT, raw[:4])
         self._identifier = fields[0]
         self._sequence = fields[1]
         self._addrmask = IPv4Address(raw[4:8])

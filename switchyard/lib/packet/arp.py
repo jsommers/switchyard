@@ -16,8 +16,8 @@ class Arp(PacketHeaderBase):
     __slots__ = ['_hwtype','_prototype','_hwaddrlen','_protoaddrlen',
                  '_operation','_senderhwaddr','_senderprotoaddr',
                  '_targethwaddr','_targetprotoaddr']
-    __PACKFMT__ = '!HHBBH6s4s6s4s'
-    __MINSIZE__ = struct.calcsize(__PACKFMT__)
+    _PACKFMT = '!HHBBH6s4s6s4s'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
         self._hwtype = ArpHwType.Ethernet
@@ -31,7 +31,7 @@ class Arp(PacketHeaderBase):
         self.targetprotoaddr = SpecialIPv4Addr.IP_ANY.value
 
     def size(self):
-        return struct.calcsize(Arp.__PACKFMT__)
+        return struct.calcsize(Arp._PACKFMT)
 
     def pre_serialize(self, raw, pkt, i):
         pass
@@ -40,14 +40,14 @@ class Arp(PacketHeaderBase):
         '''
         Return packed byte representation of the ARP header.
         '''
-        return struct.pack(Arp.__PACKFMT__, self._hwtype.value, self._prototype.value, self._hwaddrlen, self._protoaddrlen, self._operation.value, self._senderhwaddr.packed, self._senderprotoaddr.packed, self._targethwaddr.packed, self._targetprotoaddr.packed)
+        return struct.pack(Arp._PACKFMT, self._hwtype.value, self._prototype.value, self._hwaddrlen, self._protoaddrlen, self._operation.value, self._senderhwaddr.packed, self._senderprotoaddr.packed, self._targethwaddr.packed, self._targetprotoaddr.packed)
 
     def from_bytes(self, raw):
         '''Return an Ethernet object reconstructed from raw bytes, or an
            Exception if we can't resurrect the packet.'''
-        if len(raw) < Arp.__MINSIZE__:
+        if len(raw) < Arp._MINLEN:
             raise Exception("Not enough bytes ({}) to reconstruct an Arp object".format(len(raw)))
-        fields = struct.unpack(Arp.__PACKFMT__, raw[:Arp.__MINSIZE__])
+        fields = struct.unpack(Arp._PACKFMT, raw[:Arp._MINLEN])
         try:
             self._hwtype = ArpHwType(fields[0])
             self._prototype = EtherType(fields[1])
@@ -60,7 +60,7 @@ class Arp(PacketHeaderBase):
             self.targetprotoaddr = IPAddr(fields[8])
         except Exception as e:
             raise Exception("Error constructing Arp packet object from raw bytes: {}".format(str(e)))
-        return raw[Arp.__MINSIZE__:]
+        return raw[Arp._MINLEN:]
 
     def __eq__(self, other):
         return self.hardwaretype == other.hardwaretype and \

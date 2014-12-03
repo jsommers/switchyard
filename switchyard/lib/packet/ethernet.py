@@ -24,8 +24,8 @@ class Vlan(PacketHeaderBase):
     '''
 
     __slots__ = ['_vlanid', '_ethertype']
-    __PACKFMT__ = '!HH'
-    __MINSIZE__ = struct.calcsize(__PACKFMT__)
+    _PACKFMT = '!HH'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self, vlan=0, ethertype=EtherType.IPv4):
         PacketHeaderBase.__init__(self)
@@ -49,21 +49,21 @@ class Vlan(PacketHeaderBase):
         self._ethertype = EtherType(value)
 
     def from_bytes(self, raw):
-        if len(raw) < Vlan.__MINSIZE__:
-            raise Exception("Not enough bytes to unpack Vlan header; need {}, only have {}".format(Vlan.__MINSIZE__, len(raw)))
-        fields = struct.unpack(Vlan.__PACKFMT__, raw[:Vlan.__MINSIZE__])
+        if len(raw) < Vlan._MINLEN:
+            raise Exception("Not enough bytes to unpack Vlan header; need {}, only have {}".format(Vlan._MINLEN, len(raw)))
+        fields = struct.unpack(Vlan._PACKFMT, raw[:Vlan._MINLEN])
         self.vlan = fields[0]
         self.ethertype = fields[1]
-        return raw[Vlan.__MINSIZE__:]
+        return raw[Vlan._MINLEN:]
 
     def to_bytes(self):
-        return struct.pack(Vlan.__PACKFMT__, self._vlanid, self._ethertype.value)
+        return struct.pack(Vlan._PACKFMT, self._vlanid, self._ethertype.value)
 
     def __eq__(self, other):
         return self.vlan == other.vlan and self.ethertype == other.ethertype
 
     def size(self):
-        return Vlan.__MINSIZE__
+        return Vlan._MINLEN
 
     def pre_serialize(self, raw, pkt, i):
         pass
@@ -85,8 +85,8 @@ EtherTypeClasses = {
 
 class Ethernet(PacketHeaderBase):
     __slots__ = ['_src','_dst','_ethertype']
-    __PACKFMT__ = '!6s6sH'
-    __MINSIZE__ = struct.calcsize(__PACKFMT__)
+    _PACKFMT = '!6s6sH'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self, src=SpecialEthAddr.ETHER_ANY.value, dst=SpecialEthAddr.ETHER_ANY.value,ethertype=EtherType.IP):
         PacketHeaderBase.__init__(self)
@@ -95,7 +95,7 @@ class Ethernet(PacketHeaderBase):
         self._ethertype = EtherType(ethertype)
 
     def size(self):
-        return struct.calcsize(Ethernet.__PACKFMT__)
+        return struct.calcsize(Ethernet._PACKFMT)
 
     @property
     def src(self):
@@ -125,14 +125,14 @@ class Ethernet(PacketHeaderBase):
         '''
         Return packed byte representation of the Ethernet header.
         '''
-        return struct.pack(Ethernet.__PACKFMT__, self._dst.packed, self._src.packed, self._ethertype.value)
+        return struct.pack(Ethernet._PACKFMT, self._dst.packed, self._src.packed, self._ethertype.value)
 
     def from_bytes(self, raw):
         '''Return an Ethernet object reconstructed from raw bytes, or an
         Exception if we can't resurrect the packet.'''
-        if len(raw) < Ethernet.__MINSIZE__:
+        if len(raw) < Ethernet._MINLEN:
             raise Exception("Not enough bytes ({}) to reconstruct an Ethernet object".format(len(raw)))
-        dst,src,ethertype = struct.unpack(Ethernet.__PACKFMT__, raw[:Ethernet.__MINSIZE__])
+        dst,src,ethertype = struct.unpack(Ethernet._PACKFMT, raw[:Ethernet._MINLEN])
         self.src = src
         self.dst = dst
         if ethertype <= 1500:
@@ -140,7 +140,7 @@ class Ethernet(PacketHeaderBase):
         else:
             self.ethertype = ethertype
 
-        return raw[Ethernet.__MINSIZE__:]
+        return raw[Ethernet._MINLEN:]
 
     def next_header_class(self):
         if self.ethertype not in EtherTypeClasses:

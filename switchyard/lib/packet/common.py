@@ -44,7 +44,7 @@ class IPProtocol(Enum):
     TLSP = 56
     ICMPv6 = 58
     IPv6NoNext = 59
-    IPv6DestinationOptions = 60
+    IPv6DestinationOption = 60
     EIGRP = 88
     OSPF = 89
     IPIP = 94

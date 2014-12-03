@@ -28,10 +28,10 @@ class ICMPv6(ICMP):
     def _compute_checksum(self, srcip, dstip, raw):
         sep = b''
         databytes = self._icmpdata.to_bytes()
-        icmpsize = ICMP.__MINSIZE__+len(databytes)
-        return csum(sep.join( (srcip.packed, dstip.packed,
+        icmpsize = ICMP._MINLEN+len(databytes)
+        self._checksum = csum(sep.join( (srcip.packed, dstip.packed,
             struct.pack('!I3xBBB', 
-                ICMP.__MINSIZE__+len(databytes), 58, self._type.value, self._code.value), 
+                ICMP._MINLEN+len(databytes), 58, self._type.value, self._code.value), 
             databytes) ))
 
     def pre_serialize(self, raw, pkt, i):

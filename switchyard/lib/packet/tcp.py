@@ -64,8 +64,8 @@ class TCPFlags(Enum):
 class TCP(PacketHeaderBase):
     __slots__ = ['_srcport','_dstport','_seq','_ack',
         '_flags','_window','_urg','_options']
-    __PACKFMT__ = '!HHIIHHHH'
-    __MINSIZE__ = struct.calcsize(__PACKFMT__)
+    _PACKFMT = '!HHIIHHHH'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
         self.srcport = self.dstport = 0
@@ -76,7 +76,7 @@ class TCP(PacketHeaderBase):
         self._options = TCPOptions()
 
     def size(self):
-        return struct.calcsize(TCP.__PACKFMT__)
+        return struct.calcsize(TCP._PACKFMT)
 
     def pre_serialize(self, raw, pkt, i):
         pass
@@ -86,7 +86,7 @@ class TCP(PacketHeaderBase):
         Return packed byte representation of the TCP header.
         '''
         offset_flags = self.offset << 12 | self._flags
-        header = struct.pack(TCP.__PACKFMT__, self.srcport, self.dstport,
+        header = struct.pack(TCP._PACKFMT, self.srcport, self.dstport,
             self.seq, self.ack, offset_flags, self.window,
             self.checksum(), self.urgent_pointer)
         return b''.join( (header, self._options.to_bytes()) )
@@ -94,9 +94,9 @@ class TCP(PacketHeaderBase):
     def from_bytes(self, raw):
         '''Return an Ethernet object reconstructed from raw bytes, or an
            Exception if we can't resurrect the packet.'''
-        if len(raw) < TCP.__MINSIZE__:
+        if len(raw) < TCP._MINLEN:
             raise Exception("Not enough bytes ({}) to reconstruct an TCP object".format(len(raw)))
-        fields = struct.unpack(TCP.__PACKFMT__, raw[:TCP.__MINSIZE__])
+        fields = struct.unpack(TCP._PACKFMT, raw[:TCP._MINLEN])
         self._srcport = fields[0]
         self._dstport = fields[1]
         self._seq = fields[2]        
@@ -107,8 +107,8 @@ class TCP(PacketHeaderBase):
         csum = fields[6]
         self._urg = fields[7]
         headerlen = offset * 4
-        optlen = headerlen - TCP.__MINSIZE__
-        self._options.from_bytes(raw[TCP.__MINSIZE__:headerlen])
+        optlen = headerlen - TCP._MINLEN
+        self._options.from_bytes(raw[TCP._MINLEN:headerlen])
         return raw[headerlen:]
 
     def __eq__(self, other):
@@ -124,7 +124,7 @@ class TCP(PacketHeaderBase):
 
     @property
     def offset(self):
-        return TCP.__MINSIZE__ // 4 + len(self._options.to_bytes()) // 4
+        return TCP._MINLEN // 4 + len(self._options.to_bytes()) // 4
 
     @property
     def srcport(self):

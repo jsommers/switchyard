@@ -115,6 +115,14 @@ class Packet(object):
             return self
         raise Exception("Payload for a packet header must be an object that is a subclass of PacketHeaderBase, or a bytes object.")
 
+    def insert_header(self, idx, ph):
+        '''
+        Insert a PacketHeaderBase-derived object at index idx the list of headers.
+        Any headers previously in the Packet from index idx:len(ph) are shifted to
+        make room for the new packet.
+        '''
+        self._headers.insert(idx, ph)
+
     def add_payload(self, ph):
         '''Alias for add_header'''
         self.add_header(ph)

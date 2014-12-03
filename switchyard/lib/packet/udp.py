@@ -10,33 +10,33 @@ References:
 
 class UDP(PacketHeaderBase):
     __slots__ = ['_srcport','_dstport','_len']
-    __PACKFMT__ = '!HHHH'
-    __MINSIZE__ = struct.calcsize(__PACKFMT__)
+    _PACKFMT = '!HHHH'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
         self.srcport = self.dstport = 0
         self._len = self.size()
 
     def size(self):
-        return struct.calcsize(UDP.__PACKFMT__)
+        return struct.calcsize(UDP._PACKFMT)
 
     def to_bytes(self):
         '''
         Return packed byte representation of the UDP header.
         '''
-        return struct.pack(UDP.__PACKFMT__, self._srcport, self._dstport,
+        return struct.pack(UDP._PACKFMT, self._srcport, self._dstport,
             self._len, 0)
 
     def from_bytes(self, raw):
         '''Return an Ethernet object reconstructed from raw bytes, or an
            Exception if we can't resurrect the packet.'''
-        if len(raw) < UDP.__MINSIZE__:
+        if len(raw) < UDP._MINLEN:
             raise Exception("Not enough bytes ({}) to reconstruct an UDP object".format(len(raw)))
-        fields = struct.unpack(UDP.__PACKFMT__, raw[:UDP.__MINSIZE__])
+        fields = struct.unpack(UDP._PACKFMT, raw[:UDP._MINLEN])
         self._srcport = fields[0]
         self._dstport = fields[1]
         self._len = fields[2]
-        return raw[UDP.__MINSIZE__:]
+        return raw[UDP._MINLEN:]
 
     def __eq__(self, other):
         return self.srcport == other.srcport and \
