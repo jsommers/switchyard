@@ -159,32 +159,3 @@ class Ethernet(PacketHeaderBase):
     def __str__(self):
         return '{} {}->{} {}'.format(self.__class__.__name__, self.src, self.dst, self.ethertype.name)
 
-
-if __name__ == '__main__':
-    e = Ethernet()
-    e2 = Ethernet()
-    ip = IPv4()
-    print (e,e2,ip)
-    packet = e + ip
-    print (packet)
-    for ph in packet:
-        print (ph)
-
-    a = Arp()
-    e = Ethernet()
-    e.ethertype = EtherType.ARP
-    p = e + a
-    print (p.headers())
-    raw = p.to_bytes()
-    px = Packet(raw)
-
-    e = Ethernet(ethertype=EtherType.x8021Q)
-    v = Vlan(ethertype=EtherType.IP, vlan=10)
-    ip = IPv4()
-    from switchyard.lib.packet import ICMP
-    icmp = ICMP()
-    p = e+v+ip+icmp
-    print (p)
-
-    raw = p.to_bytes()
-    p2 = Packet(raw)

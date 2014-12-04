@@ -121,7 +121,6 @@ class _PcapFfi(object):
             raise PcapException("Don't know how to locate libpcap on this platform: {}".format(sys.platform))
         self.__interfaces = []
         self.discoverdevs()
-        # print (self.devices)
 
     @staticmethod
     def instance():
@@ -152,7 +151,7 @@ class _PcapFfi(object):
             tmp = tmp.next
         self.__libpcap.pcap_freealldevs(pintf)
 
-    @property
+    @property 
     def devices(self):
         return self.__interfaces
 
@@ -248,12 +247,17 @@ class _PcapFfi(object):
             s = self.__ffi.string(self.__libpcap.pcap_geterr(xpcap))
             raise PcapException("Error getting stats: {}".format(s))
 
+
+def pcap_devices():
+    return _PcapFfi.instance().devices
+
+
 class PcapDumper(object):
     __slots__ = ['__pcapffi','__dumper']
     def __init__(self, outfile):
         self.__pcapffi = _PcapFfi.instance()
         self.__dumper = self.__pcapffi.open_dumper(outfile)
-        print ("Got pcap dump device: {}".format(self.__dumper))
+        # print ("Got pcap dump device: {}".format(self.__dumper))
 
     def write_packet(self, pkt, ts=None):
         if not isinstance(pkt, bytes):
@@ -330,24 +334,4 @@ class PcapLiveDevice(object):
     def stats(self):
         return self.__pcapffi.stats(self.__pcapdev.pcap)
 
-_PcapFfi()
-
-
-if __name__ == '__main__':
-    dump = PcapDumper("outfile.pcap")
-    pkt = b'\xff\xff\xff\xff\xff\xff\x68\xa8\x6d\x04\xbd\x86\x08\x00' + b'\x00'*20
-    dump.write_packet(pkt)
-
-    p = PcapLiveDevice('en0')
-    # p.send_packet(pkt)
-    # p.close()
-
-    for _ in range(2):
-        rv = p.recv_packet(5.0)
-        if rv:
-            print (rv)
-            dump.write_packet(rv.packet)
-    print ("Stats: {}".format(p.stats()))
-    p.close()
-
-    dump.close()
+_PcapFfi() # instantiate singleton

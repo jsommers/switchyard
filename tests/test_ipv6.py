@@ -153,9 +153,5 @@ class IPv6PacketTests(unittest.TestCase):
     def testMobilityHeader(self):
         pass
 
-
-# mobility
-
-
 if __name__ == '__main__':
     unittest.main()

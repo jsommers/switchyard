@@ -3,3 +3,4 @@ xenv3
 __pycache__
 *.pcap
 .coverage
+htmlcov
