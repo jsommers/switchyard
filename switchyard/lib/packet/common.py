@@ -157,10 +157,10 @@ class ICMPv6Type(Enum):
     # InverseNeighborDiscoverySolicitationMessage = 141
     # InverseNeighborDiscoveryAdvertisementMessage = 142
     # Version2MulticastListenerReport = 143
-    # HomeAgentAddressDiscoveryRequestMessage = 144
-    # HomeAgentAddressDiscoveryReplyMessage = 145
-    # MobilePrefixSolicitation = 146
-    # MobilePrefixAdvertisement = 147
+    HomeAgentAddressDiscoveryRequestMessage = 144
+    HomeAgentAddressDiscoveryReplyMessage = 145
+    MobilePrefixSolicitation = 146
+    MobilePrefixAdvertisement = 147
     # CertificationPathSolicitationMessage = 148
     # CertificationPathAdvertisementMessage = 149
     # ICMPmessagesutilizedbyexperimentalmobilityprotocolssuchasSeamoby = 150

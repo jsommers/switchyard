@@ -151,7 +151,17 @@ class IPv6PacketTests(unittest.TestCase):
         self.assertEqual(p, pkt)
 
     def testMobilityHeader(self):
-        pass
+        pkt = deepcopy(self.pkt)
+        idx = pkt.get_header_index(IPv6)
+        pkt[idx].nextheader = IPProtocol.IPv6Mobility
+        pkt[idx].srcip = IPv6Address("fc00::a")
+        pkt[idx].dstip = IPv6Address("fc00::b")
+        pkt[idx+1] = IPv6Mobility()
+        self.assertEqual(pkt.num_headers(), 3)
+        xraw = pkt.to_bytes()
+        p = Packet(raw=xraw)
+        xraw2 = p.to_bytes()
+        self.assertEqual(pkt,p)
 
 if __name__ == '__main__':
     unittest.main()
