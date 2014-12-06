@@ -5,9 +5,7 @@ Switchyard (or "switchy") is a low-level networking library for software switche
 
 Documentation is currently a work in progress.
 
-Switchyard can run in a standalone test mode, in a simulation environment with a nice little command-line interface, or also nicely within a Linux host and as a result, within Mininet.  The [Mininet project](http://www.mininet.org) pages have documentation for Mininet, as well as lots of other good stuff.
-
-This version of Switchyard is a complete overhaul of the original framework written in late 2013.  Many parts of the code are under active development and very little is presently documented.  For the older version of Switchyard, see the v1 branch.  Importantly, this version of Switchyard requires Python 3.4.
+Switchyard can run in a standalone test mode, in a simulation environment with a nice little command-line interface, or also within a Linux host and or in Mininet.  This version of Switchyard is a complete overhaul of the original framework written in late 2013.  Many parts of the code are under active development and very little is presently documented.  For the older version of Switchyard, see the v1 branch.  Importantly, this version of Switchyard requires Python 3.4.
 
 ----
 
