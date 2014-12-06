@@ -103,7 +103,7 @@ class WildcardMatch(AbstractMatch):
                 if pkt.has_header(cls):
                     header = pkt.get_header(cls)
                     value = getattr(header,field)
-                    mvals[field] = value
+                    mvals[key] = value
         return mvals
 
     def match(self, pkt):
@@ -167,12 +167,16 @@ class PacketMatcher(object):
 
         self.predicates = []
         if len(predicates) > 0:
+            boguslambda = lambda: 0
             for i in range(len(predicates)):
                 if isinstance(predicates[i], str):
-                    self.predicates.append(eval(predicates[i]))
-                elif str(type(self.predicates[i])) == "<class 'function'>":
+                    try:
+                        fn = eval(predicates[i])
+                        self.predicates.append(fn)
+                    except SyntaxError:
+                        raise SyntaxError("Predicate strings passed to PacketMatcher must conform to Python lambda syntax")
+                elif isinstance(predicates[i], type(boguslambda)):
                     self.predicates.append(predicates[i])
-                    pass
                 else:
                     raise Exception("Predicates passed to PacketMatcher must be strings or lambdas ({} is of type {})".format(predicates[i], type(predicates[i])))
 
@@ -223,26 +227,22 @@ class PacketMatcher(object):
         if self.exact:
             return PacketFormatter.format_pkt(self.__matchobj, cls)
         else:
-            def fmtfield(f, wildcardview='*', convert=None):
+            def fmtfield(f, wildcardview='*'):
                 v = getattr(self.__matchobj, f)
                 if v is None or f.startswith('tp') and v == 0:
                     return wildcardview
                 else:
-                    if convert:
-                        return convert(v)
                     return v
             dl = nw = tp = ''
             if cls is None or cls.__name__ == 'Ethernet':
                 dl = "[{}->{} {}]".format(fmtfield('dl_src', '**:**:**:**:**:**'),
                                           fmtfield('dl_dst', '**:**:**:**:**:**'),
-                                          # fmtfield('dl_type', convert=ethtype_to_str))
                                           fmtfield('dl_type'))
             if cls is None or cls.__name__ == 'IPv4':
                 nw = " IP {}->{} ".format(fmtfield('nw_src', '*.*.*.*'),
                                           fmtfield('nw_dst', '*.*.*.*'))
             if cls is None or cls.__name__ in ['TCP','UDP','ICMP']:
                 arrow = ':' if cls is None or cls.__name__ == 'ICMP' else '->'
-                # tp = " {} {}{}{}".format(fmtfield('nw_proto', convert=ipproto_to_str),fmtfield('tp_src'), arrow, fmtfield('tp_dst'))
                 tp = " {} {}{}{}".format(fmtfield('nw_proto'),fmtfield('tp_src'), arrow, fmtfield('tp_dst'))
             return dl + nw + tp
             # not including dl_vlan, dl_vlan_pcp

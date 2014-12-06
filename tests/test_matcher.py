@@ -40,6 +40,10 @@ class SrpyMatcherTest(unittest.TestCase):
         self.assertFalse(matcher.match(pkt))
         matcher = WildcardMatch(pkt, ['dl_src'])
         self.assertTrue(matcher.match(pkt))
+        self.assertTrue('dl_src' in str(matcher))
+        self.assertIsNone(matcher.dl_src, None)
+        self.assertEqual(matcher.nw_src, IPv4Address("0.0.0.0"))
+        self.assertEqual(matcher.dl_type, EtherType.IP)
         
     def testWildcardMatch1(self):
         pkt = Ethernet() + IPv4()
@@ -63,6 +67,24 @@ class SrpyMatcherTest(unittest.TestCase):
             '''lambda pkt: isinstance(pkt[1], IPv4) and pkt[1].ttl == 0 ''',
             exact=False)
         self.assertTrue(matcher.match(pkt))
+
+    def testPredicateMatch4(self):
+        pkt = Ethernet() + IPv4()
+        matcher = PacketMatcher(pkt, 
+            lambda pkt: pkt[0].src == '00:00:00:00:00:00',
+            lambda pkt: (isinstance(pkt[1], IPv4) and pkt[1].ttl == 0),
+            exact=False)        
+        self.assertTrue(matcher.match(pkt))
+
+    def testPredicateMatch5(self):
+        pkt = Ethernet() + IPv4()
+        with self.assertRaises(Exception):
+            matcher = PacketMatcher(pkt, list(), exact=False)
+
+    def testPredicateMatch6(self):
+        pkt = Ethernet() + IPv4()
+        with self.assertRaises(Exception):
+            matcher = PacketMatcher(pkt, 'not a function', exact=False)
 
     def testWildcarding(self):
         pkt = Ethernet() + IPv4()

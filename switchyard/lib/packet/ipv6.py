@@ -371,7 +371,7 @@ class IPv6MobilityHeaderType(Enum):
     BindingAcknowledgment = 6
     BindingError = 7
 
-IPv6MobilityHeaderStruct = {
+_IPv6MobilityHeaderStruct = {
     IPv6MobilityHeaderType.BindingRefreshRequest: '!H', # 2 reserved bytes, TLV options
     IPv6MobilityHeaderType.HomeTestInit: '!H8s', # 2 reserved bytes, 8 byte cookie, TLV options
     IPv6MobilityHeaderType.CareOfTestInit: '!H8s', # 2 reserved bytes, 8 byte cookie, TLV options
@@ -438,7 +438,7 @@ class IPv6Mobility(IPv6ExtensionHeader):
             self._compute_checksum()
         exthdr = super().to_bytes()
         mobhdr = struct.pack(IPv6Mobility._PACKFMT, self._mhtype.value, 0, self._checksum)
-        remain = struct.pack(IPv6MobilityHeaderStruct[self._mhtype], *self._data)
+        remain = struct.pack(_IPv6MobilityHeaderStruct[self._mhtype], *self._data)
         return exthdr + mobhdr + remain
 
     def from_bytes(self, raw):
@@ -450,7 +450,7 @@ class IPv6Mobility(IPv6ExtensionHeader):
                                                  remain[:IPv6Mobility._MINLEN])
         self._mhtype = IPv6MobilityHeaderType(mhtype)
         self._checksum = checksum
-        self._data = struct.unpack(IPv6MobilityHeaderStruct[self._mhtype], remain[IPv6Mobility._MINLEN:])
+        self._data = struct.unpack(_IPv6MobilityHeaderStruct[self._mhtype], remain[IPv6Mobility._MINLEN:])
 
 IPTypeClasses = {
     IPProtocol.TCP: TCP,

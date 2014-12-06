@@ -1,6 +1,8 @@
 from switchyard.lib.packet import *
 from switchyard.lib.address import EthAddr, IPAddr
 from switchyard.lib.common import PacketFormatter
+from io import StringIO
+import sys
 import unittest 
 
 class PacketTests(unittest.TestCase):
@@ -44,6 +46,8 @@ class PacketTests(unittest.TestCase):
         self.assertEqual(PacketFormatter.format_pkt(fullpkt, cls=IPv4), str(partial))
         print("Expect a warning from the next test...")
         self.assertEqual(PacketFormatter.format_pkt(fullpkt, cls=IPv6), str(fullpkt))
+        PacketFormatter.full_display()
+        self.assertEqual(PacketFormatter.format_pkt(fullpkt), str(fullpkt))
 
 
 

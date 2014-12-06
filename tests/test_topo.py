@@ -2,6 +2,7 @@ from switchyard.lib.packet import *
 from switchyard.lib.address import EthAddr, IPAddr
 from switchyard.lib.topo.util import *
 from switchyard.lib.topo.topobuild import *
+from switchyard.lib.common import Interface
 import unittest 
 
 class TopologyTests(unittest.TestCase):
@@ -176,6 +177,23 @@ class TopologyTests(unittest.TestCase):
         rdict = r.asDict()
         self.assertEqual(rdict['interfaces'], d)
 
+    def testInterface(self):
+        intf = Interface("test", None, None, None)
+        self.assertTrue(str(intf).startswith("test"))
+        self.assertTrue("mac:00:00:00:00:00:00" in str(intf))
+        intf.ethaddr = EthAddr("00:11:22:33:44:55")
+        self.assertEqual(str(intf.ethaddr), "00:11:22:33:44:55")
+        intf.ethaddr = None
+        self.assertTrue("mac:00:00:00:00:00:00" in str(intf))
+        with self.assertRaises(Exception):
+            intf.ipaddr = 1
+        intf.ipaddr = "1.2.3.4"
+        intf.netmask = "24"
+        self.assertTrue("ip:1.2.3.4/24" in str(intf))
+        intf.netmask = "255.255.252.0"
+        self.assertTrue("ip:1.2.3.4/22" in str(intf))
+        with self.assertRaises(Exception):
+            intf.netmask = True
 
 if __name__ == '__main__':
     unittest.main()
