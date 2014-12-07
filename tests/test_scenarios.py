@@ -91,6 +91,19 @@ scenario = s
         s.testpass()
         self.assertRaises(ScenarioFailure, s.next)
 
+    def testScenarioSanity(self):
+        self.scenario.reset()
+        self.scenario.scenario_sanity_check()
+
+    def testInterfaces(self):
+        p = self.scenario.reset()
+        p = self.scenario.ports()
+        self.assertIn('router-eth0', p)
+        self.assertIn('router-eth1', p)
+        self.assertIn('router-eth2', p)
+        self.assertIn('router-eth3', p)
+
+
 if __name__ == '__main__':
     setup_logging(False)
     unittest.main()
