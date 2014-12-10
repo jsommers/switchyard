@@ -3,7 +3,7 @@ import importlib
 import os
 from switchyard.lib.common import log_failure
 
-def import_code(module_name, entrypoint_names):
+def import_or_die(module_name, entrypoint_names):
     '''
     Import user code; return reference to usercode function.
 
@@ -18,6 +18,8 @@ def import_code(module_name, entrypoint_names):
     if modname in sys.modules:
         user_module = sys.modules.get(modname)
         user_module = importlib.reload(user_module)
+    # if it isn't in sys.modules, load it for the first time, or
+    # try to.
     else:
         try:
             user_module = importlib.import_module(modname)

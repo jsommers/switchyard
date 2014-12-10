@@ -21,6 +21,7 @@ from switchyard.lib.packet import *
 from switchyard.lib.address import *
 from switchyard.lib.common import *
 import switchyard.lib.debug as sdebug
+from switchyard.lib.importcode import import_or_die
 
 
 class SwitchyTestEvent(object):
@@ -263,7 +264,7 @@ class PacketInputTimeoutEvent(SwitchyTestEvent):
         self.__dict__.update(xdict)
 
     def __eq__(self, other):
-        return self.device == other.device and str(self.packet) == str(other.packet)
+        return self.timeout == other.timeout
 
     def __str__(self):
         return "timeout on recv_packet"
@@ -361,7 +362,6 @@ class PacketOutputEvent(SwitchyTestEvent):
         if device in self.device_packet_map:
             matcher = self.device_packet_map[device]
             if matcher.match(pkt):
-            # if self.packets_match(pkt, self.device_packet_map[device]):
                 self.matches[device] = pkt
                 del self.device_packet_map[device]
                 if len(self.device_packet_map) == 0:
@@ -399,22 +399,16 @@ class Scenario(object):
     '''
     def __init__(self, name):
         self.interface_map = {}
-        self.name = name
+        self._name = name
         self.pending_events = []
         self.completed_events = []
         self.timer = False
         self.next_timestamp = 0.0
         self.timeoutval = 10
 
-    def reset(self):
-        '''
-        Clear out completed events; put all events into pending.
-        Reset timer and timestamp.
-        '''
-        self.pending_events += self.completed_events
-        self.completed_events = []
-        self.next_timestamp = 0.0
-        self.timer = False
+    @property  
+    def name(self):
+        return self._name
 
     def add_interface(self, interface_name, macaddr, ipaddr=None, netmask=None):
         '''
@@ -458,7 +452,7 @@ class Scenario(object):
         Return the next expected event to happen.
         '''
         if not self.pending_events:
-            raise ScenarioFailure("next() called on scenario{}, but not expecting anything else for this scenario".format(self.name))
+            raise ScenarioFailure("next() called on scenario '{}', but not expecting anything else for this scenario".format(self.name))
         else:
             return self.pending_events[0].event
 
@@ -575,13 +569,13 @@ class Scenario(object):
         odict['events'] = odict['pending_events'] + odict['completed_events']
         del odict['pending_events']
         del odict['completed_events']
-        del odict['next_timestamp']
+        # del odict['next_timestamp']
         return odict
 
     def __setstate__(self, xdict):
         xdict['pending_events'] = xdict['events']
         del xdict['events']
-        xdict['next_timestamp'] = 0.0
+        # xdict['next_timestamp'] = 0.0
         xdict['timer'] = None
         xdict['completed_events'] = []
         self.__dict__.update(xdict)
@@ -589,15 +583,14 @@ class Scenario(object):
     def __eq__(self, other):
         if self.next_timestamp != other.next_timestamp:
             return False
-        if len(self.pending_events) != len(other.pending_events):
+        selfev = self.pending_events + self.completed_events
+        otherev = other.pending_events + other.completed_events
+        if len(selfev) != len(otherev):
+            print ("ev len doesn't match")
             return False
-        if len(self.completed_events) != len(other.completed_events):
-            return False
-        for i in range(len(self.pending_events)):
-            if self.pending_events[i] != other.pending_events[i]:
-                return False
-        for i in range(len(self.completed_events)):
-            if self.completed_events[i] != other.completed_events[i]:
+        for i in range(len(selfev)):
+            if selfev[i] != otherev[i]:
+                print ("specific ev don't match")
                 return False
         return True
 
@@ -638,30 +631,6 @@ class Scenario(object):
             else:
                 log_warn("Unrecognized event type in scenario event list: {}".format(str(type(ev.event))))
 
-
-def get_scenario_object(sfile):
-    '''
-    Given a .py module containing a scenario object, import the module
-    and return the object.  Raise an exception if anything goes wrong.
-
-    (str) -> Scenario object
-    '''
-    modname = os.path.basename(sfile).rstrip('.py')
-    dirname = os.path.dirname(sfile)
-    if dirname:
-        sys.path.append(dirname)
-
-    try:
-        mod = importlib.import_module(modname)
-        sobj = getattr(mod, 'scenario')
-        return sobj
-    except ImportError as ie:
-        raise SwitchyException("Couldn't import scenario file: {}".format(str(ie)))
-    except AttributeError as ae:
-        raise SwitchyException("Couldn't find required 'scenario' variable in your scenario file: {}".format(str(ae)))
-    except Exception as e:
-        raise SwitchyException("Error when getting scenario object: {}".format(str(e)))
-
 def compile_scenario(scenario_file, output_filename=None):
     '''
     Compile a Switchy test scenario object to a serialized representation
@@ -670,7 +639,7 @@ def compile_scenario(scenario_file, output_filename=None):
 
     (str/filename) -> str/filename
     '''
-    sobj = get_scenario_object(scenario_file)
+    sobj = import_or_die(scenario_file, ('scenario',))
     sobj.scenario_sanity_check()
     outname = scenario_file.rstrip('.py') + '.switchy'
     pickle_repr = pickle.dumps(sobj)
@@ -716,10 +685,9 @@ def get_test_scenario_from_file(sfile):
     '''
     sobj = None
     if fnmatch.fnmatch(sfile, "*.py"):
-        sobj = get_scenario_object(sfile)
+        sobj = import_or_die(sfile, ('scenario',))
     elif fnmatch.fnmatch(sfile, "*.switchy"):
         sobj = uncompile_scenario(sfile)
     else:
-        sobj = get_scenario_object(sfile)
+        sobj = import_or_die(sfile, ('scenario',))
     return sobj
-

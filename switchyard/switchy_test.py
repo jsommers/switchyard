@@ -20,7 +20,7 @@ from switchyard.lib.packet import *
 from switchyard.lib.address import *
 from switchyard.lib.common import *
 from switchyard.lib.testing import *
-from switchyard.lib.importcode import import_user_code
+from switchyard.lib.importcode import import_or_die
 from switchyard.lib.debug import *
 
 
@@ -39,11 +39,11 @@ class FakePyLLNet(LLNetBase):
         if name:
             self.__name = name
         else:
-            self.__name = scenario
+            self.__name = scenario.name
 
     @property
     def name(self):
-        return self.scenario
+        return self.__name
 
     def shutdown(self):
         '''
@@ -77,7 +77,7 @@ class FakePyLLNet(LLNetBase):
 
     def send_packet(self, devname, pkt):
         if self.scenario.done():
-            raise ScenarioFailure("send_packet was called, but the scenario was finished.")
+            raise ScenarioFailure("send_packet was called, but the test scenario was finished.")
 
         ev = self.scenario.next()
         match_results = ev.match(SwitchyTestEvent.EVENT_OUTPUT, device=devname, packet=pkt)
@@ -110,15 +110,20 @@ def run_tests(scenario_names, usercode_entry_point, no_pdb, verbose):
             usercode_entry_point(net)
         except Shutdown:
             pass
-        except SwitchyException:
-            exc,value,tb = sys.exc_info()
-            message = '''Your code crashed before I could run all the tests.'''
         except ScenarioFailure:
             exc,value,tb = sys.exc_info()
-            message = '''Your code didn't crash, but a test failed.'''
+            if sobj.get_failed_test():
+                message = '''Your code didn't crash, but a test failed.'''
+            else:
+                message = '''Your code didn't crash, but something unexpected happened.'''
         except Exception:
             exc,value,tb = sys.exc_info()
-            message = '''Some kind of crash occurred before I could run all the tests.'''
+            message = '''Your code crashed (or caused a crash) before I could run all the tests.'''
+        else:
+            # it's possible that no exception gets raised, but that not all scenario steps are 
+            # completed.  if a failed test exists, then adjust the final output message.
+            if sobj.get_failed_test():
+                message = '''Your code didn't crash, but a test failed.'''
 
         # there may be a pending SIGALRM for ensuring test completion;
         # turn it off.
@@ -189,7 +194,7 @@ def main_test(compile, scenarios, usercode, dryrun, no_pdb, verbose):
             log_info("Compiling scenario {}".format(scenario))
             compile_scenario(scenario)
     else:
-        usercode_entry_point = import_user_code(usercode)
+        usercode_entry_point = import_or_die(usercode, ('main','srpy_main','switchy_main'))
         if dryrun:
             log_info("Imported your code successfully.  Exiting dry run.")
             return

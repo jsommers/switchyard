@@ -34,7 +34,6 @@ scenario = s
 
     def setUp(self):
         self.writeScenario1('stest.py', SrpyCompileTest.CONTENTS1)
-        self.scenario = get_test_scenario_from_file('stest.py')
     
     def tearDown(self):
         self.removeScenario('stest')
@@ -59,7 +58,7 @@ scenario = s
             pass
 
     def testScenarioFromPy(self):
-        self.scenario.reset()
+        self.scenario = get_test_scenario_from_file('stest.py')
         self.assertIsInstance(self.scenario, Scenario)
         self.assertIsInstance(self.scenario.next(), PacketInputEvent)
         self.scenario.testpass()
@@ -69,7 +68,7 @@ scenario = s
 
     def testScenarioFromSrpy(self):
         # test that compilation and resurrection give the same scenario
-        self.scenario.reset()
+        self.scenario = get_test_scenario_from_file('stest.py')
         compile_scenario('stest.py')
         self.assertTrue(os.stat('stest.switchy') != None)
         self.scenario_compiled = get_test_scenario_from_file('stest.switchy')
@@ -77,14 +76,14 @@ scenario = s
         self.assertEqual(self.scenario, self.scenario_compiled)
 
     def testSlowOutput(self):
-        self.scenario.reset()
+        self.scenario = get_test_scenario_from_file('stest.py')
         self.scenario.next()
         self.scenario.testpass()
         self.scenario.next()
         self.assertRaises(ScenarioFailure, time.sleep, 30)
 
     def testNoMorePending(self):
-        self.scenario.reset()
+        self.scenario = get_test_scenario_from_file('stest.py')
         s = copy.deepcopy(self.scenario)
         s.pending_events.pop()
         s.next()
@@ -92,11 +91,11 @@ scenario = s
         self.assertRaises(ScenarioFailure, s.next)
 
     def testScenarioSanity(self):
-        self.scenario.reset()
+        self.scenario = get_test_scenario_from_file('stest.py')
         self.scenario.scenario_sanity_check()
 
     def testInterfaces(self):
-        p = self.scenario.reset()
+        self.scenario = get_test_scenario_from_file('stest.py')
         p = self.scenario.ports()
         self.assertIn('router-eth0', p)
         self.assertIn('router-eth1', p)

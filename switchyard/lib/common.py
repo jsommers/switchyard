@@ -12,6 +12,16 @@ if sys.version_info.major < 3 or sys.version_info.minor < 4:
     sys.exit(-1)
 
 class SwitchyException(Exception):
+    def __init__(self, message):
+        self.message = message
+
+    def __str__(self):
+        return self.message
+
+    def __repr__(self):
+        return self.message
+
+class ScenarioFailure(SwitchyException):
     pass
 
 class Shutdown(Exception):
@@ -20,8 +30,6 @@ class Shutdown(Exception):
 class NoPackets(Exception):
     pass
 
-class ScenarioFailure(Exception):
-    pass
 
 class PacketFormatter(object):
     __fulldisp = False
