@@ -3,28 +3,31 @@ import importlib
 import os
 from switchyard.lib.common import log_failure
 
-USERMAIN = ['srpy_main','switchy_main','main']
-
-def import_user_code(usercode):
+def import_code(module_name, entrypoint_names):
     '''
     Import user code; return reference to usercode function.
 
     (str) -> function reference
     '''
-    modname = os.path.basename(usercode).rstrip('.py')
-    dirname = os.path.dirname(usercode)
+    modname = os.path.basename(module_name).rstrip('.py')
+    dirname = os.path.dirname(module_name)
     if dirname:
-        sys.path.append(dirname)
+        sys.path.append(os.path.abspath(dirname))
 
-    try:
-        user_module = importlib.import_module(modname)
-    except ImportError as e:
-        log_failure("Couldn't import your module: {}".format(str(e)))
-        sys.exit(-1)
+    # first, try to reload code
+    if modname in sys.modules:
+        user_module = sys.modules.get(modname)
+        user_module = importlib.reload(user_module)
+    else:
+        try:
+            user_module = importlib.import_module(modname)
+        except ImportError as e:
+            log_failure("Fatal error: couldn't import module {}".format(str(e)))
+            sys.exit(-1)
 
-    for mainmeth in USERMAIN:
-        if mainmeth in dir(user_module):
-            return getattr(user_module, mainmeth)
+    existing_names = dir(user_module)
+    for method in entrypoint_names:
+        if method in existing_names:
+            return getattr(user_module, method)
 
-    raise Exception("Required entrypoint function (one of {}) not found in your code".format(USERMAIN))
-
+    raise Exception("Required entrypoint function (one of {}) not found in your code".format(entrypoint_names))
