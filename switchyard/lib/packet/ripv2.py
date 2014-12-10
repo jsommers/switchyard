@@ -2,7 +2,7 @@ import struct
 from enum import Enum
 
 from switchyard.lib.packet.packet import PacketHeaderBase,Packet
-from switchyard.lib.address import SpecialIPv4Address, IPv4Address
+from switchyard.lib.address import SpecialIPv4Addr, IPv4Address
 
 
 '''
@@ -41,13 +41,12 @@ class RIPRouteEntry(PacketHeaderBase):
     # FIXME properties
 
 class RIPv2(PacketHeaderBase):
-    __slots__ = ('_command','_version','_domain','_routes')
+    __slots__ = ('_command','_domain','_routes')
     _PACKFMT = '!BBH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
         self.command = RIPCommand.Request
-        self.version = 2
         self.domain = 0
 
     def size(self):
@@ -62,13 +61,33 @@ class RIPv2(PacketHeaderBase):
         return hdr + routes
 
     def from_bytes(self, raw):
-        FIXME
+        pass
 
     def __eq__(self, other):
-        FIXME
+        pass
 
     def __str__(self):
-        FIXME
+        return self.__class__.__name__
+
+    @property 
+    def command(self):
+        return self._command
+
+    @command.setter 
+    def command(self, value):
+        self._command = RIPCommand(value)
+
+    @property
+    def version(self):
+        return 2
+
+    @property 
+    def domain(self):
+        return self._domain
+
+    @domain.setter
+    def domain(self, value):
+        self._domain = int(value)
 
     def next_header_class(self):
         return None
