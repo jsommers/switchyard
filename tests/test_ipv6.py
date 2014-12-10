@@ -109,8 +109,9 @@ class IPv6PacketTests(unittest.TestCase):
         idx = pkt.get_header_index(IPv6)
         pkt.insert_header(idx+1, hopopt)
         pkt[idx].nextheader = IPProtocol.IPv6HopOption
-        print ("Expect a warning for the next call to to_bytes()...")
-        xraw = pkt.to_bytes()
+        with self.assertLogs(level='WARNING') as cm:
+            xraw = pkt.to_bytes()
+        self.assertIn('not an even multiple of 8', cm.output[0])
         hopopt.add_option(PadN(4))
         xraw = pkt.to_bytes()
         p = Packet(raw=xraw)
