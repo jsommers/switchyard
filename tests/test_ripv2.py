@@ -35,7 +35,27 @@ class RIPv2PacketTests(unittest.TestCase):
         pkt = Packet(raw=xraw)
         pkt[-1] = RIPv2(pkt[-1])
         self.assertEqual(pkt, p)
+        s = str(pkt)
+        self.assertIn('192.168.200.0/24', s)
+        self.assertIn('192.168.100.0/22', s)
+        self.assertEqual(pkt[-1][0].address, IPv4Address('192.168.200.0'))
+        self.assertEqual(pkt[-1][0].netmask, IPv4Address('255.255.255.0'))
+        self.assertEqual(pkt.size(), 44)
+
+        pkt[-1][-1] = RIPRouteEntry('192.168.0.0','255.255.0.0','192.168.42.5',15)
+        s = str(pkt)
+        self.assertIn('192.168.0.0/16', s)
+        self.assertNotIn('192.168.100.0/22', s)
+        with self.assertRaises(ValueError):
+            pkt[-1].append(1)
+        with self.assertRaises(ValueError):
+            pkt[-1][0] = 0
+        with self.assertRaises(IndexError):
+            pkt[-1][2] = RIPRouteEntry()
+        with self.assertRaises(IndexError):
+            x = pkt[-1][2]
 
 
 if __name__ == '__main__':
     unittest.main()
+

@@ -46,8 +46,9 @@ class RIPRouteEntry(object):
         entry = RIPRouteEntry()
         entry._family = int(fields[0])
         entry._tag = int(fields[1])
-        entry._addr = IPv4Network(fields[2], strict=False)
-        entry._addr.netmask = IPv4Address(fields[3])
+        xaddr = IPv4Address(fields[2]) 
+        xmask = IPv4Address(fields[3]) 
+        entry._addr = IPv4Network("{}/{}".format(str(xaddr), str(xmask)), strict=False)
         entry._nexthop = IPv4Address(fields[4])
         entry._metric = int(fields[5])
         return entry
@@ -61,7 +62,7 @@ class RIPRouteEntry(object):
         return self._addr.network_address
 
     @property 
-    def mask(self):
+    def netmask(self):
         return self._addr.netmask
 
     @property 
