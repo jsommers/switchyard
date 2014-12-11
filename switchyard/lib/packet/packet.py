@@ -176,10 +176,14 @@ class Packet(object):
         raise TypeError("Indexes must be integers (slices are not supported)")
         
     def __getitem__(self, index):
+        if index < 0:
+            index = len(self._headers) + index
         index = self._checkidx(index)
         return self._headers[index]
 
     def __setitem__(self, index, value):
+        if index < 0:
+            index = len(self._headers) + index
         index = self._checkidx(index)
         if not isinstance(value, (PacketHeaderBase, bytes)):
             raise TypeError("Can't assign a non-packet header in a packet")
