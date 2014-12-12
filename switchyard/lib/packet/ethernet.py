@@ -28,24 +28,32 @@ class Vlan(PacketHeaderBase):
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self, vlan=0, ethertype=EtherType.IPv4):
+        '''
+        VLAN constructor accepts an initial VLAN Id and the EtherType
+        of the next header.
+        '''
         PacketHeaderBase.__init__(self)
         self.vlan = vlan
         self.ethertype = ethertype
 
     @property
     def vlan(self):
+        '''Get the VLAN Id'''
         return self._vlanid
 
     @vlan.setter
     def vlan(self, value):
+        '''Set the VLAN Id'''
         self._vlanid = int(value) & 0x0fff # mask out high-order 4 bits
 
     @property
     def ethertype(self):
+        '''Get the EtherType'''
         return self._ethertype
 
     @ethertype.setter
     def ethertype(self, value):
+        '''Set the EtherType'''
         self._ethertype = EtherType(value)
 
     def from_bytes(self, raw):

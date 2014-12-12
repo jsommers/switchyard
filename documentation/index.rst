@@ -12,8 +12,11 @@ Contents:
    :maxdepth: 2
 
    intro
+   writing_a_program
+   test_scenario_creation
+   test_execution
+   live_execution
    reference
-
 
 Indices and tables
 ==================
@@ -22,3 +25,9 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
+Acknowledgment
+==============
+
+I gratefully acknowledge support from the NSF.  The materials here are based upon work supported by the National Science Foundation under grant CNS-1054985 ("CAREER: Expanding the functionality of Internet routers").     
+
+Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author and do not necessarily reflect the views of the National Science Foundation.
