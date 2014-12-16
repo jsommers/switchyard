@@ -13,7 +13,7 @@ from socket import gethostname, if_nameindex
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
 from switchyard.lib.pcapffi import *
-from switchyard.lib.importcode import import_user_code
+from switchyard.lib.importcode import import_or_die
 
 '''
 Low-level-ish packet library for PyRouter project.  Uses a FFI-based
@@ -255,7 +255,7 @@ def main_real(usercode, dryrun, includeintf, excludeintf, nopdb, verbose):
 
     (str, bool, str, list(str), list(str)) -> None
     '''
-    usercode_entry_point = import_user_code(usercode)
+    usercode_entry_point = import_or_die(usercode, ('main','srpy_main','switchy_main'))
     if dryrun:
         log_info("Imported your code successfully.  Exiting dry run.")
         return

@@ -6,7 +6,7 @@ from enum import Enum
 from time import time,sleep
 from select import select
 
-Interface = namedtuple('Interface', ['name','isloop'])
+Interface = namedtuple('Interface', ['name','isloop','isup','isrunning'])
 PcapStats = namedtuple('PcapStats', ['ps_recv','ps_drop','ps_ifdrop'])
 PcapPacket = namedtuple('PcapPacket', ['timestamp', 'capture_length', 'length', 'raw'])
 PcapDev = namedtuple('PcapDev', ['dlt','nonblock','snaplen','version','pcap'])
@@ -145,9 +145,12 @@ class _PcapFfi(object):
         tmp = pintf
         while tmp != self.__ffi.NULL:
             xname = self.__ffi.string(tmp.name)
-            isloop = tmp.flags == 1
-            xif = Interface(xname, isloop)
-            self.__interfaces.append(xif)
+            isloop = (tmp.flags & 0x1) == 0x1
+            isup = (tmp.flags & 0x2) == 0x2
+            isrunning = (tmp.flags & 0x4) == 0x4
+            if isup:
+                xif = Interface(xname.decode('ascii','ignore'), isloop, isup, isrunning)
+                self.__interfaces.append(xif)
             tmp = tmp.next
         self.__libpcap.pcap_freealldevs(pintf)
 
