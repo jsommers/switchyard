@@ -16,6 +16,7 @@ Contents:
    test_scenario_creation
    test_execution
    live_execution
+   exercises
    reference
 
 Indices and tables
