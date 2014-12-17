@@ -8,7 +8,7 @@ import time
 import threading
 import textwrap
 from queue import Queue,Empty
-from socket import gethostname, if_nameindex
+from socket import gethostname
 
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
@@ -36,7 +36,7 @@ class PyLLNet(LLNetBase):
     on which packets can be received and sent.
     '''
 
-    def __init__(self, includelist, excludelist, name=None):
+    def __init__(self, devlist, name=None):
         LLNetBase.__init__(self)
         signal.signal(signal.SIGINT, PyLLNet.__sig_handler)
         signal.signal(signal.SIGTERM, PyLLNet.__sig_handler)
@@ -44,7 +44,7 @@ class PyLLNet(LLNetBase):
         signal.signal(signal.SIGUSR1, PyLLNet.__sig_handler)
         signal.signal(signal.SIGUSR2, PyLLNet.__sig_handler)
 
-        self.devs = self.__initialize_devices(includelist, excludelist)
+        self.devs = devlist # self.__initialize_devices(includelist, excludelist)
         self.devinfo = self.__assemble_devinfo()
         self.pcaps = {}
         self.__make_pcaps()
@@ -107,14 +107,6 @@ class PyLLNet(LLNetBase):
             t = threading.Thread(target=PyLLNet.__low_level_dispatch, args=(pdev, devname, self.pktqueue))
             t.start()
             self.threads.append(t)
-
-    def __get_net_devs(self):
-        '''
-        Internal method.  Find all "valid" network devices
-        on the host.  Assumes naming convention in
-        project mininet code.
-        '''
-        return set([ name for _,name in if_nameindex() if not name.startswith('lo') ])
 
     def __assemble_devinfo(self):
         '''
@@ -248,7 +240,7 @@ class PyLLNet(LLNetBase):
             log_debug("Sending packet on device {}: {}".format(dev, str(packet)))
             pdev.send_packet(rawpkt)
 
-def main_real(usercode, dryrun, includeintf, excludeintf, nopdb, verbose):
+def main_real(usercode, dryrun, devlist, nopdb, verbose):
     '''
     Entrypoint function for non-test ("real") mode.  At this point
     we assume that we are running as root and have pcap module.
@@ -259,8 +251,8 @@ def main_real(usercode, dryrun, includeintf, excludeintf, nopdb, verbose):
     if dryrun:
         log_info("Imported your code successfully.  Exiting dry run.")
         return
-    net = PyLLNet(includeintf, excludeintf)
     try:
+        net = PyLLNet(devlist)
         usercode_entry_point(net)
     except Exception as e:
         import traceback
@@ -283,6 +275,5 @@ If you don't want pdb, use the --nopdb flag to avoid this fate.
 ''')
             import pdb
             pdb.post_mortem()
-
+    else:
         net.shutdown()
-

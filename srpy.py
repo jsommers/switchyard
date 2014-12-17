@@ -54,5 +54,13 @@ if __name__ == '__main__':
             args.exclude = []
         if args.intf is None:
             args.intf = []
-        with Firewall(args.intf, args.exclude, args.fwconfig):
-            main_real(args.usercode, args.dryrun, args.intf, args.exclude, args.nopdb, args.verbose)
+
+        devlist = make_device_list(args.intf, args.exclude)
+        if not devlist:
+            log_failure("There are no network interfaces I can use after processing include/exclude lists")
+            alldevs = make_device_list([], [])
+            log_failure("Here are all the interfaces I see on your system: {}".format(', '.join(list(alldevs))))
+            sys.exit()
+
+        with Firewall(devlist, args.fwconfig):
+            main_real(args.usercode, args.dryrun, devlist, args.nopdb, args.verbose)

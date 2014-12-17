@@ -3,7 +3,6 @@ import os
 import sys
 
 from switchyard.lib.common import log_warn
-from switchyard.lib.pcapffi import pcap_devices
 
 #
 # Rule: 
@@ -12,24 +11,11 @@ from switchyard.lib.pcapffi import pcap_devices
 #
 
 class Firewall(object):
-    def __init__(self, include_intf, exclude_intf, rules):
+    def __init__(self, interfaces, rules):
         cls = _osmap.get(sys.platform, None)
         if cls is None:
             raise Exception("{} can't run on {}".format(self.__class__.__name__, sys.platform))
-        devices = pcap_devices()
-        usedevs = []
-        print ("dev{} incl{} excl{}".format(devices, include_intf, exclude_intf))
-        if include_intf:
-            for dev in devices:
-                if dev.name in include_intf:
-                    usedevs.append(dev)
-        elif exclude_intf:
-            for dev in devices:
-                if dev.name not in exclude_intf:
-                    usedevs.append(dev)
-        else:
-            usedevs = devices
-        self._firewall_delegate = cls(usedevs, rules)
+        self._firewall_delegate = cls(interfaces, rules)
 
     def __enter__(self):
         self._firewall_delegate.block()
@@ -81,9 +67,13 @@ class MacOSFirewall(AbstractFirewall):
         super().__init__(interfaces, rules)
 
     def block(self):
+        '''
+        '''
         print ("Block!")
 
     def unblock(self):
+        '''
+        '''
         print ("Unblock!")
 
 

@@ -1,9 +1,11 @@
 import sys
 import logging
 from abc import ABCMeta,abstractmethod
+from ipaddress import ip_interface
+
 from switchyard.lib.address import IPAddr,EthAddr
 from switchyard.lib.textcolor import *
-from ipaddress import ip_interface
+from switchyard.lib.pcapffi import pcap_devices
 
 # version test, for sanity
 if sys.version_info.major < 3 or sys.version_info.minor < 4:
@@ -246,3 +248,16 @@ class LLNetBase(metaclass=ABCMeta):
     @abstractmethod
     def name(self):
         pass
+
+def make_device_list(includes, excludes):
+    devs = set([ dev.name for dev in pcap_devices() if dev.isrunning and not dev.isloop ])
+
+    # remove devs from excludelist
+    devs.difference_update(set(excludes))
+
+    # if includelist is non-empty, perform
+    # intersection with devs found and includelist
+    if includes:
+        devs.intersection_update(set(includes))
+
+    return devs
