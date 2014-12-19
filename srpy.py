@@ -25,7 +25,7 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--verbose", help="Turn on verbose output, including full packet dumps in test results.  Can be specified multiple times to increase verbosity.", dest="verbose", action="count", default=0)
     parser.add_argument("-d", "--debug", help="Turn on debug logging output.", dest="debug", action="store_true", default=False)
     parser.add_argument("--nopdb", help="Don't enter pdb on crash.", dest="nopdb", action="store_true", default=False)
-    parser.add_argument("-f", "--firewall", help="Specify host firewall rules (for real/live mode only)", dest="fwconfig", action="append", default=("all",))
+    parser.add_argument("-f", "--firewall", help="Specify host firewall rules (for real/live mode only)", dest="fwconfig", action="append")
     args = parser.parse_args()
 
     # assume test mode if the compile flag is set
@@ -54,6 +54,8 @@ if __name__ == '__main__':
             args.exclude = []
         if args.intf is None:
             args.intf = []
+        if args.fwconfig is None:
+            args.fwconfig = ('all',)
 
         devlist = make_device_list(args.intf, args.exclude)
         if not devlist:

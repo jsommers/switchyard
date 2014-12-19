@@ -60,6 +60,7 @@ class PyLLNet(LLNetBase):
         else:
             self.__name = gethostname()
 
+    @property
     def name(self):
         return self.__name
 

@@ -1,13 +1,15 @@
 from abc import ABCMeta, abstractmethod
 import os
 import sys
+import re
+from subprocess import getstatusoutput, Popen, PIPE, STDOUT
 
-from switchyard.lib.common import log_warn
+from switchyard.lib.common import log_warn, log_info, log_debug
 
 #
 # Rule: 
 # 'all'
-# proto:port
+# proto[:port], e.g., tcp:80, icmp:*, udp:*, icmp, udp
 #
 
 class Firewall(object):
@@ -28,7 +30,7 @@ class Firewall(object):
 
 class AbstractFirewall(metaclass=ABCMeta):
     def __init__(self, interfaces, rules):
-        pass
+        self._rules = []
 
     @abstractmethod
     def block(self):
@@ -65,17 +67,48 @@ class MacOSFirewall(AbstractFirewall):
     def __init__(self, interfaces, rules):
         print ("Init: {} {}".format(interfaces, rules))
         super().__init__(interfaces, rules)
+        for intf in interfaces:
+            for r in rules:
+                mobj = re.match('(tcp|udp|icmp):(\d+|\*)', r)
+                if mobj:
+                    proto,port = mobj.groups()[:2]
+                    if port == '*':
+                        self._rules.append('block drop on {0} proto {1} from any to any'.format(intf, proto))
+                    else:
+                        self._rules.append('block drop on {0} proto {1} from any port {2} to any port {2}'.format(intf, proto, port))
+                elif r == 'all':
+                    self._rules.append('block drop on {} all'.format(intf))
+                else:
+                    raise Exception("Can't interpret firewall rule {}".format(r))
+
+        st,output = getstatusoutput("pfctl -E")
+        mobj = re.search("Token\s*:\s*(\d+)", output, re.M)
+        self._token = mobj.groups()[0]
+        log_debug("Rules to install: {}".format(self._rules))
+        log_info("Enabling pf: {}".format(output.replace('\n', '; ')))
 
     def block(self):
         '''
+        pfctl -a switchyard -f- < rules.txt
+        pfctl -a switchyard -F rules
+        pfctl -t switchyard -F r
         '''
-        print ("Block!")
+        pipe = Popen(["/sbin/pfctl","-aswitchyard", "-f-"], stdin=PIPE, stdout=PIPE, stderr=STDOUT, universal_newlines=True)
+        for r in self._rules:
+            print(r, file=pipe.stdin)
+        pipe.stdin.close()
+        output = pipe.stdout.read()
+        pipe.stdout.close()
+        st = pipe.wait()
+        log_debug("Installing rules: {}".format(output))
 
     def unblock(self):
         '''
         '''
-        print ("Unblock!")
-
+        st,output = getstatusoutput("pfctl -a switchyard -Fr") # flush rules
+        log_debug("Flushing rules: {}".format(output))
+        st,output = getstatusoutput("pfctl -X {}".format(self._token))
+        log_info("Releasing pf: {}".format(output.replace('\n', '; ')))
 
 _osmap = {
     'darwin': MacOSFirewall,
