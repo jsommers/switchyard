@@ -12,6 +12,16 @@ from switchyard.lib.common import log_warn, log_info, log_debug
 # proto[:port], e.g., tcp:80, icmp:*, udp:*, icmp, udp
 #
 
+def _sendcmd(progargs, cmdlist):
+    pipe = Popen(progargs, stdin=PIPE, stdout=PIPE, stderr=STDOUT, universal_newlines=True)
+    for cmd in cmdlist:
+        print(cmd, file=pipe.stdin)
+    pipe.stdin.close()
+    output = pipe.stdout.read()
+    pipe.stdout.close()
+    st = pipe.wait()
+    return st,output
+
 class Firewall(object):
     def __init__(self, interfaces, rules):
         cls = _osmap.get(sys.platform, None)
@@ -43,29 +53,46 @@ class AbstractFirewall(metaclass=ABCMeta):
 class LinuxFirewall(AbstractFirewall):
     def __init__(self, interfaces, rules):
         super().__init__(interfaces, rules)
+        self._intf = interfaces
+        st,output = getstatusoutput("iptables-save")
+        self._saved_iptables = output
+        self._arpignore = {}
+        self._rulecmds = [ 'iptables -F', 'iptables -t raw -F' ]
+
+        # --protocol {}  -i {} --port {}
+        for intf in interfaces:
+
+            st,output = getstatusoutput('sysctl net.ipv4.conf.{}.arp_ignore'.format(intf))
+            self._arpignore[intf] = int(output)
+            st,output = getstatusoutput('sysctl -w net.ipv4.conf.{}.arp_ignore=8'.format(intf))
+
+        for r in rules:
+            mobj = re.match('(tcp|udp|icmp):(\d+|\*)', r)
+            if mobj:
+                for intf in interfaces:
+                    proto,port = mobj.groups()[:2]
+                    self._rulecmds.append('iptables -t raw -P PREROUTING DROP --protocol {} -i {} --port {}'.format(proto, intf, port))
+            elif r == 'all':
+                self._rulecmds.append('iptables -t raw -P PREROUTING DROP')
+
+        log_debug("Rules to install: {}".format(self._rulecmds))
 
     def block(self):
-        pass
-        '''
-        iptables-save -> dumps all rules
-        iptables-restore
-
-        router.cmdPrint('ebtables -t nat -F')
-        router.cmdPrint('ebtables -t nat -P PREROUTING DROP')
-        router.cmdPrint('ebtables -F')
-        router.cmdPrint('ebtables -P INPUT DROP')
-        router.cmdPrint('iptables -F')
-        router.cmdPrint('iptables -P INPUT DROP')
-        router.cmdPrint('sysctl -w net.ipv4.conf.all.arp_ignore=8') -- set to 0 initially
-        '''
+        log_info("Saving iptables state and installing switchyard rules")
+        for cmd in self._rulecmds:
+            st,output = getstatusoutput(cmd)
 
     def unblock(self):
-        pass
-
+        # clear switchyard tables, load up saved state
+        log_info("Restoring saved iptables state")
+        st,output = getstatusoutput("iptables -F")
+        st,output = getstatusoutput("iptables -t raw -F")
+        st,output = _sendcmd(["iptables-restore"], self._saved_iptables)
+        for intf in self._intf:
+            st,output = getstatusoutput('sysctl -w net.ipv4.conf.{}.arp_ignore={}'.format(intf, self._arpignore[intf]))
 
 class MacOSFirewall(AbstractFirewall):
     def __init__(self, interfaces, rules):
-        print ("Init: {} {}".format(interfaces, rules))
         super().__init__(interfaces, rules)
         for intf in interfaces:
             for r in rules:
@@ -93,13 +120,7 @@ class MacOSFirewall(AbstractFirewall):
         pfctl -a switchyard -F rules
         pfctl -t switchyard -F r
         '''
-        pipe = Popen(["/sbin/pfctl","-aswitchyard", "-f-"], stdin=PIPE, stdout=PIPE, stderr=STDOUT, universal_newlines=True)
-        for r in self._rules:
-            print(r, file=pipe.stdin)
-        pipe.stdin.close()
-        output = pipe.stdout.read()
-        pipe.stdout.close()
-        st = pipe.wait()
+        st,output = _sendcmd(["/sbin/pfctl","-aswitchyard", "-f-"], self._rules)
         log_debug("Installing rules: {}".format(output))
 
     def unblock(self):

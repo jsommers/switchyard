@@ -30,6 +30,7 @@ class Dlt(Enum):
     DLT_SLIP        = 8
     DLT_PPP         = 9
     DLT_FDDI        = 10
+    DLT_RAW         = 12
     DLT_LINUX_SLL   = 113
 
 class _PcapFfi(object):
