@@ -4,6 +4,7 @@ import sys
 import os
 sys.path.append(os.getcwd())
 import argparse
+from threading import Thread
 
 from switchyard.lib.common import *
 from switchyard.lib.textcolor import *
@@ -11,6 +12,11 @@ from switchyard.lib.hostfirewall import Firewall
 from switchyard.switchy_test import main_test
 from switchyard.switchy_real import main_real
 import switchyard.lib.pcapffi
+from switchyard.lib.importcode import import_or_die
+from switchyard.lib.socketemu import ApplicationLayer
+
+def start_app(appcode):
+    import_or_die(appcode, [])
 
 if __name__ == '__main__':
     progname = "srpy"
@@ -26,6 +32,7 @@ if __name__ == '__main__':
     parser.add_argument("-d", "--debug", help="Turn on debug logging output.", dest="debug", action="store_true", default=False)
     parser.add_argument("--nopdb", help="Don't enter pdb on crash.", dest="nopdb", action="store_true", default=False)
     parser.add_argument("-f", "--firewall", help="Specify host firewall rules (for real/live mode only)", dest="fwconfig", action="append")
+    parser.add_argument("-a", "--app", help="Specify application layer (socket-based) program to start (EXPERIMENTAL!)", dest="app", default=None)
     args = parser.parse_args()
 
     # assume test mode if the compile flag is set
@@ -40,6 +47,11 @@ if __name__ == '__main__':
     if args.usercode is None and not args.compile:
         log_failure("You need to specify the name of your module to run as the last argument")
         sys.exit()
+
+    if args.app:
+        ApplicationLayer.init()
+        _appt = Thread(target=start_app, args=(args.app,))
+        _appt.start()
 
     if args.testmode:
         if args.usercode and args.compile:

@@ -27,6 +27,11 @@ def import_or_die(module_name, entrypoint_names):
             log_failure("Fatal error: couldn't import module {}".format(str(e)))
             sys.exit(-1)
 
+    # if there aren't any functions to call into, then the caller
+    # just wanted the module/code to be imported, and that's it.
+    if not entrypoint_names:
+        return
+
     existing_names = dir(user_module)
     for method in entrypoint_names:
         if method in existing_names:

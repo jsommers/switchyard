@@ -23,7 +23,11 @@ def _sendcmd(progargs, cmdlist):
     return st,output
 
 class Firewall(object):
+    _instance = None
     def __init__(self, interfaces, rules):
+        if Firewall._instance:
+            raise Exception("Firewall can only be instantiated once.")
+        Firewall._instance = self
         cls = _osmap.get(sys.platform, None)
         if cls is None:
             raise Exception("{} can't run on {}".format(self.__class__.__name__, sys.platform))
@@ -36,6 +40,10 @@ class Firewall(object):
     def __exit__(self, exctype, excvalue, traceback):
         self._firewall_delegate.unblock()
         return None
+
+    @staticmethod
+    def add_rule(rule):
+        Firewall._instance._firewall_delegate.add_rule(rule)
 
 
 class AbstractFirewall(metaclass=ABCMeta):
@@ -50,6 +58,10 @@ class AbstractFirewall(metaclass=ABCMeta):
     def unblock(self):
         pass
 
+    @abstractmethod
+    def add_rule(self, rule):
+        pass
+
 class LinuxFirewall(AbstractFirewall):
     def __init__(self, interfaces, rules):
         super().__init__(interfaces, rules)
@@ -60,22 +72,38 @@ class LinuxFirewall(AbstractFirewall):
         self._rulecmds = [ 'iptables -F', 'iptables -t raw -F' ]
 
         # --protocol {}  -i {} --port {}
-        for intf in interfaces:
-
-            st,output = getstatusoutput('sysctl net.ipv4.conf.{}.arp_ignore'.format(intf))
-            self._arpignore[intf] = int(output)
-            st,output = getstatusoutput('sysctl -w net.ipv4.conf.{}.arp_ignore=8'.format(intf))
-
+        doall = False
         for r in rules:
-            mobj = re.match('(tcp|udp|icmp):(\d+|\*)', r)
-            if mobj:
-                for intf in interfaces:
-                    proto,port = mobj.groups()[:2]
-                    self._rulecmds.append('iptables -t raw -P PREROUTING DROP --protocol {} -i {} --port {}'.format(proto, intf, port))
-            elif r == 'all':
-                self._rulecmds.append('iptables -t raw -P PREROUTING DROP')
+            cmds = self._parse_rule(r)
+            self._rulecmds.extend(cmds)
+            if r == 'all':
+                doall = True
 
+        if doall:
+            for intf in interfaces:
+                st,output = getstatusoutput('sysctl net.ipv4.conf.{}.arp_ignore'.format(intf))
+                self._arpignore[intf] = int(output)
+                st,output = getstatusoutput('sysctl -w net.ipv4.conf.{}.arp_ignore=8'.format(intf))
         log_debug("Rules to install: {}".format(self._rulecmds))
+
+    def _parse_rule(self, rule):
+        cmds = []
+        mobj = re.match('(tcp|udp|icmp):(\d+|\*)', r)
+        if mobj:
+            for intf in interfaces:
+                proto,port = mobj.groups()[:2]
+                cmds.append('iptables -t raw -P PREROUTING DROP --protocol {} -i {} --port {}'.format(proto, intf, port))
+        elif r == 'all':
+            cmds.append('iptables -t raw -P PREROUTING DROP')
+        else:
+            raise Exception("Can't parse rule: {}".format(rule))
+        return cmds
+
+    def add_rule(self, rule):
+        for cmd in self._parse_rule(rule):
+            st,output = getstatusoutput(cmd)
+            self._rulecmds.append(cmd)
+            log_debug("Adding firewall rule: {}".format(cmd))
 
     def block(self):
         log_info("Saving iptables state and installing switchyard rules")
@@ -94,25 +122,40 @@ class LinuxFirewall(AbstractFirewall):
 class MacOSFirewall(AbstractFirewall):
     def __init__(self, interfaces, rules):
         super().__init__(interfaces, rules)
-        for intf in interfaces:
-            for r in rules:
-                mobj = re.match('(tcp|udp|icmp):(\d+|\*)', r)
-                if mobj:
-                    proto,port = mobj.groups()[:2]
-                    if port == '*':
-                        self._rules.append('block drop on {0} proto {1} from any to any'.format(intf, proto))
-                    else:
-                        self._rules.append('block drop on {0} proto {1} from any port {2} to any port {2}'.format(intf, proto, port))
-                elif r == 'all':
-                    self._rules.append('block drop on {} all'.format(intf))
-                else:
-                    raise Exception("Can't interpret firewall rule {}".format(r))
+        self._interfaces = interfaces
+        for r in rules:
+            cmds = self._parse_rule(r)
+            self._rules.extend(cmds)
 
         st,output = getstatusoutput("pfctl -E")
         mobj = re.search("Token\s*:\s*(\d+)", output, re.M)
+        if mobj is None:
+            raise RuntimeError("Couldn't get pfctl token.  Are you running as root?")
         self._token = mobj.groups()[0]
         log_debug("Rules to install: {}".format(self._rules))
         log_info("Enabling pf: {}".format(output.replace('\n', '; ')))
+
+    def _parse_rule(self, rule):
+        for intf in self._interfaces:
+            cmds = []
+            mobj = re.match('(tcp|udp|icmp):(\d+|\*)', rule)
+            if mobj:
+                proto,port = mobj.groups()[:2]
+                if port == '*':
+                    cmds.append('block drop on {0} proto {1} from any to any'.format(intf, proto))
+                else:
+                    cmds.append('block drop on {0} proto {1} from any port {2} to any port {2}'.format(intf, proto, port))
+            elif rule == 'all':
+                cmds.append('block drop on {} all'.format(intf))
+            else:
+                raise Exception("Can't interpret firewall rule {}".format(rule))
+        return cmds
+
+    def add_rule(self, rule):
+        cmds = self._parse_rule(rule)
+        self._rules.extend(cmds)
+        st,output = _sendcmd(["/sbin/pfctl","-aswitchyard", "-f-"], cmds)
+        log_debug("Adding firewall rules: {}".format(cmds))
 
     def block(self):
         '''
