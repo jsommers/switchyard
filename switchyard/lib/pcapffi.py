@@ -113,6 +113,16 @@ class _PcapFfi(object):
         char *pcap_geterr(pcap_t *);
         char *pcap_lib_version();
         int pcap_stats(pcap_t *, struct pcap_stat *);
+
+        struct bpf_insn;
+        struct bpf_program {
+            unsigned int bf_len;
+            struct bpf_insn *bf_insns;
+        };
+        int pcap_setfilter(pcap_t *, struct bpf_program *);
+        int pcap_compile(pcap_t *, struct bpf_program *,
+            const char *, int, unsigned int);
+        void pcap_freecode(struct bpf_program *);
         ''')
         if sys.platform == 'darwin':
             self.__libpcap = self.__ffi.dlopen('libpcap.dylib')
@@ -242,6 +252,22 @@ class _PcapFfi(object):
             # reading from savefile, but none left
             return None
 
+    def set_filter(self, xpcap, filterstr):
+        bpf = self.__ffi.new("struct bpf_program *")
+        cfilter = self.__ffi.new("char []", bytes(filterstr, 'ascii'))
+        compile_result = self.__libpcap.pcap_compile(xpcap.pcap, bpf, cfilter, 0, 0xffffffff)
+        if compile_result < 0:
+            # get error, raise exception
+            s = self.__ffi.string(self.__libpcap.pcap_geterr(xpcap.pcap))
+            raise PcapException("Error compiling filter expression: {}".format(s)) 
+
+        sf_result = self.__libpcap.pcap_setfilter(xpcap.pcap, bpf)
+        if sf_result < 0:
+            # get error, raise exception
+            s = self.__ffi.string(self.__libpcap.pcap_geterr(xpcap.pcap))
+            raise PcapException("Error setting filter on pcap handle: {}".format(s)) 
+        self.__libpcap.pcap_freecode(bpf)
+
     def stats(self, xpcap):
         pstat = self.__ffi.new("struct pcap_stat *")
         rv = self.__libpcap.pcap_stats(xpcap, pstat)
@@ -251,10 +277,8 @@ class _PcapFfi(object):
             s = self.__ffi.string(self.__libpcap.pcap_geterr(xpcap))
             raise PcapException("Error getting stats: {}".format(s))
 
-
 def pcap_devices():
     return _PcapFfi.instance().devices
-
 
 class PcapDumper(object):
     __slots__ = ['__pcapffi','__dumper']
@@ -277,9 +301,11 @@ class PcapReader(object):
     '''
     __slots__ = ['__pcapffi','__pcapdev']
 
-    def __init__(self, filename):
+    def __init__(self, filename, filterstr=None):
         self.__pcapffi = _PcapFfi.instance()
         self.__pcapdev = self.__pcapffi.open_pcap_file(filename)
+        if filterstr is not None:
+            self.__pcapffi.set_filter(self.__pcapdev, filterstr)
 
     def close(self):
         self.__pcapffi.close_live(self.__pcapdev.pcap)
@@ -293,10 +319,12 @@ class PcapLiveDevice(object):
     '''
     __slots__ = ['__pcapffi','__pcapdev']
 
-    def __init__(self, device, snaplen=65535, promisc=1, to_ms=100):
+    def __init__(self, device, snaplen=65535, promisc=1, to_ms=100, filterstr=None):
         self.__pcapffi = _PcapFfi.instance()
         self.__pcapdev = self.__pcapffi.open_live(device)
         # print ("Got live pcap device: {}".format(self.__pcapdev))
+        if filterstr is not None:
+            self.__pcapffi.set_filter(self.__pcapdev, filterstr)
 
     def recv_packet(self, timeout):
         if timeout < 0:
@@ -337,5 +365,8 @@ class PcapLiveDevice(object):
 
     def stats(self):
         return self.__pcapffi.stats(self.__pcapdev.pcap)
+
+    def set_filter(self, filterstr):
+        self.__pcapffi.set_filter(self.__pcapdev, filterstr)
 
 _PcapFfi() # instantiate singleton
