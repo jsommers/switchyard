@@ -241,7 +241,7 @@ class PyLLNet(LLNetBase):
             log_debug("Sending packet on device {}: {}".format(dev, str(packet)))
             pdev.send_packet(rawpkt)
 
-def main_real(usercode, dryrun, devlist, nopdb, verbose):
+def main_real(usercode, dryrun, netobj, nopdb, verbose):
     '''
     Entrypoint function for non-test ("real") mode.  At this point
     we assume that we are running as root and have pcap module.
@@ -253,8 +253,7 @@ def main_real(usercode, dryrun, devlist, nopdb, verbose):
         log_info("Imported your code successfully.  Exiting dry run.")
         return
     try:
-        net = PyLLNet(devlist)
-        usercode_entry_point(net)
+        usercode_entry_point(netobj)
     except Exception as e:
         import traceback
 
@@ -277,4 +276,4 @@ If you don't want pdb, use the --nopdb flag to avoid this fate.
             import pdb
             pdb.post_mortem()
     else:
-        net.shutdown()
+        netobj.shutdown()

@@ -61,15 +61,15 @@ class ApplicationLayer(object):
     @staticmethod
     def recv_from_app(timeout=1.0):
         try:
-            data,addr = ApplicationLayer._from_app.get(timeout=timeout)
-            return data,addr
+            data,local_addr,remote_addr = ApplicationLayer._from_app.get(timeout=timeout)
+            return data,local_addr,remote_addr
         except Empty:
             pass
         raise NoPackets()
 
     @staticmethod
-    def send_to_app(data, addr):
-        ApplicationLayer._to_app.put( (data,addr) )
+    def send_to_app(data, source_addr, dest_addr):
+        ApplicationLayer._to_app.put( (data,source_addr,dest_addr) )
 
     @staticmethod
     def queues():
@@ -168,24 +168,24 @@ class socket(object):
         pass
 
     def recv(self, buffersize, flags=0):
-        data,addrinfo = self._recv(buffersize)
+        data,source,dest = self._recv(buffersize)
         return data
 
     def recv_into(self, *args):
         raise NotImplementedError("*_into calls aren't implemented")
 
     def recvfrom(self, buffersize, flags=0):
-        data,addrinfo = self._recv(buffersize)
-        return data,addrinfo
+        data,source,dest = self._recv(buffersize)
+        return data,source
 
     def recvfrom_into(self, *args):
         raise NotImplementedError("*_into calls aren't implemented")
 
     def _recv(self, nbytes):
         try:
-            data,addrinfo = self._socket_queue_from_stack.get(block=self._block, timeout=self._timeout)
-            log_debug("recv from {}<-{}".format(data,addrinfo))
-            return data,addrinfo
+            data,sourceaddr,destaddr = self._socket_queue_from_stack.get(block=self._block, timeout=self._timeout)
+            log_debug("recv from {}<-{}:{}".format(data,sourceaddr,destaddr))
+            return data,sourceaddr,destaddr
         except Empty as e:
             pass
         log_debug("recv timed out")
@@ -200,9 +200,9 @@ class socket(object):
             addr = arg2
         self._send(data, addr)
 
-    def _send(self, data, addr):
-        log_debug("socketemu send: {}->{}".format(data, addr))
-        self._socket_queue_to_stack.put( (data, addr) )
+    def _send(self, data, remote_addr):
+        log_debug("socketemu send: {}->{}:{}".format(data, self._local_addr, remote_addr))
+        self._socket_queue_to_stack.put( (data, self._local_addr, remote_addr) )
 
     def sendall(self, data, flags):
         raise NotImplementedError("sendall isn't implemented")

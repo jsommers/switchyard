@@ -10,12 +10,13 @@ from switchyard.lib.common import *
 from switchyard.lib.textcolor import *
 from switchyard.lib.hostfirewall import Firewall
 from switchyard.switchy_test import main_test
-from switchyard.switchy_real import main_real
-import switchyard.lib.pcapffi
+from switchyard.switchy_real import main_real, PyLLNet
 from switchyard.lib.importcode import import_or_die
 from switchyard.lib.socketemu import ApplicationLayer
 
 setup_ok = False
+netobj = None
+
 def start_app(appcode, firewall_setup):
     # don't start app-layer code until the lower layers are initialized
     firewall_setup.wait()
@@ -23,6 +24,9 @@ def start_app(appcode, firewall_setup):
     # if it looks like everything was initialized correctly
     if setup_ok:
         import_or_die(appcode, [])
+    print("After app-code")
+    if netobj is not None:
+        netobj.shutdown()
 
 if __name__ == '__main__':
     progname = "srpy"
@@ -94,4 +98,5 @@ if __name__ == '__main__':
         with Firewall(devlist, args.fwconfig):
             setup_ok = True
             barrier.wait()
-            main_real(args.usercode, args.dryrun, devlist, args.nopdb, args.verbose)
+            netobj = PyLLNet(devlist)
+            main_real(args.usercode, args.dryrun, netobj, args.nopdb, args.verbose)
