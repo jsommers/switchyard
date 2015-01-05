@@ -4,7 +4,7 @@ import sys
 import os
 sys.path.append(os.getcwd())
 import argparse
-from threading import Thread
+from threading import Thread, Barrier
 
 from switchyard.lib.common import *
 from switchyard.lib.textcolor import *
@@ -15,8 +15,14 @@ import switchyard.lib.pcapffi
 from switchyard.lib.importcode import import_or_die
 from switchyard.lib.socketemu import ApplicationLayer
 
-def start_app(appcode):
-    import_or_die(appcode, [])
+setup_ok = False
+def start_app(appcode, firewall_setup):
+    # don't start app-layer code until the lower layers are initialized
+    firewall_setup.wait()
+    # and beware that something may have failed, so only start app code
+    # if it looks like everything was initialized correctly
+    if setup_ok:
+        import_or_die(appcode, [])
 
 if __name__ == '__main__':
     progname = "srpy"
@@ -48,9 +54,14 @@ if __name__ == '__main__':
         log_failure("You need to specify the name of your module to run as the last argument")
         sys.exit()
 
+    waiters = 1
+    if args.app:
+        waiters = 2
+    barrier = Barrier(waiters)
+
     if args.app:
         ApplicationLayer.init()
-        _appt = Thread(target=start_app, args=(args.app,))
+        _appt = Thread(target=start_app, args=(args.app,barrier))
         _appt.start()
 
     if args.testmode:
@@ -66,7 +77,10 @@ if __name__ == '__main__':
             args.exclude = []
         if args.intf is None:
             args.intf = []
-        if args.fwconfig is None:
+
+        if args.app:
+            args.fwconfig = []
+        elif args.fwconfig is None:
             args.fwconfig = ('all',)
 
         devlist = make_device_list(args.intf, args.exclude)
@@ -74,7 +88,10 @@ if __name__ == '__main__':
             log_failure("There are no network interfaces I can use after processing include/exclude lists")
             alldevs = make_device_list([], [])
             log_failure("Here are all the interfaces I see on your system: {}".format(', '.join(list(alldevs))))
+            barrier.wait()
             sys.exit()
 
         with Firewall(devlist, args.fwconfig):
+            setup_ok = True
+            barrier.wait()
             main_real(args.usercode, args.dryrun, devlist, args.nopdb, args.verbose)

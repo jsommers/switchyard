@@ -250,7 +250,10 @@ class LLNetBase(metaclass=ABCMeta):
         pass
 
 def make_device_list(includes, excludes):
-    devs = set([ dev.name for dev in pcap_devices() if dev.isrunning and not dev.isloop ])
+    log_debug("Making device list.  Includes: {}, Excludes: {}".format(includes, excludes))
+    # devs = set([ dev.name for dev in pcap_devices() if dev.isrunning and not dev.isloop ])
+    devs = set([ dev.name for dev in pcap_devices() if not dev.isloop or dev.name in includes])
+    log_debug("Devices found: {}".format(devs))
 
     # remove devs from excludelist
     devs.difference_update(set(excludes))
@@ -260,4 +263,5 @@ def make_device_list(includes, excludes):
     if includes:
         devs.intersection_update(set(includes))
 
+    log_debug("Using these devices: {}".format(devs))
     return devs

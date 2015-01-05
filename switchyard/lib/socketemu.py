@@ -8,9 +8,9 @@ import re
 import random
 
 from switchyard.lib.hostfirewall import Firewall
+from switchyard.lib.pcapffi import PcapLiveDevice
 from switchyard.lib.common import NoPackets, log_debug, log_info, setup_logging
-
-# Firewall.add_rule("tcp:80")
+from switchyard.lib.packet import IPProtocol
 
 def gather_ports():
     portset = set()
@@ -82,10 +82,12 @@ def setup_switchyard_stack(proto, localaddr):
     return ApplicationLayer.queues()
 
 
+
 # need to import lots of stuff out of base socket module so that we can avoid
 # completely reinventing the wheel here
 
 class socket(object):
+    __slots__ = ('_family','_socktype','_protoname','_proto','_timeout','_block','_remote_addr','_local_addr', '_socket_queue_to_stack','_socket_queue_from_stack')
     def __init__(self, family, xtype, proto=0, fileno=0):
         family = AddressFamily(family)
         if family != AddressFamily.AF_INET:
@@ -94,13 +96,19 @@ class socket(object):
             raise NotImplementedError("socket type {} not implemented".format(xtype))
         self._family = family
         self._socktype = xtype
-        self._proto = 'udp'
+        self._protoname = 'udp'
+        self._proto = IPProtocol.UDP
         if self._socktype == SOCK_STREAM:
-            self._proto = 'tcp'
+            self._protoname = 'tcp'
+            self._proto = IPProtocol.TCP
         self._timeout = None
         self._block = True
         self._remote_addr = (None,None)
         self._local_addr = ('0.0.0.0',get_ephemeral_port())
+
+        Firewall.add_rule("{}:{}".format(self._protoname, self._local_addr[1]))
+        PcapLiveDevice.set_bpf_filter_on_all_devices("{} port {}".format(self._protoname, self._local_addr[1]))
+
         ApplicationLayer.init()
         self._socket_queue_to_stack, self._socket_queue_from_stack = ApplicationLayer.queues()
 
@@ -110,7 +118,7 @@ class socket(object):
 
     @property
     def type(self):
-        return self._socktype
+        return self._proto
 
     @property
     def proto(self):
