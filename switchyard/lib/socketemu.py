@@ -107,7 +107,8 @@ class socket(object):
         self._local_addr = ('0.0.0.0',get_ephemeral_port())
 
         Firewall.add_rule("{}:{}".format(self._protoname, self._local_addr[1]))
-        PcapLiveDevice.set_bpf_filter_on_all_devices("{} port {}".format(self._protoname, self._local_addr[1]))
+        # only get packets with destination port of local port
+        PcapLiveDevice.set_bpf_filter_on_all_devices("{} dst port {}".format(self._protoname, self._local_addr[1]))
 
         ApplicationLayer.init()
         self._socket_queue_to_stack, self._socket_queue_from_stack = ApplicationLayer.queues()
@@ -139,6 +140,9 @@ class socket(object):
         # block firewall port
         # set stack to only allow packets through for addr/port
         self._local_addr = address
+        # update firewall and pcap filters
+        Firewall.add_rule("{}:{}".format(self._protoname, self._local_addr[1]))
+        PcapLiveDevice.set_bpf_filter_on_all_devices("{} dst port {}".format(self._protoname, self._local_addr[1]))
 
     def connect(self, address):
         self._remote_addr = address
