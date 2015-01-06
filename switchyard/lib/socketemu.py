@@ -1,4 +1,4 @@
-from configparser import ConfigParser
+import sys
 from queue import Queue, Empty
 from threading import Thread, Lock
 from socket import timeout, AddressFamily, AF_INET, SOCK_DGRAM, SOCK_STREAM, IPPROTO_TCP, IPPROTO_UDP
@@ -6,10 +6,11 @@ from socket import error as sockerr
 from subprocess import getoutput
 import re
 import random
+from textwrap import indent
 
 from switchyard.lib.hostfirewall import Firewall
 from switchyard.lib.pcapffi import PcapLiveDevice
-from switchyard.lib.common import NoPackets, log_debug, log_info, setup_logging
+from switchyard.lib.common import NoPackets, log_debug, log_info, setup_logging, red, yellow
 from switchyard.lib.packet import IPProtocol
 
 def gather_ports():
@@ -106,9 +107,19 @@ class socket(object):
         self._remote_addr = (None,None)
         self._local_addr = ('0.0.0.0',get_ephemeral_port())
 
-        Firewall.add_rule("{}:{}".format(self._protoname, self._local_addr[1]))
-        # only get packets with destination port of local port
-        PcapLiveDevice.set_bpf_filter_on_all_devices("{} dst port {}".format(self._protoname, self._local_addr[1]))
+        log_debug("Adding firewall/bpf rule {} dst port {}".format(self._protoname, self._local_addr[1]))
+        try:
+            Firewall.add_rule("{}:{}".format(self._protoname, self._local_addr[1]))
+            # only get packets with destination port of local port
+            PcapLiveDevice.set_bpf_filter_on_all_devices("{} dst port {}".format(self._protoname, self._local_addr[1]))
+        except: 
+            with yellow():
+                print ("Unable to complete socket emulation setup (failed on firewall/bpf filter installation).  Did you start the program via srpy?")
+                import traceback
+            print ("Here is the raw exception information:")
+            with red():
+                print(indent(traceback.format_exc(), '    '))
+            sys.exit()
 
         ApplicationLayer.init()
         self._socket_queue_to_stack, self._socket_queue_from_stack = ApplicationLayer.queues()
@@ -141,6 +152,7 @@ class socket(object):
         # set stack to only allow packets through for addr/port
         self._local_addr = address
         # update firewall and pcap filters
+        log_debug("Updating firewall/bpf rule on bind(): {} dst port {}".format(self._protoname, self._local_addr[1]))
         Firewall.add_rule("{}:{}".format(self._protoname, self._local_addr[1]))
         PcapLiveDevice.set_bpf_filter_on_all_devices("{} dst port {}".format(self._protoname, self._local_addr[1]))
 

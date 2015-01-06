@@ -5,6 +5,7 @@ import os
 sys.path.append(os.getcwd())
 import argparse
 from threading import Thread, Barrier
+from textwrap import indent
 
 from switchyard.lib.common import *
 from switchyard.lib.textcolor import *
@@ -23,8 +24,23 @@ def start_app(appcode, firewall_setup):
     # and beware that something may have failed, so only start app code
     # if it looks like everything was initialized correctly
     if setup_ok:
-        import_or_die(appcode, [])
-    print("After app-code")
+        try:
+            import_or_die(appcode, [])
+        except Exception as e:
+            import traceback
+            with red():
+                print('*'*60)
+                print ("Exception while running your code: {}".format(e))
+                lines = indent(traceback.format_exc(), '   ').split('\n')
+                doprint = False
+                for line in lines:
+                    if doprint:
+                        print (line)
+                    elif appcode in line:
+                        print (line)
+                        doprint = True
+                print ('*'*60)
+
     if netobj is not None:
         netobj.shutdown()
 

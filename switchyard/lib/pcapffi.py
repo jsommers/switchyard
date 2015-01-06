@@ -317,19 +317,17 @@ class PcapLiveDevice(object):
     '''
     Class the represents a live pcap capture/injection device.
     '''
-    _OpenDevices = set()
-    __slots__ = ['_pcapffi','_pcapdev']
+    _OpenDevices = {}
+    __slots__ = ['_pcapffi','_pcapdev','_devname']
 
     def __init__(self, device, snaplen=65535, promisc=1, to_ms=100, filterstr=None):
         self._pcapffi = _PcapFfi.instance()
         self._pcapdev = self._pcapffi.open_live(device)
-        PcapLiveDevice._OpenDevices.add(self._pcapdev)
+        self._devname = device
+        PcapLiveDevice._OpenDevices[self._devname] = self._pcapdev
         # print ("Got live pcap device: {}".format(self._pcapdev))
         if filterstr is not None:
             self._pcapffi.set_filter(self._pcapdev, filterstr)
-
-    def __del__(self):
-        PcapLiveDevice._OpenDevices.remove(self._pcapdev)
 
     @staticmethod
     def set_bpf_filter_on_all_devices(filterstr):
@@ -337,7 +335,7 @@ class PcapLiveDevice(object):
         Long method name, but self-explanatory.  Set the bpf
         filter on all devices that have been opened.
         '''
-        for dev in PcapLiveDevice._OpenDevices:
+        for dev in PcapLiveDevice._OpenDevices.values():
             _PcapFfi.instance().set_filter(dev, filterstr)
 
     def recv_packet(self, timeout):
@@ -375,6 +373,8 @@ class PcapLiveDevice(object):
         self._pcapffi.send_packet(self._pcapdev.pcap, packet)
 
     def close(self):
+        print("In close; existing devs: {}".format(list(PcapLiveDevice._OpenDevices.keys())))
+        del PcapLiveDevice._OpenDevices[self._devname]
         self._pcapffi.close_live(self._pcapdev.pcap)
 
     def stats(self):

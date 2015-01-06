@@ -179,13 +179,13 @@ class LLNetBase(metaclass=ABCMeta):
         Return a list of interfaces incident on this node/router.
         Each item in the list is an Interface (devname,macaddr,ipaddr,netmask) object.
         '''
-        return self.devinfo.values()
+        return list(self.devinfo.values())
 
     def ports(self):
         '''
         Alias for interfaces() method.
         '''
-        return self.interfaces()
+        return list(self.interfaces())
 
     def interface_by_name(self, name):
         '''

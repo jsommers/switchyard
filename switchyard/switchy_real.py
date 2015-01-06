@@ -88,6 +88,9 @@ class PyLLNet(LLNetBase):
         being shut down.  Cleans up internal threads and network
         interaction objects.
         '''
+        if not PyLLNet.running:
+            return
+
         PyLLNet.running = False
         log_debug("Joining threads for shutdown")
         for t in self.threads:
