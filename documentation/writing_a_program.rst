@@ -1,25 +1,51 @@
 Writing a Switchyard Program
-============================
+****************************
 
-A SRPY program is simply a Python program that includes the the required function srpy_main().  The SRPY framework will invoke this function on startup, passing a reference to the SRPY network object as the only parameter.
+.. index:: switchy_main, srpy_main, main
 
-A SRPY program will typically also import other Python modules such as POX modules for parsing and constructing packets, as well as handling Ethernet and IPv4 addresses.
+A Switchyard program is simply a Python program that includes an explicit "startup" function.  The startup function can either be named ``switchy_main``, ``srpy_main``, or simply ``main``.   This function must accept a single parameter, which is a reference to the Switchyard "network object" (described below).  The network object is used to send and receive packets to and from network interfaces.  
 
-Methods Available on the "net" Object
--------------------------------------
+.. index:: srpy.py
 
-The object passed as a parameter to srpy_main has a set of methods that allow you to find out about interfaces attached to your network device (e.g., your switch or router), receive packets from the network, and emit a packet on a network interface.  There are also some important classes and functions in a module called srpy_common.
+Note that a Switchyard program isn't executed *directly* with the Python interpreter.  You will instead use the Switchyard program ``srpy.py`` to start up the Switchyard framework and tell ``srpy.py`` to load your code.  Details on how to do this are given in 
+
+A Switchyard program will typically also import other Switchyard modules such as  modules for parsing and constructing packets, dealing with network addresses, and other functions.
+
+Introducing the "network object"
+================================
+
+As mentioned above, a Switchyard program can simply have a ``main`` function that accepts a single argument.  The parameter passed to ``main`` is called the "network object".  It is on this object that you can call methods for sending and receiving packets.  For example, here is a program that receives one packet, prints something out, then quits.
+
+.. code-block:: python
+    
+    from switchyard.lib.packet import *
+    from switchyard.lib.address import *
+    from switchyard.lib.common import *
+
+    def main(net):
+        input_port,packet = net.recv_packet()
+        print ("Received {} on {}".format(packet, input_port))
+
+In addition to having methods for sending and receiving packets, the network object has methods to allow gathering a list of interfaces (ports) attached to your network device (i.e., the switch or router for which you're creating the logic).
+
+
+
+a set of methods that allow you to find out about interfaces attached to your network device (e.g., your switch or router), receive packets from the network, and emit a packet on a network interface.  There are also some important classes and functions in a module called srpy_common.
 
 Important classes and functions in srpy_common are:
+
+Interfaces (ports)
+==================
+
 
 The Interface class, which models a single logical interface on a network device.  It has four properties:
 name: the name of the interface
 ethaddr: the Ethernet address associated with the interface as a POX EthAddr object
 ipaddr: the IP address associated with the interface as a POX IPAddr object
 netmask: the subnet mask associated with the interface as a POX IPAddr object
-The SrpyShutdown and SrpyNoPackets exception classes
-SrpyShutdown is raised when the SRPY framework is shutting down
-SrpyNoPackets is raised when you attempt to receive packets, but none arrive prior to a "timeout" occurring
+The Shutdown and NoPackets exception classes
+Shutdown is raised when the Switchyard framework is shutting down
+NoPackets is raised when you attempt to receive packets, but none arrive prior to a "timeout" occurring
 log_debug, log_info, log_warn, log_failure
 Each of these functions takes a string as a parameter and prints it to the console as a logging message
 Alternatively, you can simply use the print statement to write to the console
@@ -44,34 +70,56 @@ There is also a ports() method that is just an alias of interfaces().
 
 interface_by_name(devicename), interface_by_ipaddr(ipaddr), interface_by_macaddr(ethaddr): these methods are alternative ways to obtain an Interface object, by supplying a device name (e.g., "eth0") an IP address configured on a device, or an Ethernet MAC address configured on a device.  They are basically convenience methods provided so that you do not have to continually iterate over the list of interfaces.
 
-recv_packet(timeout): this method waits for timeout seconds for any packets to arrive.  If a packet arrives before timeout seconds have passed, it returns a tuple of three items: the device name that the packet arrived on, a timestamp, and a POX packet object.  If no packets arrive before timeout seconds pass, the method raises a SrpyNoPackets exception.
+recv_packet(timeout): this method waits for timeout seconds for any packets to arrive.  If a packet arrives before timeout seconds have passed, it returns a tuple of three items: the device name that the packet arrived on, a timestamp, and a POX packet object.  If no packets arrive before timeout seconds pass, the method raises a NoPackets exception.
 
 send_packet(dev, packet): this method sends a packet (which must be a POX Ethernet packet object) on the device named dev.  The name dev must match the name of one of the interfaces given in the interface list.
 
-shutdown(): this signals to the SRPY framework that your program is done and exiting.  It should be the last thing you call in a SRPY program.
+shutdown(): this signals to the Switchyard framework that your program is done and exiting.  It should be the last thing you call in a SRPY program.
 
-A simple template for a SRPY program is as follows::
+Packet parsing and construction
+===============================
+
+basic pattern and core ideas of packet libraries
+
+examples:
+
+  * ether + ip + icmp
+  * ether + arp
+  * ether + ip + udp + payload
+  * ether + ip + tcp + payload
+
+include examples with looking at particular aspects of address objects
+
+
+A longer example
+================
+
+A simple template for a Switchyard program is as follows:
+
+FIXME: explain
+
+.. code-block:: python
 
     #!/usr/bin/env python
 
-    import os
-    import os.path
-    sys.path.append(os.path.join(os.environ['HOME'],'pox'))
-    sys.path.append(os.path.join(os.getcwd(),'pox'))
-    import pox.lib.packet as pkt
-    from srpy_common import SrpyShutdown, SrpyNoPackets
+    from switchyard.lib.packet import *
+    from switchyard.lib.address import *
+    from switchyard.lib.common import *
 
-    def srpy_main(net): while True:
+    def main(net): 
+        while True:
             try:
-                dev,ts,packet = net.recv_packet(timeout=1.0)
-            except SrpyNoPackets:
+                dev,packet = net.recv_packet(timeout=1.0)
+            except NoPackets:
                 # timeout waiting for packet arrival
                 continue
-            except SrpyShutdown:
+            except Shutdown:
                 # we're done; bail out of while loop
                 return
-            print packet.dump() # just print each packet to the console
-            # before exiting our main function,
-            # perform shutdown on network
+
+            # just print each packet to the console
+            print (packet.dump()) 
+
+        # before exiting our main function perform shutdown on network
         net.shutdown()
 

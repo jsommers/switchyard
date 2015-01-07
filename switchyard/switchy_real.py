@@ -84,9 +84,9 @@ class PyLLNet(LLNetBase):
 
     def shutdown(self):
         '''
-        Should be called by pynet user when a PyLLNet object is
-        being shut down.  Cleans up internal threads and network
-        interaction objects.
+        Should be called by Switchyard user code when a network object is
+        being shut down.  (This method cleans up internal threads and network
+        interaction objects.)
         '''
         if not PyLLNet.running:
             return
@@ -228,7 +228,7 @@ class PyLLNet(LLNetBase):
         Send a Switchyard Packet object on the given device 
         (string name of device).
 
-        Raises an exception if packet object isn't valid, or device
+        Raises SwitchyException if packet object isn't valid, or device
         name isn't recognized.
         '''
         pdev = self.pcaps.get(dev, None)
