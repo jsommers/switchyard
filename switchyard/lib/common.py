@@ -1,9 +1,11 @@
 import sys
 import logging
 from abc import ABCMeta,abstractmethod
+from ipaddress import ip_interface
+
 from switchyard.lib.address import IPAddr,EthAddr
 from switchyard.lib.textcolor import *
-from ipaddress import ip_interface
+from switchyard.lib.pcapffi import pcap_devices
 
 # version test, for sanity
 if sys.version_info.major < 3 or sys.version_info.minor < 4:
@@ -177,13 +179,13 @@ class LLNetBase(metaclass=ABCMeta):
         Return a list of interfaces incident on this node/router.
         Each item in the list is an Interface (devname,macaddr,ipaddr,netmask) object.
         '''
-        return self.devinfo.values()
+        return list(self.devinfo.values())
 
     def ports(self):
         '''
         Alias for interfaces() method.
         '''
-        return self.interfaces()
+        return list(self.interfaces())
 
     def interface_by_name(self, name):
         '''
@@ -243,6 +245,23 @@ class LLNetBase(metaclass=ABCMeta):
     def shutdown(self):
         pass
 
-    @abstractmethod
+    @property
     def name(self):
         pass
+
+def make_device_list(includes, excludes):
+    log_debug("Making device list.  Includes: {}, Excludes: {}".format(includes, excludes))
+    # devs = set([ dev.name for dev in pcap_devices() if dev.isrunning and not dev.isloop ])
+    devs = set([ dev.name for dev in pcap_devices() if not dev.isloop or dev.name in includes])
+    log_debug("Devices found: {}".format(devs))
+
+    # remove devs from excludelist
+    devs.difference_update(set(excludes))
+
+    # if includelist is non-empty, perform
+    # intersection with devs found and includelist
+    if includes:
+        devs.intersection_update(set(includes))
+
+    log_debug("Using these devices: {}".format(devs))
+    return devs

@@ -110,7 +110,9 @@ class Packet(object):
         may be a slight misnomer since the last portion of a packet is
         considered application payload and not a header per se.
         '''
-        if isinstance(ph, PacketHeaderBase) or isinstance(ph, bytes):
+        if isinstance(ph, bytes):
+            ph = RawPacketContents(ph)
+        if isinstance(ph, PacketHeaderBase):
             self._headers.append(ph)            
             return self
         raise Exception("Payload for a packet header must be an object that is a subclass of PacketHeaderBase, or a bytes object.")
