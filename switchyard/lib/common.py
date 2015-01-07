@@ -1,3 +1,5 @@
+import switchyard.versioncheck
+
 import sys
 import logging
 from abc import ABCMeta,abstractmethod
@@ -6,12 +8,6 @@ from ipaddress import ip_interface
 from switchyard.lib.address import IPAddr,EthAddr
 from switchyard.lib.textcolor import *
 from switchyard.lib.pcapffi import pcap_devices
-
-# version test, for sanity
-if sys.version_info.major < 3 or sys.version_info.minor < 4:
-    with red():
-        print("Switchyard requires Python 3.4")
-    sys.exit(-1)
 
 class SwitchyException(Exception):
     def __init__(self, message):

@@ -1,3 +1,5 @@
+import switchyard.versioncheck
+
 import sys
 import argparse
 import os

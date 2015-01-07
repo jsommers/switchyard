@@ -3,17 +3,20 @@
 import sys
 import os
 sys.path.append(os.getcwd())
+
+import switchyard.versioncheck
+
 import argparse
 from threading import Thread, Barrier
 from textwrap import indent
 
-from switchyard.lib.common import *
 from switchyard.lib.textcolor import *
 from switchyard.lib.hostfirewall import Firewall
 from switchyard.switchy_test import main_test
 from switchyard.switchy_real import main_real, PyLLNet
 from switchyard.lib.importcode import import_or_die
 from switchyard.lib.socketemu import ApplicationLayer
+from switchyard.lib.common import *
 
 setup_ok = False
 netobj = None

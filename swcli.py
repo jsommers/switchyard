@@ -3,8 +3,10 @@
 import sys
 import os
 sys.path.append(os.getcwd())
-import argparse
 
+import switchyard.versioncheck
+
+import argparse
 from switchyard.lib.common import *
 from switchyard.lib.topo import *
 from switchyard.cli import run_simulation
