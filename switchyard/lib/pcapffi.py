@@ -339,7 +339,7 @@ class PcapLiveDevice(object):
             _PcapFfi.instance().set_filter(dev, filterstr)
 
     def recv_packet(self, timeout):
-        if timeout < 0:
+        if timeout is None or timeout < 0:
             timeout = None
         fd = self._pcapffi.get_select_fd(self._pcapdev.pcap)
         if fd >= 0:
