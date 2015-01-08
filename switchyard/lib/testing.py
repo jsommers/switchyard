@@ -18,12 +18,40 @@ import copy
 import textwrap
 from collections import namedtuple
 from abc import ABCMeta, abstractmethod
+from dis import Bytecode
+
 
 from switchyard.lib.packet import *
 from switchyard.lib.address import *
 from switchyard.lib.common import *
 import switchyard.lib.debug as sdebug
 from switchyard.lib.importcode import import_or_die
+
+
+class PacketFormatter(object):
+    _fulldisp = False
+
+    @staticmethod
+    def full_display(value=True):
+        PacketFormatter._fulldisp = value
+
+    @staticmethod
+    def format_pkt(pkt, cls=None):
+        '''
+        Return a string representation of a packet.  If display_class is a known
+        header type, just show the string repr of that header.  Otherwise, dump
+        the whole thing.
+        '''
+        if PacketFormatter._fulldisp:
+            cls = None
+
+        if cls is None:
+            return str(pkt)
+        idx = pkt.get_header_index(cls)
+        if idx == -1:
+            log_warn("PacketFormatter tried to find non-existent header (test scenario probably needs fixing)")
+            return str(pkt)
+        return ' | '.join([str(pkt[i]) for i in range(idx, pkt.num_headers())])
 
 
 class SwitchyTestEvent(object):
@@ -168,6 +196,8 @@ class PacketMatcher(object):
         else:
             self.__matchobj = WildcardMatch(packet, wildcard)
 
+        self._packet = packet
+
         self.predicates = []
         if len(predicates) > 0:
             boguslambda = lambda: 0
@@ -184,6 +214,10 @@ class PacketMatcher(object):
                     raise Exception("Predicates passed to PacketMatcher must be strings or lambdas ({} is of type {})".format(predicates[i], type(predicates[i])))
 
 
+    @property
+    def packet(self):
+        return self._packet
+
     def __diagnose(self, packet, results):
         '''
         Construct/return a string that describes why a packet doesn't
@@ -196,10 +230,17 @@ class PacketMatcher(object):
         conjunction = ', but' if firstmatch else '. '
         diagnosis = ["{} {} match {}{}".format(aan.capitalize(), xtype, xresults, conjunction)]
 
-        for pidx,preresult in enumerate(results):
-            xresults = "passed" if preresult else "failed"
-            xname = self.predicates[pidx]
-            diagnosis += ["when comparing the packet you sent versus what I expected, the predicate ({}) {}.".format(xname, xresults)]
+        if len(results):
+            diagnosis += ["When comparing the packet you sent versus what I expected,"]
+            for pidx,preresult in enumerate(results):
+                xresults = "passed" if preresult else "failed"
+                xname = self.predicates[pidx]
+                # xname = ' '.join([x.strip() for x in Bytecode(xname).dis().replace('\n', ';;').split() ])
+                conjunction = 'and' if pidx == len(results)-1 else ''
+                diagnosis += ["{} the predicate ({}) {}".format(conjunction, xname, xresults)]
+                if not conjunction:
+                    diagnosis[-1] += ','
+            diagnosis[-1] += '.'
 
         if firstmatch:
             diagnosis += ["\nThese fields matched: {}.".format(self.show(None))]
@@ -234,6 +275,8 @@ class PacketMatcher(object):
                 v = getattr(self.__matchobj, f)
                 if v is None or f.startswith('tp') and v == 0:
                     return wildcardview
+                elif issubclass(v.__class__, Enum):
+                    return v.name
                 else:
                     return v
             dl = nw = tp = ''
@@ -242,13 +285,12 @@ class PacketMatcher(object):
                                           fmtfield('dl_dst', '**:**:**:**:**:**'),
                                           fmtfield('dl_type'))
             if cls is None or cls.__name__ == 'IPv4':
-                nw = " IP {}->{} ".format(fmtfield('nw_src', '*.*.*.*'),
+                nw = " IPv4 {}->{} ".format(fmtfield('nw_src', '*.*.*.*'),
                                           fmtfield('nw_dst', '*.*.*.*'))
             if cls is None or cls.__name__ in ['TCP','UDP','ICMP']:
                 arrow = ':' if cls is None or cls.__name__ == 'ICMP' else '->'
                 tp = " {} {}{}{}".format(fmtfield('nw_proto'),fmtfield('tp_src'), arrow, fmtfield('tp_dst'))
             return dl + nw + tp
-            # not including dl_vlan, dl_vlan_pcp
 
 class PacketInputTimeoutEvent(SwitchyTestEvent):
     '''
@@ -377,7 +419,9 @@ class PacketOutputEvent(SwitchyTestEvent):
 
     def __str__(self):
         s = "send_packet(s) "
-        devlist = ["{} out {}".format(v.show(self.display),k) for k,v in self.device_packet_map.items() ]
+        # in device_packet_map, values are Match objects
+        devlist = ["{} out {}".format(self.format_pkt(v.packet),k) for k,v in self.device_packet_map.items() ]
+        # in matches, values are packets
         devlist += ["{} out {}".format(self.format_pkt(v),k) for k,v in self.matches.items() ]
         s += ' and '.join(devlist)
         return s
