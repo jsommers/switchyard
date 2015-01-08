@@ -29,32 +29,6 @@ class NoPackets(Exception):
     pass
 
 
-class PacketFormatter(object):
-    __fulldisp = False
-
-    @staticmethod
-    def full_display(value=True):
-        PacketFormatter.__fulldisp = value
-
-    @staticmethod
-    def format_pkt(pkt, cls=None):
-        '''
-        Return a string representation of a packet.  If display_class is a known
-        header type, just show the string repr of that header.  Otherwise, dump
-        the whole thing.
-        '''
-        if PacketFormatter.__fulldisp:
-            cls = None
-
-        if cls is None:
-            return str(pkt)
-        idx = pkt.get_header_index(cls)
-        if idx == -1:
-            log_warn("PacketFormatter tried to find non-existent header (test scenario probably needs fixing)")
-            return str(pkt)
-        return ' | '.join([str(pkt[i]) for i in range(idx, pkt.num_headers())])
-
-
 class Interface(object):
     __slots__ = ['__name','__ethaddr','__ipaddr']
     '''
@@ -230,7 +204,7 @@ class LLNetBase(metaclass=ABCMeta):
         return self.interface_by_macaddr(macaddr)
 
     @abstractmethod
-    def recv_packet(self, timeout=0.0, timestamp=False):
+    def recv_packet(self, timeout=None, timestamp=False):
         raise NoPackets()
 
     @abstractmethod

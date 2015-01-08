@@ -25,7 +25,7 @@ jsommers@colgate.edu
 
 USERMAIN = 'switchy_main'
 
-from switchyard.lib.common import Interface, SwitchyException, Shutdown, NoPackets, ScenarioFailure, PacketFormatter, LLNetBase
+from switchyard.lib.common import Interface, SwitchyException, Shutdown, NoPackets, LLNetBase
 from switchyard.lib.common import setup_logging, log_info, log_debug, log_warn, log_failure
 from switchyard.lib.textcolor import *
 
@@ -183,6 +183,11 @@ class PyLLNet(LLNetBase):
         '''
         count = 0
         while PyLLNet.running:
+            # a non-zero timeout value is ok here; this is an
+            # independent thread that handles input for this
+            # one pcap device.  it throws any packets received
+            # into the shared queue (which is read by the actual
+            # user code)
             pktinfo = pcapdev.recv_packet(timeout=0.2)
             if pktinfo is None:
                 continue
@@ -197,19 +202,23 @@ class PyLLNet(LLNetBase):
         stats = pcapdev.stats()
         log_debug("Final device statistics {}: {} received, {} dropped, {} dropped/if".format(devname, stats.ps_recv, stats.ps_drop, stats.ps_ifdrop))
 
-    def recv_packet(self, timeout=0.0, timestamp=False):
+    def recv_packet(self, timeout=None, timestamp=False):
         '''
         Receive packets from any device on which one is available.
-        Blocks until it receives a packet.  Returns None,None,None
-        when device(s) are shut down (i.e., on a SIGINT to the process).
+        Blocks until it receives a packet, unless a timeout value >=0
+        is given.  Raises Shutdown exception when device(s) are shut 
+        down (i.e., on a SIGINT to the process).  Raises NoPackets when 
+        there are no packets that can be read.
 
-        Returns a tuple of device,timestamp,packet, where
-            device: network device name on which packet was received
-                    as a string
-            timestamp: floating point value of time at which packet
-                    was received (optionally returned; only if
-                    timestamp=True)
-            packet: Switchyard Packet object.
+        Returns a tuple of length 2 or 3, depending on whether the
+        timestamp is desired.
+
+         * device: network device name on which packet was received
+           as a string
+         * timestamp: floating point value of time at which packet
+           was received (optionally returned; only if
+           timestamp=True)
+         * packet: Switchyard Packet object.
         '''
         while PyLLNet.running:
             try:

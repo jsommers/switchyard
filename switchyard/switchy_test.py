@@ -51,18 +51,20 @@ class FakePyLLNet(LLNetBase):
         '''
         pass
 
-    def recv_packet(self, timeout=0.0, timestamp=False):
+    def recv_packet(self, timeout=None, timestamp=False):
         '''
         Receive packets from any device on which one is available.
-        Blocks until it receives a packet.  Returns None,None,None
-        when device(s) are shut down (i.e., on a SIGINT to the process).
+        Blocks until it receives a packet unless a timeout value >= 0 is
+        supplied.  Raises Shutdown exception when device(s) are shut 
+        down (i.e., on a SIGINT to the process) and raises NoPackets
+        if there are no packets that could be read before a timeout occurred.
 
-        Returns a tuple of device,timestamp,packet, where
-            device: network device name on which packet was received
-                    as a string
-            timestamp: floating point value of time at which packet
-                    was received
-            packet: Switchyard Packet object
+        Returns a tuple of length 2 or 3, depending whether the timestamp
+        is desired.
+
+        * device: network device name on which packet was received as a string
+        * timestamp: floating point value of time at which packet was received
+        * packet: Switchyard Packet object
         '''
         # check if we're done with test scenario
         if self.scenario.done():
