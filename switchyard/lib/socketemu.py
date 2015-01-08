@@ -110,8 +110,9 @@ class socket(object):
         log_debug("Adding firewall/bpf rule {} dst port {}".format(self._protoname, self._local_addr[1]))
         try:
             Firewall.add_rule("{}:{}".format(self._protoname, self._local_addr[1]))
-            # only get packets with destination port of local port
-            PcapLiveDevice.set_bpf_filter_on_all_devices("{} dst port {}".format(self._protoname, self._local_addr[1]))
+            # only get packets with destination port of local port, or any
+            # icmp packets
+            PcapLiveDevice.set_bpf_filter_on_all_devices("{} dst port {} or icmp".format(self._protoname, self._local_addr[1]))
         except: 
             with yellow():
                 print ("Unable to complete socket emulation setup (failed on firewall/bpf filter installation).  Did you start the program via srpy?")
