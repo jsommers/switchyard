@@ -17,6 +17,7 @@ from switchyard.switchy_real import main_real, PyLLNet
 from switchyard.lib.importcode import import_or_die
 from switchyard.lib.socketemu import ApplicationLayer
 from switchyard.lib.common import *
+from switchyard.lib.testing import PacketFormatter
 
 setup_ok = False
 netobj = None
