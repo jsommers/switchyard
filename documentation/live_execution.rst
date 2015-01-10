@@ -8,26 +8,20 @@ Switchyard can run in any live environment that supports the libpcap packet capt
 Running on a standard host
 ==========================
 
-need to run with sudo; firewalling, etc.; command-line options for choosing specific interfaces, etc.
 
-To run Switchyard in a "live" Mininet environment (i.e., "real" packets will arrive and can be emitted, not just packets in the test harness), you simply drop the -t and -s options to Switchyard:
+The basic recipe for running Switchyard on a live host is pretty simple.  If we wanted to run a Switchyard program and use *all* available network interfaces on the system, we could use the following::
 
-::
-    $ sudo python srpy.py -v myswitch
+    $ sudo python3 srpy.py myhub.py
 
-FIXME: show some examples
+Note that you'll need to run Switchyard as root since it uses libpcap for sending and receiving packets, and you need root privileges to access live interfaces with libpcap.
 
+Note also that Switchyard will automatically install host firewall rules so that the host is *prevented* from responding to packets since it is assumed that you want Switchyard to handle all packets.  If that's not the case, you can specify that certain interfaces should be included or excluded from Switchyard's control.  You can use the ``-i`` option to say that only certain interfaces should be included, or the ``-e`` option to exclude certain interfaces.
 
-Running within Mininet
-======================
+For example, if we want to just use the interface named ``eth0``, we could invoke ``srpy`` as follows::
 
-FIXME: command-line options (all work the same, it's just more likely that you want all interfaces and don't need to explicitly set any firewall options)
+    $ sudo python3 srpy.py -i eth0 myhub.py
 
-Note that you'll need to do either of the above two commands on a node of a Mininet network.  To open a terminal window on a Mininet node, you can use the "xterm" command in Mininet.  For example, if you want to open a terminal window on a Mininet node named "server1", you would type:
+Just as with running Switchyard in a test environment, you may wish to use the ``-v`` and/or ``-d`` options to increase Switchyard's output verbosity or to include debugging messages, respectively.
 
-::
-    mininet> xterm server1
-
-at the Mininet console prompt.  Inside that window, you'd run ./runreal.sh.
-
+Last note: there are no real differences with running Switchyard on a "real" host compared with running in Mininet or a virtual host.  In a virtual environment it may be more likely that you want to use all interfaces with Switchyard, thus the ``-i`` and ``-e`` options may be less relevant.  Also, when you open xterm's within Mininet you'll already have a root shell so there's no need to use ``sudo`` to invoke Switchyard.
 
