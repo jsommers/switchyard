@@ -24,9 +24,14 @@ class ScenarioFailure(SwitchyException):
     pass
 
 class Shutdown(Exception):
+    '''Exception that is raised in user Switchyard program when the
+    framework is being shut down.'''
     pass
 
 class NoPackets(Exception):
+    '''Exception that is raised in user Switchyard program when
+    the recv_packet() method is called on the net object and there
+    are no packets available.'''
     pass
 
 

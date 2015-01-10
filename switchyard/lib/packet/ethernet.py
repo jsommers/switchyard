@@ -38,22 +38,18 @@ class Vlan(PacketHeaderBase):
 
     @property
     def vlan(self):
-        '''Get the VLAN Id'''
         return self._vlanid
 
     @vlan.setter
     def vlan(self, value):
-        '''Set the VLAN Id'''
         self._vlanid = int(value) & 0x0fff # mask out high-order 4 bits
 
     @property
     def ethertype(self):
-        '''Get the EtherType'''
         return self._ethertype
 
     @ethertype.setter
     def ethertype(self, value):
-        '''Set the EtherType'''
         self._ethertype = EtherType(value)
 
     def from_bytes(self, raw):

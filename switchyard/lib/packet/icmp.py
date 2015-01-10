@@ -13,8 +13,10 @@ TCP/IP Illustrated, Vol 1.
 
 class ICMP(PacketHeaderBase):
     '''
-    A base class for all ICMP message types.  This class isn't normally instantiated, but rather
-    its subclasses are.
+    A mother class for all ICMP message types.  It holds a reference
+    to another object that contains the specific ICMP data, given
+    a particular ICMP type.  Just setting the icmptype causes the
+    data object to change.
     '''
     __slots__ = ('_type', '_code', '_icmpdata', '_valid_types', 
                  '_valid_codes_map', '_classtype_from_icmptype', 
