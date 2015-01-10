@@ -3,11 +3,9 @@
 '''
 Ethernet hub in Python.
 '''
-import time
-import switchyard.lib.address 
-import switchyard.lib.packet
-from switchyard.lib.common import log_info, NoPackets, Shutdown
-from switchyard.lib.debug import debugger
+from switchyard.lib.address import *
+from switchyard.lib.packet import *
+from switchyard.lib.common import *
 
 def switchy_main(net):
     my_interfaces = net.interfaces() 
@@ -16,11 +14,12 @@ def switchy_main(net):
     while True:
         try:
             dev,packet = net.recv_packet()
-            debugger()
         except NoPackets:
             continue
         except Shutdown:
             return
+
+        debugger()
 
         print ("In {} received packet {} on {}".format(net.name, packet, dev))
         if packet[0].dst in mymacs:
