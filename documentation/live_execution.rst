@@ -1,3 +1,5 @@
+.. _runlive:
+
 Running in a "live" environment
 *******************************
 

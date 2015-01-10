@@ -1,3 +1,5 @@
+.. _runtest:
+
 Running in the test environment
 *******************************
 
