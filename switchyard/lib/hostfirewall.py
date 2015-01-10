@@ -82,18 +82,18 @@ class LinuxFirewall(AbstractFirewall):
         if doall:
             for intf in interfaces:
                 st,output = getstatusoutput('sysctl net.ipv4.conf.{}.arp_ignore'.format(intf))
-                self._arpignore[intf] = int(output)
+                self._arpignore[intf] = int(output.split()[-1])
                 st,output = getstatusoutput('sysctl -w net.ipv4.conf.{}.arp_ignore=8'.format(intf))
         log_debug("Rules to install: {}".format(self._rulecmds))
 
     def _parse_rule(self, rule):
         cmds = []
-        mobj = re.match('(tcp|udp|icmp):(\d+|\*)', r)
+        mobj = re.match('(tcp|udp|icmp):(\d+|\*)', rule)
         if mobj:
             for intf in interfaces:
                 proto,port = mobj.groups()[:2]
                 cmds.append('iptables -t raw -P PREROUTING DROP --protocol {} -i {} --port {}'.format(proto, intf, port))
-        elif r == 'all':
+        elif rule == 'all':
             cmds.append('iptables -t raw -P PREROUTING DROP')
         else:
             raise Exception("Can't parse rule: {}".format(rule))
