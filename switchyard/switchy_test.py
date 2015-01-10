@@ -172,7 +172,14 @@ If you don't want pdb, use the --nopdb flag to avoid this fate.
 
 ''')
                 if tb is not None:
-                    pdb.post_mortem(tb)
+                    # patched-up post mortem pdb session to make sure
+                    # that we start in the right place
+                    p = pdb.Pdb(skip=['switchyard.lib.testing','switchyard.switchy_test'])
+                    p.reset()
+                    p.setup(None, tb)
+                    for i in range(3): # this may overshoot, but that may be ok
+                        p.onecmd('up')
+                    p.cmdloop()
                 else:
                     print ("No exception traceback available")
 
