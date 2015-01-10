@@ -2,6 +2,9 @@
 # to decide whether to handle the timer or not.
 # if we're in the debugger, just drop it.
 
+from functools import wraps
+import pdb
+
 in_debugger = False
 def disable_timer():
     global in_debugger
@@ -11,10 +14,13 @@ def disable_timer():
 # decorate the "real" debugger entrypoint by
 # disabling any SIGALRM invocations -- just ignore
 # them if we're going into the debugger
-import pdb
-def setup_debugger(real_debugger):
-    def inner():
+def setup_debugger(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
         disable_timer()
-        return real_debugger
-    return inner
-debugger = setup_debugger(pdb.set_trace)
+        return f(*args, **kwargs)
+    return wrapper
+
+@setup_debugger
+def debugger():
+    pdb.Pdb(skip=['switchyard.lib.debug']).set_trace()

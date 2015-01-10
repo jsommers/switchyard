@@ -8,6 +8,7 @@ from ipaddress import ip_interface
 from switchyard.lib.address import IPAddr,EthAddr
 from switchyard.lib.textcolor import *
 from switchyard.lib.pcapffi import pcap_devices
+from switchyard.lib.debug import debugger
 
 class SwitchyException(Exception):
     def __init__(self, message):
