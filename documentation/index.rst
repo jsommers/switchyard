@@ -13,8 +13,8 @@ Contents:
 
    intro
    writing_a_program
-   test_scenario_creation
    test_execution
+   test_scenario_creation
    live_execution
    installation
    reference
