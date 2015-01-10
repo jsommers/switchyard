@@ -51,10 +51,16 @@ useful and which are *not* documented below for clarity:
  * ``to_bytes()``: returns the serialized (wire format) representation of the packet as a byte string
  * ``from_bytes(b)``: parses a byte string representing this packet header and constructs the various header fields from the raw bytes
 
+
 .. autoclass:: switchyard.lib.packet.Ethernet
    :members:
    :undoc-members:
    :exclude-members: next_header_class, pre_serialize, size, to_bytes, from_bytes
+
+   Represents an Ethernet header with fields src (source Ethernet address),
+   dst (destination Ethernet address), and ethertype (type of header to
+   come in the packet after the Ethernet header).  All valid ethertypes are
+   defined below.
 
 .. autoclass:: switchyard.lib.packet.common.EtherType
 
@@ -74,16 +80,37 @@ useful and which are *not* documented below for clarity:
    class type.  Note that some values start with 'x' since they must
    start with an alphabetic character to be valid in the enum.
 
+By default, the Ethernet header addresses are all zeroes ("00:00:00:00:00:00"),
+and the ethertype is IPv4.  Here is an example of creating an Ethernet header
+and setting the header fields to non-default values:
 
-.. autoclass:: switchyard.lib.packet.Vlan
-   :members:
-   :undoc-members:
-   :exclude-members: next_header_class, pre_serialize, size, to_bytes, from_bytes
+>>> e = Ethernet()
+>>> e.src = "de:ad:00:00:be:ef"
+>>> e.dst = "ff:ff:ff:ff:ff:ff"
+>>> e.ethertype = EtherType.ARP
+
+
+.. .. autoclass:: switchyard.lib.packet.Vlan
+..    :members:
+..    :undoc-members:
+..    :exclude-members: next_header_class, pre_serialize, size, to_bytes, from_bytes
+
+
 
 .. autoclass:: switchyard.lib.packet.IPv4
    :members:
    :undoc-members:
    :exclude-members: next_header_class, pre_serialize, size, to_bytes, from_bytes, checksum
+
+   Represents an IP version 4 packet header.  All properties relate to
+   specific fields in the header and can be inspected and/or modified.
+
+   Note that the field named "hl" ("h-ell") stands for "header length".
+   It is the size of the header in 4-octet quantities.  It is a read-only
+   property (cannot be set).
+
+   Note also that some IPv4 header option classes are available in 
+   Switchyard, but are currently undocumented.
 
 .. autoclass:: switchyard.lib.packet.common.IPProtocol
 
@@ -95,20 +122,70 @@ useful and which are *not* documented below for clarity:
    class type.  There are other protocol numbers defined.  See 
    switchyard.lib.packet.common for all defined values.
 
+A just-constructed IPv4 header defaults to having all zeroes for 
+the source and destination addresses ('0.0.0.0') and the protocol
+number defaults to ICMP.  An example of creating an IPv4 header
+and setting various fields is shown below:
+
+>>> ip = IPv4()
+>>> ip.src = '10.0.1.1'
+>>> ip.dst = '10.0.2.42'
+>>> ip.protocol = IPProtocol.UDP
+>>> ip.ttl = 64
+
 .. autoclass:: switchyard.lib.packet.UDP
    :members:
    :undoc-members:
    :exclude-members: next_header_class, pre_serialize, size, to_bytes, from_bytes, checksum
+ 
+   The UDP header contains just source and destination port fields.
+
+To construct a packet that includes an UDP header as well as some application
+data, the same pattern of packet construction can be followed:
+
+>>> p = Ethernet() + IPv4() + UDP()
+>>> p[1].protocol = IPProtocol.UDP
+>>> p[2].srcport = 4444
+>>> p[2].dstport = 5555
+>>> p += b'These are some application data bytes'
+>>> print (p)
+Ethernet 00:00:00:00:00:00->00:00:00:00:00:00 IP | IPv4 0.0.0.0->0.0.0.0 UDP | UDP 4444->5555 | RawPacketContents (37 bytes) b'These are '...
+>>> 
+
+Note that we didn't set the IP addresses or Ethernet addresses above, but
+did set the IP protocol to correctly match the next header (UDP).  Adding
+a payload to a packet is as simple as tacking on a Python ``bytes`` object.
+You can also construct a ``RawPacketContents`` header, which is just a
+packet header class that wraps a set of raw bytes.
+
 
 .. autoclass:: switchyard.lib.packet.TCP
    :members:
    :undoc-members:
    :exclude-members: next_header_class, pre_serialize, size, to_bytes, from_bytes, checksum
 
+   Represents a TCP header.  Includes properties to access/modify TCP
+   header fields.
+
+Setting TCP header flags can be done by assigning 1 to any of the
+mnemonic flag properties:
+
+>>> t = TCP()
+>>> t.SYN = 1
+
+To check whether a flag has been set, you can simply inspect the
+the flag value:
+
+>>> if t.SYN:
+>>> ...
+
+
 .. autoclass:: switchyard.lib.packet.ICMP
    :members:
    :undoc-members:
    :exclude-members: next_header_class, pre_serialize, size, to_bytes, from_bytes, checksum
+
+   Represents an ICMP packet header.  
 
 .. autoclass:: switchyard.lib.packet.common.ICMPType
 
@@ -118,6 +195,65 @@ useful and which are *not* documented below for clarity:
    .. attribute:: Redirect = 5
    .. attribute:: EchoRequest = 8
    .. attribute:: TimeExceeded = 11
+
+
+The icmptype and icmpcode header fields
+determine the value stored in the icmpdata property.  When the icmptype
+is set to a new value, the icmpdata field is *automatically* set to
+the correct object.  
+
+>>> i = ICMP()
+>>> i.icmptype = ICMPType.TimeExceeded
+>>> print (i)
+ICMP TimeExceeded:TTLExpired 0 bytes of raw payload (b'') OrigDgramLen: 0
+>>> i.icmpcode
+<TimeExceeded.TTLExpired: 0>
+>>> i.icmpdata
+<switchyard.lib.packet.icmp.ICMPTimeExceeded object at 0x10f3812c8>
+>>> 
+
+
+To set the icmpcode, a dictionary called ``ICMPTypeCodeMap`` is defined
+in ``switchyard.lib.packet``.  Keys in the dictionary are of type ``ICMPType``, and values for each key is another enumerated type indicating the valid
+codes for the given type.  
+
+>>> from switchyard.lib.packet import *
+>>> ICMPTypeCodeMap[ICMPType.DestinationUnreachable]
+<enum 'DestinationUnreachable'>
+
+Just getting the dictionary value isn't particularly helpful, but if you
+coerce the enum to a list, you can see all valid values:
+
+>>> list(ICMPTypeCodeMap[ICMPType.DestinationUnreachable])
+[<DestinationUnreachable.ProtocolUnreachable: 2>, <DestinationUnreachable.SourceHostIsolated: 8>, <DestinationUnreachable.FragmentationRequiredDFSet: 4>, <DestinationUnreachable.HostUnreachable: 1>, <DestinationUnreachable.DestinationNetworkUnknown: 6>, <DestinationUnreachable.NetworkUnreachableForTOS: 11>, <DestinationUnreachable.HostAdministrativelyProhibited: 10>, <DestinationUnreachable.DestinationHostUnknown: 7>, <DestinationUnreachable.HostPrecedenceViolation: 14>, <DestinationUnreachable.PrecedenceCutoffInEffect: 15>, <DestinationUnreachable.NetworkAdministrativelyProhibited: 9>, <DestinationUnreachable.NetworkUnreachable: 0>, <DestinationUnreachable.SourceRouteFailed: 5>, <DestinationUnreachable.PortUnreachable: 3>, <DestinationUnreachable.CommunicationAdministrativelyProhibited: 13>, <DestinationUnreachable.HostUnreachableForTOS: 12>]
+
+Another example, but with the much simpler EchoRequest:
+
+>>> list(ICMPTypeCodeMap[ICMPType.EchoRequest])
+[<EchoRequest.EchoRequest: 0>]
+
+If you try to set the icmpcode to an invalid value, an exception will be
+raised:
+
+>>> i = ICMP()
+>>> i.icmptype = ICMPType.DestinationUnreachable
+>>> i.icmpcode = 44
+Traceback (most recent call last):
+...
+>>>
+
+You can either (validly) set the code using an integer, or a valid enumerated
+type value:
+
+>>> i.icmpcode = 2
+>>> print(i)
+ICMP DestinationUnreachable:ProtocolUnreachable 0 bytes of raw payload (b'') NextHopMTU: 0
+>>> i.icmpcode = ICMPTypeCodeMap[i.icmptype].HostUnreachable
+>>> print (i)
+ICMP DestinationUnreachable:HostUnreachable 0 bytes of raw payload (b'') NextHopMTU: 0
+
+Below are shown the ICMP data classes, as well as any properties that can
+be inspected and/or modified on them.
 
 .. autoclass:: switchyard.lib.packet.ICMPEchoReply
    :members:
