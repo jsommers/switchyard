@@ -14,6 +14,8 @@ The "net" object
    :members:
    :inherited-members:
 
+.. _pktlib:
+
 Packet parsing and construction
 ===============================
 

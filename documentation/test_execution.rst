@@ -12,6 +12,8 @@ Let's say your program is named myswitch.py.  To invoke Switchyard in test mode 
 FIXME: command-line options
 
 
+.. _debugging:
+
 Debugging Switchyard code
 =========================
 

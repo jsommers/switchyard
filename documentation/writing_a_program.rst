@@ -209,6 +209,7 @@ A really complete implementation of our hub is now:
     from switchyard.lib.common import *
 
     def main(net):
+        # add some informational text about ports on this device
         print ("Hub is starting up with these ports:")
         for port in net.ports():
             print ("{}: ethernet address {}".format(port.name, port.ethaddr)) 
@@ -229,72 +230,238 @@ A really complete implementation of our hub is now:
                 if port.name != input_port:
                     net.send_packet(port.name, packet)
 
-        # new line of code:
-        # shutdown is the last thing we do
+        # shutdown is the last thing we should do
         net.shutdown()
 
 
-The Shutdown and NoPackets exception classes
-Shutdown is raised when the Switchyard framework is shutting down
-NoPackets is raised when you attempt to receive packets, but none arrive prior to a "timeout" occurring
-log_debug, log_info, log_warn, log_failure
-Each of these functions takes a string as a parameter and prints it to the console as a logging message
-Alternatively, you can simply use the print statement to write to the console
 
-Packet parsing and construction
-===============================
+Introduction to packet parsing and construction
+===============================================
 
-basic pattern and core ideas of packet libraries
+This section provides an overview of packet construction and parsing
+in Switchyard.  For full details on these capabilities, see :ref:`pktlib`.
 
-examples:
+Switchyard's packet construction/parsing library is found in
+``switchyard.lib.packet``.  It's design is based on a few other 
+libraries out there, including POX's library [#f2]_ and Ryu's library [#f3]_.
 
-  * ether + ip + icmp
-  * ether + arp
-  * ether + ip + udp + payload
-  * ether + ip + tcp + payload
+There are a few key ideas to understand when using the packet library:
 
-include examples with looking at particular aspects of address objects
+ * The ``Packet`` class acts as a container of headers (rather,
+   header objects).
+ * Headers within a packet can be accessed through methods on the Packet
+   container object, and also by indexing.
+ * Fields in header objects are accessed through standard Python
+   *properties*.  (The code to manipulate header fields thus looks
+   like it is just accessing instance variables.)
+ * A packet object can be constructed by either expliciting instantiating
+   and object and adding headers, or it can be formed by "adding" (using
+   the ``+`` operator) headers together, or by adding headers onto a packet
+   (using ``+`` or ``+=``).
+ * The Switchyard framework generally *automatically* handles serializing
+   and deserializing Packet objects to and from byte sequences (i.e., wire
+   format packets), but you can also explicitly invoke those methods if 
+   you need to.
 
+.. figure:: packet.*
+   :align: center
+
+Here are some examples using ``Ethernet``, ``IPv4``, and ``ICMP`` headers.
+First, let's construct a packet object and add these headers to the packet:
+
+>>> from switchyard.lib.packet import *
+>>> p = Packet()   # construct a packet object
+>>> e = Ethernet() # construct Ethernet header
+>>> ip = IPv4()    # construct IPv4 header
+>>> icmp = ICMP()  # construct ICMP header
+>>> p += e         # add eth header to packet
+>>> p += ip        # add ip header to packet
+>>> p += icmp      # add icmp header to packet
+>>> print (p)
+Ethernet 00:00:00:00:00:00->00:00:00:00:00:00 IP | IPv4 0.0.0.0->0.0.0.0 ICMP | ICMP EchoRequest 0 0 (0 data bytes)
+
+A shorthand for doing the above is:
+
+>>> p = Ethernet() + IPv4() + ICMP()
+
+The effect of "adding" headers together is to construct a packet, just as the first example.
+Note that with the above example, the default Ethertype for the Ethernet header is IPv4, and
+the default protocol number for IPv4 is ICMP.  Thus, the above example is somewhat special in
+that we didn't need to modify any of the packet header fields to create a (mostly) valid packet.
+
+Switchyard does *not* ensure that a constructed Packet is sensible in any way.  It is possible
+to put headers in the wrong order, to supply illogical values for header elements (e.g., a protocol number in the IPv4 header that doesn't match the next header in the packet), and to do other invalid things.  Switchyard gives you the tools for constructing packets, but doesn't tell you how to do so.
+
+The ``num_headers`` Packet method returns the number of headers in a packet, which returns
+the expected number for this example:
+
+>>> p.num_headers()
+3
+
+Note that the ``len`` function on a packet returns the number of bytes that the Packet would consume if it was in wire (serialized) format.  The ``size`` method returns the same value.  
+
+>>> len(p)
+42
+>>> p.size()
+42
+
+(Note: Ethernet header is 14 bytes + 20 bytes IP + 8 bytes ICMP = 42 bytes.)
+
+Packet header objects can be accessed conveniently by indexing.  Standard negative indexing also works.  For example, to obtain a reference to the Ethernet header object and to inspect and modify the Ethernet header, we might do the following:
+
+>>> p[0]
+<switchyard.lib.packet.ethernet.Ethernet object at 0x104474248>
+>>> p[0].src
+EthAddr('00:00:00:00:00:00')
+>>> p[0].dst
+EthAddr('00:00:00:00:00:00')
+>>> p[0].dst = "ab:cd:ef:00:11:22"
+>>> str(p[0])
+'Ethernet 00:00:00:00:00:00->ab:cd:ef:00:11:22 IP'
+>>> p[0].dst = EthAddr("00:11:22:33:44:55")
+>>> str(p[0])
+'Ethernet 00:00:00:00:00:00->00:11:22:33:44:55 IP'
+>>> p[0].ethertype
+<EtherType.IP: 2048>
+>>> p[0].ethertype = EtherType.ARP
+>>> print (p)
+Ethernet 00:00:00:00:00:00->00:00:00:00:00:00 ARP | IPv4 0.0.0.0->0.0.0.0 ICMP | ICMP EchoRequest 0 0 (0 data bytes)
+>> p[0].ethertype = EtherType.IPv4 # set it back to sensible value
+
+Note that all header field elements are accessed through *properties*.  For Ethernet headers, there are three properties that can be inspected and modified, ``src``, ``dst`` and ``ethertype``, as shown above.  Note again that Switchyard doesn't prevent a user from setting header fields to illogical values, e.g., when we set the ethertype to ARP.  All ``EtherType`` values are specified in ``switchyard.lib.packet.common``, and imported when the module ``switchyard.lib.packet`` is imported.
+
+Accessing header fields in other headers works similarly.  Here are examples involving the IPv4 header:
+
+>>> str(p[1])
+'IPv4 0.0.0.0->0.0.0.0 ICMP'
+>>> p[1].protocol
+<IPProtocol.ICMP: 1>
+>>> p[1].srcip
+IPv4Address('0.0.0.0')
+>>> p[1].dstip
+IPv4Address('0.0.0.0')
+>>> p[1].dstip = '149.43.80.13'
+
+IPv4 protocol values are specified in ``switchyard.lib.packet.common``, just as with ``EtherType`` values.  The full set of properties that can be manipulated in the IPv4 header as well as all other headers is described in the reference documentation for the packet library: :ref:`pktlib`.
+
+Lastly, an example with the ICMP header shows some now-familiar patterns.  The main difference with ICMP is that the "data" portion of an ICMP packet changes, depending on the ICMP type.  For example, if the type is 8 (ICMP echo request) the ICMP data becomes an object that allows the identifier and sequence values to be inspected and modified.
+
+>>> p[2]
+<switchyard.lib.packet.icmp.ICMP object at 0x104449c78>
+>>> p[2].icmptype
+<ICMPType.EchoRequest: 8>
+>>> p[2].icmpcode
+<EchoRequest.EchoRequest: 0>
+>>> p[2].icmpdata
+<switchyard.lib.packet.icmp.ICMPEchoRequest object at 0x1044742c8>
+>>> icmp.icmpdata.sequence
+0
+>>> icmp.icmpdata.identifier
+0
+>>> icmp.icmpdata.identifier = 42
+>>> icmp.icmpdata.sequence = 13
+>>> print (p)
+Ethernet 00:00:00:00:00:00->00:11:22:33:44:55 IP | IPv4 0.0.0.0->149.43.80.13 ICMP | ICMP EchoRequest 42 13 (0 data bytes)
+
+By default, no "payload" data are included in with an ICMP header, but we can change that using the ``data`` property on the icmpdata part of the header:
+
+>>> icmp.icmpdata.data = "hello, world"
+>>> print (p)
+Ethernet 00:00:00:00:00:00->00:11:22:33:44:55 IP | IPv4 0.0.0.0->149.43.80.13 ICMP | ICMP EchoRequest 42 13 (12 data bytes)
+
+To serialize the packet into a wire format sequence of bytes, we can use the ``to_bytes()`` method:
+
+>>> p.to_bytes()
+b'\x00\x11"3DU\x00\x00\x00\x00\x00\x00\x08\x00E\x00\x00(\x00\x00\x00\x00\x00\x01\xba\xd6\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\xb7|\x00*\x00\rhello, world'
+
+Other header classes that are available in Switchyard include ``Arp``, ``UDP``, ``TCP``, ``IPv6``, and ``ICMPv6``.  Again, see :ref:`pktlib` for details on these header classes, and full documentation for all classes.
 
 Utility functions (e.g., logging)
 =================================
 
-``log_debug``, ``log_info``, etc.
+There are a few additional utility functions that are useful when developing
+a Switchyard program related to logging and debugging.  These functions
+are all included by importing the module ``switchyard.lib.common``.
 
-Others?
+Logging functions
+-----------------
 
-A longer example
-================
+Switchyard uses the standard Python logging facilities, but provides four
+convenience functions.  Each of these functions takes a string as a 
+parameter and prints it to the console as a logging message.  The only 
+difference with the functions relates to the logging *level* 
+(see https://docs.python.org/3.4/library/logging.html#levels), and whether
+the output is colored to visually highlight a problem.  The default logging
+level is INFO  within Switchyard.  If you wish to include debugging messages,
+you can use the ``-d`` flag for the various invocation programs (e.g., srpy),
+as described in :ref:`runtest` and :ref:`runlive`.
 
-A simple template for a Switchyard program is as follows:
 
-FIXME: explain
+.. py:function:: log_debug(str)
 
-.. code-block:: python
+   Write a debugging message to the log using the log level DEBUG.  
 
-    #!/usr/bin/env python
+.. py:function:: log_info(str)
 
-    from switchyard.lib.packet import *
-    from switchyard.lib.address import *
-    from switchyard.lib.common import *
+   Write a debugging message to the log using the log level INFO.  
 
-    def main(net): 
-        while True:
-            try:
-                dev,packet = net.recv_packet(timeout=1.0)
-            except NoPackets:
-                # timeout waiting for packet arrival
-                continue
-            except Shutdown:
-                # we're done; bail out of while loop
-                return
+.. py:function:: log_warn(str)
 
-            # just print each packet to the console
-            print (packet.dump()) 
+   Write a debugging message to the log using the log level WARNING.  Output
+   is colored magenta.
 
-        # before exiting our main function perform shutdown on network
-        net.shutdown()
+.. py:function:: log_failure(str)
+
+   Write a debugging message to the log using the log level CRITICAL.  Output
+   is colored red.
+
+Alternatively, you can simply use the print statement to write to the
+console, but writing to the log provides a much more structured way of
+writing information to the screen.
+
+Invoking the debugger
+---------------------
+
+Although a longer discussion of debugging is included in a later section
+(:ref:`debugging`), it is worth mentioning that there is a built-in
+function named ``debugger`` that can be used *anywhere* in Switchyard
+code to immediately invoke the standard Python pdb debugger.
+
+For example, if we add a call to ``debugger()`` in the example code above
+just *after* the try/except block, then run the code in a test environment
+(for details on how to do this, see :ref:`runtest`), the program pauses
+immediately after the call to debugger and the pdb prompt is shown::
+
+    # after hub code is started in test environment, 
+    # some output is shown, followed by this:
+
+    > /Users/jsommers/Dropbox/src/switchyard/xhub.py(29)main()
+    -> for port in net.ports():
+    (Pdb) list
+     24     
+     25                 debugger()
+     26     
+     27                 # send the packet out all ports *except*
+     28                 # the one on which it arrived
+     29  ->             for port in net.ports():
+     30                     if port.name != input_port:
+     31                         packet[0].src = 'ab:cd:ef:ff:ff:ff'
+     32                         net.send_packet(port.name, packet)
+     33     
+
+As you can see, the program is paused on the next executable line following
+the call to ``debugger()``.  At this point, any valid ``pdb`` commands
+can be given to inspect program state.  Once again, see later sections
+for details on running Switchyard code (:ref:`runtest`, :ref:`runlive`) and
+on other debugging capabilities (:ref:`debugging`).
+
+
 
 .. [#f1] A hub is a network device with multiple physical ports.  Any packet
    to arrive on a port is sent back out *all* ports **except** for the one
    on which it arrived.
+
+.. [#f2] https://github.com/noxrepo/pox
+
+.. [#f3] https://github.com/osrg/ryu
+
