@@ -16,7 +16,10 @@ def _sendcmd(progargs, cmdlist):
     pipe = Popen(progargs, stdin=PIPE, stdout=PIPE, stderr=STDOUT, universal_newlines=True)
     for cmd in cmdlist:
         print(cmd, file=pipe.stdin)
-    pipe.stdin.close()
+    try:
+        pipe.stdin.close()
+    except:
+        pass
     output = pipe.stdout.read()
     pipe.stdout.close()
     st = pipe.wait()
