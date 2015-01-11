@@ -38,11 +38,11 @@ class PyLLNet(LLNetBase):
 
     def __init__(self, devlist, name=None):
         LLNetBase.__init__(self)
-        signal.signal(signal.SIGINT, PyLLNet.__sig_handler)
-        signal.signal(signal.SIGTERM, PyLLNet.__sig_handler)
-        signal.signal(signal.SIGHUP, PyLLNet.__sig_handler)
-        signal.signal(signal.SIGUSR1, PyLLNet.__sig_handler)
-        signal.signal(signal.SIGUSR2, PyLLNet.__sig_handler)
+        signal.signal(signal.SIGINT, self._sig_handler)
+        signal.signal(signal.SIGTERM, self._sig_handler)
+        signal.signal(signal.SIGHUP, self._sig_handler)
+        signal.signal(signal.SIGUSR1, self._sig_handler)
+        signal.signal(signal.SIGUSR2, self._sig_handler)
 
         self.devs = devlist # self.__initialize_devices(includelist, excludelist)
         self.devinfo = self.__assemble_devinfo()
@@ -166,14 +166,18 @@ class PyLLNet(LLNetBase):
             # pdev.setfilter("not ether src {}".format(thismac))
             self.pcaps[dev] = pdev
 
-    @staticmethod
-    def __sig_handler(signum, stack):
+    def _sig_handler(self, signum, stack):
         '''
         Handle process INT signal.
         '''
         log_debug("Got SIGINT.")
         if signum == signal.SIGINT:
             PyLLNet.running = False
+            if self.pktqueue.qsize() == 0:
+                # put dummy pkt in queue to unblock a 
+                # possibly stuck user thread
+                self.pktqueue.put( (None,None) )
+            self.pktqueue = Queue()
 
     @staticmethod
     def __low_level_dispatch(pcapdev, devname, pktqueue):
@@ -220,9 +224,11 @@ class PyLLNet(LLNetBase):
            timestamp=True)
          * packet: Switchyard Packet object.
         '''
-        while PyLLNet.running:
+        while True:
             try:
                 dev,pktinfo = self.pktqueue.get(timeout=timeout)
+                if not PyLLNet.running:
+                    break
                 pkt = Packet(raw=pktinfo.raw)
                 if timestamp:
                     return dev,pktinfo.timestamp,pkt

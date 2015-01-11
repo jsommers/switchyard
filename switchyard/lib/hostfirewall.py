@@ -80,10 +80,17 @@ class LinuxFirewall(AbstractFirewall):
                 doall = True
 
         if doall:
+            badintf = []
             for intf in interfaces:
                 st,output = getstatusoutput('sysctl net.ipv4.conf.{}.arp_ignore'.format(intf))
+                if st != 0:
+                    badintf.append(intf)
+                    continue
                 self._arpignore[intf] = int(output.split()[-1])
                 st,output = getstatusoutput('sysctl -w net.ipv4.conf.{}.arp_ignore=8'.format(intf))
+            for intf in badintf:
+                self._intf.remove(intf) # alias of interfaces, so just remove
+                                        # from self._intf
         log_debug("Rules to install: {}".format(self._rulecmds))
 
     def _parse_rule(self, rule):
