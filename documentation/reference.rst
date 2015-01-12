@@ -52,6 +52,11 @@ useful and which are *not* documented below for clarity:
  * ``from_bytes(b)``: parses a byte string representing this packet header and constructs the various header fields from the raw bytes
 
 
+------
+
+Ethernet header
+^^^^^^^^^^^^^^^
+
 .. autoclass:: switchyard.lib.packet.Ethernet
    :members:
    :undoc-members:
@@ -95,7 +100,51 @@ and setting the header fields to non-default values:
 ..    :undoc-members:
 ..    :exclude-members: next_header_class, pre_serialize, size, to_bytes, from_bytes
 
+------
 
+ARP (address resolution protocol) header
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: switchyard.lib.packet.Arp
+   :members:
+   :undoc-members:
+   :exclude-members: next_header_class, pre_serialize, size, to_bytes, from_bytes, checksum
+
+.. autoclass:: switchyard.lib.packet.common.ArpOperation
+
+   .. attribute:: Request = 1
+   .. attribute:: Reply = 2
+
+The ``Arp`` class is used for constructing ARP (address resolution protocol)
+requests and replies.  The ``hardwaretype`` property defaults to ``Ethernet``,
+so you don't need to set that when an ``Arp`` object is instantiated.  The
+operation can be set using the enumerated type ``ArpOperation``, as indicated
+above.  The remaining fields hold either ``EthAddr`` or ``IPv4Address`` objects,
+and can be initialized using string representations of Ethernet or IPv4 
+addresses as appropriate.  Below is an example of creating an ARP request.
+You can assume in the example that the senders Ethernet and IPv4
+addresses are ``srchw`` and ``srcip``, respectively.  You can also 
+assume that the IPv4 address for which we are requesting the Ethernet
+address is ``targetip``.
+
+.. code-block:: python
+
+    ether = Ethernet()
+    ether.src = srchw
+    ether.dst = 'ff:ff:ff:ff:ff:ff'
+    ether.ethertype = EtherType.ARP
+    arp = Arp()
+    arp.operation = ArpOperation.Request
+    arp.senderhwaddr = srchw
+    arp.senderprotoaddr = srcip
+    arp.targethwaddr = 'ff:ff:ff:ff:ff:ff'
+    arp.targetprotoaddr = targetip
+    arppacket = ether + arp 
+
+------
+
+IP version 4 header
+^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: switchyard.lib.packet.IPv4
    :members:
@@ -133,6 +182,11 @@ and setting various fields is shown below:
 >>> ip.protocol = IPProtocol.UDP
 >>> ip.ttl = 64
 
+------
+
+UDP (user datagram protocol) header
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 .. autoclass:: switchyard.lib.packet.UDP
    :members:
    :undoc-members:
@@ -158,6 +212,10 @@ a payload to a packet is as simple as tacking on a Python ``bytes`` object.
 You can also construct a ``RawPacketContents`` header, which is just a
 packet header class that wraps a set of raw bytes.
 
+------
+
+TCP (transmission control protocol) header
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: switchyard.lib.packet.TCP
    :members:
@@ -179,6 +237,10 @@ the flag value:
 >>> if t.SYN:
 >>> ...
 
+------
+
+ICMP (Internet control message protocol) header
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: switchyard.lib.packet.ICMP
    :members:
