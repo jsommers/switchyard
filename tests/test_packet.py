@@ -1,6 +1,6 @@
 from switchyard.lib.packet import *
 from switchyard.lib.address import EthAddr, IPAddr
-from switchyard.lib.common import PacketFormatter
+from switchyard.lib.testing import PacketFormatter
 from io import StringIO
 import sys
 import unittest 

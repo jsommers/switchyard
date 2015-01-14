@@ -90,14 +90,14 @@ class AbstractMatch(metaclass=ABCMeta):
 
 class ExactMatch(AbstractMatch):
     def __init__(self, pkt):
-        self.__reference = pkt.to_bytes()
+        self._reference = pkt.to_bytes()
 
     def match(self, pkt):
-        return self.__reference == pkt.to_bytes()
+        return self._reference == pkt.to_bytes()
 
     def __str__(self):
-        return str(Packet(raw=self.__reference))
-    
+        return str(Packet(raw=self._reference))
+
 class WildcardMatch(AbstractMatch):
     def __init__(self, pkt, wildcard_fields):
         self.__lookup = {
@@ -292,6 +292,15 @@ class PacketMatcher(object):
                 tp = " {} {}{}{}".format(fmtfield('nw_proto'),fmtfield('tp_src'), arrow, fmtfield('tp_dst'))
             return dl + nw + tp
 
+    def __getstate__(self):
+        rv = self.__dict__.copy()
+        rv['_packet'] = rv['_packet'].to_bytes()
+        return rv
+
+    def __setstate__(self, xdict):
+        self.__dict__.update(xdict)
+        self._packet = Packet(raw=self._packet)
+
 class PacketInputTimeoutEvent(SwitchyTestEvent):
     '''
     Test event that models a timeout when trying to receive
@@ -339,10 +348,13 @@ class PacketInputEvent(SwitchyTestEvent):
         self.display = display
 
     def __getstate__(self):
-        return self.__dict__.copy()
+        rv = self.__dict__.copy()
+        rv['packet'] = self.packet.to_bytes()
+        return rv
 
     def __setstate__(self, xdict):
         self.__dict__.update(xdict)
+        self.packet = Packet(raw=self.packet)
 
     def __eq__(self, other):
         return self.device == other.device and str(self.packet) == str(other.packet)
@@ -427,10 +439,18 @@ class PacketOutputEvent(SwitchyTestEvent):
         return s
 
     def __getstate__(self):
-        return self.__dict__.copy()
+        rv = self.__dict__.copy()
+        for dev in rv['matches']:
+            pkt = rv['matches'][dev].to_bytes()
+            rv['matches'][dev] = pkt
+        return rv
 
     def __setstate__(self, xdict):
         self.__dict__.update(xdict)
+        for dev in self.matches:
+            raw = self.matches[dev]
+            pkt = Packet(raw=raw)
+            self.matches[dev] = pkt
 
     def __eq__(self, other):
         return str(self) == str(other)
@@ -687,7 +707,7 @@ def compile_scenario(scenario_file, output_filename=None):
     '''
     sobj = import_or_die(scenario_file, ('scenario',))
     sobj.scenario_sanity_check()
-    outname = scenario_file.rstrip('.py') + '.switchy'
+    outname = scenario_file.rstrip('.py') + '.srpy'
     pickle_repr = pickle.dumps(sobj)
     dig = hashlib.sha512()
     dig.update(pickle_repr)
@@ -725,14 +745,14 @@ def get_test_scenario_from_file(sfile):
     '''
     Takes a file name as a parameter, which contains a
     scenario object either in a .py module form, or serialized
-    in a .switchy form.
+    in a .srpy form.
 
     (str/filename) -> Scenario object
     '''
     sobj = None
     if fnmatch.fnmatch(sfile, "*.py"):
         sobj = import_or_die(sfile, ('scenario',))
-    elif fnmatch.fnmatch(sfile, "*.switchy"):
+    elif fnmatch.fnmatch(sfile, "*.srpy"):
         sobj = uncompile_scenario(sfile)
     else:
         sobj = import_or_die(sfile, ('scenario',))
