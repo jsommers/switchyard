@@ -202,17 +202,15 @@ class PacketMatcher(object):
         if len(predicates) > 0:
             boguslambda = lambda: 0
             for i in range(len(predicates)):
-                if isinstance(predicates[i], str):
-                    try:
-                        fn = eval(predicates[i])
-                        self.predicates.append(fn)
-                    except SyntaxError:
-                        raise SyntaxError("Predicate strings passed to PacketMatcher must conform to Python lambda syntax")
-                elif isinstance(predicates[i], type(boguslambda)):
-                    self.predicates.append(predicates[i])
-                else:
-                    raise Exception("Predicates passed to PacketMatcher must be strings or lambdas ({} is of type {})".format(predicates[i], type(predicates[i])))
-
+                if not isinstance(predicates[i], str):
+                    raise Exception("Predicates used for matching packets must be strings (in the form of a lambda definition)")
+                try:
+                    fn = eval(predicates[i])
+                except SyntaxError:
+                    raise SyntaxError("Predicate strings passed to PacketMatcher must conform to Python lambda syntax")
+                if type(boguslambda) != type(fn):                    
+                    raise Exception("Predicate was not a lambda expression: {}".format(predicate[i]))
+                self.predicates.append(predicates[i])
 
     @property
     def packet(self):
@@ -235,7 +233,6 @@ class PacketMatcher(object):
             for pidx,preresult in enumerate(results):
                 xresults = "passed" if preresult else "failed"
                 xname = self.predicates[pidx]
-                # xname = ' '.join([x.strip() for x in Bytecode(xname).dis().replace('\n', ';;').split() ])
                 conjunction = 'and' if pidx == len(results)-1 else ''
                 diagnosis += ["{} the predicate ({}) {}".format(conjunction, xname, xresults)]
                 if not conjunction:
@@ -261,7 +258,7 @@ class PacketMatcher(object):
             of what doesn't match, and throw an exception.
         '''
         results = [ self.__matchobj.match(packet) ]
-        results += [ fn(packet) for fn in self.predicates ]
+        results += [ eval(fn)(packet) for fn in self.predicates ]
         if all(results):
             return True
         else:

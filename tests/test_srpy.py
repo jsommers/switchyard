@@ -210,7 +210,7 @@ def main(obj):
         except:
             pass
         try:
-            os.unlink(name + '.switchy')
+            os.unlink(name + '.srpy')
         except:
             pass
 
@@ -231,7 +231,7 @@ def main(obj):
         with self.assertLogs(level='INFO') as cm:
             main_test(True, ['stest'], 'ucode1', True, True, False)
         self.assertIn('Compiling', cm.output[0])
-        self.assertIsNotNone(os.stat('stest.switchy'))
+        self.assertIsNotNone(os.stat('stest.srpy'))
 
     def testEmptyUserProgram(self):
         with redirectio() as xio:

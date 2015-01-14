@@ -64,15 +64,15 @@ class SrpyMatcherTest(unittest.TestCase):
         pkt = Ethernet() + IPv4()
         matcher = PacketMatcher(pkt, 
             '''lambda pkt: pkt[0].src == '00:00:00:00:00:00' ''', 
-            '''lambda pkt: isinstance(pkt[1], IPv4) and pkt[1].ttl == 0 ''',
+            '''lambda pkt: isinstance(pkt[1], IPv4) and pkt[1].ttl == 0''',
             exact=False)
         self.assertTrue(matcher.match(pkt))
 
     def testPredicateMatch4(self):
         pkt = Ethernet() + IPv4()
         matcher = PacketMatcher(pkt, 
-            lambda pkt: pkt[0].src == '00:00:00:00:00:00',
-            lambda pkt: (isinstance(pkt[1], IPv4) and pkt[1].ttl == 0),
+            '''lambda pkt: pkt[0].src == '00:00:00:00:00:00' ''',
+            '''lambda pkt: isinstance(pkt[1], IPv4) and pkt[1].ttl == 0''',
             exact=False)        
         self.assertTrue(matcher.match(pkt))
 
@@ -111,4 +111,4 @@ class SrpyMatcherTest(unittest.TestCase):
 
 if __name__ == '__main__':
     setup_logging(False)
-    unittest.main(verbosity=2)
+    unittest.main()

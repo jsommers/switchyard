@@ -53,7 +53,7 @@ scenario = s
         except:
             pass
         try:
-            os.unlink(name + '.switchy')
+            os.unlink(name + '.srpy')
         except:
             pass
 
@@ -70,8 +70,8 @@ scenario = s
         # test that compilation and resurrection give the same scenario
         self.scenario = get_test_scenario_from_file('stest.py')
         compile_scenario('stest.py')
-        self.assertTrue(os.stat('stest.switchy') != None)
-        self.scenario_compiled = get_test_scenario_from_file('stest.switchy')
+        self.assertTrue(os.stat('stest.srpy') != None)
+        self.scenario_compiled = get_test_scenario_from_file('stest.srpy')
         self.assertIsInstance(self.scenario_compiled, Scenario)
         self.assertEqual(self.scenario, self.scenario_compiled)
 
