@@ -176,8 +176,21 @@ If you don't want pdb, use the --nopdb flag to avoid this fate.
                     # that we start in the right place
                     p = pdb.Pdb(skip=['switchyard.lib.testing','switchyard.switchy_test'])
                     p.reset()
+
+                    count = 0
+                    xtb = tb
+                    while xtb is not None:
+                        count += 1
+                        codestr = str(xtb.tb_frame.f_code)
+                        syscode = ('switchyard/switchy_test.py' in codestr or 'switchyard/lib/testing.py' in codestr)
+                        if not syscode:
+                            break
+                        xtb = xtb.tb_next
+
+                    if xtb is None:
+                        count -= 1
                     p.setup(None, tb)
-                    for i in range(3): # this may overshoot, but that may be ok
+                    for i in range(count): 
                         p.onecmd('up')
                     p.cmdloop()
                 else:
