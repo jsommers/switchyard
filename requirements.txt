@@ -1,3 +1,4 @@
+colorama==0.3.3
 Jinja2==2.7.3
 MarkupSafe==0.23
 Pygments==1.6

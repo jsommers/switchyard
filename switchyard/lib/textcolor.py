@@ -1,4 +1,4 @@
-import curses
+from colorama import init, Fore, Back, Style
 import atexit
 from contextlib import contextmanager
 
@@ -12,45 +12,37 @@ class TextColor(object):
     def setup():
         if TextColor.SETUP:
             return
-        curses.setupterm()
-        TextColor.SETAF=curses.tigetstr('setaf')
-        TextColor.GREEN=curses.tparm(TextColor.SETAF,curses.COLOR_GREEN).decode('ascii')
-        TextColor.RED=curses.tparm(TextColor.SETAF,curses.COLOR_RED).decode('ascii')
-        TextColor.BLUE=curses.tparm(TextColor.SETAF,curses.COLOR_BLUE).decode('ascii')
-        TextColor.CYAN=curses.tparm(TextColor.SETAF,curses.COLOR_CYAN).decode('ascii')
-        TextColor.MAGENTA=curses.tparm(TextColor.SETAF,curses.COLOR_MAGENTA).decode('ascii')
-        TextColor.YELLOW=curses.tparm(TextColor.SETAF,curses.COLOR_YELLOW).decode('ascii')
-        TextColor.RESET=curses.tparm(curses.tigetstr('op')).decode('ascii')
+        init()
         atexit.register(TextColor.reset)
         TextColor.SETUP=True
 
     @staticmethod
     def reset():
-        print(TextColor.RESET,end='')
+        print(Fore.RESET + Back.RESET + Style.RESET_ALL)
 
     @staticmethod
     def green():
-        print(TextColor.GREEN,end='')
+        print(Fore.GREEN,end='')
 
     @staticmethod
     def red():
-        print(TextColor.RED,end='')
+        print(Fore.RED,end='')
 
     @staticmethod
     def blue():
-        print(TextColor.BLUE,end='')
+        print(Fore.BLUE,end='')
 
     @staticmethod
     def cyan():
-        print(TextColor.CYAN,end='')
+        print(Fore.CYAN,end='')
 
     @staticmethod
     def magenta():
-        print(TextColor.MAGENTA,end='')
+        print(Fore.MAGENTA,end='')
 
     @staticmethod
     def yellow():
-        print(TextColor.YELLOW,end='')
+        print(Fore.YELLOW,end='')
 
 TextColor.setup()
 
