@@ -6,7 +6,7 @@ from enum import Enum
 from time import time,sleep
 from select import select
 
-Interface = namedtuple('Interface', ['name','isloop','isup','isrunning'])
+Interface = namedtuple('Interface', ['name','internal_name', 'description', 'isloop','isup','isrunning'])
 PcapStats = namedtuple('PcapStats', ['ps_recv','ps_drop','ps_ifdrop'])
 PcapPacket = namedtuple('PcapPacket', ['timestamp', 'capture_length', 'length', 'raw'])
 PcapDev = namedtuple('PcapDev', ['dlt','nonblock','snaplen','version','pcap'])
@@ -42,13 +42,14 @@ class _PcapFfi(object):
     and PcapLiveDevice classes, below.
     '''
     _instance = None
-    __slots__ = ['_ffi', '_libpcap','_interfaces']
+    __slots__ = ['_ffi', '_libpcap','_interfaces','_windoze']
 
     def __init__(self):
         if _PcapFfi._instance:
             raise Exception("Can't initialize this class more than once!")
 
         _PcapFfi._instance = self
+        self._windoze = False
 
         self._ffi = FFI()
         self._ffi.cdef('''
@@ -125,9 +126,12 @@ class _PcapFfi(object):
         void pcap_freecode(struct bpf_program *);
         ''')
         if sys.platform == 'darwin':
-            self._libpcap = self._ffi.dlopen('libpcap.dylib')
+            self._libpcap = self._ffi.dlopen('libpcap.dylib') # standard libpcap
         elif sys.platform == 'linux':
-            self._libpcap = self._ffi.dlopen('libpcap.so')
+            self._libpcap = self._ffi.dlopen('libpcap.so') # standard libpcap
+        elif sys.platform == 'win32':
+            self._libpcap = self._ffi.dlopen('wpcap.dll') # winpcap
+            self._windoze = True
         else:
             raise PcapException("Don't know how to locate libpcap on this platform: {}".format(sys.platform))
         self._interfaces = []
@@ -154,13 +158,30 @@ class _PcapFfi(object):
             raise PcapException("pcap_findalldevs returned failure: {}".format(self._ffi.string(errbuf)))
         pintf = ppintf[0]
         tmp = pintf
+        pindex = 0
         while tmp != self._ffi.NULL:
-            xname = self._ffi.string(tmp.name)
+            xname = self._ffi.string(tmp.name) # "internal name"; still stored as bytes object
+            xname = xname.decode('ascii', 'ignore')
+
+            if self._windoze:
+                ext_name = "port{}".format(pindex)
+            else:
+                ext_name = xname
+            pindex += 1
+
+            if tmp.description == self._ffi.NULL:
+                xdesc = ext_name
+            else:
+                xdesc = self._ffi.string(tmp.description)
+                xdesc = xdesc.decode('ascii', 'ignore')
+
+            # NB: on WinPcap, only loop flag is set
             isloop = (tmp.flags & 0x1) == 0x1
             isup = (tmp.flags & 0x2) == 0x2
             isrunning = (tmp.flags & 0x4) == 0x4
-            #print(xname,tmp.flags,isloop,isup,isrunning)
-            xif = Interface(xname.decode('ascii','ignore'), isloop, isup, isrunning)
+
+            xif = Interface(ext_name, xname, xdesc, isloop, isup, isrunning)
+
             self._interfaces.append(xif)
             tmp = tmp.next
         self._libpcap.pcap_freealldevs(pintf)
@@ -202,9 +223,17 @@ class _PcapFfi(object):
 
     def open_live(self, device, snaplen=65535, promisc=1, to_ms=100, nonblock=True):
         errbuf = self._ffi.new("char []", 128)
-        pcap = self._libpcap.pcap_open_live(bytes(device, 'ascii'), snaplen, promisc, to_ms, errbuf)
+        internal_name = None
+        for dev in self._interfaces:
+            if dev.name == device:
+                internal_name = dev.internal_name
+                break
+        if internal_name is None:
+            raise Exception("No such device {} exists.".format(device))
+
+        pcap = self._libpcap.pcap_open_live(bytes(internal_name, 'ascii'), snaplen, promisc, to_ms, errbuf)
         if pcap == self._ffi.NULL:
-            raise PcapException("Failed to open live device {}: {}".format(device, self._ffi.string(errbuf)))
+            raise PcapException("Failed to open live device {}: {}".format(internal_name, self._ffi.string(errbuf)))
 
         if nonblock:
             rv = self._libpcap.pcap_setnonblock(pcap, 1, errbuf)
@@ -221,7 +250,10 @@ class _PcapFfi(object):
         self._libpcap.pcap_close(pcap)
 
     def get_select_fd(self, xpcap):
-        return self._libpcap.pcap_get_selectable_fd(xpcap)
+        try:
+            return self._libpcap.pcap_get_selectable_fd(xpcap)
+        except:
+            return -1
 
     def send_packet(self, xpcap, xbuffer):
         if not isinstance(xbuffer, bytes):
@@ -341,6 +373,7 @@ class PcapLiveDevice(object):
     def recv_packet(self, timeout):
         if timeout is None or timeout < 0:
             timeout = None
+
         fd = self._pcapffi.get_select_fd(self._pcapdev.pcap)
         if fd >= 0:
             xread,xwrite,xerr = select([fd], [], [fd], timeout)
@@ -386,4 +419,6 @@ class PcapLiveDevice(object):
 _PcapFfi() # instantiate singleton
 
 if __name__ == '__main__':
-    print ("Found devices: {}".format(pcap_devices()))
+    print ("Found devices: ")
+    for dev in pcap_devices():
+        print(str(dev))

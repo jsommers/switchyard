@@ -468,10 +468,19 @@ class Scenario(object):
         self.timer = False
         self.next_timestamp = 0.0
         self.timeoutval = 10
+        self.support_files = {}
 
     @property  
     def name(self):
         return self._name
+
+    def add_file(self, fname, text):
+        self.support_files[fname] = text
+
+    def write_files(self):
+        for fname, text in self.support_files.items():
+            with open(fname, 'w') as outfile:
+                outfile.write(text)
 
     def add_interface(self, interface_name, macaddr, ipaddr=None, netmask=None):
         '''

@@ -103,6 +103,7 @@ def run_tests(scenario_names, usercode_entry_point, no_pdb, verbose):
     '''
     for sname in scenario_names:
         sobj = get_test_scenario_from_file(sname)
+        sobj.write_files()
         net = FakePyLLNet(sobj)
 
         log_info("Starting test scenario {}".format(sname))

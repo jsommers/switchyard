@@ -1,6 +1,6 @@
 __author__ = 'jsommers@colgate.edu'
 
-from ipaddress import IPv4Address, IPv6Address, ip_address
+from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network, ip_address
 from enum import Enum
 
 # make aliases for built-in ip_address class
