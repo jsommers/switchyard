@@ -144,10 +144,18 @@ class WildcardMatch(AbstractMatch):
     def __str__(self):
         return 'Wildcarded fields: {}'.format(' '.join(self.__wildcards))
 
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        return d
+
+    def __setstate__(self, xdict):
+        self.__dict__.update(xdict)
+
     def __getattr__(self, attr):
         if attr in self.__matchvals:
             return self.__matchvals[attr]
-        return None
+        print ("*** !! in wildcard match no attr: {}".format(attr))
+        raise AttributeError("No such attribute {}".format(attr))
 
 class PacketMatcher(object):
     '''
@@ -714,7 +722,7 @@ def compile_scenario(scenario_file, output_filename=None):
     sobj = import_or_die(scenario_file, ('scenario',))
     sobj.scenario_sanity_check()
     outname = scenario_file.rstrip('.py') + '.srpy'
-    pickle_repr = pickle.dumps(sobj)
+    pickle_repr = pickle.dumps(sobj, pickle.HIGHEST_PROTOCOL)
     dig = hashlib.sha512()
     dig.update(pickle_repr)
     if output_filename:

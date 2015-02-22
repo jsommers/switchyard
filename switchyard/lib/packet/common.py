@@ -87,51 +87,88 @@ class ICMPType(Enum):
     AddressMaskRequest = 17
     AddressMaskReply = 18
 
+class ICMPCodeEchoReply(Enum):
+    EchoReply = 0
+
+class ICMPCodeDestinationUnreachable(Enum):
+    NetworkUnreachable = 0 
+    HostUnreachable = 1 
+    ProtocolUnreachable = 2 
+    PortUnreachable = 3 
+    FragmentationRequiredDFSet = 4 
+    SourceRouteFailed = 5 
+    DestinationNetworkUnknown = 6
+    DestinationHostUnknown = 7
+    SourceHostIsolated = 8
+    NetworkAdministrativelyProhibited = 9
+    HostAdministrativelyProhibited = 10
+    NetworkUnreachableForTOS = 11
+    HostUnreachableForTOS = 12
+    CommunicationAdministrativelyProhibited = 13
+    HostPrecedenceViolation = 14
+    PrecedenceCutoffInEffect = 15
+
+class ICMPCodeSourceQuench(Enum):
+    SourceQuench = 0
+
+class ICMPCodeRedirect(Enum):
+    RedirectForNetwork = 0
+    RedirectForHost = 1
+    RedirectForTOSAndNetwork = 2
+    RedirectForTOSAndHost = 3
+    
+class ICMPCodeEchoRequest(Enum):
+    EchoRequest = 0
+
+class ICMPCodeRouterAdvertisement(Enum):
+    RouterAdvertisement = 0
+
+class ICMPCodeRouterSolicitation(Enum):
+    RouterSolicitation = 0
+
+class ICMPCodeTimeExceeded(Enum):
+    TTLExpired = 0
+    FragmentReassemblyTimeExceeded = 1
+
+class ICMPCodeParameterProblem(Enum):
+    PointerIndictatesError = 0
+    MissingRequiredOption = 1
+    BadLength = 2
+
+class ICMPCodeTimestamp(Enum):
+    Timestamp = 0
+
+class ICMPCodeTimestampReply(Enum):
+    TimestampReply = 0
+
+class ICMPCodeInformationRequest(Enum):
+    InformationRequest = 0
+
+class ICMPCodeInformationReply(Enum):
+    InformationReply = 0
+
+class ICMPCodeAddressMaskRequest(Enum):
+    AddressMaskRequest = 0
+
+class ICMPCodeAddressMaskReply(Enum):
+    AddressMaskReply = 0
+
 ICMPTypeCodeMap = {
-    ICMPType.EchoReply: Enum('EchoReply', {'EchoReply': 0}),
-    ICMPType.DestinationUnreachable: Enum('DestinationUnreachable', {
-        'NetworkUnreachable': 0, 
-        'HostUnreachable': 1, 
-        'ProtocolUnreachable': 2, 
-        'PortUnreachable': 3, 
-        'FragmentationRequiredDFSet': 4, 
-        'SourceRouteFailed': 5, 
-        'DestinationNetworkUnknown': 6,
-        'DestinationHostUnknown': 7,
-        'SourceHostIsolated': 8,
-        'NetworkAdministrativelyProhibited': 9,
-        'HostAdministrativelyProhibited': 10,
-        'NetworkUnreachableForTOS': 11,
-        'HostUnreachableForTOS': 12,
-        'CommunicationAdministrativelyProhibited': 13,
-        'HostPrecedenceViolation': 14,
-        'PrecedenceCutoffInEffect': 15,
-    }),
-    ICMPType.SourceQuench: Enum('SourceQuench', { 'SourceQuench': 0 }),
-    ICMPType.Redirect: Enum('Redirect', {
-        'RedirectForNetwork': 0,
-        'RedirectForHost': 1,
-        'RedirectForTOSAndNetwork': 2,
-        'RedirectForTOSAndHost': 3
-    }),
-    ICMPType.EchoRequest: Enum('EchoRequest', { 'EchoRequest': 0 }),
-    ICMPType.RouterAdvertisement: Enum('RouterAdvertisement', { 'RouterAdvertisement': 0 }),
-    ICMPType.RouterSolicitation: Enum('RouterSolicitation', { 'RouterSolicitation': 0 }),
-    ICMPType.TimeExceeded: Enum('TimeExceeded', {
-        'TTLExpired': 0,
-        'FragmentReassemblyTimeExceeded': 1,
-    }),
-    ICMPType.ParameterProblem: Enum('BadIPHeader', { 
-        'PointerIndicatesError': 0,
-        'MissingRequiredOption': 1,
-        'BadLength': 2
-    }),
-    ICMPType.Timestamp: Enum('Timestamp', { 'Timestamp': 0 }),
-    ICMPType.TimestampReply: Enum('TimestampReply', { 'TimestampReply': 0 }),
-    ICMPType.InformationRequest: Enum('InformationRequest', { 'InformationRequest': 0 }),
-    ICMPType.InformationReply: Enum('InformationReply', { 'InformationReply': 0 }),
-    ICMPType.AddressMaskRequest: Enum('AddressMaskRequest', { 'AddressMaskRequest': 0 }),
-    ICMPType.AddressMaskReply: Enum('AddressMaskReply', { 'AddressMaskReply': 0 }),
+    ICMPType.EchoReply: ICMPCodeEchoReply,
+    ICMPType.DestinationUnreachable: ICMPCodeDestinationUnreachable,
+    ICMPType.SourceQuench: ICMPCodeSourceQuench,
+    ICMPType.Redirect: ICMPCodeRedirect,
+    ICMPType.EchoRequest: ICMPCodeEchoRequest,
+    ICMPType.RouterAdvertisement: ICMPCodeRouterAdvertisement,
+    ICMPType.RouterSolicitation: ICMPCodeRouterSolicitation,
+    ICMPType.TimeExceeded: ICMPCodeTimeExceeded,
+    ICMPType.ParameterProblem: ICMPCodeParameterProblem,
+    ICMPType.Timestamp: ICMPCodeTimestamp,
+    ICMPType.TimestampReply: ICMPCodeTimestampReply,
+    ICMPType.InformationRequest: ICMPCodeInformationRequest,
+    ICMPType.InformationReply: ICMPCodeInformationReply,
+    ICMPType.AddressMaskRequest: ICMPCodeAddressMaskRequest,
+    ICMPType.AddressMaskReply: ICMPCodeAddressMaskReply
 }
 
 class ICMPv6Type(Enum):
@@ -175,10 +212,9 @@ class ICMPv6Type(Enum):
     # Privateexperimentation3 = 200
     # Privateexperimentation4 = 201
 
-
 ICMPv6TypeCodeMap = {
-   ICMPv6Type.EchoRequest: Enum('EchoRequest', {'EchoRequest': 0}),    
-   ICMPv6Type.EchoReply: Enum('EchoReply', {'EchoReply': 0}),    
+   ICMPv6Type.EchoRequest: ICMPCodeEchoRequest,
+   ICMPv6Type.EchoReply: ICMPCodeEchoReply
 }
 
 # the following checksum function was taken from the POX openflow controller
