@@ -61,7 +61,10 @@ def construct_icmpv6_class_map():
     clsmap = {}
     for xtype in ICMPv6Type:
         clsname = "ICMPv6{}".format(xtype.name)
-        cls = eval(clsname)
+        try:
+            cls = eval(clsname)
+        except:
+            cls = None
         clsmap[xtype] = cls
     def inner(icmptype):
         icmptype = ICMPv6Type(icmptype)
@@ -72,8 +75,11 @@ def construct_icmpv6_type_map():
     typemap = {}
     for xtype in ICMPv6Type:
         clsname = "ICMPv6{}".format(xtype.name)
-        cls = eval(clsname)
-        typemap[cls] = xtype
+        try:
+            cls = eval(clsname)
+            typemap[cls] = xtype
+        except:
+            pass
     def inner(icmpcls):
         return typemap.get(icmpcls, None)
     return inner    
