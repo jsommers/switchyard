@@ -219,7 +219,11 @@ class _PcapFfi(object):
             raise PcapException("Failed to open pcap file for reading: {}: {}".format(filename, self._ffi.string(errbuf)))
         
         dl = self._libpcap.pcap_datalink(pcap)
-        return PcapDev(Dlt(dl), 0, 0, self.version, pcap)
+        try:
+            dl = Dlt(dl)
+        except ValueError as e:
+            raise PcapException("Don't know how to handle datalink type {}".format(dl))
+        return PcapDev(dl, 0, 0, self.version, pcap)
 
     def open_live(self, device, snaplen=65535, promisc=1, to_ms=100, nonblock=True):
         errbuf = self._ffi.new("char []", 128)

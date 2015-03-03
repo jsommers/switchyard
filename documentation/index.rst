@@ -18,6 +18,7 @@ Contents:
    live_execution
    installation
    reference
+   exercises
 
 Indices and tables
 ==================

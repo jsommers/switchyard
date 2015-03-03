@@ -41,7 +41,8 @@ class SrpyMatcherTest(unittest.TestCase):
         matcher = WildcardMatch(pkt, ['dl_src'])
         self.assertTrue(matcher.match(pkt))
         self.assertTrue('dl_src' in str(matcher))
-        self.assertIsNone(matcher.dl_src, None)
+        with self.assertRaises(AttributeError):
+            matcher.dl_src            
         self.assertEqual(matcher.nw_src, IPv4Address("0.0.0.0"))
         self.assertEqual(matcher.dl_type, EtherType.IP)
         
@@ -58,7 +59,8 @@ class SrpyMatcherTest(unittest.TestCase):
     def testPredicateMatch2(self):
         pkt = Ethernet() + IPv4()
         matcher = PacketMatcher(pkt, '''lambda pkt: pkt[0].src == '00:00:00:00:00:01' ''', exact=False)
-        self.assertRaises(ScenarioFailure, matcher.match, pkt)
+        with self.assertRaises(ScenarioFailure):
+            matcher.match(pkt)
 
     def testPredicateMatch3(self):
         pkt = Ethernet() + IPv4()

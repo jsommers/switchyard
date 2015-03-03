@@ -9,6 +9,22 @@ available in the documentation directory.
 
 Switchyard can run in a standalone test mode, in a simulation environment with a nice little command-line interface, or also within a Linux host and or in Mininet.  This version of Switchyard is a complete overhaul of the original framework written in late 2013, and many parts of the code are under active development.  For the older version of Switchyard, see the v1 branch.  Importantly, this version of Switchyard requires Python 3.4.
 
+Installation
+------------
+
+Switchyard requires a few additional Python libraries, all identified in requirements.txt.  You can either install directly to your system Python directories, or use a virtualenv (see https://docs.python.org/3/library/venv.html).  
+
+To install into your system Python directories, the easiest method is to use pip (or pip3 --- make sure you're using the Python 3-version of pip):
+
+    $ pip install -r requirements.txt
+
+On Ubuntu and Fedora systems, you'll also likely need to install additional packages (do this before using pip to install the Python libraries).  The list of libraries below is for recent versions of Ubuntu (14.04 and later) and Fedora (20 and later):
+
+ * Ubuntu: `sudo apt-get install libffi-dev libpcap-dev python3-dev`
+ * Fedora: `sudo yum install libffi-devel libpcap-devel python3-devel`
+
+If pip3 is not installed, you'll also need to install that (on Ubuntu: `sudo apt-get install python3-pip`.)
+
 ----
 
 I gratefully acknowledge support from the NSF.  The materials here are
