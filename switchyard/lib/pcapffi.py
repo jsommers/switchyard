@@ -45,6 +45,10 @@ class _PcapFfi(object):
     __slots__ = ['_ffi', '_libpcap','_interfaces','_windoze']
 
     def __init__(self):
+        '''
+        Assumption: this class is instantiated once in the main thread before
+        any other threads have a chance to try instantiating it.
+        '''
         if _PcapFfi._instance:
             raise Exception("Can't initialize this class more than once!")
 
@@ -151,6 +155,9 @@ class _PcapFfi(object):
         '''
         Find all the pcap-eligible devices on the local system.
         '''
+        if len(self._interfaces):
+            raise PcapException("Device discovery should only be done once.")
+            
         ppintf = self._ffi.new("pcap_if_t * *")
         errbuf = self._ffi.new("char []", 128)
         rv = self._libpcap.pcap_findalldevs(ppintf, errbuf)
@@ -380,7 +387,10 @@ class PcapLiveDevice(object):
 
         fd = self._pcapffi.get_select_fd(self._pcapdev.pcap)
         if fd >= 0:
-            xread,xwrite,xerr = select([fd], [], [fd], timeout)
+            try:
+                xread,xwrite,xerr = select([fd], [], [fd], timeout)
+            except:
+                return None
             if xread:  
                 return self._pcapffi.recv_packet(self._pcapdev.pcap)
             # timeout; return nothing

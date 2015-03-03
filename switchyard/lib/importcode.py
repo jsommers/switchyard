@@ -9,8 +9,9 @@ def import_or_die(module_name, entrypoint_names):
 
     (str) -> function reference
     '''
-    noext,ext = os.path.splitext(module_name)
-    modname = os.path.basename(noext)
+    if module_name.endswith('.py'):
+        module_name,ext = os.path.splitext(module_name)
+    modname = os.path.basename(module_name)
     dirname = os.path.dirname(module_name)
     if dirname:
         sys.path.append(os.path.abspath(dirname))
