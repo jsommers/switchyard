@@ -30,12 +30,5 @@ class PcapFfiTests(unittest.TestCase):
         os.unlink("testXX.pcap")
 
 
-    def testLive(self):
-        for d in pcap_devices():
-            if not d.isloop:
-                with self.assertRaises(PcapException):
-                    PcapLiveDevice(d.name.decode('ascii'))
-
-
 if __name__ == '__main__':
     unittest.main()
