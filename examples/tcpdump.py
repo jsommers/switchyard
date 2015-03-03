@@ -6,13 +6,12 @@ reading packets from a local device and dumping them to a file.
 from switchyard.lib.pcapffi import *
 from switchyard.lib.packet import *
 
-reader = PcapLiveDevice('eth0')
+reader = PcapLiveDevice('en0')
 writer = PcapDumper("tcpdump.pcap")
 print (reader)
 count = 0
 while True:
     pkt = reader.recv_packet(10.0)
-    writer.write_packet(pkt.raw)
     if pkt is None:
         break
     try:
@@ -21,7 +20,9 @@ while True:
     except Exception as e:
         print ("Failed to parse packet: {}".format(e))
 
+    writer.write_packet(pkt.raw)
     count += 1
+
 print ("Got {} packets".format(count))
 reader.close()
 writer.close()
