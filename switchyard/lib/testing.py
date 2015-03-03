@@ -154,7 +154,6 @@ class WildcardMatch(AbstractMatch):
     def __getattr__(self, attr):
         if attr in self.__matchvals:
             return self.__matchvals[attr]
-        print ("*** !! in wildcard match no attr: {}".format(attr))
         raise AttributeError("No such attribute {}".format(attr))
 
 class PacketMatcher(object):
@@ -277,7 +276,11 @@ class PacketMatcher(object):
             return PacketFormatter.format_pkt(self.__matchobj, cls)
         else:
             def fmtfield(f, wildcardview='*'):
-                v = getattr(self.__matchobj, f)
+                try:
+                    v = getattr(self.__matchobj, f)
+                except AttributeError:
+                    v = None
+
                 if v is None or f.startswith('tp') and v == 0:
                     return wildcardview
                 elif issubclass(v.__class__, Enum):
