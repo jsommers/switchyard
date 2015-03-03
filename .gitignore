@@ -4,3 +4,4 @@ __pycache__
 *.pcap
 .coverage
 htmlcov
+sandbox
