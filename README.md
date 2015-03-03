@@ -25,7 +25,8 @@ On Ubuntu and Fedora systems, you'll also likely need to install additional pack
 
 If pip3 is not installed, you'll also need to install that (on Ubuntu: `sudo apt-get install python3-pip`.)
 
-----
+Credits
+-------
 
 I gratefully acknowledge support from the NSF.  The materials here are
 based upon work supported by the National Science Foundation under
