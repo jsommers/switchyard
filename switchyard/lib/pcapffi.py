@@ -5,6 +5,7 @@ from collections import namedtuple
 from enum import Enum
 from time import time,sleep
 from select import select
+from threading import Lock
 
 Interface = namedtuple('Interface', ['name','internal_name', 'description', 'isloop','isup','isrunning'])
 PcapStats = namedtuple('PcapStats', ['ps_recv','ps_drop','ps_ifdrop'])
@@ -253,9 +254,13 @@ class _PcapFfi(object):
 
         # gather what happened
         nblock = self._libpcap.pcap_getnonblock(pcap, errbuf)
-        dl = self._libpcap.pcap_datalink(pcap)
         snaplen = self._libpcap.pcap_snapshot(pcap)
-        return PcapDev(Dlt(dl), nblock, snaplen, self.version, pcap)
+        dl = self._libpcap.pcap_datalink(pcap)
+        try:
+            dl = Dlt(dl)
+        except ValueError as e:
+            raise PcapException("Don't know how to handle datalink type {}".format(dl))
+        return PcapDev(dl, nblock, snaplen, self.version, pcap)
 
     def close_live(self, pcap):
         self._libpcap.pcap_close(pcap)
@@ -361,14 +366,15 @@ class PcapLiveDevice(object):
     Class the represents a live pcap capture/injection device.
     '''
     _OpenDevices = {}
+    _lock = Lock()
     __slots__ = ['_pcapffi','_pcapdev','_devname']
 
     def __init__(self, device, snaplen=65535, promisc=1, to_ms=100, filterstr=None):
         self._pcapffi = _PcapFfi.instance()
         self._pcapdev = self._pcapffi.open_live(device)
         self._devname = device
-        PcapLiveDevice._OpenDevices[self._devname] = self._pcapdev
-        # print ("Got live pcap device: {}".format(self._pcapdev))
+        with PcapLiveDevice._lock:
+            PcapLiveDevice._OpenDevices[self._devname] = self._pcapdev
         if filterstr is not None:
             self._pcapffi.set_filter(self._pcapdev, filterstr)
 
@@ -378,8 +384,13 @@ class PcapLiveDevice(object):
         Long method name, but self-explanatory.  Set the bpf
         filter on all devices that have been opened.
         '''
-        for dev in PcapLiveDevice._OpenDevices.values():
-            _PcapFfi.instance().set_filter(dev, filterstr)
+        with PcapLiveDevice._lock:
+            for dev in PcapLiveDevice._OpenDevices.values():
+                _PcapFfi.instance().set_filter(dev, filterstr)
+
+    @property
+    def dlt(self):
+        return self._pcapdev.dlt
 
     def recv_packet(self, timeout):
         if timeout is None or timeout < 0:
@@ -420,8 +431,9 @@ class PcapLiveDevice(object):
         self._pcapffi.send_packet(self._pcapdev.pcap, packet)
 
     def close(self):
-        print("In close; existing devs: {}".format(list(PcapLiveDevice._OpenDevices.keys())))
-        del PcapLiveDevice._OpenDevices[self._devname]
+        with PcapLiveDevice._lock:
+            # print("In close; existing devs: {}".format(list(PcapLiveDevice._OpenDevices.keys())))
+            del PcapLiveDevice._OpenDevices[self._devname]
         self._pcapffi.close_live(self._pcapdev.pcap)
 
     def stats(self):
