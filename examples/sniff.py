@@ -3,22 +3,22 @@
 '''
 Packet sniffer in Python
 '''
-import time
-import switchyard.lib.address 
-import switchyard.lib.packet
-from switchyard.lib.common import log_info, NoPackets, Shutdown
-from switchyard.lib.debug import debugger
+
+from switchyard.lib.address import *
+from switchyard.lib.packet import *
+from switchyard.lib.common import *
 
 def switchy_main(net):
     my_interfaces = net.interfaces() 
-    print ("My interfaces: {}".format([intf.name for intf in my_interfaces]))
+    log_info ("My interfaces: {}".format([intf.name for intf in my_interfaces]))
     while True:
         try:
-            dev,packet = net.recv_packet()
+            dev,packet = net.recv_packet(timeout=1.0)
         except NoPackets:
             continue
         except Shutdown:
             return
 
-        print ("In {} received packet {} on {}".format(net.name, packet, dev))
+        log_info ("In {} received packet {} on {}".format(net.name, packet, dev))
+
     net.shutdown()
