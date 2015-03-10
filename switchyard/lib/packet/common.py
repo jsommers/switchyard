@@ -9,6 +9,8 @@ class EtherType(Enum):
     IPv4 = 0x0800
     ARP = 0x0806
     x8021Q = 0x8100
+    Vlan = 0x8100
+    VLAN = 0x8100
     IPv6 = 0x86dd
     SLOW = 0x8809
     MPLS = 0x8847

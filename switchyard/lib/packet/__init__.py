@@ -18,3 +18,5 @@ from switchyard.lib.packet.ripv2 import *
 
 from switchyard.lib.packet.util import *
 
+from switchyard.lib.packet.null import *
+
