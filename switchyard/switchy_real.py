@@ -15,6 +15,10 @@ from switchyard.lib.packet import *
 from switchyard.lib.pcapffi import *
 from switchyard.lib.importcode import import_or_die
 
+_dlt_to_decoder = {}
+_dlt_to_decoder[Dlt.DLT_EN10MB] = lambda raw: Packet(raw, first_header=Ethernet)
+_dlt_to_decoder[Dlt.DLT_NULL] = lambda raw: Packet(raw, first_header=Null)
+
 '''
 Low-level-ish packet library for PyRouter project.  Uses a FFI-based
 pcap bridge library (pcapffi) for receiving and sending packets, 
@@ -176,7 +180,7 @@ class PyLLNet(LLNetBase):
             if self.pktqueue.qsize() == 0:
                 # put dummy pkt in queue to unblock a 
                 # possibly stuck user thread
-                self.pktqueue.put( (None,None) )
+                self.pktqueue.put( (None,None,None) )
             self.pktqueue = Queue()
 
     @staticmethod
@@ -195,8 +199,8 @@ class PyLLNet(LLNetBase):
             pktinfo = pcapdev.recv_packet(timeout=0.2)
             if pktinfo is None:
                 continue
-            log_debug("Got packet on device {}".format(devname))
-            pktqueue.put( (devname,pktinfo) )
+            log_debug("Got packet on device {}, dlt {}".format(devname, pcapdev.dlt))
+            pktqueue.put( (devname,pcapdev.dlt,pktinfo) )
             count += 1
             if count % 100 == 0:
                 stats = pcapdev.stats()
@@ -226,10 +230,16 @@ class PyLLNet(LLNetBase):
         '''
         while True:
             try:
-                dev,pktinfo = self.pktqueue.get(timeout=timeout)
+                dev,dlt,pktinfo = self.pktqueue.get(timeout=timeout)
                 if not PyLLNet.running:
                     break
-                pkt = Packet(raw=pktinfo.raw)
+
+                decoder = _dlt_to_decoder.get(dlt, None)
+                if decoder is None:
+                    log_warn("Received packet with unparseable encapsulation {}".format(dlt))
+                    continue
+
+                pkt = decoder(pktinfo.raw) 
                 if timestamp:
                     return dev,pktinfo.timestamp,pkt
                 else:
