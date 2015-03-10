@@ -49,7 +49,7 @@ class PacketFormatter(object):
             return str(pkt)
         idx = pkt.get_header_index(cls)
         if idx == -1:
-            log_warn("PacketFormatter tried to find non-existent header (test scenario probably needs fixing)")
+            log_warn("PacketFormatter tried to find non-existent header {} (test scenario probably needs fixing)".format(str(cls)))
             return str(pkt)
         return ' | '.join([str(pkt[i]) for i in range(idx, pkt.num_headers())])
 
