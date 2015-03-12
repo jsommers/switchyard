@@ -265,15 +265,30 @@ is set to a new value, the icmpdata field is *automatically* set to
 the correct object.  
 
 >>> i = ICMP()
+>>> print (i)
+ICMP EchoRequest 0 0 (0 data bytes)
 >>> i.icmptype = ICMPType.TimeExceeded
 >>> print (i)
 ICMP TimeExceeded:TTLExpired 0 bytes of raw payload (b'') OrigDgramLen: 0
 >>> i.icmpcode
-<TimeExceeded.TTLExpired: 0>
+<ICMPCodeTimeExceeded.TTLExpired: 0>
 >>> i.icmpdata
-<switchyard.lib.packet.icmp.ICMPTimeExceeded object at 0x10f3812c8>
+<switchyard.lib.packet.icmp.ICMPTimeExceeded object at 0x10d3a3308>
+
+Notice above that when the icmptype changes, other contents in the ICMP
+header object change appropriately. 
+
+To access and/or modify the *payload* (i.e., data) that comes after the ICMP header, use ``icmpdata.data``.  This object is a raw bytes object and can be accessed and or set.  For example, with many ICMP error messages, up to the first 28 bytes of the "dead" IPv4 packet should be included.  To do that, you must set the ``icmpdata.data`` attribute with the byte-level representation of the IP header data you want to include, as follows:
+
+>>> i.icmpdata.data
+b''
+>>> dead_ip = IPv4()
+>>> i.icmpdata.data = dead_ip.to_bytes()[:28]
+>>> print (i)
+ICMP TimeExceeded:TTLExpired 20 bytes of raw payload (b'E\x00\x00\x14\x00\x00\x00\x00\x00\x01') OrigDgramLen: 0
 >>> 
 
+Notice that above, the ``to_bytes`` method returns the byte-level representation of the IP header we're including as the payload.  The ``to_bytes`` method can be called on any packet header, or on an packet object (in which case *all* packet headers will be byte-serialized).
 
 To set the icmpcode, a dictionary called ``ICMPTypeCodeMap`` is defined
 in ``switchyard.lib.packet``.  Keys in the dictionary are of type ``ICMPType``, and values for each key is another enumerated type indicating the valid
@@ -287,7 +302,22 @@ Just getting the dictionary value isn't particularly helpful, but if you
 coerce the enum to a list, you can see all valid values:
 
 >>> list(ICMPTypeCodeMap[ICMPType.DestinationUnreachable])
-[<DestinationUnreachable.ProtocolUnreachable: 2>, <DestinationUnreachable.SourceHostIsolated: 8>, <DestinationUnreachable.FragmentationRequiredDFSet: 4>, <DestinationUnreachable.HostUnreachable: 1>, <DestinationUnreachable.DestinationNetworkUnknown: 6>, <DestinationUnreachable.NetworkUnreachableForTOS: 11>, <DestinationUnreachable.HostAdministrativelyProhibited: 10>, <DestinationUnreachable.DestinationHostUnknown: 7>, <DestinationUnreachable.HostPrecedenceViolation: 14>, <DestinationUnreachable.PrecedenceCutoffInEffect: 15>, <DestinationUnreachable.NetworkAdministrativelyProhibited: 9>, <DestinationUnreachable.NetworkUnreachable: 0>, <DestinationUnreachable.SourceRouteFailed: 5>, <DestinationUnreachable.PortUnreachable: 3>, <DestinationUnreachable.CommunicationAdministrativelyProhibited: 13>, <DestinationUnreachable.HostUnreachableForTOS: 12>]
+[ <DestinationUnreachable.ProtocolUnreachable: 2>, 
+  <DestinationUnreachable.SourceHostIsolated: 8>, 
+  <DestinationUnreachable.FragmentationRequiredDFSet: 4>, 
+  <DestinationUnreachable.HostUnreachable: 1>, 
+  <DestinationUnreachable.DestinationNetworkUnknown: 6>, 
+  <DestinationUnreachable.NetworkUnreachableForTOS: 11>, 
+  <DestinationUnreachable.HostAdministrativelyProhibited: 10>, 
+  <DestinationUnreachable.DestinationHostUnknown: 7>, 
+  <DestinationUnreachable.HostPrecedenceViolation: 14>, 
+  <DestinationUnreachable.PrecedenceCutoffInEffect: 15>, 
+  <DestinationUnreachable.NetworkAdministrativelyProhibited: 9>, 
+  <DestinationUnreachable.NetworkUnreachable: 0>, 
+  <DestinationUnreachable.SourceRouteFailed: 5>, 
+  <DestinationUnreachable.PortUnreachable: 3>, 
+  <DestinationUnreachable.CommunicationAdministrativelyProhibited: 13>, 
+  <DestinationUnreachable.HostUnreachableForTOS: 12> ]
 
 Another example, but with the much simpler EchoRequest:
 
