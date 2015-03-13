@@ -415,7 +415,7 @@ class PcapLiveDevice(object):
                 expiry = now + timeout
                 while now < expiry:
                     sleep(timeout/10)
-                    pkt = self._pcapffi.recv_packet(self.pcapdev.pcap)
+                    pkt = self._pcapffi.recv_packet(self._pcapdev.pcap)
                     if pkt:
                         return pkt
                     now = time()
