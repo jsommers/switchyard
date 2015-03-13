@@ -110,7 +110,7 @@ def setup_logging(debug):
         level = logging.DEBUG
     else:
         level = logging.INFO
-    logging.basicConfig(format="%(asctime)s %(levelname)8s %(message)s", datefmt="%T %Y/%m/%d", level=level)
+    logging.basicConfig(format="%(asctime)s %(levelname)8s %(message)s", datefmt="%H:%M:%S %Y/%m/%d", level=level)
 
 def log_failure(s):
     '''Convenience function for failure message.'''
