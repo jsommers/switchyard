@@ -93,7 +93,7 @@ if __name__ == '__main__':
             log_info("You specified user code to run with compile flag, but I'm just doing compile.")
         main_test(args.compile, args.scenario, args.usercode, args.dryrun, args.nopdb, args.verbose)
     else:
-        if os.geteuid() != 0:
+        if sys.platform != 'win32' and os.geteuid() != 0:
             log_warn("You're running in real mode, but not as root.  "
                 "You should expect errors, but I'm going to "
                 "continue anyway.")
