@@ -141,10 +141,32 @@ class OpenflowActionType(Enum):
     Enqueue = 11
     Vendor = 0xffff
 
+class OpenflowSwitchFeatures(PacketHeaderBase):
+    '''
+    Switch features response message, not including the header.
+    '''
+    __slots__ = ['_dpid','_nbuffers','_ntables','_capabilities',
+                 '_actions', '_ports' ]
+    _PACKFMT = '!QIBxxxII'
+    _MINLEN = struct.calcsize(_PACKFMT)
+
+    def __init__(self):
+        PacketHeaderBase.__init__(self)
+        self._dpid = 0
+        self._nbuffers = 0
+        self._ntables = 0
+        self._capabilities = 0
+        self._actions = 0
+        self._ports = []
+
 
 class OpenflowHeader(PacketHeaderBase):
     '''
-    standard 8 byte header for all Openflow packets.
+    Standard 8 byte header for all Openflow packets.
+    This is the entire packet for:
+      Hello
+      FeaturesRequest
+
     '''
     __slots__ = ['_version','_type','_length','_xid']
     _PACKFMT = '!BBHI'
