@@ -40,6 +40,12 @@ Packet parsing and construction
    'Ethernet 00:00:00:00:00:00->00:00:00:00:00:00 IP'
    >>> 
 
+To delete/remove a header, you can use the ``del`` operator as if the packet
+object is a Python list::
+
+    >>> del p[0] # delete/remove first header in packet
+    >>>
+
 Header classes
 --------------
 
