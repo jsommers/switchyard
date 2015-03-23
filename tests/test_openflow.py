@@ -5,14 +5,19 @@ from switchyard.lib.address import EthAddr, IPv4Address, SpecialIPv4Addr
 
 class OpenflowPacketTests(unittest.TestCase):
     def testHello(self):
-        ofp = OpenflowHeader()
-        ofp.type = OpenflowType.Hello
-        self.assertEqual(ofp.to_bytes(), b'\x01\x00\x00\x08\x00\x00\x00\x00')
-        ofp.xid = 42
-        self.assertEqual(ofp.to_bytes(), b'\x01\x00\x00\x08\x00\x00\x00\x2a')
+        hello = OpenflowHello()
+        self.assertEqual(hello.to_bytes(), b'\x01\x00\x00\x08\x00\x00\x00\x00')
+        hello.header.xid = 42
+        self.assertEqual(hello.to_bytes(), b'\x01\x00\x00\x08\x00\x00\x00\x2a')
        
-    def testSwitchFeatures(self):
-        pass
+    def testSwitchFeatureRequest(self):
+        featuresreq = OpenflowSwitchFeaturesRequest()
+        self.assertEqual(featuresreq.to_bytes(), b'\x01\x05\x00\x08\x00\x00\x00\x00')
+
+    def testSwitchFeatureReply(self):
+        featuresreply = OpenflowSwitchFeaturesReply()
+        self.assertEqual(featuresreply.to_bytes(), b'\x01\x06\x00\x08\x00\x00\x00\x00')
+
 
 if __name__ == '__main__':
     unittest.main()

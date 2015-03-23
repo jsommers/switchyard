@@ -141,46 +141,25 @@ class OpenflowActionType(Enum):
     Enqueue = 11
     Vendor = 0xffff
 
-class OpenflowSwitchFeatures(PacketHeaderBase):
-    '''
-    Switch features response message, not including the header.
-    '''
-    __slots__ = ['_dpid','_nbuffers','_ntables','_capabilities',
-                 '_actions', '_ports' ]
-    _PACKFMT = '!QIBxxxII'
-    _MINLEN = struct.calcsize(_PACKFMT)
-
-    def __init__(self):
-        PacketHeaderBase.__init__(self)
-        self._dpid = 0
-        self._nbuffers = 0
-        self._ntables = 0
-        self._capabilities = 0
-        self._actions = 0
-        self._ports = []
-
-
-class OpenflowHeader(PacketHeaderBase):
+class OpenflowHeader(object):
     '''
     Standard 8 byte header for all Openflow packets.
-    This is the entire packet for:
-      Hello
-      FeaturesRequest
-
+    This is a mostly-internal class used by the various
+    OpenflowMessage type classes.
     '''
     __slots__ = ['_version','_type','_length','_xid']
     _PACKFMT = '!BBHI'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self):
+    def __init__(self, xtype = OpenflowType.Hello, xid = 0):
         '''
         ofp_header struct from Openflow v1.0.0 spec.
         '''
         PacketHeaderBase.__init__(self)
         self._version = 0x01
-        self._type = OpenflowType.Hello
+        self._type = xtype
         self._length = OpenflowHeader._MINLEN
-        self._xid = 0
+        self._xid = xid
 
     @property  
     def xid(self):
@@ -220,11 +199,83 @@ class OpenflowHeader(PacketHeaderBase):
     def size(self):
         return OpenflowHeader._MINLEN
 
-    def pre_serialize(self, raw, pkt, i):
-        pass
-
-    def next_header_class(self):
-        return OpenflowTypeClasses[self._type]
-
     def __str__(self):
         return '{} {} {} {}'.format(self.__class__.__name__, self.type.name, self.xid, self.length)
+
+class OpenflowMessage(PacketHeaderBase):
+    '''
+    Base class for OpenflowMessage packets.  
+    '''
+    __slots__ = ['_header']
+    def __init__(self, xtype, xid = 0):
+        self._header = OpenflowHeader(xtype=xtype, xid=xid)
+
+    @property 
+    def header(self):
+        '''
+        Get reference to an object representing the 8-byte
+        Openflow header.
+        '''
+        return self._header
+
+    def to_bytes(self):
+        return self._header.to_bytes()
+
+    def from_bytes(self, raw):
+        return self._header.from_bytes(raw)
+
+    def __eq__(self, other):
+        return self._header == other._header
+
+    def size(self):
+        return self._header.size()
+
+    def next_header_class(self):
+        pass
+
+    def pre_serialize(self):
+        pass
+
+class OpenflowHello(OpenflowMessage):
+    def __init__(self, xid=0):
+        OpenflowMessage.__init__(self, OpenflowType.Hello, xid)
+
+class OpenflowSwitchFeaturesRequest(OpenflowMessage):
+    def __init__(self, xid=0):
+        OpenflowMessage.__init__(self, OpenflowType.FeaturesRequest, xid)
+        
+class OpenflowSwitchFeaturesReply(OpenflowMessage):
+    '''
+    Switch features response message, not including the header.
+    '''
+    __slots__ = ['_dpid','_nbuffers','_ntables','_capabilities',
+                 '_actions', '_ports' ]
+    _PACKFMT = '!QIBxxxII'
+    _MINLEN = struct.calcsize(_PACKFMT)
+
+    def __init__(self, xid=0):
+        OpenflowMessage.__init__(self, OpenflowType.FeaturesReply, xid)
+        self._dpid = 0
+        self._nbuffers = 0
+        self._ntables = 0
+        self._capabilities = 0
+        self._actions = 0
+        self._ports = []
+
+    @property 
+    def dpid(self):
+        return self._dpid
+    
+    @dpid.setter
+    def dpid(self, value):
+        pass
+
+    @property 
+    def nbuffers(self):
+        return self._nbuffers
+
+    @dpid.setter
+    def dpid(self, value):
+        pass
+
+
