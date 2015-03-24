@@ -1,4 +1,4 @@
-from switchyard.lib.packet.packet import PacketHeaderBase
+from switchyard.lib.packet.packet import PacketHeaderBase, Packet
 from switchyard.lib.address import EthAddr
 from enum import Enum
 import struct
@@ -323,8 +323,8 @@ class OpenflowMessage(PacketHeaderBase):
     def next_header_class(self):
         pass
 
-    def pre_serialize(self):
-        pass
+    def pre_serialize(self, raw, pkt, i):
+        self._header.length = len(self.to_bytes())
 
     def __str__(self):
         return '{} xid={} len={}'.format(self.__class__.__name__, 
@@ -535,7 +535,12 @@ OpenflowTypeClasses = {
 }
 
 def send_openflow_message(sock, msg):
-    sock.sendall(msg.to_bytes())
+    if not isinstance(msg, Packet):
+        p = Packet()
+        p += msg
+    else:
+        p = msg
+    sock.sendall(p.to_bytes())
 
 def receive_openflow_message(sock):
     ofheader = OpenflowHeader()
@@ -547,4 +552,6 @@ def receive_openflow_message(sock):
     cls = OpenflowTypeClasses[ofheader.type]
     ofmsg = cls()
     ofmsg.from_bytes(data, ofheader)
-    return ofmsg
+    p = Packet()
+    p += ofmsg
+    return p
