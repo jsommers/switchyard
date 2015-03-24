@@ -23,7 +23,12 @@ class OpenflowPacketTests(unittest.TestCase):
         featuresreply = OpenflowSwitchFeaturesReply()
         featuresreply.dpid_low48 = EthAddr("00:01:02:03:04:05")
         featuresreply.dpid_high16 = b'\xab\xcd'
-        self.assertEqual(featuresreply.to_bytes(), b'\x01\x06\x00\x08\x00\x00\x00\x00')
+        p = OpenflowPhysicalPort(0, EthAddr("ab:cd:ef:ab:cd:ef"), "eth0")
+        featuresreply.ports.append(p)
+        xb = featuresreply.to_bytes()
+        fr = OpenflowSwitchFeaturesReply()
+        fr.from_bytes(xb)
+        self.assertEqual(fr, featuresreply)
 
     def testEchoRequest(self):
         echoreq = OpenflowEchoRequest()        
