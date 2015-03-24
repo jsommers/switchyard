@@ -357,7 +357,7 @@ class OpenflowEchoRequest(OpenflowMessage):
     def to_bytes(self):
         return self._header + self.data
 
-    def from_bytes(self, raw, headerobj):
+    def from_bytes(self, raw, headerobj=None):
         super().from_bytes(raw, headerobj)
         self.data = raw
 
@@ -402,7 +402,7 @@ class OpenflowSwitchFeaturesReply(OpenflowMessage):
             rawpkt += p.to_bytes()
         return rawpkt
 
-    def from_bytes(self, raw, headerobj):
+    def from_bytes(self, raw, headerobj=None):
         remain = super().from_bytes(raw, headerobj)
         fields = struct.unpack(OpenflowSwitchFeaturesReply._PACKFMT, 
                                raw[:OpenflowSwitchFeaturesReply._MINLEN])
