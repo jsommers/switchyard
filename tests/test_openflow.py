@@ -5,18 +5,18 @@ from switchyard.lib.address import EthAddr, IPv4Address, SpecialIPv4Addr
 
 class OpenflowPacketTests(unittest.TestCase):
     def testHello(self):
-        hello = OpenflowHello()
+        hello = OpenflowHeader(OpenflowType.Hello, 0)
         self.assertEqual(hello.to_bytes(), b'\x01\x00\x00\x08\x00\x00\x00\x00')
-        hello.header.xid = 42
+        hello.xid = 42
         self.assertEqual(hello.to_bytes(), b'\x01\x00\x00\x08\x00\x00\x00\x2a')
         bval = hello.to_bytes()
 
-        hello2 = OpenflowHello()
+        hello2 = OpenflowHeader(OpenflowType.Hello)
         hello2.from_bytes(bval)
         self.assertEqual(hello, hello2)
        
     def testSwitchFeatureRequest(self):
-        featuresreq = OpenflowSwitchFeaturesRequest()
+        featuresreq = OpenflowHeader(OpenflowType.FeaturesRequest, 0)
         self.assertEqual(featuresreq.to_bytes(), b'\x01\x05\x00\x08\x00\x00\x00\x00')
 
     def testSwitchFeatureReply(self):
@@ -32,10 +32,21 @@ class OpenflowPacketTests(unittest.TestCase):
 
     def testEchoRequest(self):
         echoreq = OpenflowEchoRequest()        
+        echoreq.data = b'\x01\x23\x45'
+        b = echoreq.to_bytes()
+        self.assertTrue(b.endswith(b'\x01\x23\x45'))
+        another = OpenflowEchoRequest()
+        another.from_bytes(b)
+        self.assertEqual(echoreq, another)
 
     def testEchoReply(self):
         echorepl = OpenflowEchoReply()
-
+        echorepl.data = b'\x01\x23\x45'
+        b = echorepl.to_bytes()
+        self.assertTrue(b.endswith(b'\x01\x23\x45'))
+        another = OpenflowEchoRequest()
+        another.from_bytes(b)
+        self.assertEqual(echorepl, another)
 
 if __name__ == '__main__':
     unittest.main()
