@@ -96,7 +96,7 @@ class _OpenflowStruct(PacketHeaderBase):
     def next_header_class(self):
         pass
 
-    def pre_serialize(self):
+    def pre_serialize(self, *args):
         pass
 
 class OpenflowPhysicalPort(_OpenflowStruct):
@@ -108,7 +108,10 @@ class OpenflowPhysicalPort(_OpenflowStruct):
     def __init__(self, portnum=0, hwaddr='', name=''):
         _OpenflowStruct.__init__(self)
         self._portnum = portnum
-        self._hwaddr = EthAddr(hwaddr)
+        if hwaddr:
+            self._hwaddr = EthAddr(hwaddr)
+        else:
+            self._hwaddr = EthAddr()
         self._name = name
         self._config = OpenflowPortConfig.NoConfig
         self._state = OpenflowPortState.NoState
@@ -129,7 +132,7 @@ class OpenflowPhysicalPort(_OpenflowStruct):
         fields = struct.unpack(OpenflowPhysicalPort._PACKFMT, raw[:OpenflowPhysicalPort._MINLEN])        
         self.portnum = fields[0]
         self.hwaddr = fields[1]
-        self.name = fields[2]
+        self.name = fields[2].decode('utf8')
         self.config = fields[3]
         self.state = fields[4]
         self.curr = fields[5]
@@ -266,6 +269,55 @@ class OpenflowEchoReply(OpenflowEchoRequest):
     def __init__(self):
         OpenflowEchoRequest.__init__(self)
 
+class OpenflowConfigFlags(Enum):
+    FragNormal = 0
+    FragDrop = 1
+    FragReasm = 2
+    FragMask = 3
+
+class OpenflowSetConfig(_OpenflowStruct):
+    __slots__ = ['_flags','_miss_send_len']
+    _PACKFMT = '!HH'
+    _MINLEN = struct.calcsize(_PACKFMT)
+    def __init__(self):
+        _OpenflowStruct.__init__(self)
+        self._flags = OpenflowConfigFlags.FragNormal
+        self._miss_send_len = 1500
+
+    def to_bytes(self):
+        return struct.pack(OpenflowSetConfig._PACKFMT, self._flags.value, self._miss_send_len)
+
+    def from_bytes(self, raw):
+        if len(raw) < OpenflowSetConfig._MINLEN:
+            raise Exception("Not enough bytes to unpack OpenflowSetConfig message")
+        fields = struct.unpack(OpenflowSetConfig._PACKFMT, raw[:OpenflowSetConfig._MINLEN])
+        self.flags = fields[0]        
+        self.miss_send_len = fields[1]
+        return raw[OpenflowSetConfig._MINLEN:]
+
+    @property
+    def flags(self):
+        return self._flags
+
+    @flags.setter
+    def flags(self, value):
+        self._flags = OpenflowConfigFlags(value)
+
+    @property 
+    def miss_send_len(self):
+        return self._miss_send_len
+
+    @miss_send_len.setter
+    def miss_send_len(self, value):
+        self._miss_send_len = int(value)
+
+    def size(self):
+        return OpenflowSetConfig._MINLEN
+
+class OpenflowGetConfigReply(OpenflowSetConfig):
+    def __init__(self):
+        OpenflowSetConfig.__init__(self)
+        
 class OpenflowSwitchFeaturesReply(_OpenflowStruct):
     '''
     Switch features response message, not including the header.
@@ -320,7 +372,7 @@ class OpenflowSwitchFeaturesReply(_OpenflowStruct):
 
         remain = raw[OpenflowSwitchFeaturesReply._MINLEN:]
         p = OpenflowPhysicalPort()
-        while remain >= p.size():
+        while len(remain) >= p.size():
             remain = p.from_bytes(remain)
             self._ports.append(p)
             p = OpenflowPhysicalPort()
@@ -440,9 +492,9 @@ class OpenflowHeader(PacketHeaderBase):
         # OpenflowType.Vendor: OpenflowVendor,
         OpenflowType.FeaturesRequest: None,
         OpenflowType.FeaturesReply: OpenflowSwitchFeaturesReply,
-        # OpenflowType.GetConfigRequest: OpenflowGetConfigRequest,
-        # OpenflowType.GetConfigReply: OpenflowGetConfigReply,
-        # OpenflowType.SetConfig: OpenflowSetConfig,
+        OpenflowType.GetConfigRequest: None,
+        OpenflowType.GetConfigReply: OpenflowGetConfigReply,
+        OpenflowType.SetConfig: OpenflowSetConfig,
         # OpenflowType.PacketIn: OpenflowPacketIn,
         # OpenflowType.FlowRemoved: OpenflowFlowRemoved,
         # OpenflowType.PortStatus: OpenflowPortStatus,
@@ -521,14 +573,14 @@ class OpenflowHeader(PacketHeaderBase):
         '''
         Set length of the header based on
         '''
-        self._header.length = len(raw) + OpenflowHeader._MINLEN
+        self.length = len(raw) + OpenflowHeader._MINLEN
 
     def __eq__(self, other):
         return self.to_bytes() == other.to_bytes()
 
     def __str__(self):
-        return '{} xid={} len={}'.format(self.header.type.name, 
-            self.header.xid, self.header.length)
+        return '{} xid={} len={}'.format(self.type.name, 
+            self.xid, self.length)
 
 def send_openflow_message(sock, pkt):
     sock.sendall(pkt.to_bytes())
