@@ -140,7 +140,7 @@ class Packet(object):
                 return hdr
         return None
 
-    def get_header(self, hdrclass):
+    def get_header(self, hdrclass, returnval=None):
         '''
         Return the first header object that is of
         class hdrclass, or None if the header class isn't
@@ -152,7 +152,7 @@ class Packet(object):
         for hdr in self._headers:
             if isinstance(hdr, hdrclass):
                 return hdr
-        return None
+        return returnval
 
     def get_header_index(self, hdrclass, startidx=0):
         '''
@@ -282,6 +282,38 @@ class PacketHeaderBase(metaclass=ABCMeta):
 
     def __str__(self):
         return self.__class__.__name__
+
+
+class NullPacketHeader(PacketHeaderBase):
+    def __init__(self):
+        PacketHeaderBase.__init__(self)
+
+    def to_bytes(self):
+        return b''
+
+    def from_bytes(self, raw):
+        return raw
+
+    def next_header_class(self):
+        return None
+
+    def pre_serialize(self, raw, pkt, i):
+        return None
+
+    def size(self):
+        return 0
+
+    def __getattr__(self, attr):
+        return self
+
+    def __call__(self, *args, **kwargs):
+        return self
+
+    def __str__(self):
+        return 'NullPacketHeader'
+
+    def __repr__(self):
+        return '<NullPacketHeader>'
 
 
 class RawPacketContents(PacketHeaderBase):

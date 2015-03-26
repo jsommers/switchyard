@@ -277,7 +277,16 @@ class OpenflowMatch(_OpenflowStruct):
         Return True if this match overlaps with othermatch.  False
         otherwise.
         '''
-        pass # FIXME
+        pass 
+
+    def match_packet(self, packet):
+        '''
+        Does the packet match the elements in this structure?
+        Return True if so, False otherwise.
+        '''
+        # FIXME
+        null = NullPacketHeader()
+        header = packet.get_header(IPv4, null)
 
     @property 
     def wildcards(self):
