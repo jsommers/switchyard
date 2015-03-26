@@ -48,5 +48,29 @@ class OpenflowPacketTests(unittest.TestCase):
         another.from_bytes(b)
         self.assertEqual(echorepl, another)
 
+    def testMatchStruct(self):
+        m = OpenflowMatch()
+        b = m.to_bytes()
+        self.assertEqual(len(b), 40)
+
+        m2 = OpenflowMatch()
+        m2.from_bytes(b)
+        self.assertEqual(m, m2)
+
+        m.wildcard_all()
+        m2.from_bytes(m.to_bytes())
+        self.assertListEqual(['NwSrc:32','NwDst:32','All'], m2.wildcards) 
+
+        m.reset_wildcards()
+        m.add_wildcard(OpenflowWildcards.DlSrc)
+        m.add_wildcard(OpenflowWildcards.DlDst)
+        xlist = m.wildcards
+        m2.from_bytes(m.to_bytes())
+        self.assertListEqual(xlist, m2.wildcards)
+
+    def testMatchOverlap(self):
+        pass
+        
+
 if __name__ == '__main__':
     unittest.main()

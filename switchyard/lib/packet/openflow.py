@@ -1,9 +1,13 @@
-from switchyard.lib.packet.packet import PacketHeaderBase, Packet
-from switchyard.lib.address import EthAddr
+from switchyard.lib.packet import PacketHeaderBase, Packet, IPProtocol, EtherType
+from switchyard.lib.address import EthAddr, IPv4Address
 from enum import Enum
 import struct
 
-OpenflowTypeClasses = {}
+def _make_bitmap(xset):
+    val = 0x00000000
+    for enumval in xset:
+        val |= enumval.value
+    return val
 
 class OpenflowType(Enum):
     Hello = 0
@@ -194,12 +198,234 @@ class OpenFlowQueueMinRateProperty(_OpenflowStruct):
     _MINLEN = struct.calcsize(_PACKFMT)
 
 class OpenflowMatch(_OpenflowStruct):
-    __slots__ = ['wildcards','_in_port','_dl_src','_dl_dst',
+    __slots__ = ['_wildcards''_nwsrc_wildcard','_nwdst_wildcard',
+                 '_in_port','_dl_src','_dl_dst',
                  '_dl_vlan','_dl_vlan_pcp','_dl_type',
                  '_nw_tos','_nw_proto','_nw_src','_nw_dst',
                  '_tp_src','_tp_dst']
-    _PACKFMT = '!IH6s6sHBxHBB2xIIHH'        
+    _PACKFMT = '!IH6s6sHBxHBB2x4s4sHH'        
     _MINLEN = struct.calcsize(_PACKFMT)
+
+    def __init__(self):
+        _OpenflowStruct.__init__(self)
+        self._wildcards = set()
+        self._in_port = 0
+        self._dl_src = EthAddr()
+        self._dl_dst = EthAddr()
+        self._dl_vlan = 0
+        self._dl_vlan_pcp = 0
+        self._dl_type = EtherType.IP
+        self._nw_tos = 0
+        self._nw_proto = IPProtocol.ICMP
+        self._nwsrc_wildcard = 0
+        self._nwdst_wildcard = 0
+        self._nw_src = IPv4Address(0)
+        self._nw_dst = IPv4Address(0)
+        self._tp_src = 0
+        self._tp_dst = 0
+
+    @staticmethod
+    def size(*args):
+        return OpenflowMatch._MINLEN
+
+    def to_bytes(self):
+        wildbits = _make_bitmap(self._wildcards)
+        return struct.pack(OpenflowMatch._PACKFMT,
+            wildbits, self.in_port,  self.dl_src.raw, self.dl_dst.raw,
+            self.dl_vlan, self.dl_vlan_pcp, self.dl_type.value,
+            self.nw_tos, self.nw_proto.value, self.nw_src.packed,
+            self.nw_dst.packed, self.tp_src, self.tp_dst)
+
+    def from_bytes(self, raw):
+        if len(raw) < OpenflowMatch._MINLEN:
+            raise Exception("Not enough data to unpack OpenflowMatch")
+        fields = struct.unpack(OpenflowMatch._PACKFMT, raw[:OpenflowMatch._MINLEN])
+        self._wildcards = set()
+        if fields[0] == OpenflowWildcards.All.value:
+            self.wildcard_all()
+            self.nwsrc_wildcard = 32
+            self.nwdst_wildcard = 32
+        else:            
+            for v in OpenflowWildcards:
+                if not v.name.endswith('All') and \
+                   not v.name.endswith('Mask') and \
+                   v.value & fields[0] != 0:
+                    self.add_wildcard(v)
+
+            # set nwsrc_wildcard, nwdst_wildcard
+            nwsrcbits = (fields[0] & OpenflowWildcards.NwSrcMask.value) >> 8
+            self.nwsrc_wildcard = nwsrcbits
+            nwdstbits = (fields[0] & OpenflowWildcards.NwDstMask.value) >> 14
+            self.nwdst_wildcard = nwdstbits
+
+        self.in_port = fields[1] 
+        self.dl_src = fields[2]
+        self.dl_dst = fields[3]
+        self.dl_vlan = fields[4]
+        self.dl_vlan_pcp = fields[5]
+        self.dl_type = fields[6]
+        self.nw_tos = fields[7]
+        self.nw_proto = fields[8]
+        self.nw_src = fields[9]
+        self.nw_dst = fields[10]
+        self.tp_src = fields[11]
+        self.tp_dst = fields[12]
+        return raw[OpenflowMatch._MINLEN:]
+
+    def overlap(self, othermatch):
+        '''
+        Return True if this match overlaps with othermatch.  False
+        otherwise.
+        '''
+        pass # FIXME
+
+    @property 
+    def wildcards(self):
+        wcards = []
+        wcards.append("NwSrc:{}".format(self.nwsrc_wildcard))
+        wcards.append("NwDst:{}".format(self.nwdst_wildcard))
+        wcards.extend([w.name for w in self._wildcards])
+        return wcards
+
+    def add_wildcard(self, value):
+        value = OpenflowWildcards(value)
+        self._wildcards.add(value)
+
+    def reset_wildcards(self):
+        self._wildcards = set()
+
+    def remove_wildcard(self, value):
+        self._wildcards.discard(value)
+
+    def wildcard_all(self):
+        self._wildcards = set([OpenflowWildcards.All])
+
+    @property
+    def nwsrc_wildcard(self):
+        return self._nwsrc_wildcard
+
+    @nwsrc_wildcard.setter
+    def nwsrc_wildcard(self, value):
+        value = max(0, int(value))
+        value = min(32, value)
+        self._nwsrc_wildcard = value
+
+    @property
+    def nwdst_wildcard(self):
+        return self._nwsrc_wildcard
+
+    @nwdst_wildcard.setter
+    def nwdst_wildcard(self, value):
+        value = max(0, int(value))
+        value = min(32, value)
+        self._nwdst_wildcard = value
+
+    @property 
+    def in_port(self):
+        return self._in_port
+
+    @in_port.setter
+    def in_port(self, value):
+        if int(value) < 0:
+            raise ValueError("Can't set a negative port value")
+        self._in_port = int(value)
+
+    @property 
+    def dl_src(self):
+        return self._dl_src
+
+    @dl_src.setter
+    def dl_src(self, value):
+        self._dl_src = EthAddr(value)
+
+    @property 
+    def dl_dst(self):
+        return self._dl_dst
+
+    @dl_dst.setter
+    def dl_dst(self, value):
+        self._dl_dst = EthAddr(value)
+
+    @property 
+    def dl_vlan(self):
+        return self._dl_vlan
+
+    @dl_vlan.setter
+    def dl_vlan(self, value):
+        self._dl_vlan = int(value)
+
+    @property 
+    def dl_vlan_pcp(self):
+        return self._dl_vlan_pcp
+
+    @dl_vlan_pcp.setter
+    def dl_vlan_pcp(self, value):
+        self._dl_vlan_pcp = int(value)
+
+    @property 
+    def dl_type(self):
+        return self._dl_type
+
+    @dl_type.setter
+    def dl_type(self, value):
+        self._dl_type = EtherType(value)
+
+    @property 
+    def nw_tos(self):
+        return self._nw_tos
+
+    @nw_tos.setter
+    def nw_tos(self, value):
+        value = int(value)
+        if value < 0 or value > 255:
+            raise ValueError("Invalid TOS value {}".format(value))
+        self._nw_tos = value
+
+    @property 
+    def nw_proto(self):
+        return self._nw_proto
+
+    @nw_proto.setter
+    def nw_proto(self, value):
+        self._nw_proto = IPProtocol(value)
+
+    @property 
+    def nw_src(self):
+        return self._nw_src
+
+    @nw_src.setter
+    def nw_src(self, value):
+        self._nw_src = IPv4Address(value)
+
+    @property 
+    def nw_dst(self):
+        return self._nw_dst
+
+    @nw_dst.setter
+    def nw_dst(self, value):
+        self._nw_dst = IPv4Address(value)
+
+    @property 
+    def tp_src(self):
+        return self._tp_src
+
+    @tp_src.setter
+    def tp_src(self, value):
+        value = int(value)
+        if value < 0 or value >= 2**16:
+            raise ValueError("Invalid transport layer src {}".format(value))
+        self._tp_src = value
+
+    @property 
+    def tp_dst(self):
+        return self._tp_dst
+
+    @tp_dst.setter
+    def tp_dst(self, value):
+        value = int(value)
+        if value < 0 or value >= 2**16:
+            raise ValueError("Invalid transport layer dst {}".format(value))
+        self._tp_dst = value
 
 class OpenflowWildcards(Enum):
     InPort = 1 << 0
@@ -216,14 +442,14 @@ class OpenflowWildcards(Enum):
     # 2 = ignore 2 least sig bits, etc.
     # >= 32 = wildcard entire field
     NwSrcMask = ((1 << 6) - 1) << 8
-    NwSrcAll = 32 << 8
-
     NwDstMask = ((1 << 6) - 1) << 14
-    NwDstAll = 32 << 14
-
     DlVlanPcp = 1 << 20
     NwTos = 1 << 21
+
+    NwSrcAll = 32 << 8
+    NwDstAll = 32 << 14
     All = ((1 << 22) - 1)
+
 
 class OpenflowActionTypes(Enum):
     Output = 0
@@ -318,6 +544,21 @@ class OpenflowGetConfigReply(OpenflowSetConfig):
     def __init__(self):
         OpenflowSetConfig.__init__(self)
         
+class OpenflowFlowMod(_OpenflowStruct):
+    '''
+    Flowmod message
+    '''
+    __slots__ = ['_match','_cookie','_command','_idle_timeout',
+                 '_hard_timeout','_priority','_buffer_id','_out_port'
+                 '_flags','_actions']
+    # packfmt doesn't include match struct or actions
+    # those are defined within other structures
+    _PACKFMT = '!QHHHHIHH'
+    _MINLEN = OpenflowMatch.size() + struct.calcsize(_PACKFMT) 
+
+    def __init__(self):
+        pass
+
 class OpenflowSwitchFeaturesReply(_OpenflowStruct):
     '''
     Switch features response message, not including the header.
@@ -334,13 +575,6 @@ class OpenflowSwitchFeaturesReply(_OpenflowStruct):
         self._capabilities = set()
         self._actions = set()
         self._ports = []
-
-    @staticmethod
-    def _make_bitmap(xset):
-        val = 0x00000000
-        for enumval in xset:
-            val |= enumval.value
-        return val
 
     def to_bytes(self):
         rawpkt = struct.pack(OpenflowSwitchFeaturesReply._PACKFMT,
@@ -448,7 +682,7 @@ class OpenflowSwitchFeaturesReply(_OpenflowStruct):
 
     @property 
     def capabilities(self):
-        return self._make_bitmap(self._capabilities)
+        return _make_bitmap(self._capabilities)
 
     @capabilities.setter
     def capabilities(self, value):
@@ -458,9 +692,12 @@ class OpenflowSwitchFeaturesReply(_OpenflowStruct):
             raise ValueError("Set value must be of type OpenflowCapabilities")
         self._capabilities.add(value)
 
+    def reset_capabilities(self):
+        self._capabilities = set()
+
     @property 
     def actions(self):
-        return self._make_bitmap(self._actions)
+        return _make_bitmap(self._actions)
 
     @actions.setter
     def actions(self, value):
@@ -469,6 +706,9 @@ class OpenflowSwitchFeaturesReply(_OpenflowStruct):
         if not isinstance(value, OpenflowActionTypes):
             raise ValueError("Set value must be of type OpenflowActionTypes")
         self._actions.add(value)
+
+    def reset_actions(self):
+        self._actions = set()
 
     @property 
     def ports(self):
