@@ -269,7 +269,7 @@ class PyLLNet(LLNetBase):
             log_debug("Sending packet on device {}: {}".format(dev, str(packet)))
             pdev.send_packet(rawpkt)
 
-def main_real(usercode, dryrun, netobj, nopdb, verbose):
+def main_real(usercode, dryrun, netobj, nopdb, verbose, no_handle):
     '''
     Entrypoint function for non-test ("real") mode.  At this point
     we assume that we are running as root and have pcap module.
@@ -280,28 +280,34 @@ def main_real(usercode, dryrun, netobj, nopdb, verbose):
     if dryrun:
         log_info("Imported your code successfully.  Exiting dry run.")
         return
-    try:
+
+    if no_handle:
         usercode_entry_point(netobj)
-    except Exception as e:
-        import traceback
-
-        log_failure("Exception while running your code: {}".format(e))
-        message = '''{0}
-
-This is the Switchyard equivalent of the blue screen of death.
-Here (repeating what's above) is the failure that occurred:
-'''.format('*'*60, textwrap.fill(str(e), 60))
-        with red():
-            print(message)
-            traceback.print_exc(1)
-            print('*'*60)
-
-        if not nopdb:
-            print('''
-I'm throwing you into the Python debugger (pdb) at the point of failure.
-If you don't want pdb, use the --nopdb flag to avoid this fate.
-''')
-            import pdb
-            pdb.post_mortem()
     else:
-        netobj.shutdown()
+        try:
+            usercode_entry_point(netobj)
+        except Exception as e:
+            if no_handle:
+                raise e
+            import traceback
+
+            log_failure("Exception while running your code: {}".format(e))
+            message = '''{0}
+
+    This is the Switchyard equivalent of the blue screen of death.
+    Here (repeating what's above) is the failure that occurred:
+    '''.format('*'*60, textwrap.fill(str(e), 60))
+            with red():
+                print(message)
+                traceback.print_exc(1)
+                print('*'*60)
+
+            if not nopdb:
+                print('''
+    I'm throwing you into the Python debugger (pdb) at the point of failure.
+    If you don't want pdb, use the --nopdb flag to avoid this fate.
+    ''')
+                import pdb
+                pdb.post_mortem()
+        else:
+            netobj.shutdown()

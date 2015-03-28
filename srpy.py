@@ -61,6 +61,7 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--verbose", help="Turn on verbose output, including full packet dumps in test results.  Can be specified multiple times to increase verbosity.", dest="verbose", action="count", default=0)
     parser.add_argument("-d", "--debug", help="Turn on debug logging output.", dest="debug", action="store_true", default=False)
     parser.add_argument("--nopdb", help="Don't enter pdb on crash.", dest="nopdb", action="store_true", default=False)
+    parser.add_argument("--nohandle", help="Don't handle exception on crash.", dest="no_handle", action="store_true", default=False)
     parser.add_argument("-f", "--firewall", help="Specify host firewall rules (for real/live mode only)", dest="fwconfig", action="append")
     parser.add_argument("-a", "--app", help="Specify application layer (socket-based) program to start (EXPERIMENTAL!)", dest="app", default=None)
     args = parser.parse_args()
@@ -91,7 +92,7 @@ if __name__ == '__main__':
     if args.testmode:
         if args.usercode and args.compile:
             log_info("You specified user code to run with compile flag, but I'm just doing compile.")
-        main_test(args.compile, args.scenario, args.usercode, args.dryrun, args.nopdb, args.verbose)
+        main_test(args.compile, args.scenario, args.usercode, args.dryrun, args.nopdb, args.verbose, args.no_handle)
     else:
         if sys.platform != 'win32' and os.geteuid() != 0:
             log_warn("You're running in real mode, but not as root.  "
@@ -119,4 +120,4 @@ if __name__ == '__main__':
             setup_ok = True
             barrier.wait()
             netobj = PyLLNet(devlist)
-            main_real(args.usercode, args.dryrun, netobj, args.nopdb, args.verbose)
+            main_real(args.usercode, args.dryrun, netobj, args.nopdb, args.verbose, args.no_handle)

@@ -94,7 +94,7 @@ class FakePyLLNet(LLNetBase):
             pass
         self.timestamp += 1.0
 
-def run_tests(scenario_names, usercode_entry_point, no_pdb, verbose):
+def run_tests(scenario_names, usercode_entry_point, no_pdb, verbose, no_handle):
     '''
     Given a list of scenario names, set up fake network object with the
     scenario objects, and invoke the user module.
@@ -109,6 +109,13 @@ def run_tests(scenario_names, usercode_entry_point, no_pdb, verbose):
         log_info("Starting test scenario {}".format(sname))
         exc,value,tb = None,None,None
         message = '''All tests passed!'''
+        if no_handle:
+            try:
+                disable_timer()
+                usercode_entry_point(net)
+            except Shutdown:
+                return
+            return
         try:
             usercode_entry_point(net)
         except Shutdown:
@@ -202,7 +209,7 @@ If you don't want pdb, use the --nopdb flag to avoid this fate.
                 print ('{}'.format(message), file=sys.stderr)
 
 
-def main_test(compile, scenarios, usercode, dryrun, no_pdb, verbose):
+def main_test(compile, scenarios, usercode, dryrun, no_pdb, verbose, no_handle):
     '''
         Entrypoint function for either compiling or running test scenarios.
 
@@ -221,5 +228,5 @@ def main_test(compile, scenarios, usercode, dryrun, no_pdb, verbose):
         if dryrun:
             log_info("Imported your code successfully.  Exiting dry run.")
             return
-        run_tests(scenarios, usercode_entry_point, no_pdb, verbose)
+        run_tests(scenarios, usercode_entry_point, no_pdb, verbose, no_handle)
 
