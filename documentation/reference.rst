@@ -289,8 +289,9 @@ To access and/or modify the *payload* (i.e., data) that comes after the ICMP hea
 >>> i.icmpdata.data
 b''
 >>> i.icmpdata.data = pkt.to_bytes()[:28]
+>>> i.icmpdata.origdgramlen = len(pkt)
 >>> print (i)
-ICMP TimeExceeded:TTLExpired 28 bytes of raw payload (b'E\x00\x00\x14\x00\x00\x00\x00\x00\x01') OrigDgramLen: 0
+ICMP TimeExceeded:TTLExpired 28 bytes of raw payload (b'E\x00\x00\x14\x00\x00\x00\x00\x00\x01') OrigDgramLen: 42
 >>> 
 
 In the above code segment, ``pkt`` should be a Packet object that just contains the IPv4 header and any subsequent headers and data.  It must *not* include an Ethernet header.  If you need to strip an Ethernet header, you can get its index (``pkt.get_header_index(Ethernet)``), then remove the header by index (``del pkt[index]``).
