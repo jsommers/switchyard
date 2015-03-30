@@ -69,8 +69,21 @@ class OpenflowPacketTests(unittest.TestCase):
         self.assertListEqual(xlist, m2.wildcards)
 
     def testMatchOverlap(self):
-        pass
+        m = OpenflowMatch()
+        self.assertTrue(m.overlaps(m))
         
+    def testError(self):
+        e = OpenflowError()
+        e.errortype = OpenflowErrorType.HelloFailed
+        e.errorcode = OpenflowHelloFailedCode.PermissionsError
+        e.data = b'\xef' * 10
+        b = e.to_bytes()
+        self.assertEqual(b, b'\x00\x00\x00\x01' + b'\xef'*10)
+
+        e.errortype = OpenflowErrorType.BadAction
+        e.errorcode = OpenflowFlowModFailedCode.Overlap
+        b = e.to_bytes()
+        self.assertEqual(b, b'\x00\x02\x00\x01' + b'\xef'*10)
 
 if __name__ == '__main__':
     unittest.main()

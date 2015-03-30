@@ -1,6 +1,7 @@
-from colorama import init, Fore, Back, Style
+import sys
 import atexit
 from contextlib import contextmanager
+from colorama import init, Fore, Back, Style
 
 class TextColor(object):
     SETUP=False
@@ -12,7 +13,10 @@ class TextColor(object):
     def setup():
         if TextColor.SETUP:
             return
-        init()
+        if sys.platform == 'win32':
+            init(strip=True,convert=True,wrap=True)
+        else:
+            init()
         atexit.register(TextColor.reset)
         TextColor.SETUP=True
 

@@ -177,8 +177,8 @@ number defaults to ICMP.  An example of creating an IPv4 header
 and setting various fields is shown below:
 
 >>> ip = IPv4()
->>> ip.src = '10.0.1.1'
->>> ip.dst = '10.0.2.42'
+>>> ip.srcip = '10.0.1.1'
+>>> ip.dstip = '10.0.2.42'
 >>> ip.protocol = IPProtocol.UDP
 >>> ip.ttl = 64
 
