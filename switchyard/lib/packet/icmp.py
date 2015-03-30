@@ -226,6 +226,22 @@ class ICMPDestinationUnreachable(ICMPData):
         self._nexthopmtu = fields[1]
         super().from_bytes(raw[4:])
 
+    @property 
+    def origdgramlen(self):
+        return self._origdgramlen
+
+    @origdgramlen.setter
+    def origdgramlen(self, value):
+        self._origdgramlen = int(value)
+
+    @property
+    def nexthopmtu(self):
+        return self._nexthopmtu
+
+    @nexthopmtu.setter
+    def nexthopmtu(self, value):
+        self.nexthopmtu = int(value)
+
     def __str__(self):
         return '{} NextHopMTU: {}'.format(super().__str__(), self._nexthopmtu)
     
