@@ -589,8 +589,9 @@ class OpenflowFlowMod(_OpenflowStruct):
         self._actions = []
 
     def to_bytes(self):
-        return self._match.to_bytes() + 
-               struct.pack(OpenflowFlowMod._PACKFMT, )
+        pass
+        #return self._match.to_bytes() + 
+        #       struct.pack(OpenflowFlowMod._PACKFMT, )
 
     def from_bytes(self, raw):
         pass
