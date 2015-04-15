@@ -111,6 +111,26 @@ class SrpyMatcherTest(unittest.TestCase):
             matcher = PacketMatcher(pkt, wildcard=['arp_tha'], exact=False)
             matcher.match(xcopy)
 
+    def testWildcardMatchOutput(self):
+        pkt = create_ip_arp_request('11:22:33:44:55:66', '192.168.1.1', '192.168.10.10')
+        outev = PacketOutputEvent("eth1", pkt, wildcard=('arp_tha',), exact=False)
+        self.assertNotIn("IPv4", str(outev))
+        rv = outev.match(SwitchyTestEvent.EVENT_OUTPUT, device='eth1', packet=pkt)
+        self.assertEqual(rv, SwitchyTestEvent.MATCH_SUCCESS)
+
+        outev = PacketOutputEvent("eth1", pkt, wildcard=('arp_tha',), exact=False)
+        pktcopy = copy.deepcopy(pkt)
+        pktcopy[1].targethwaddr = '00:ff:00:ff:00:ff'
+        rv = outev.match(SwitchyTestEvent.EVENT_OUTPUT, device='eth1', packet=pktcopy)
+        self.assertEqual(rv, SwitchyTestEvent.MATCH_SUCCESS)
+
+        outev = PacketOutputEvent("eth1", pkt, wildcard=('arp_tha',), exact=False)
+        with self.assertRaises(ScenarioFailure) as exc:
+            pktcopy[1].senderhwaddr = '00:ff:00:ff:00:ff'
+            rv = outev.match(SwitchyTestEvent.EVENT_OUTPUT, device='eth1', packet=pktcopy)
+        self.assertNotIn("IPv4", str(exc.exception))
+
+
 if __name__ == '__main__':
     setup_logging(False)
     unittest.main()
