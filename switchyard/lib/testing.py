@@ -16,7 +16,7 @@ import base64
 import fnmatch
 import copy
 import textwrap
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 from abc import ABCMeta, abstractmethod
 from dis import Bytecode
 
@@ -88,6 +88,11 @@ class AbstractMatch(metaclass=ABCMeta):
     def match(self, pkt):
         return False
 
+    @abstractmethod
+    def show(self, comparepkt):
+        pass
+
+
 class ExactMatch(AbstractMatch):
     def __init__(self, pkt):
         self._reference = pkt.to_bytes()
@@ -98,39 +103,59 @@ class ExactMatch(AbstractMatch):
     def __str__(self):
         return str(Packet(raw=self._reference))
 
+    def show(self, comparepkt):
+        return str(self)
+
+
 class WildcardMatch(AbstractMatch):
+    ETHWILD = '**:**:**:**:**:**'
+    SINGLE = '*'
+    IP4WILD = '*.*.*.*'
+    IP6WILD = '**::**'
+    _ETHFMT = ("{} {}->{} {}", 'dl_src', 'dl_dst', 'dl_type')
+    _IPFMT = ("{} {}->{} {}", 'nw_src', 'nw_dst', 'nw_proto')
+    _ARPFMT = ("{} {}:{} {}:{}", 'arp_sha', 'arp_spa', 'arp_tha', 'arp_tpa')
+    _TPORTFMT = ("{} {}->{}", 'tp_src', 'tp_dst')
+    _SHOWORDER = [(Ethernet, _ETHFMT), (Arp, _ARPFMT),
+                  (IPv4, _IPFMT), (IPv6, _IPFMT),
+                  (TCP, _TPORTFMT), (UDP, _TPORTFMT), (ICMP, _TPORTFMT)]
+    # FIXME: modify field names to more closely align with
+    # openflow 1.4 spec, e.g., p147 in v1.4.0 spec: oxm_ofb_match_fields
+    _LOOKUP = {
+        'dl_src': [(Ethernet, 'src', ETHWILD)],
+        'dl_dst': [(Ethernet, 'dst', ETHWILD)],
+        'dl_type': [(Ethernet, 'ethertype', SINGLE)],
+        'nw_src': [(IPv4, 'srcip', IP4WILD), (IPv6, 'srcip', IP6WILD)],
+        'nw_dst': [(IPv4, 'dstip', IP4WILD), (IPv6, 'dstip', IP6WILD)],
+        'nw_proto': [(IPv4, 'protocol', SINGLE), (IPv6, 'protocol', SINGLE)],
+        'tp_src': [(TCP, 'srcport', SINGLE), (UDP, 'srcport', SINGLE), (ICMP, 'icmptype', SINGLE)],
+        'tp_dst': [(TCP, 'dstport', SINGLE), (UDP, 'dstport', SINGLE), (ICMP, 'icmpcode', SINGLE)],
+        'arp_tpa': [(Arp, 'targetprotoaddr', IP4WILD)],
+        'arp_spa': [(Arp, 'senderprotoaddr', IP4WILD)],
+        'arp_tha': [(Arp, 'targethwaddr', ETHWILD)],
+        'arp_sha': [(Arp, 'senderhwaddr', ETHWILD)],
+    }
+    _BYHEADER = None
+
     def __init__(self, pkt, wildcard_fields):
-        self.__lookup = {
-            'dl_src': [(Ethernet,'src')],
-            'dl_dst': [(Ethernet,'dst')],
-            'dl_type': [(Ethernet,'ethertype')],
-            'nw_src': [(IPv4,'srcip'),(IPv6,'srcip')],
-            'nw_dst': [(IPv4,'dstip'),(IPv6,'dstip')],
-            'nw_proto': [(IPv4,'protocol'),(IPv6,'protocol')],
-            'tp_src': [(TCP,'srcport'),(UDP,'srcport'),(ICMP,'icmptype')],
-            'tp_dst': [(TCP,'dstport'),(UDP,'dstport'),(ICMP,'icmpcode')],
-            'arp_tpa': [(Arp,'targetprotoaddr')],
-            'arp_spa': [(Arp,'senderprotoaddr')],
-            'arp_tha': [(Arp,'targethwaddr')],
-            'arp_sha': [(Arp,'senderhwaddr')],
-        }
-
-        # FIXME: modify field names to more closely align with
-        # openflow 1.4 spec, e.g., p147 in v1.4.0 spec: oxm_ofb_match_fields
-
+        if WildcardMatch._BYHEADER is None:
+            WildcardMatch._BYHEADER = defaultdict(list)
+            for xkey, xlist in WildcardMatch._LOOKUP.items():
+                for cls, headerfield, wildfmt in xlist:
+                    WildcardMatch._BYHEADER[cls].append(xkey)
         self.__wildcards = list(wildcard_fields)
         self.__matchvals = self.__buildmvals(pkt)
 
     def __buildmvals(self, pkt):
         mvals = {}
-        for key,llist in self.__lookup.items():
+        for key,llist in WildcardMatch._LOOKUP.items():
 
             # only build a comparison table of fields that aren't
             # listed in wildcards
             if key in self.__wildcards:
                 continue
 
-            for cls,field in llist:
+            for cls,field,_ in llist:
                 if pkt.has_header(cls):
                     header = pkt.get_header(cls)
                     value = getattr(header,field)
@@ -155,6 +180,33 @@ class WildcardMatch(AbstractMatch):
         if attr in self.__matchvals:
             return self.__matchvals[attr]
         raise AttributeError("No such attribute {}".format(attr))
+
+    def show(self, comparepkt):
+        def fill_field(field, header):
+            for clsname,attr,wilddisplay in WildcardMatch._LOOKUP[field]:
+                if isinstance(header, clsname):
+                    # print (field, attr, self.__wildcards)
+                    if field in self.__wildcards:
+                        return wilddisplay
+                    elif hasattr(header, attr):
+                        a = getattr(header, attr)
+                        if isinstance(a, Enum):
+                            return str(a.name)
+                        return str(a)
+                    return wilddisplay
+            raise Exception("Should never get here!")
+
+        def with_wildcards(header, fmt):
+            args = [header.__class__.__name__]
+            args.extend([fill_field(field, header) for field in fmt[1:]])
+            return fmt[0].format(*args)
+
+        headers = []
+        for clsname, fmt in WildcardMatch._SHOWORDER:
+            if comparepkt.has_header(clsname):
+                headers.append(with_wildcards(comparepkt.get_header(clsname), fmt))
+        return ' | '.join(headers)
+
 
 class PacketMatcher(object):
     '''
@@ -235,6 +287,7 @@ class PacketMatcher(object):
         conjunction = ', but' if firstmatch else '. '
         diagnosis = ["{} {} match {}{}".format(aan.capitalize(), xtype, xresults, conjunction)]
 
+        # are there predicates that were tested?
         if len(results):
             diagnosis += ["When comparing the packet you sent versus what I expected,"]
             for pidx,preresult in enumerate(results):
@@ -246,14 +299,17 @@ class PacketMatcher(object):
                     diagnosis[-1] += ','
             diagnosis[-1] += '.'
 
-        if firstmatch:
-            diagnosis += ["\nThese fields matched: {}.".format(self.show(None))]
+        if firstmatch: 
+            # headers match, but predicate(s) failed
+            diagnosis += ["\nThese fields matched: {}.".format(self.__matchobj.show(packet))]
         else:
+            # packet header match failed
             diagnosis += ["\nHere is the packet that failed the check: {}.".format(packet)]
+
             if self.exact:
-                diagnosis += ["\nHere is exactly what I expected: {}.".format(self.__matchobj)]
+                diagnosis += ["\nHere is exactly what I expected: {}.".format(self.__matchobj.show(packet))]
             else:
-                diagnosis += ["\nHere is what I expected to match: {}.".format(self.show(None))]
+                diagnosis += ["\nHere is what I expected to match: {}.".format(self.__matchobj.show(packet))]
         return ' '.join(diagnosis)
 
     def match(self, packet):
@@ -270,35 +326,6 @@ class PacketMatcher(object):
             return True
         else:
             raise ScenarioFailure(self.__diagnose(packet, results))
-
-    def show(self, cls):
-        if self.exact:
-            return PacketFormatter.format_pkt(self.__matchobj, cls)
-        else:
-            def fmtfield(f, wildcardview='*'):
-                try:
-                    v = getattr(self.__matchobj, f)
-                except AttributeError:
-                    v = None
-
-                if v is None or f.startswith('tp') and v == 0:
-                    return wildcardview
-                elif issubclass(v.__class__, Enum):
-                    return v.name
-                else:
-                    return v
-            dl = nw = tp = ''
-            if cls is None or cls.__name__ == 'Ethernet':
-                dl = "[{}->{} {}]".format(fmtfield('dl_src', '**:**:**:**:**:**'),
-                                          fmtfield('dl_dst', '**:**:**:**:**:**'),
-                                          fmtfield('dl_type'))
-            if cls is None or cls.__name__ == 'IPv4':
-                nw = " IPv4 {}->{} ".format(fmtfield('nw_src', '*.*.*.*'),
-                                          fmtfield('nw_dst', '*.*.*.*'))
-            if cls is None or cls.__name__ in ['TCP','UDP','ICMP']:
-                arrow = ':' if cls is None or cls.__name__ == 'ICMP' else '->'
-                tp = " {} {}{}{}".format(fmtfield('nw_proto'),fmtfield('tp_src'), arrow, fmtfield('tp_dst'))
-            return dl + nw + tp
 
     def __getstate__(self):
         rv = self.__dict__.copy()

@@ -124,7 +124,7 @@ class SrpyMatcherTest(unittest.TestCase):
         rv = outev.match(SwitchyTestEvent.EVENT_OUTPUT, device='eth1', packet=pktcopy)
         self.assertEqual(rv, SwitchyTestEvent.MATCH_SUCCESS)
 
-        outev = PacketOutputEvent("eth1", pkt, wildcard=('arp_tha',), exact=False)
+        outev = PacketOutputEvent("eth1", pkt, wildcard=('arp_tha','dl_src'), exact=False)
         with self.assertRaises(ScenarioFailure) as exc:
             pktcopy[1].senderhwaddr = '00:ff:00:ff:00:ff'
             rv = outev.match(SwitchyTestEvent.EVENT_OUTPUT, device='eth1', packet=pktcopy)
