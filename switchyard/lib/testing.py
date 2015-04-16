@@ -301,7 +301,7 @@ class PacketMatcher(object):
 
         if firstmatch: 
             # headers match, but predicate(s) failed
-            diagnosis += ["\nThese fields matched: {}.".format(self.__matchobj.show(packet))]
+            diagnosis += ["\nThis part matched: {}.".format(self.__matchobj.show(packet))]
         else:
             # packet header match failed
             diagnosis += ["\nHere is the packet that failed the check: {}.".format(packet)]
