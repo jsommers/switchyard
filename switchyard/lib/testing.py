@@ -289,7 +289,12 @@ class PacketMatcher(object):
 
         # are there predicates that were tested?
         if len(results):
-            diagnosis += ["When comparing the packet you sent versus what I expected,"]
+            diagnosis += ["when comparing the packet you sent versus what I expected,"]
+            # if previous statement ended with sentence, cap the last
+            # statement added.
+            if diagnosis[-2].endswith('.'):
+                diagnosis[-1] = diagnosis[-1].capitalize()
+
             for pidx,preresult in enumerate(results):
                 xresults = "passed" if preresult else "failed"
                 xname = self.predicates[pidx]
