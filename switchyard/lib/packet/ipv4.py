@@ -354,7 +354,7 @@ class IPv4(PacketHeaderBase):
     _PACKFMT = '!BBHHHBBH4s4s'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         # fill in fields with (essentially) zero values
         self.tos = 0x00
         self._totallen = IPv4._MINLEN
@@ -367,6 +367,7 @@ class IPv4(PacketHeaderBase):
         self.srcip = SpecialIPv4Addr.IP_ANY.value
         self.dstip = SpecialIPv4Addr.IP_ANY.value
         self._options = IPOptionList()
+        super().__init__(**kwargs)
         
     def size(self):
         return struct.calcsize(IPv4._PACKFMT) + self._options.raw_length()

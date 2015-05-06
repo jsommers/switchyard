@@ -221,8 +221,9 @@ class PacketHeaderBase(metaclass=ABCMeta):
     '''
     __slots__ = []
 
-    def __init__(self):
-        pass
+    def __init__(self, **kwargs):
+        for attrname,value in kwargs.items():
+            setattr(self, attrname, value)
 
     def __len__(self):
         '''Return the packed length of this packet; calls

@@ -14,9 +14,10 @@ class UDP(PacketHeaderBase):
     _PACKFMT = '!HHHH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.srcport = self.dstport = 0
         self._len = self.size()
+        super().__init__(**kwargs)
 
     def size(self):
         return struct.calcsize(UDP._PACKFMT)

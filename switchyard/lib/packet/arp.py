@@ -19,7 +19,7 @@ class Arp(PacketHeaderBase):
     _PACKFMT = '!HHBBH6s4s6s4s'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self._hwtype = ArpHwType.Ethernet
         self._prototype = EtherType.IP
         self._hwaddrlen = 6
@@ -29,6 +29,7 @@ class Arp(PacketHeaderBase):
         self.senderprotoaddr = SpecialIPv4Addr.IP_ANY.value
         self.targethwaddr = SpecialEthAddr.ETHER_BROADCAST.value
         self.targetprotoaddr = SpecialIPv4Addr.IP_ANY.value
+        super().__init__(**kwargs)
 
     def size(self):
         return struct.calcsize(Arp._PACKFMT)

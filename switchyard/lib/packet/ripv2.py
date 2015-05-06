@@ -79,12 +79,13 @@ class RIPv2(PacketHeaderBase):
     _PACKFMT = '!BBH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, raw=None):
+    def __init__(self, raw=None, **kwargs):
         self.command = RIPCommand.Request
         self.domain = 0
         self._routes = []
         if raw:
             self.from_bytes(raw)
+        super().__init__(**kwargs)
 
     def size(self):
         return len(self.to_bytes())

@@ -12,7 +12,7 @@ References:
 
 
 class ICMPv6(ICMP):
-    def __init__(self):
+    def __init__(self, **kwargs):
         self._valid_types = ICMPv6Type
         self._valid_codes_map = ICMPv6TypeCodeMap
         self._classtype_from_icmptype = ICMPv6ClassFromType
@@ -21,6 +21,7 @@ class ICMPv6(ICMP):
         self._code = self._valid_codes_map[self._type].EchoRequest
         self._icmpdata = ICMPv6ClassFromType(self._type)()
         self._checksum = 0
+        super().__init__(**kwargs)
 
     def checksum(self):
         return self._checksum

@@ -27,12 +27,13 @@ class IPv6ExtensionHeader(PacketHeaderBase):
     _PACKFMT = '!BB'
     _MINLEN = 2
 
-    def __init__(self, optlenmultiplier):
+    def __init__(self, optlenmultiplier, **kwargs):
         self._nextheader = None
         self._optdatalen = 0
         # number of bytes represented by length field (should be 1 or 8, depending on ext hdr)
         assert(optlenmultiplier in (1,8))
         self._optlenmultiplier = optlenmultiplier
+        super().__init__(**kwargs)
 
     def pre_serialize(self, raw, pkt, i):
         pass
@@ -86,15 +87,23 @@ class IPv6RouteOption(IPv6ExtensionHeader):
     IPv6 routing option.  Only supports type 2 (single address) option.
     '''
     __slots__ = ['_routingtype', '_segmentsleft','_address']
-    def __init__(self, addr=SpecialIPv6Addr.UNDEFINED.value):
-        super().__init__(8)
+    def __init__(self, **kwargs):
         self._routingtype = 2
         self._segmentsleft = 1
-        self._address = IPv6Address(addr)
+        self._address = SpecialIPv6Addr.UNDEFINED.value
         self._optdatalen = 2 # RFC2460: len is number of 8 octet units, not including for 8 octets
+        super().__init__(8, **kwargs)
 
     def __str__(self):
         return "{} (type {}, {})".format(self.__class__.__name__, self._routingtype, self._address)
+
+    @property
+    def address(self):
+        return self._address
+
+    @address.setter
+    def address(self, value):
+        self._address = IPv6Address(value)
 
     def to_bytes(self):
         common = super().to_bytes()
@@ -118,28 +127,36 @@ class IPv6Fragment(IPv6ExtensionHeader):
     _PACKFMT = '!HI'
     _MINLEN = 6
 
-    def __init__(self, xid=0, offset=0, mf=False):
-        super().__init__(1)
-        self._id = int(xid)
-        self._offset = int(offset)
-        self._morefragments = bool(mf)
+    def __init__(self, **kwargs):
+        self._id = 0
+        self._offset = 0
+        self._morefragments = False
         self._optdatalen = 0
+        super().__init__(1, **kwargs)
 
     @property 
     def id(self):
         return self._id
 
+    @id.setter
+    def id(self, value):
+        self._id = int(value)
+
     @property 
     def offset(self):
         return self._offset
 
-    @property 
-    def morefragments(self):
-        return self._morefragments
+    @offset.setter
+    def offset(self, value):
+        self._offset = int(value)
 
     @property 
     def mf(self):
-        return self.morefragments
+        return self._morefragments
+
+    @mf.setter
+    def mf(self, value):
+        self._morefragments = bool(value)
 
     def __str__(self):
         return "{} (id: {} offset: {} mf: {})".format(self.__class__.__name__, self._id, self._offset, self._morefragments)
@@ -298,9 +315,9 @@ class IPv6HopOption(IPv6ExtensionHeader):
         201: HomeAddress 
     }
 
-    def __init__(self):
-        super().__init__(8)
+    def __init__(self, **kwargs):
         self._options = []
+        super().__init__(8, **kwargs)
 
     def __str__(self):
         return "{}/{}".format(self.__class__.__name__, ' ; '.join([str(o) for o in self._options]))
@@ -402,13 +419,13 @@ class IPv6Mobility(IPv6ExtensionHeader):
     _PACKFMT = '!BBH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self):
-        super().__init__(8)
+    def __init__(self, **kwargs):
         self._nextheader = IPProtocol.IPv6NoNext
         self._optdatalen = 0 #FIXME
         self._mhtype = IPv6MobilityHeaderType(0)
         self._data = (0,)
         self._srcip = self._dstip = SpecialIPv6Addr.UNDEFINED.value
+        super().__init__(8, **kwargs)
 
     def pre_serialize(self, raw, pkt, i):
         ipv6hdr = pkt.get_header(IPv6)
@@ -450,7 +467,10 @@ class IPv6Mobility(IPv6ExtensionHeader):
                                                  remain[:IPv6Mobility._MINLEN])
         self._mhtype = IPv6MobilityHeaderType(mhtype)
         self._checksum = checksum
-        self._data = struct.unpack(_IPv6MobilityHeaderStruct[self._mhtype], remain[IPv6Mobility._MINLEN:])
+        mobheaderstruct = _IPv6MobilityHeaderStruct[self._mhtype]
+        structsize = struct.calcsize(mobheaderstruct)
+        self._data = struct.unpack(mobheaderstruct, remain[IPv6Mobility._MINLEN:(IPv6Mobility._MINLEN+structsize)])
+        return raw[(IPv6Mobility._MINLEN + structsize):]
 
 IPTypeClasses = {
     IPProtocol.TCP: TCP,
@@ -475,7 +495,7 @@ class IPv6(PacketHeaderBase):
     _PACKFMT = '!BBHHBB16s16s'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.trafficclass = 0
         self.flowlabel = 0
         self.ttl = 128
@@ -484,6 +504,7 @@ class IPv6(PacketHeaderBase):
         self.srcip = SpecialIPv6Addr.UNDEFINED.value
         self.dstip = SpecialIPv6Addr.UNDEFINED.value
         self._extheaders = []
+        super().__init__(**kwargs)
         
     def size(self):
         return IPv6._MINLEN + 0 # FIXME extension headers

@@ -26,9 +26,9 @@ class TCPOption(metaclass=ABCMeta):
 
 class TCPOptions(PacketHeaderBase):
     __slots__ = ['_optlist']
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
         self._optlist = []
+        super().__init__(**kwargs)
 
     def size(self):
         return len(self.to_bytes())
@@ -68,7 +68,7 @@ class TCP(PacketHeaderBase):
     _PACKFMT = '!HHIIHHHH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.srcport = self.dstport = 0
         self.seq = self.ack = 0
         self._flags = 0x000
@@ -77,6 +77,7 @@ class TCP(PacketHeaderBase):
         self._options = TCPOptions()
         self._checksum = 0
         self._len = 0
+        super().__init__(**kwargs)
 
     def size(self):
         return struct.calcsize(TCP._PACKFMT)
