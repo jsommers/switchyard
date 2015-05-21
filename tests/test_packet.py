@@ -71,6 +71,8 @@ class PacketTests(unittest.TestCase):
         self.assertEqual(p[Ethernet], eth)
         self.assertEqual(p[IPv4], ip)
         self.assertEqual(p[ICMP], icmp)
+        with self.assertRaises(KeyError):
+            x = p[IPv6]
 
 
 if __name__ == '__main__':
