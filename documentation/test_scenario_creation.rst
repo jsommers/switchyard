@@ -107,8 +107,8 @@ Below is an example of a creating two test expectations for a network hub device
         testpkt = Ethernet() + IPv4() + ICMP()
         testpkt[0].src = "30:00:00:00:00:02"
         testpkt[0].dst = "ff:ff:ff:ff:ff:ff"
-        testpkt[1].srcip = "172.16.42.2"
-        testpkt[1].dstip = "255.255.255.255"
+        testpkt[1].src = "172.16.42.2"
+        testpkt[1].dst = "255.255.255.255"
 
         # expect that the packet should arrive on port eth1
         s.expect(PacketInputEvent("eth1", testpkt, display=Ethernet), "An Ethernet frame with a broadcast destination address should arrive on eth1")

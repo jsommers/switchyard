@@ -250,7 +250,8 @@ There are a few key ideas to understand when using the packet library:
  * The ``Packet`` class acts as a container of headers (rather,
    header objects).
  * Headers within a packet can be accessed through methods on the Packet
-   container object, and also by indexing.
+   container object, and also by indexing.  Headers are ordered starting with lowest layer protocols.  For example, if a ``Packet`` has an ``Ethernet`` header (which is likely to be the lowest layer protocol),
+   this header can be accessed with index 0 as in ``pktobj[0]``.  Indexes can be integers, and they can also be packet header class names (e.g., ``Ethernet``, ``IPv4``, etc.).  For example, to access the ``Ethernet`` header of a packet, you can write ``pktobj[Ethernet]``.
  * Fields in header objects are accessed through standard Python
    *properties*.  (The code to manipulate header fields thus looks
    like it is just accessing instance variables.)
@@ -336,11 +337,11 @@ Accessing header fields in other headers works similarly.  Here are examples inv
 'IPv4 0.0.0.0->0.0.0.0 ICMP'
 >>> p[1].protocol
 <IPProtocol.ICMP: 1>
->>> p[1].srcip
+>>> p[1].src
 IPv4Address('0.0.0.0')
->>> p[1].dstip
+>>> p[1].dst
 IPv4Address('0.0.0.0')
->>> p[1].dstip = '149.43.80.13'
+>>> p[1].dst = '149.43.80.13'
 
 IPv4 protocol values are specified in ``switchyard.lib.packet.common``, just as with ``EtherType`` values.  The full set of properties that can be manipulated in the IPv4 header as well as all other headers is described in the reference documentation for the packet library: :ref:`pktlib`.
 

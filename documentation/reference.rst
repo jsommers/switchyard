@@ -29,14 +29,21 @@ Packet parsing and construction
    + and += operators are defined for use with the Packet class
    to add on headers (to the end of the packet).  Indexing can also
    be done with Packet objects to access individual header objects.
+   Indexes may be integers (from 0 up to, but not including, the number
+   of packet headers), or indexes may also be packet header class names.
+   Exceptions are raised for invaliding indexing of either kind.
 
    >>> p = Packet()
    >>> p += Ethernet()
    >>> p[0]
    <switchyard.lib.packet.ethernet.Ethernet object at 0x10632bb08>
+   >>> p[Ethernet]
+   <switchyard.lib.packet.ethernet.Ethernet object at 0x10632bb08>
    >>> str(p)
    'Ethernet 00:00:00:00:00:00->00:00:00:00:00:00 IP'
    >>> str(p[0])
+   'Ethernet 00:00:00:00:00:00->00:00:00:00:00:00 IP'
+   >>> str(p[Ethernet])
    'Ethernet 00:00:00:00:00:00->00:00:00:00:00:00 IP'
    >>> 
 
@@ -44,6 +51,12 @@ To delete/remove a header, you can use the ``del`` operator as if the packet
 object is a Python list::
 
     >>> del p[0] # delete/remove first header in packet
+    >>>
+
+You can assign new header objects to a packet by integer index, but not
+by packet header class index::
+
+    >>> p[0] = Ethernet() # assign a new Ethernet header to index 0
     >>>
 
 Header classes

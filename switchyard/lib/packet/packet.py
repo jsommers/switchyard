@@ -179,8 +179,6 @@ class Packet(object):
         
     def __getitem__(self, index):
         if isinstance(index, int):
-            if index < 0:
-                index = len(self._headers) + index
             index = self._checkidx(index)
             return self._headers[index]
         elif issubclass(index, PacketHeaderBase):
@@ -190,8 +188,6 @@ class Packet(object):
             return self._headers[idx]
 
     def __setitem__(self, index, value):
-        if index < 0:
-            index = len(self._headers) + index
         index = self._checkidx(index)
         if not isinstance(value, (PacketHeaderBase, bytes)):
             raise TypeError("Can't assign a non-packet header in a packet")
@@ -204,8 +200,14 @@ class Packet(object):
         return False
 
     def __delitem__(self, index):
-        index = self._checkidx(index)
-        self._headers = self._headers[:index] + self._headers[(index+1):]
+        if isinstance(index, int):
+            index = self._checkidx(index)
+            del self._headers[index]
+        elif issubclass(index, PacketHeaderBase):
+            idx = self.get_header_index(index)
+            if idx == -1:
+                raise KeyError("No such header type exists.")
+            del self._headers[idx]
 
     def __eq__(self, other):
         if not isinstance(other, Packet):
