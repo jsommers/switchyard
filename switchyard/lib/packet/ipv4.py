@@ -354,7 +354,7 @@ class IPv4(PacketHeaderBase):
     _PACKFMT = '!BBHHHBBH4s4s'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         # fill in fields with (essentially) zero values
         self.tos = 0x00
         self._totallen = IPv4._MINLEN
@@ -364,9 +364,10 @@ class IPv4(PacketHeaderBase):
         self._fragoffset = 0
         self.protocol = IPProtocol.ICMP
         self._csum = 0x0000
-        self.srcip = SpecialIPv4Addr.IP_ANY.value
-        self.dstip = SpecialIPv4Addr.IP_ANY.value
+        self.src = SpecialIPv4Addr.IP_ANY.value
+        self.dst = SpecialIPv4Addr.IP_ANY.value
         self._options = IPOptionList()
+        super().__init__(**kwargs)
         
     def size(self):
         return struct.calcsize(IPv4._PACKFMT) + self._options.raw_length()
@@ -379,7 +380,7 @@ class IPv4(PacketHeaderBase):
             4 << 4 | self.hl, self.tos, self._totallen,
             self.ipid, self._flags.value << 13 | self.fragment_offset,
             self.ttl, self.protocol.value, self.checksum,
-            self.srcip.packed, self.dstip.packed)
+            self.src.packed, self.dst.packed)
         return iphdr + self._options.to_bytes()
 
     def from_bytes(self, raw):
@@ -401,8 +402,8 @@ class IPv4(PacketHeaderBase):
         self.ttl = headerfields[5]
         self.protocol = IPProtocol(headerfields[6])
         self._csum = headerfields[7]
-        self.srcip = headerfields[8]
-        self.dstip = headerfields[9]
+        self.src = headerfields[8]
+        self.dst = headerfields[9]
         self._options = IPOptionList.from_bytes(optionbytes)
         return raw[hl:]
 
@@ -413,8 +414,8 @@ class IPv4(PacketHeaderBase):
                 self.fragment_offset == other.fragment_offset and \
                 self.ttl == other.ttl and \
                 self.protocol == other.protocol and \
-                self.srcip == other.srcip and \
-                self.dstip == other.dstip
+                self.src == other.src and \
+                self.dst == other.dst
                 # self.checksum == other.checksum and \
 
     def next_header_class(self):
@@ -492,19 +493,39 @@ class IPv4(PacketHeaderBase):
         self._protocol = IPProtocol(value)
 
     @property
+    def src(self):
+        return self._srcip
+
+    @src.setter
+    def src(self, value):
+        self._srcip = IPAddr(value)
+
+    @property
     def srcip(self):
+        '''Deprecated property.  Use src instead.'''
         return self._srcip
 
     @srcip.setter
     def srcip(self, value):
+        '''Deprecated property.  Use src instead.'''
         self._srcip = IPAddr(value)
 
     @property
+    def dst(self):
+        return self._dstip
+
+    @dst.setter
+    def dst(self, value):
+        self._dstip = IPAddr(value)
+
+    @property
     def dstip(self):
+        '''Deprecated property.  Use dst instead.'''
         return self._dstip
 
     @dstip.setter
     def dstip(self, value):
+        '''Deprecated property.  Use dst instead.'''
         self._dstip = IPAddr(value)
 
     @property
@@ -536,11 +557,11 @@ class IPv4(PacketHeaderBase):
                     self._totallen, self.ipid,
                     (self.flags.value << 13) | self.fragment_offset, 
                     self.ttl,
-                    self.protocol.value, 0, self.srcip.packed, self.dstip.packed)
+                    self.protocol.value, 0, self.src.packed, self.dst.packed)
         data += self._options.to_bytes()
         self._csum = checksum(data, 0)
         return self._csum
 
     def __str__(self):
-        return '{} {}->{} {}'.format(self.__class__.__name__, self.srcip, self.dstip, self.protocol.name)
+        return '{} {}->{} {}'.format(self.__class__.__name__, self.src, self.dst, self.protocol.name)
 

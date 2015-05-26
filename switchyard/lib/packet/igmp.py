@@ -8,8 +8,8 @@ References:
 
 
 class IGMP(PacketHeaderBase):
-    def __init__(self):
-        pass
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def size(self):
         pass

@@ -1,4 +1,5 @@
 from switchyard.lib.packet.packet import PacketHeaderBase,Packet
+from switchyard.lib.packet.common import checksum
 import struct
 from enum import Enum
 from abc import ABCMeta, abstractmethod
@@ -25,9 +26,9 @@ class TCPOption(metaclass=ABCMeta):
 
 class TCPOptions(PacketHeaderBase):
     __slots__ = ['_optlist']
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
         self._optlist = []
+        super().__init__(**kwargs)
 
     def size(self):
         return len(self.to_bytes())
@@ -51,45 +52,63 @@ class TCPOptions(PacketHeaderBase):
         return 0
 
 class TCPFlags(Enum):
-    FIN = 1
-    SYN = 2
-    RST = 3
-    PSH = 4
-    ACK = 5
-    URG = 6
-    ECE = 7 # ECN-echo RFC 3168
-    CWR = 8 # Congestion-window reduced RFC 3168
-    NS =  9 # ECN-nonce concealment protection RFC 3540
+    FIN = 0
+    SYN = 1
+    RST = 2
+    PSH = 3
+    ACK = 4
+    URG = 5
+    ECE = 6 # ECN-echo RFC 3168
+    CWR = 7 # Congestion-window reduced RFC 3168
+    NS =  8 # ECN-nonce concealment protection RFC 3540
 
 class TCP(PacketHeaderBase):
     __slots__ = ['_srcport','_dstport','_seq','_ack',
-        '_flags','_window','_urg','_options']
+        '_flags','_window','_urg','_options','_len', '_checksum']
     _PACKFMT = '!HHIIHHHH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.srcport = self.dstport = 0
         self.seq = self.ack = 0
         self._flags = 0x000
         self.window = 0
         self.urgent_pointer = 0
         self._options = TCPOptions()
+        self._checksum = 0
+        self._len = 0
+        super().__init__(**kwargs)
 
     def size(self):
         return struct.calcsize(TCP._PACKFMT)
 
+    def _compute_checksum_ipv4(self, ip4, xdata):
+        if ip4 is None:
+            return 0
+        phdr = struct.pack('!IIxBH', int(ip4.srcip), int(ip4.dstip), 
+            ip4.protocol.value, self._len)
+        tcphdr = self._make_header(0)
+        return checksum(phdr + tcphdr + xdata)
+
     def pre_serialize(self, raw, pkt, i):
-        pass
+        self._len = self.size() + len(raw)
+        # checksum calc currently assumes we're only dealing with ipv4.
+        # will need to be modified for ipv6 support...
+        self._checksum = self._compute_checksum_ipv4(pkt.get_header_by_name('IPv4'), raw)
+
+    def _make_header(self, csum):
+        offset_flags = self.offset << 12 | self._flags
+        header = struct.pack(TCP._PACKFMT, self.srcport, self.dstport,
+            self.seq, self.ack, offset_flags, self.window,
+            csum, self.urgent_pointer)
+        return header
 
     def to_bytes(self):
         '''
         Return packed byte representation of the TCP header.
         '''
-        offset_flags = self.offset << 12 | self._flags
-        header = struct.pack(TCP._PACKFMT, self.srcport, self.dstport,
-            self.seq, self.ack, offset_flags, self.window,
-            self.checksum(), self.urgent_pointer)
-        return b''.join( (header, self._options.to_bytes()) )
+        header = self._make_header(self._checksum)
+        return header + self._options.to_bytes()
 
     def from_bytes(self, raw):
         '''Return an Ethernet object reconstructed from raw bytes, or an
@@ -172,9 +191,9 @@ class TCP(PacketHeaderBase):
     def window(self, value):
         self._window = value
 
+    @property 
     def checksum(self):
-        # FIXME 
-        return 0
+        return self._checksum
 
     @property
     def flags(self):

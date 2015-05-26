@@ -27,14 +27,14 @@ class Vlan(PacketHeaderBase):
     _PACKFMT = '!HH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, vlan=0, ethertype=EtherType.IPv4):
+    def __init__(self, **kwargs):
         '''
         VLAN constructor accepts an initial VLAN Id and the EtherType
         of the next header.
         '''
-        PacketHeaderBase.__init__(self)
-        self.vlan = vlan
-        self.ethertype = ethertype
+        self._vlanid = 0
+        self._ethertype = EtherType.IP
+        super().__init__(**kwargs)
 
     @property
     def vlan(self):
@@ -92,11 +92,10 @@ class Ethernet(PacketHeaderBase):
     _PACKFMT = '!6s6sH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, src=SpecialEthAddr.ETHER_ANY.value, dst=SpecialEthAddr.ETHER_ANY.value,ethertype=EtherType.IP):
-        PacketHeaderBase.__init__(self)
-        self._src = EthAddr(src)
-        self._dst = EthAddr(dst)
-        self._ethertype = EtherType(ethertype)
+    def __init__(self, **kwargs):
+        self._src = self._dst = EthAddr()
+        self._ethertype = EtherType.IP
+        super().__init__(**kwargs)
 
     def size(self):
         return struct.calcsize(Ethernet._PACKFMT)

@@ -50,7 +50,34 @@ class PacketTests(unittest.TestCase):
         PacketFormatter.full_display()
         self.assertEqual(PacketFormatter.format_pkt(fullpkt), str(fullpkt))
 
-
+    def testHeaderAccess(self):
+        eth = Ethernet()
+        ip = IPv4()
+        icmp = ICMP()
+        p = eth + ip + icmp
+        self.assertTrue(p.has_header(Ethernet))
+        self.assertTrue(p.has_header(IPv4))
+        self.assertTrue(p.has_header(ICMP))
+        self.assertIsInstance(p[0], Ethernet)
+        self.assertIsInstance(p[1], IPv4)
+        self.assertIsInstance(p[2], ICMP)
+        self.assertEqual(p.num_headers(), 3)
+        self.assertEqual(eth, p.get_header(Ethernet))
+        self.assertEqual(ip, p.get_header(IPv4))
+        self.assertEqual(icmp, p.get_header(ICMP))
+        self.assertEqual(p.get_header_index(Ethernet), 0)
+        self.assertEqual(p.get_header_index(IPv4), 1)
+        self.assertEqual(p.get_header_index(ICMP), 2)
+        self.assertEqual(p[Ethernet], eth)
+        self.assertEqual(p[IPv4], ip)
+        self.assertEqual(p[ICMP], icmp)
+        with self.assertRaises(KeyError):
+            p[IPv6]
+        del p[Ethernet]
+        self.assertFalse(p.has_header(Ethernet))
+        self.assertEqual(p.num_headers(), 2)
+        with self.assertRaises(KeyError):
+            del p[Ethernet]
 
 if __name__ == '__main__':
     unittest.main()

@@ -95,7 +95,7 @@ class Packet(object):
         Return the number of headers in the packet.
         '''
         return len(self._headers)
-        
+
     def prepend_header(self, ph):
         '''
         Insert a PacketHeader object at the beginning of this packet
@@ -113,7 +113,7 @@ class Packet(object):
         if isinstance(ph, bytes):
             ph = RawPacketContents(ph)
         if isinstance(ph, PacketHeaderBase):
-            self._headers.append(ph)            
+            self._headers.append(ph)
             return self
         raise Exception("Payload for a packet header must be an object that is a subclass of PacketHeaderBase, or a bytes object.")
 
@@ -178,14 +178,16 @@ class Packet(object):
         raise TypeError("Indexes must be integers (slices are not supported)")
         
     def __getitem__(self, index):
-        if index < 0:
-            index = len(self._headers) + index
-        index = self._checkidx(index)
-        return self._headers[index]
+        if isinstance(index, int):
+            index = self._checkidx(index)
+            return self._headers[index]
+        elif issubclass(index, PacketHeaderBase):
+            idx = self.get_header_index(index)
+            if idx == -1:
+                raise KeyError("No such header type exists.")
+            return self._headers[idx]
 
     def __setitem__(self, index, value):
-        if index < 0:
-            index = len(self._headers) + index
         index = self._checkidx(index)
         if not isinstance(value, (PacketHeaderBase, bytes)):
             raise TypeError("Can't assign a non-packet header in a packet")
@@ -198,8 +200,14 @@ class Packet(object):
         return False
 
     def __delitem__(self, index):
-        index = self._checkidx(index)
-        self._headers = self._headers[:index] + self._headers[(index+1):] 
+        if isinstance(index, int):
+            index = self._checkidx(index)
+            del self._headers[index]
+        elif issubclass(index, PacketHeaderBase):
+            idx = self.get_header_index(index)
+            if idx == -1:
+                raise KeyError("No such header type exists.")
+            del self._headers[idx]
 
     def __eq__(self, other):
         if not isinstance(other, Packet):
@@ -212,7 +220,7 @@ class Packet(object):
         return True
 
     def __str__(self):
-        return ' | '.join([str(ph) for ph in self._headers if isinstance(ph,PacketHeaderBase)])
+        return ' | '.join([str(ph) for ph in self._headers if isinstance(ph, PacketHeaderBase)])
 
 
 class PacketHeaderBase(metaclass=ABCMeta):
@@ -221,8 +229,9 @@ class PacketHeaderBase(metaclass=ABCMeta):
     '''
     __slots__ = []
 
-    def __init__(self):
-        pass
+    def __init__(self, **kwargs):
+        for attrname, value in kwargs.items():
+            setattr(self, attrname, value)
 
     def __len__(self):
         '''Return the packed length of this packet; calls
@@ -246,13 +255,13 @@ class PacketHeaderBase(metaclass=ABCMeta):
         This method is called by the Switchyard framework just before any
         subsequent packet headers (i.e., headers that come *after* this one)
         are serialized into a byte sequence.  The main purpose for this callback
-        is to allow the header to compute its checksum, especially if it needs 
-        access to header fields that are outside its scope (e.g., in IPv6, 
+        is to allow the header to compute its checksum, especially if it needs
+        access to header fields that are outside its scope (e.g., in IPv6,
         the checksum includes the IPv6 source/dst addresses).
 
         The three parameters to this method are the raw (bytes) representation
         of the "tail" of the packet (i.e., headers that come after this one),
-        a reference to the full packet object, and the index of the current header.  
+        a reference to the full packet object, and the index of the current header.
         This method should not return anything.
         '''
         pass
@@ -265,11 +274,11 @@ class PacketHeaderBase(metaclass=ABCMeta):
 
     @abstractmethod
     def from_bytes(self, raw):
-        pass        
+        pass
 
     def __add__(self, ph):
         '''Add two packet headers together to get a new packet object.'''
-        if not isinstance(ph, (bytes,PacketHeaderBase)):
+        if not isinstance(ph, (bytes, PacketHeaderBase)):
             raise Exception("Only objects derived from PacketHeaderBase and bytes objects can be added to create a new packet.")
         p = Packet()
         p.add_header(self)

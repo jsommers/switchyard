@@ -29,16 +29,35 @@ Packet parsing and construction
    + and += operators are defined for use with the Packet class
    to add on headers (to the end of the packet).  Indexing can also
    be done with Packet objects to access individual header objects.
+   Indexes may be integers (from 0 up to, but not including, the number
+   of packet headers), or indexes may also be packet header class names.
+   Exceptions are raised for invaliding indexing of either kind.
 
    >>> p = Packet()
    >>> p += Ethernet()
    >>> p[0]
    <switchyard.lib.packet.ethernet.Ethernet object at 0x10632bb08>
+   >>> p[Ethernet]
+   <switchyard.lib.packet.ethernet.Ethernet object at 0x10632bb08>
    >>> str(p)
    'Ethernet 00:00:00:00:00:00->00:00:00:00:00:00 IP'
    >>> str(p[0])
    'Ethernet 00:00:00:00:00:00->00:00:00:00:00:00 IP'
+   >>> str(p[Ethernet])
+   'Ethernet 00:00:00:00:00:00->00:00:00:00:00:00 IP'
    >>> 
+
+To delete/remove a header, you can use the ``del`` operator as if the packet
+object is a Python list::
+
+    >>> del p[0] # delete/remove first header in packet
+    >>>
+
+You can assign new header objects to a packet by integer index, but not
+by packet header class index::
+
+    >>> p[0] = Ethernet() # assign a new Ethernet header to index 0
+    >>>
 
 Header classes
 --------------
@@ -278,15 +297,17 @@ ICMP TimeExceeded:TTLExpired 0 bytes of raw payload (b'') OrigDgramLen: 0
 Notice above that when the icmptype changes, other contents in the ICMP
 header object change appropriately. 
 
-To access and/or modify the *payload* (i.e., data) that comes after the ICMP header, use ``icmpdata.data``.  This object is a raw bytes object and can be accessed and or set.  For example, with many ICMP error messages, up to the first 28 bytes of the "dead" IPv4 packet should be included.  To do that, you must set the ``icmpdata.data`` attribute with the byte-level representation of the IP header data you want to include, as follows:
+To access and/or modify the *payload* (i.e., data) that comes after the ICMP header, use ``icmpdata.data``.  This object is a raw bytes object and can be accessed and or set.  For example, with many ICMP error messages, up to the first 28 bytes of the "dead" packet should be included, starting with the IPv4 header.  To do that, you must set the ``icmpdata.data`` attribute with the byte-level representation of the IP header data you want to include, as follows:
 
 >>> i.icmpdata.data
 b''
->>> dead_ip = IPv4()
->>> i.icmpdata.data = dead_ip.to_bytes()[:28]
+>>> i.icmpdata.data = pkt.to_bytes()[:28]
+>>> i.icmpdata.origdgramlen = len(pkt)
 >>> print (i)
-ICMP TimeExceeded:TTLExpired 20 bytes of raw payload (b'E\x00\x00\x14\x00\x00\x00\x00\x00\x01') OrigDgramLen: 0
+ICMP TimeExceeded:TTLExpired 28 bytes of raw payload (b'E\x00\x00\x14\x00\x00\x00\x00\x00\x01') OrigDgramLen: 42
 >>> 
+
+In the above code segment, ``pkt`` should be a Packet object that just contains the IPv4 header and any subsequent headers and data.  It must *not* include an Ethernet header.  If you need to strip an Ethernet header, you can get its index (``pkt.get_header_index(Ethernet)``), then remove the header by index (``del pkt[index]``).
 
 Notice that above, the ``to_bytes`` method returns the byte-level representation of the IP header we're including as the payload.  The ``to_bytes`` method can be called on any packet header, or on an packet object (in which case *all* packet headers will be byte-serialized).
 

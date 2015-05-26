@@ -26,7 +26,7 @@ class ICMP(PacketHeaderBase):
     _PACKFMT = '!BBH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self._valid_types = ICMPType
         self._valid_codes_map = ICMPTypeCodeMap
         self._classtype_from_icmptype = ICMPClassFromType
@@ -35,6 +35,7 @@ class ICMP(PacketHeaderBase):
         self._code = self._valid_codes_map[self._type].EchoRequest
         self._icmpdata = ICMPEchoRequest()
         self._checksum = 0
+        super().__init__(**kwargs)
 
     def size(self):
         return struct.calcsize(ICMP._PACKFMT) + len(self._icmpdata.to_bytes())
@@ -127,9 +128,9 @@ class ICMP(PacketHeaderBase):
 class ICMPData(PacketHeaderBase):
     __slots__ = ('_rawpayload',)
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
         self._rawpayload = b''
+        super().__init__(**kwargs)
 
     def next_header_class(self):
         return None
@@ -225,6 +226,22 @@ class ICMPDestinationUnreachable(ICMPData):
         self._origdgramlen = fields[0]
         self._nexthopmtu = fields[1]
         super().from_bytes(raw[4:])
+
+    @property 
+    def origdgramlen(self):
+        return self._origdgramlen
+
+    @origdgramlen.setter
+    def origdgramlen(self, value):
+        self._origdgramlen = int(value)
+
+    @property
+    def nexthopmtu(self):
+        return self._nexthopmtu
+
+    @nexthopmtu.setter
+    def nexthopmtu(self, value):
+        self.nexthopmtu = int(value)
 
     def __str__(self):
         return '{} NextHopMTU: {}'.format(super().__str__(), self._nexthopmtu)

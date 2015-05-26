@@ -13,8 +13,8 @@ class Null(PacketHeaderBase):
     __slots__ = ['_af']
 
     def __init__(self, af=socket.AF_INET):
-        PacketHeaderBase.__init__(self)
         self._af = int(af)
+        super().__init__()
 
     def size(self):
         return 4
