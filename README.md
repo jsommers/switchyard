@@ -45,3 +45,10 @@ routers").
 Any opinions, findings, and conclusions or recommendations expressed
 in this material are those of the author and do not necessarily
 reflect the views of the National Science Foundation.
+
+License
+-------
+
+This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License. 
+https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png
+http://creativecommons.org/licenses/by-nc-sa/4.0/
