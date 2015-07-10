@@ -2,9 +2,7 @@ Sample Exercises
 ****************
 
 This folder contains sources for sample exercises.  Each subfolder includes 
-a project description and various support files. 
-
-Instructors: if you'd like the source for the tests, please email me.
+a project description and various support files.  *Instructors*: if you'd like the source for the tests, please email me.  An overview of existing and in-the-works exercises is as follows:
 
 Learning switch
 	Build a simple Ethernet learning switch.  This is a nice starter
@@ -35,3 +33,9 @@ TCP network stack (TBD)
 	layers to support a TCP-based socket application.  The TCP
 	implementation is simplified from a "real" TCP, but can still be
 	used to communicate with a "real" TCP remote endpoint.
+
+License
+-------
+
+This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+http://creativecommons.org/licenses/by-nc-sa/4.0/
