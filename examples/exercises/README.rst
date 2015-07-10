@@ -1,0 +1,37 @@
+Sample Exercises
+****************
+
+This folder contains sources for sample exercises.  Each subfolder includes 
+a project description and various support files. 
+
+Instructors: if you'd like the source for the tests, please email me.
+
+Learning switch
+	Build a simple Ethernet learning switch.  This is a nice starter
+	exercise for getting accustomed to the APIs and workflow in Switchyard.
+
+IP router
+	This is really a set of 3 projects designed to gradually built up
+	capabilities to implement an IPv4 router that uses a static forwarding
+	table (i.e., it has no dynamic routing capabilities).  
+
+Firewall
+	In this exercise, build a stand-alone firewall device with token bucket
+	rate-limiting capability.
+
+Distance-vector dynamic routing (TBD)
+	Building on the IPv4 router, add a RIPv2-like dynamic routing capability.
+
+Link-state dynamic routing (TBD)
+	Building on the IPv4 router, add an OSPF-like dynamic routing capability.
+
+UDP network stack (TBD)
+	This exercise is an introduction to using Switchyard's socket 
+	API emulation capabilities.  The goal is to build the Ethernet/IP/UDP
+	layers to support a UDP-based application.
+
+TCP network stack (TBD)
+	The goal of this exercise is to build the Ethernet/IP/TCP 
+	layers to support a TCP-based socket application.  The TCP
+	implementation is simplified from a "real" TCP, but can still be
+	used to communicate with a "real" TCP remote endpoint.

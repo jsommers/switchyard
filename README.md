@@ -25,6 +25,15 @@ On Ubuntu and Fedora systems, you'll also likely need to install additional pack
 
 If pip3 is not installed, you'll also need to install that (on Ubuntu: `sudo apt-get install python3-pip`.)
 
+Documentation and Exercises
+---------------------------
+ 
+ * Documentation sources can be found in the documentation directory.  See
+   http://cs.colgate.edu/~jsommers/switchyard for compiled/built docs.
+
+ * Sample exercises (in ReStructuredText format) can be found in the
+   examples/exercises directory.  
+
 Credits
 -------
 
