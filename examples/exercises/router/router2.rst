@@ -37,8 +37,8 @@ Note that for each interface object in the list obtained from ``net.interfaces()
 
 The file ``forwarding_table.txt`` can be assumed to exist in the same directory where your router is starting up (again, this file is produced by the Switchyard test scenario or by the Mininet startup script), and is structured such that each line contains 4 space-separated items: the network address, the subnet mask, the next hop address, and the interface through which packets should be forwarded.  Here are three example lines::
 
-	172.16.0.0 255.255.255.0 192.168.1.2 router-eth0
-	192.168.200.0 255.255.255.0 192.168.200.1 router-eth1
+    172.16.0.0 255.255.255.0 192.168.1.2 router-eth0
+    192.168.200.0 255.255.255.0 192.168.200.1 router-eth1
 
 In the first line, the network address is 172.16.0.0 and the subnet mask is 255.255.0.0 (16 1's followed by 16 0's).  The next hop IP address is 192.168.1.2, and the interface through which to forward packets is named ``router-eth0``.
 
@@ -54,26 +54,26 @@ There are a couple functions and methods in the Python 3's ``ipaddress`` library
 
 1. To find out the length of a subnet prefix, you can use the following code pattern::
 
-	from switchyard.lib.address import *
-	netaddr = IPv4Network('172.16.0.0/255.255.255.0')
-	netaddr.prefixlen # -> 24
+    from switchyard.lib.address import *
+    netaddr = IPv4Network('172.16.0.0/255.255.255.0')
+    netaddr.prefixlen # -> 24
 
 Note in the code above that you simply need to concatenate an IP address with '/' and the netmask when constructing a ``IPv4Network`` object.  The resulting object can tell you the length of the prefix in bits, which will be quite helpful.
 
 
 1. The ``IPv4Address`` class can be converted to an integer using the standard ``int()`` type conversion function.  This function will return the 32-bit unsigned integer representation of an IP address.  Remember that you can use bit-wise operations on Python integers (``&`` is bitwise AND, ``|`` is bitwise OR, ``~`` is bitwise NOT, ``^`` is bitwise XOR).  For example, if we wanted to check whether a given address matches a prefix, we might do something like this::
 
-	prefix = IPv4Address('172.16.0.0') 
-	destaddr = IPv4Address('172.16.23.55')
-	matches = (int(prefix) & int(destaddr)) == int(prefix)
-	# matches -> True
+    prefix = IPv4Address('172.16.0.0') 
+    destaddr = IPv4Address('172.16.23.55')
+    matches = (int(prefix) & int(destaddr)) == int(prefix)
+    # matches -> True
 
 You can also use capabilities in the IPv4Network class to do the same thing::
 
-	prefixnet = IPv4Network('172.16.0.0/16') 
-	# same as IPv4Network('172.16.0.0/255.255.0.0')
-	matches = destaddr in prefixnet
-	# matches -> True
+    prefixnet = IPv4Network('172.16.0.0/16') 
+    # same as IPv4Network('172.16.0.0/255.255.0.0')
+    matches = destaddr in prefixnet
+    # matches -> True
 
 Task 2: Forwarding the Packet and ARP
 -------------------------------------
@@ -100,7 +100,7 @@ In either case, you will need to send an ARP query in order to obtain the Ethern
 
 You will need to carefully structure your code to be able to receive and process incoming packets while you are waiting for replies to ARP requests.  A suggested method is to create a queue that contains information about IP packets awaiting ARP resolution.  Each time through the main while loop in your code, you can process the items in the queue to see whether an ARP request retransmission needs to be sent.  If you receive an ARP reply packet, you could remove an item from the queue, update the ARP table, construct the Ethernet header, and send the packet.  You might create a separate class to represent packets in the queue waiting for ARP responses, with the class containing variables to hold the most recent time an ARP request was sent, and the number of retries, among other things.
 
-  Note: you *can* create a separate Python thread to handle ARP requests.  Switchyard is thread-safe and this is an acceptable pattern.  You may find it easier, however, to simply handle everything in the main thread of the router.
+  Note: you *can* create a separate Python thread to handle ARP requests.  Switchyard is thread-safe and this is an acceptable pattern.  You may find it easier, however, to simply handle everything in the main thread of the router.  
 
 For keeping track of how long it has been since an ARP request has been sent, you can use the built-in ``time`` module.  It has a ``time`` function that returns the current time in seconds (as a floating point value) (e.g., ``time.time()`` # -> current time in seconds as a float).  
 
@@ -111,7 +111,7 @@ Switchyard testing
 
 To test your router, you can use the same formula you've used in the past::
 
-	$ ./switchyard/srpy.py -t -s routertests2.srpy myrouter.py
+    $ ./switchyard/srpy.py -t -s routertests2.srpy myrouter.py
 
 If you need to step through code to see what's going on, you can add calls to ``debugger()`` at any point in your code.  When execution reaches that line, you'll get a Python debugger (pdb) command line at which you can inspect variables, call methods, etc., in order to understand what's happening.  This kind of debugging will, in general, be much more effective than "printf" debugging.  This project includes quite a bit of complexity, so inspecting variables and stepping through your program in the debugger can be extremely helpful!
 
@@ -126,11 +126,11 @@ Once the Switchyard tests pass, you can test your router in Mininet.  There is a
 
 To test your router in Mininet, open up a terminal on the virtual machine, and cd (if necessary) to the folder where your project files are located (or transfer them into the virtual machine).   Then type::
 
-	$ sudo python start_mininet.py
+    $ sudo python start_mininet.py
 
 Once Mininet starts up, you should open an xterm on the router node (``xterm router``), and type::
 
-	router# ./switchyard/srpy.py myrouter.py
+    router# ./switchyard/srpy.py myrouter.py
 
 to start the router.
 
@@ -139,8 +139,7 @@ Note: when you run your router in Mininet, you'll almost certainly receive packe
 
 At this point, you should be able to open another xterm on any one of the other nodes and send a ping (ICMP echo request) to any of the IP addresses configured on any node in the network.  For example, if you open an xterm on client, you should be able to send a ping to 192.168.200.1 (on server2) and 192.168.100.1 (on server1).   You should also be able to send a ping to any address in the subnets 192.168.100.0/24 and 192.168.200.0/24 from the client node, and the router should successfully forward them to either server1 or server2.  (But note that you will only get ping responses from 192.168.100.1 and 192.168.200.1 --- pings to any other IP address will not get a response.)  To test whether the router is correctly forwarding the packets, you can run wireshark on any of the nodes in the network.  Below is an example of starting wireshark on the router using interface router-eth0, then running ping on the client to send 2 ICMP echo requests to 192.168.100.1::
 
-
-	router# wireshark -i router-eth0
+    router# wireshark -i router-eth0
     # then on client
     client# ping -c2 192.168.100.1
 

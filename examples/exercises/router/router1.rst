@@ -18,7 +18,7 @@ In the source directory for this exercise, there is a Python file to use as a st
 
 If you do not already have a suitable Switchyard development environment set up, you'll need to run the set up script::
 
-	$ ./setup.sh
+    $ ./setup.sh
 
 The main task for this project is to modify the Router class to do the following:
 
@@ -28,9 +28,9 @@ The main task for this project is to modify the Router class to do the following
 
    * Note that the packet header class for ARP is named ``Arp``, so to obtain the ARP header from an incoming packet (if it exists) you can do something like::
 
-		arp = packet.get_header(Arp)
+        arp = packet.get_header(Arp)
 
-	 See the Arp packet header reference in the documentation for more.
+   See the Arp packet header reference in the documentation for more.
 
    * For each ARP request, you should determine whether the targetprotoaddr field (IP address destination) in the ARP header is an IP address assigned to one of the interfaces on your router.  
 
@@ -59,7 +59,7 @@ Switchyard testing
 
 For initial testing and debugging of your code, you can run the Switchyard test scenario (routertests1.srpy).  Run it like this::
 
-	$ ./switchyard/srpy.py -t -s routertests1.srpy myrouter.py 
+    $ ./switchyard/srpy.py -t -s routertests1.srpy myrouter.py 
 
 Read each individual test case output carefully (yes, it can be a lot to read!) since each test case has an explanation for what your code should be doing.  
 
@@ -72,35 +72,35 @@ Once the Switchyard tests pass, you can test your router in Mininet.  There is a
 
 (Note that the above topology may not be the same as the one implied by the Switchyard tests.)
 
-
 To test your router in Mininet, you do the following:
 
 1. Open up a terminal on the virtual machine, and cd (if necessary) to the folder where your project files are located (or transfer them into the virtual machine).  Then type the following to get Mininet started::
-	$ sudo python start_mininet.py
+
+    $ sudo python start_mininet.py
 
 2. Open up an xterm on the client node::
 
-	mininet> xterm client
+    mininet> xterm client
 
 3. Start up wireshark on the client.  From the xterm running on the client, type::
 
-	client# wireshark -k&
+    client# wireshark -k&
 
    (Note: you'll get some warnings from Wireshark about running as root, which you can safely ignore.)
 
 4. Open an xterm on the router node::
 
-	mininet> xterm router
+    mininet> xterm router
 
 5. Start your router::
 
-	router# ./switchyard/srpy.py myrouter1.py
+    router# ./switchyard/srpy.py myrouter1.py
 
 6. Now, in the xterm running on the client, try to send an ICMP echo request to the IP address at the "other end" of the link between the client and the router.
 
 ::
 
-	client# ping -c3 10.1.1.2
+    client# ping -c3 10.1.1.2
 
 
 The router should initially receive an ARP request for its own IP address (which your router will need to correctly respond to!), then it should receive an ICMP echo request.  Since your router isn't yet programmed to respond to ping requests, nothing else should happen (i.e., you'll get ping requests, but they won't be responded to).
