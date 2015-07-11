@@ -2,7 +2,9 @@ Sample Exercises
 ****************
 
 This folder contains sources for sample exercises.  Each subfolder includes 
-a project description and various support files.  *Instructors*: if you'd like the source for the tests, please email me.  Note: if you're viewing this source through Github, it will render individual ``.rst`` files if you click on them.  If you don't like ReStructuredText, use pandoc to convert to a format you like better.
+a project description and various support files.  Note: if you're viewing this source through Github, it will render individual ``.rst`` files if you click on them.  If you don't like ReStructuredText, use pandoc to convert to a format you like better.
+
+**Instructors**: if you'd like the Switchyard test files (and test source code), please email me.  Any tests referred to in the project/exercise descriptions are intentionally excluded from this repo (except for the firewall, currently).
 
 An overview of existing and in-the-works exercises is as follows:
 
