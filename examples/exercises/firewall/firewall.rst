@@ -79,13 +79,13 @@ Rules that permit traffic may specify that the traffic flow should be impaired i
 
 You can choose exactly how flows should be impaired.  Here are some fun options:
 
- * Randomly drop some fraction of the packets belonging to the flow.
+* Randomly drop some fraction of the packets belonging to the flow.
 
- * Rewrite/overwrite the TCP advertised window to make it smaller.
+* Rewrite/overwrite the TCP advertised window to make it smaller.
 
- * Rewrite/overwrite the application payload contents of packets.
+* Rewrite/overwrite the application payload contents of packets.
 
- * Randomly inject TCP RST packets to reset (and take down) traffic flows.
+* Randomly inject TCP RST packets to reset (and take down) traffic flows.
 
 Lastly, note that a given permit rule may specify a rate limit, that impairment should be applied, or that the traffic should simply be permitted.  A rule may not specify both a rate limit and impairment.
 
@@ -104,7 +104,7 @@ Note that items in square braces indicate items to be made concrete in a specifi
 
 which would allow any IP packets (any protocol) with source address 10.0.0.1 and any destination address.  
 
-Note that the srcnet or dstnet values may either be an exact IP address, or an IP prefix indicating a subnet of addresses.  Also, portno should be specified as a single integer between 0 and 65535.  "any", somewhat obviously, should match anything.  
+Note that the ``srcnet`` or ``dstnet`` values may either be an exact IP address, or an IP prefix indicating a subnet of addresses.  Also, ``portno`` should be specified as a single integer between 0 and 65535.  ``any``, somewhat obviously, should match anything.  
 
 Here is another example::
 
