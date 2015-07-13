@@ -269,17 +269,17 @@ class PyLLNet(LLNetBase):
             log_debug("Sending packet on device {}: {}".format(dev, str(packet)))
             pdev.send_packet(rawpkt)
 
-def main_real(usercode, dryrun, netobj, nopdb, verbose):
+def main_real(usercode, netobj, options):
     '''
     Entrypoint function for non-test ("real") mode.  At this point
     we assume that we are running as root and have pcap module.
-
-    (str, bool, str, list(str), list(str)) -> None
     '''
     usercode_entry_point = import_or_die(usercode, ('main','srpy_main','switchy_main'))
-    if dryrun:
+    if options.dryrun:
         log_info("Imported your code successfully.  Exiting dry run.")
+        netobj.shutdown()
         return
+
     try:
         usercode_entry_point(netobj)
     except Exception as e:
@@ -296,7 +296,10 @@ Here (repeating what's above) is the failure that occurred:
             traceback.print_exc(1)
             print('*'*60)
 
-        if not nopdb:
+        if options.nohandle:
+            raise 
+            
+        if not options.nopdb:
             print('''
 I'm throwing you into the Python debugger (pdb) at the point of failure.
 If you don't want pdb, use the --nopdb flag to avoid this fate.

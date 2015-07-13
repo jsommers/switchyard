@@ -94,12 +94,12 @@ class FakePyLLNet(LLNetBase):
             pass
         self.timestamp += 1.0
 
-def run_tests(scenario_names, usercode_entry_point, no_pdb, verbose):
+def run_tests(scenario_names, usercode_entry_point, options):
     '''
     Given a list of scenario names, set up fake network object with the
     scenario objects, and invoke the user module.
 
-    (list(str), function, bool, bool) -> None
+    (list(str), function, options/args) -> None
     '''
     for sname in scenario_names:
         sobj = get_test_scenario_from_file(sname)
@@ -154,11 +154,14 @@ Here (repeating what's above) is the failure that occurred:
 {}
 '''.format('*'*60, message, '*'*60, failurecontext), file=sys.stderr)
 
-            if not verbose:
+            if not options.verbose:
                 message = "You can rerun with the -v flag to include full dumps of packets that may have caused errors. (By default, only relevant packet context may be shown, not the full contents.)"
                 print (textwrap.fill(message, 70))
 
-            if no_pdb:
+            if options.nohandle:
+                raise Exception(exc).with_traceback(tb)
+
+            if options.nopdb:
                 print (textwrap.fill("You asked not to be put into the Python debugger.  You got it.",70))
             else:
                 print ('''
@@ -202,24 +205,21 @@ If you don't want pdb, use the --nopdb flag to avoid this fate.
                 print ('{}'.format(message), file=sys.stderr)
 
 
-def main_test(compile, scenarios, usercode, dryrun, no_pdb, verbose):
+def main_test(usercode, scenarios, options):
     '''
-        Entrypoint function for either compiling or running test scenarios.
-
-    (bool, list(str), str, bool, bool, bool) -> None
+    Entrypoint function for either compiling or running test scenarios.
     '''
     if not scenarios or not len(scenarios):
         log_failure("In test mode, but no scenarios specified.")
         return
 
-    if compile:
+    if options.compile:
         for scenario in scenarios:
             log_info("Compiling scenario {}".format(scenario))
             compile_scenario(scenario)
     else:
         usercode_entry_point = import_or_die(usercode, ('main','srpy_main','switchy_main'))
-        if dryrun:
+        if options.dryrun:
             log_info("Imported your code successfully.  Exiting dry run.")
             return
-        run_tests(scenarios, usercode_entry_point, no_pdb, verbose)
-
+        run_tests(scenarios, usercode_entry_point, options)
