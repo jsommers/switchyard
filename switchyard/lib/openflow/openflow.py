@@ -1106,7 +1106,7 @@ def receive_openflow_message(sock):
     ofheader = OpenflowHeader()
     data = sock.recv(ofheader.size())
     ofheader.from_bytes(data)
-    log_debug("Attempting to receive Openflow message (header: {}) ({} bytes)".format(ofheader, len(ofheader.length)))
+    log_debug("Attempting to receive Openflow message (header: {}) ({} bytes)".format(ofheader, ofheader.length))
 
     remain = ofheader.length - ofheader.size()
     while remain > 0:
