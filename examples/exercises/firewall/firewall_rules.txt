@@ -1,0 +1,47 @@
+
+# drop everything from an internal subnet which shouldn't be allowed
+# to communicate with rest of internet
+# rule 1
+deny ip src 192.168.42.0/24 dst any 
+# rule 2
+deny ip src any dst 192.168.42.0/24 
+
+# allow traffic to/from an internal web server that should
+# be accessible to external hosts
+# rule 3
+permit tcp src 192.168.13.13 srcport 80 dst any dstport any
+# rule 4
+permit tcp src any srcport any dst 192.168.13.13 dstport 80
+
+# allow DNS (udp port 53) traffic in/out of network
+# rule 5
+permit udp src 192.168.0.0/16 srcport any dst any dstport 53 
+# rule 6
+permit udp src any srcport 53 dst 192.168.0.0/16 dstport any 
+
+# allow internal hosts access to web (tcp ports 80 and 443)
+# rate limit http traffic to 100 kB/s (12500 bytes/sec), but
+# don't rate limit any encrypted HTTP traffic.
+# rule 7
+permit tcp src 192.168.0.0/16 srcport any dst any dstport 80 ratelimit 12500
+# rule 8
+permit tcp src any srcport 80 dst 192.168.0.0/16 dstport any ratelimit 12500
+# rule 9
+permit tcp src 192.168.0.0/16 srcport any dst any dstport 443
+# rule 10
+permit tcp src any srcport 443 dst 192.168.0.0/16 dstport any
+
+# permit, but impair certain traffic flows
+# rule 11
+permit tcp src 192.168.0.0/24 srcport any dst any dstport 8000 impair
+# rule 12
+permit tcp src any srcport 8000 dst 192.168.0.0/24 dstport any impair
+
+# permit, but rate limit icmp to 150 bytes/sec.
+# NB: this includes *both* directions!
+# rule 13
+permit icmp src any dst any ratelimit 150
+
+# block everything else
+# rule 14
+deny ip src any dst any 
