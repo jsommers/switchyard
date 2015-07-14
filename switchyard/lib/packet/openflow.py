@@ -1,5 +1,6 @@
 from switchyard.lib.packet import PacketHeaderBase, Packet, IPProtocol, EtherType
 from switchyard.lib.address import EthAddr, IPv4Address
+from switchyard.lib.common import log_debug
 from enum import Enum, IntEnum
 import struct
 
@@ -589,12 +590,17 @@ class OpenflowFlowMod(_OpenflowStruct):
         self._actions = []
 
     def to_bytes(self):
-        pass
-        #return self._match.to_bytes() + 
-        #       struct.pack(OpenflowFlowMod._PACKFMT, )
+        return self._match.to_bytes() + \
+               struct.pack(OpenflowFlowMod._PACKFMT, self._cookie, self._command.value,
+               	self._idle_timeout, self._hard_timeout, self._priority, self._buffer_id,
+               	self._out_port, self._flags) + \
+               b''.join(a.to_bytes() for a in self._actions)
 
     def from_bytes(self, raw):
         pass
+
+    def size(self):
+    	return len(self.to_bytes())
         
 
 class OpenflowSwitchFeaturesReply(_OpenflowStruct):
@@ -1093,12 +1099,15 @@ class OpenflowHeader(PacketHeaderBase):
             self.xid, self.length)
 
 def send_openflow_message(sock, pkt):
+    log_debug("Sending Openflow message {} ({} bytes)".format(pkt, len(pkt)))
     sock.sendall(pkt.to_bytes())
 
 def receive_openflow_message(sock):
     ofheader = OpenflowHeader()
     data = sock.recv(ofheader.size())
     ofheader.from_bytes(data)
+    log_debug("Attempting to receive Openflow message (header: {}) ({} bytes)".format(ofheader, len(ofheader.length)))
+
     remain = ofheader.length - ofheader.size()
     while remain > 0:
         more = sock.recv(remain)

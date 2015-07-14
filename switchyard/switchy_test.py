@@ -104,6 +104,7 @@ def run_tests(scenario_names, usercode_entry_point, no_pdb, verbose):
     for sname in scenario_names:
         sobj = get_test_scenario_from_file(sname)
         sobj.write_files()
+        sobj.do_setup()
         net = FakePyLLNet(sobj)
 
         log_info("Starting test scenario {}".format(sname))
@@ -128,6 +129,8 @@ def run_tests(scenario_names, usercode_entry_point, no_pdb, verbose):
             if sobj.get_failed_test():
                 message = '''Your code didn't crash, but a test failed.'''
 
+        sobj.do_teardown()
+        
         # there may be a pending SIGALRM for ensuring test completion;
         # turn it off.
         signal.signal(signal.SIGALRM, signal.SIG_IGN)

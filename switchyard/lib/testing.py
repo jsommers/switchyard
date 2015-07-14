@@ -512,6 +512,8 @@ class Scenario(object):
         self.next_timestamp = 0.0
         self.timeoutval = 10
         self.support_files = {}
+        self._setup = None
+        self._teardown = None
 
     @property  
     def name(self):
@@ -524,6 +526,30 @@ class Scenario(object):
         for fname, text in self.support_files.items():
             with open(fname, 'w') as outfile:
                 outfile.write(text)
+
+    @property 
+    def setup(self):
+        return self._setup 
+
+    @setup.setter
+    def setup(self, value):
+        self._setup = value
+
+    def do_setup(self):
+        if self._setup:
+            self._setup()
+
+    @property
+    def teardown(self):
+        return self._teardown
+
+    @teardown.setter
+    def teardown(self, value):
+        self._teardown = value
+
+    def do_teardown(self):
+        if self._teardown:
+            self._teardown()
 
     def add_interface(self, interface_name, macaddr, ipaddr=None, netmask=None):
         '''
@@ -684,6 +710,8 @@ class Scenario(object):
         odict['events'] = odict['pending_events'] + odict['completed_events']
         del odict['pending_events']
         del odict['completed_events']
+        del odict['_setup']
+        del odict['_teardown']
         # del odict['next_timestamp']
         return odict
 
@@ -693,6 +721,8 @@ class Scenario(object):
         # xdict['next_timestamp'] = 0.0
         xdict['timer'] = None
         xdict['completed_events'] = []
+        xdict['_setup'] = None
+        xdict['_teardown'] = None
         self.__dict__.update(xdict)
 
     def __eq__(self, other):
