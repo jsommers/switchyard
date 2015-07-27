@@ -16,6 +16,9 @@ from switchyard.lib.address import *
 
 from contextlib import ContextDecorator
 
+class Opt(object):
+    pass
+
 class redirectio(ContextDecorator):
     def __init__(self):
         self.iobuf = StringIO()
@@ -181,6 +184,22 @@ def main(obj):
         sys.path.append(os.getcwd())
         sys.path.append(os.path.join(os.getcwd(),'tests'))
         sys.path.append(os.path.join(os.getcwd(),'..'))
+
+        self.opt_compile = Opt()
+        self.opt_compile.verbose = False
+        self.opt_compile.testmode = True
+        self.opt_compile.compile = True
+        self.opt_compile.debug = False
+        self.opt_compile.dryrun = False
+        self.opt_compile.nohandle = False
+        self.opt_compile.nopdb = True
+
+        self.opt_nocompile = copy.copy(self.opt_compile)
+        self.opt_nocompile.compile = False
+
+        self.opt_dryrun = copy.copy(self.opt_compile)
+        self.opt_dryrun.compile = False
+        self.opt_dryrun.dryrun = True
     
     def tearDown(self):
         self.removeFile('stest')
@@ -216,27 +235,27 @@ def main(obj):
 
     def testDryRun(self):
         with self.assertLogs(level='INFO') as cm:
-            main_test(False, ['stest'], 'ucode1.py', True, True, False)
+            main_test('ucode1.py', ['stest'], self.opt_dryrun)
         self.assertIn('Imported your code successfully', cm.output[0])
         with self.assertLogs(level='INFO') as cm:
-            main_test(False, ['stest'], 'ucode1', True, True, False)
+            main_test('ucode1', ['stest'], self.opt_dryrun)
         self.assertIn('Imported your code successfully', cm.output[0])
 
     def testNoScenario(self):
         with self.assertLogs(level='ERROR') as cm:
-            main_test(False, [], 'ucode1', True, True, False)
+            main_test('ucode1', [], self.opt_compile)
         self.assertIn('no scenarios', cm.output[0])
 
     def testCompileOutput(self):
         with self.assertLogs(level='INFO') as cm:
-            main_test(True, ['stest'], 'ucode1', True, True, False)
+            main_test('ucode1', ['stest'], self.opt_compile)
         self.assertIn('Compiling', cm.output[0])
         self.assertIsNotNone(os.stat('stest.srpy'))
 
     def testEmptyUserProgram(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test(False, ['stest'], 'ucode1', False, True, False)
+                main_test('ucode1', ['stest'], self.opt_nocompile)
         self.assertIn('0 passed, 1 failed, 3 pending', xio.contents)
         self.assertNotIn('All tests passed', xio.contents)
 
@@ -249,7 +268,7 @@ def main(obj):
     def testOneRecvCall(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test(False, ['stest'], 'ucode2', False, True, False)
+                main_test('ucode2', ['stest'], self.opt_nocompile)
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, re.compile('Passed:\s*1\s*Incoming ARP request', re.M))
         self.assertRegex(xio.contents, re.compile('Failed:\s*Outgoing ARP reply',re.M))
@@ -257,7 +276,7 @@ def main(obj):
     def testTwoRecvCalls(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test(False, ['stest'], 'ucode3', False, True, False)
+                main_test('ucode3', ['stest'], self.opt_nocompile)
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, re.compile('Passed:\s*1\s*Incoming ARP request', re.M))
         self.assertRegex(xio.contents, re.compile('Failed:\s*Outgoing ARP reply',re.M))
@@ -266,7 +285,7 @@ def main(obj):
     def testDelayedSent(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test(False, ['stest'], 'ucode4', False, True, False)
+                main_test('ucode4', ['stest'], self.opt_nocompile)
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, re.compile('Passed:\s*1\s*Incoming ARP request', re.M))
         self.assertRegex(xio.contents, re.compile('Failed:\s*Outgoing ARP reply',re.M))
@@ -275,21 +294,21 @@ def main(obj):
     def testScenarioTimeoutHandledCorrectly(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test(False, ['stest'], 'ucode5', False, True, False) 
+                main_test('ucode5', ['stest'], self.opt_nocompile)
         self.assertIn('4 passed, 0 failed, 0 pending', xio.contents)
         self.assertIn('All tests passed', xio.contents)
 
     def testShutdownSignal(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test(False, ['stest'], 'ucode6', False, True, False) 
+                main_test('ucode6', ['stest'], self.opt_nocompile)
         self.assertIn('4 passed, 0 failed, 0 pending', xio.contents)
         self.assertIn('All tests passed', xio.contents)
 
     def testTooManySends(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test(False, ['stest'], 'ucode7', False, True, False) 
+                main_test('ucode7', ['stest'], self.opt_nocompile)
         self.assertIn('4 passed, 0 failed, 0 pending', xio.contents)
         self.assertRegex(xio.contents, 
             re.compile('Your\s+code\s+didn\'t\s+crash,\s+but\s+something\s+unexpected\s+happened.', re.M))
@@ -298,7 +317,7 @@ def main(obj):
     def testEpicFail(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test(False, ['stest'], 'ucode8', False, True, False) 
+                main_test('ucode8', ['stest'], self.opt_nocompile)
         self.assertNotIn('All tests passed', xio.contents)
         self.assertIn('0 passed, 1 failed, 3 pending', xio.contents)
         self.assertRegex(xio.contents, 
@@ -307,7 +326,7 @@ def main(obj):
     def testDeviceMatchFail(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test(False, ['stest'], 'ucode9', False, True, False) 
+                main_test('ucode9', ['stest'], self.opt_nocompile)
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, 
             re.compile('output\s+on\s+device\s+router-eth2\s+unexpected', re.M))
@@ -315,7 +334,7 @@ def main(obj):
     def testPacketMatchFail(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test(False, ['stest'], 'ucode10', False, True, False) 
+                main_test('ucode10', ['stest'], self.opt_nocompile)
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, 
             re.compile('an\s+exact\s+match\s+failed', re.M | re.I))
@@ -323,3 +342,6 @@ def main(obj):
 if __name__ == '__main__':
     setup_logging(False)
     unittest.main() 
+
+# main_test: usercode, scenarios, options
+# used to be: 

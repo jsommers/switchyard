@@ -171,7 +171,7 @@ class Packet(object):
     def _checkidx(self, index):
         if isinstance(index, int):
             if index < 0:
-                index = len(self._headers) - index
+                index = len(self._headers) + index
             if not (0 <= index < len(self._headers)):
                 raise IndexError("Index out of range")
             return index
