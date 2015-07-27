@@ -4,7 +4,7 @@ import switchyard.lib.address
 from switchyard.lib.packet import *
 from switchyard.lib.common import log_info, log_debug, NoPackets, Shutdown
 from switchyard.lib.debug import debugger
-from switchyard.lib.socket import ApplicationLayer
+from switchyard.lib.socket import _ApplicationLayer
 
 def main(net):
     intf = net.ports()[0]
@@ -14,7 +14,7 @@ def main(net):
 
         data = None
         try:
-            data,localaddr,remoteaddr = ApplicationLayer.recv_from_app(timeout=1.0)
+            data,localaddr,remoteaddr = _ApplicationLayer.recv_from_app(timeout=1.0)
         except NoPackets:
             pass
         except Shutdown:
@@ -44,7 +44,7 @@ def main(net):
         if packet is not None:
             ipidx = packet.get_header_index(IPv4)
             log_debug("Received packet {} on {}".format(packet, dev))
-            ApplicationLayer.send_to_app(packet[-1].to_bytes(), (packet[ipidx].srcip, packet[ipidx+1].srcport), (packet[ipidx].dstip, packet[ipidx+1].dstport) )
+            _ApplicationLayer.send_to_app(packet[-1].to_bytes(), (packet[ipidx].srcip, packet[ipidx+1].srcport), (packet[ipidx].dstip, packet[ipidx+1].dstport) )
 
 
     net.shutdown()

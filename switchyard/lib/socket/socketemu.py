@@ -13,7 +13,7 @@ from switchyard.lib.pcapffi import PcapLiveDevice
 from switchyard.lib.common import NoPackets, log_debug, log_info, setup_logging, red, yellow
 from switchyard.lib.packet import IPProtocol
 
-def gather_ports():
+def _gather_ports():
     portset = set()
     out = getoutput("netstat -an | grep ^udp")
     for x in out.split('\n'):
@@ -29,20 +29,20 @@ def gather_ports():
                 portset.add(int(port))
     return portset
 
-def get_ephemeral_port():
-    ports = gather_ports()
+def _get_ephemeral_port():
+    ports = _gather_ports()
     while True:
         p = random.randint(30000,60000)
         if p not in ports:
             return p
 
 def port_in_use(p):
-    ports = gather_ports()
+    ports = _gather_ports()
     return p in ports
 
 _app_layer_lock = Lock()
 
-class ApplicationLayer(object):
+class _ApplicationLayer(object):
     _init = False
     _to_app = None
     _from_app = None
@@ -53,16 +53,16 @@ class ApplicationLayer(object):
     @staticmethod
     def init():
         with _app_layer_lock:
-            if ApplicationLayer._init:
+            if _ApplicationLayer._init:
                 return
-            ApplicationLayer._init = True
-            ApplicationLayer._to_app = Queue()
-            ApplicationLayer._from_app = Queue()
+            _ApplicationLayer._init = True
+            _ApplicationLayer._to_app = Queue()
+            _ApplicationLayer._from_app = Queue()
 
     @staticmethod
     def recv_from_app(timeout=1.0):
         try:
-            data,local_addr,remote_addr = ApplicationLayer._from_app.get(timeout=timeout)
+            data,local_addr,remote_addr = _ApplicationLayer._from_app.get(timeout=timeout)
             return data,local_addr,remote_addr
         except Empty:
             pass
@@ -70,17 +70,17 @@ class ApplicationLayer(object):
 
     @staticmethod
     def send_to_app(data, source_addr, dest_addr):
-        ApplicationLayer._to_app.put( (data,source_addr,dest_addr) )
+        _ApplicationLayer._to_app.put( (data,source_addr,dest_addr) )
 
     @staticmethod
     def queues():
-        return ApplicationLayer._from_app, ApplicationLayer._to_app
+        return _ApplicationLayer._from_app, _ApplicationLayer._to_app
 
 
 def setup_switchyard_stack(proto, localaddr):
     log_debug("Starting up stack thread")
-    ApplicationLayer.init()
-    return ApplicationLayer.queues()
+    _ApplicationLayer.init()
+    return _ApplicationLayer.queues()
 
 
 
@@ -105,7 +105,7 @@ class socket(object):
         self._timeout = None
         self._block = True
         self._remote_addr = (None,None)
-        self._local_addr = ('0.0.0.0',get_ephemeral_port())
+        self._local_addr = ('0.0.0.0',_get_ephemeral_port())
 
         log_debug("Adding firewall/bpf rule {} dst port {}".format(self._protoname, self._local_addr[1]))
         try:
@@ -122,8 +122,8 @@ class socket(object):
                 print(indent(traceback.format_exc(), '    '))
             sys.exit()
 
-        ApplicationLayer.init()
-        self._socket_queue_to_stack, self._socket_queue_from_stack = ApplicationLayer.queues()
+        _ApplicationLayer.init()
+        self._socket_queue_to_stack, self._socket_queue_from_stack = _ApplicationLayer.queues()
 
     @property
     def family(self):
