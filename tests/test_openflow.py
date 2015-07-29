@@ -9,8 +9,6 @@ from time import time
 
 class OpenflowPacketTests(unittest.TestCase):
     def _storePkt(self, ofhdr, dstport=6633):
-        return
-
         pkt = (Ethernet(src="11:22:33:44:55:66") + IPv4() + TCP()) + ofhdr
 
         xname = pkt[OpenflowHeader].type.name
@@ -33,53 +31,49 @@ class OpenflowPacketTests(unittest.TestCase):
         dumper.close()
 
     def testHello(self):
-        hello = OpenflowHeader(OpenflowType.Hello, 0)
+        hello = OpenflowHeader.build(OpenflowType.Hello, 0)
         self.assertEqual(hello.to_bytes(), b'\x01\x00\x00\x08\x00\x00\x00\x00')
-        hello.xid = 42
+        hello[0].xid = 42
         self.assertEqual(hello.to_bytes(), b'\x01\x00\x00\x08\x00\x00\x00\x2a')
         bval = hello.to_bytes()
 
-        hello2 = OpenflowHeader(OpenflowType.Hello)
-        hello2.from_bytes(bval)
+        hello2 = Packet.from_bytes(bval, OpenflowHeader)
         self.assertEqual(hello, hello2)
         self._storePkt(hello)
        
     def testSwitchFeatureRequest(self):
-        featuresreq = OpenflowHeader(OpenflowType.FeaturesRequest, 0)
+        featuresreq = OpenflowHeader.build(OpenflowType.FeaturesRequest, 0)
         self.assertEqual(featuresreq.to_bytes(), b'\x01\x05\x00\x08\x00\x00\x00\x00')
         self._storePkt(featuresreq)
 
     def testSwitchFeatureReply(self):
-        featuresreply = OpenflowSwitchFeaturesReply()
-        featuresreply.dpid_low48 = EthAddr("00:01:02:03:04:05")
-        featuresreply.dpid_high16 = b'\xab\xcd'
+        featuresreply = OpenflowHeader.build(OpenflowType.FeaturesReply, 0)
+        featuresreply[1].dpid_low48 = EthAddr("00:01:02:03:04:05")
+        featuresreply[1].dpid_high16 = b'\xab\xcd'
         p = OpenflowPhysicalPort(0, EthAddr("ab:cd:ef:ab:cd:ef"), "eth0")
-        featuresreply.ports.append(p)
+        featuresreply[1].ports.append(p)
         xb = featuresreply.to_bytes()
-        fr = OpenflowSwitchFeaturesReply()
-        fr.from_bytes(xb)
+        fr = Packet.from_bytes(xb, OpenflowHeader)
         self.assertEqual(fr, featuresreply)
-        self._storePkt(OpenflowHeader(OpenflowType.FeaturesReply, 0) + featuresreply)
+        self._storePkt(featuresreply)
 
     def testEchoRequest(self):
-        echoreq = OpenflowEchoRequest()        
-        echoreq.data = b'\x01\x23\x45'
+        echoreq = OpenflowHeader.build(OpenflowType.EchoRequest, 0)        
+        echoreq[1].data = b'\x01\x23\x45'
         b = echoreq.to_bytes()
         self.assertTrue(b.endswith(b'\x01\x23\x45'))
-        another = OpenflowEchoRequest()
-        another.from_bytes(b)
+        another = Packet.from_bytes(b, OpenflowHeader)
         self.assertEqual(echoreq, another)
-        self._storePkt(OpenflowHeader(OpenflowType.EchoRequest, 0) + echoreq)
+        self._storePkt(echoreq)
 
     def testEchoReply(self):
-        echorepl = OpenflowEchoReply()
-        echorepl.data = b'\x01\x23\x45'
+        echorepl = OpenflowHeader.build(OpenflowType.EchoReply, 0)
+        echorepl[1].data = b'\x01\x23\x45'
         b = echorepl.to_bytes()
         self.assertTrue(b.endswith(b'\x01\x23\x45'))
-        another = OpenflowEchoRequest()
-        another.from_bytes(b)
+        another = Packet.from_bytes(b, OpenflowHeader)
         self.assertEqual(echorepl, another)
-        self._storePkt(OpenflowHeader(OpenflowType.EchoReply, 0) + echorepl)
+        self._storePkt(echorepl)
 
     def testMatchStruct(self):
         m = OpenflowMatch()
@@ -106,18 +100,18 @@ class OpenflowPacketTests(unittest.TestCase):
         self.assertTrue(m.overlaps(m))
         
     def testError(self):
-        e = OpenflowError()
-        e.errortype = OpenflowErrorType.HelloFailed
-        e.errorcode = OpenflowHelloFailedCode.PermissionsError
-        e.data = b'\xef' * 10
+        e = OpenflowHeader.build(OpenflowType.Error, 0)
+        e[1].errortype = OpenflowErrorType.HelloFailed
+        e[1].errorcode = OpenflowHelloFailedCode.PermissionsError
+        e[1].data = b'\xef' * 10
         b = e.to_bytes()
-        self.assertEqual(b, b'\x00\x00\x00\x01' + b'\xef'*10)
+        self.assertEqual(b, b'\x01\x01\x00\x16\x00\x00\x00\x00\x00\x00\x00\x01' + b'\xef'*10)
 
-        e.errortype = OpenflowErrorType.BadAction
-        e.errorcode = OpenflowBadActionCode.BadArgument
+        e[1].errortype = OpenflowErrorType.BadAction
+        e[1].errorcode = OpenflowBadActionCode.BadArgument
         b = e.to_bytes()
-        self.assertEqual(b, b'\x00\x02\x00\x05' + b'\xef'*10)
-        self._storePkt(OpenflowHeader(OpenflowType.Error, 0) + e)
+        self.assertEqual(b, b'\x01\x01\x00\x16\x00\x00\x00\x00\x00\x02\x00\x05' + b'\xef'*10)
+        self._storePkt(e)
 
     def testPacketIn(self):
         pass

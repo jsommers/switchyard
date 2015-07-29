@@ -488,6 +488,7 @@ class OpenflowActionTypes(Enum):
 class OpenflowEchoRequest(_OpenflowStruct):
     __slots__ = ['_data']
     def __init__(self):
+        _OpenflowStruct.__init__(self)
         self._data = b''
 
     def size(self):
@@ -569,7 +570,7 @@ class OpenflowFlowMod(_OpenflowStruct):
     __slots__ = ['_match','_cookie','_command','_idle_timeout',
                  '_hard_timeout','_priority','_buffer_id','_out_port'
                  '_flags','_actions']
-    # packfmt doesn't include match struct or actions
+    # NB: packfmt doesn't include match struct or actions
     # those are defined within other structures
     _PACKFMT = '!QHHHHIHH'
     _MINLEN = OpenflowMatch.size() + struct.calcsize(_PACKFMT) 
@@ -613,6 +614,7 @@ class OpenflowSwitchFeaturesReply(_OpenflowStruct):
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
+        _OpenflowStruct.__init__(self)
         self.dpid = b'\x00' * 8
         self.nbuffers = 0
         self.ntables = 1
@@ -1033,6 +1035,16 @@ class OpenflowHeader(PacketHeaderBase):
         self._type = xtype
         self._length = OpenflowHeader._MINLEN
         self._xid = xid
+
+    @staticmethod
+    def build(xtype, xid=0):
+        pkt = Packet()
+        header = OpenflowHeader(xtype=xtype, xid=xid)
+        pkt += header
+        clsname = OpenflowHeader._OpenflowTypeClasses.get(xtype)        
+        if clsname is not None:
+            pkt += clsname()
+        return pkt
 
     @property  
     def xid(self):
