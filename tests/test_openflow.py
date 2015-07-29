@@ -1,9 +1,37 @@
 import unittest 
 from copy import deepcopy
-from switchyard.lib.packet.openflow import *
+from switchyard.lib.openflow import *
 from switchyard.lib.address import EthAddr, IPv4Address, SpecialIPv4Addr
+from switchyard.lib.pcapffi import PcapDumper
+from switchyard.lib.packet import Ethernet, IPv4, TCP, TCPFlags
+from time import time
+
 
 class OpenflowPacketTests(unittest.TestCase):
+    def _storePkt(self, ofhdr, dstport=6633):
+        return
+
+        pkt = (Ethernet(src="11:22:33:44:55:66") + IPv4() + TCP()) + ofhdr
+
+        xname = pkt[OpenflowHeader].type.name
+        dumper = PcapDumper("oftests_{}.pcap".format(xname))
+
+        pkt[Ethernet].dst = ''.join(list(reversed("11:22:33:44:55:66")))
+        pkt[IPv4].protocol = 6
+        pkt[IPv4].src = "149.43.80.25"
+        pkt[IPv4].dst = "149.43.80.25"
+        pkt[IPv4].ttl = 5
+        pkt[IPv4].ipid = 42
+        pkt[TCP].dstport = dstport
+        pkt[TCP].srcport = 5555
+        pkt[TCP].window = 1000
+        pkt[TCP].seq = 42
+        pkt[TCP].ack = 500
+        pkt[TCP].PSH = 1
+        pkt[TCP].ACK = 1
+        dumper.write_packet(pkt.to_bytes(), time())
+        dumper.close()
+
     def testHello(self):
         hello = OpenflowHeader(OpenflowType.Hello, 0)
         self.assertEqual(hello.to_bytes(), b'\x01\x00\x00\x08\x00\x00\x00\x00')
@@ -14,10 +42,12 @@ class OpenflowPacketTests(unittest.TestCase):
         hello2 = OpenflowHeader(OpenflowType.Hello)
         hello2.from_bytes(bval)
         self.assertEqual(hello, hello2)
+        self._storePkt(hello)
        
     def testSwitchFeatureRequest(self):
         featuresreq = OpenflowHeader(OpenflowType.FeaturesRequest, 0)
         self.assertEqual(featuresreq.to_bytes(), b'\x01\x05\x00\x08\x00\x00\x00\x00')
+        self._storePkt(featuresreq)
 
     def testSwitchFeatureReply(self):
         featuresreply = OpenflowSwitchFeaturesReply()
@@ -29,6 +59,7 @@ class OpenflowPacketTests(unittest.TestCase):
         fr = OpenflowSwitchFeaturesReply()
         fr.from_bytes(xb)
         self.assertEqual(fr, featuresreply)
+        self._storePkt(OpenflowHeader(OpenflowType.FeaturesReply, 0) + featuresreply)
 
     def testEchoRequest(self):
         echoreq = OpenflowEchoRequest()        
@@ -38,6 +69,7 @@ class OpenflowPacketTests(unittest.TestCase):
         another = OpenflowEchoRequest()
         another.from_bytes(b)
         self.assertEqual(echoreq, another)
+        self._storePkt(OpenflowHeader(OpenflowType.EchoRequest, 0) + echoreq)
 
     def testEchoReply(self):
         echorepl = OpenflowEchoReply()
@@ -47,6 +79,7 @@ class OpenflowPacketTests(unittest.TestCase):
         another = OpenflowEchoRequest()
         another.from_bytes(b)
         self.assertEqual(echorepl, another)
+        self._storePkt(OpenflowHeader(OpenflowType.EchoReply, 0) + echorepl)
 
     def testMatchStruct(self):
         m = OpenflowMatch()
@@ -81,9 +114,43 @@ class OpenflowPacketTests(unittest.TestCase):
         self.assertEqual(b, b'\x00\x00\x00\x01' + b'\xef'*10)
 
         e.errortype = OpenflowErrorType.BadAction
-        e.errorcode = OpenflowFlowModFailedCode.Overlap
+        e.errorcode = OpenflowBadActionCode.BadArgument
         b = e.to_bytes()
-        self.assertEqual(b, b'\x00\x02\x00\x01' + b'\xef'*10)
+        self.assertEqual(b, b'\x00\x02\x00\x05' + b'\xef'*10)
+        self._storePkt(OpenflowHeader(OpenflowType.Error, 0) + e)
+
+    def testPacketIn(self):
+        pass
+
+    def testPacketOut(self):
+        pass
+
+    def testFlowMod1(self):
+        pass
+
+    def testFlowRemoved(self):
+        pass
+
+    def testPortMod(self):
+        pass
+
+    def testBarrier(self):
+        pass
+
+    def testQueueConfigRequest(self):
+        pass
+
+    def testQueueConfigReply(self):
+        pass
+
+    def testPortStatus(self):
+        pass
+
+    def testStatsRequest(self):
+        pass
+
+    def testStatsReply(self):
+        pass
 
 if __name__ == '__main__':
     unittest.main()

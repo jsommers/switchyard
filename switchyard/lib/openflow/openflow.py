@@ -861,7 +861,7 @@ class OpenflowError(_OpenflowStruct):
 
     @errorcode.setter
     def errorcode(self, value):
-        codeclass = OpenflowErrorTypeCodes(self._type)
+        codeclass = OpenflowErrorTypeCodes.get(self._type)
         value = codeclass(value)
         self._code = value
 
