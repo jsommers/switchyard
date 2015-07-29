@@ -3,6 +3,7 @@ from switchyard.lib.address import EthAddr, IPv4Address
 from switchyard.lib.common import log_debug
 from enum import Enum, IntEnum
 import struct
+from math import ceil
 
 
 def _make_bitmap(xset):
@@ -486,7 +487,7 @@ class OpenflowWildcards(Enum):
     All = ((1 << 22) - 1)
 
 
-class OpenflowActionTypes(Enum):
+class OpenflowActionType(Enum):
     Output = 0
     SetVlanVid = 1
     SetVlanPcp = 2
@@ -503,11 +504,10 @@ class OpenflowActionTypes(Enum):
 
 
 class _OpenflowAction(_OpenflowStruct):
-    __slots__ = ['_type', '_len']
+    __slots__ = ['_type']
     def __init__(self):
         super().__init__()
-        self._type = OpenflowActionTypes.Output
-        self._len = 0
+        self._type = OpenflowActionType.Output
 
     @property
     def type(self):
@@ -515,18 +515,18 @@ class _OpenflowAction(_OpenflowStruct):
 
     @type.setter
     def type(self, value):
-        self._type = OpenflowActionTypes(value)
+        self._type = OpenflowActionType(value)
 
 
 class ActionOutput(_OpenflowAction):
     __slots__ = ['_port', '_maxlen']
     _PACKFMT = '!HHHH'
     _MINLEN = 8
-    def __init__(self, port = 0):
+
+    def __init__(self, port):
         super().__init__()
-        self._type = OpenflowActionTypes.Output
-        self._len = ActionOutput._MINLEN
-        self._port = 0
+        self._type = OpenflowActionType.Output
+        self._port = int(port)
         self._maxlen = 1500
 
     @property
@@ -546,16 +546,290 @@ class ActionOutput(_OpenflowAction):
         self._maxlen = int(value)
 
     def from_bytes(self, raw):
-        self.type, self._len, self.port, self.maxlen = struct.unpack(ActionOutput._PACKFMT, 
+        self.type, ignorelen, self.port, self.maxlen = struct.unpack(ActionOutput._PACKFMT, 
             raw[:ActionOutput._MINLEN]) 
         return raw[ActionOutput._MINLEN:]
 
     def to_bytes(self):
         return struct.pack(ActionOutput._PACKFMT, self._type.value, 
-                           self._len, self._port, self._maxlen)
+                           ActionOutput._MINLEN, self._port, self._maxlen)
 
     def size(self):
-        return self._len
+        return ActionOutput._MINLEN
+
+
+class ActionEnqueue(_OpenflowAction):
+    __slots__ = ['_port', '_queue_id']
+    _PACKFMT = '!HHH6xI'
+    _MINLEN = 16
+
+    def __init__(self, port, queue_id):
+        super().__init__()
+        self._type = OpenflowActionType.Enqueue
+        self._port = int(port)
+        self._queue_id = int(queue_id)
+
+    @property
+    def port(self):
+        return self._port
+
+    @port.setter
+    def port(self, value):
+        self._port = int(port)    
+
+    @property
+    def queue_id(self):
+        return self._queue_id
+
+    @queue_id.setter
+    def queue_id(self, value):
+        self._queue_id = int(value)
+
+    def from_bytes(self, raw):
+        self.type, ignorelen, self.port, self.queue_id = struct.unpack(ActionEnqueue._PACKFMT, 
+            raw[:ActionEnqueue._MINLEN]) 
+        return raw[ActionEnqueue._MINLEN:]
+
+    def to_bytes(self):
+        return struct.pack(ActionEnqueue._PACKFMT, self._type.value, 
+                           ActionEnqueue._MINLEN, self._port, self._queue_id)
+
+    def size(self):
+        return ActionEnqueue._MINLEN
+
+
+class ActionVlanVid(_OpenflowAction):
+    __slots__ = ['_vlan_vid']
+    _PACKFMT = '!HHH2x'
+    _MINLEN = 8
+
+    def __init__(self, vlan_vid):
+        super().__init__()
+        self._type = OpenflowActionType.SetVlanVid
+        self._vlan_vid = vlan_vid
+
+    @property
+    def vlan_vid(self):
+        return self._vlan_vid
+
+    @vlan_vid.setter
+    def vlan_vid(self, value):
+        self._vlan_vid = int(value)  
+    
+    def from_bytes(self, raw):
+        self.type, ignorelen, self.vlan_vid = struct.unpack(ActionVlanVid._PACKFMT, 
+            raw[:ActionVlanVid._MINLEN]) 
+        return raw[ActionVlanVid._MINLEN:]
+
+    def to_bytes(self):
+        return struct.pack(ActionVlanVid._PACKFMT, self._type.value, 
+                           ActionVlanVid._MINLEN, self._vlan_vid)
+
+    def size(self):
+        return ActionVlanVid._MINLEN
+
+
+class ActionVlanPcp(_OpenflowAction):
+    __slots__ = ['_vlan_pcp']
+    _PACKFMT = '!HHB3x'
+    _MINLEN = 8
+
+    def __init__(self, vlan_pcp):
+        super().__init__()
+        self._type = OpenflowActionType.SetVlanPcp
+        self._vlan_pcp = vlan_pcp
+
+    @property
+    def vlan_pcp(self):
+        return self._vlan_pcp
+
+    @vlan_pcp.setter
+    def vlan_pcp(self, value):
+        self._vlan_pcp = int(value)
+    
+    def from_bytes(self, raw):
+        self.type, ignorelen, self.vlan_pcp = struct.unpack(ActionVlanPcp._PACKFMT, 
+            raw[:ActionVlanPcp._MINLEN]) 
+        return raw[ActionVlanPcp._MINLEN:]
+
+    def to_bytes(self):
+        return struct.pack(ActionVlanPcp._PACKFMT, self._type.value, 
+                           ActionVlanPcp._MINLEN, self._vlan_pcp)
+
+    def size(self):
+        return ActionVlanPcp._MINLEN
+
+
+class ActionDlAddr(_OpenflowAction):
+    __slots__ = ['_dl_addr']
+    _PACKFMT = '!HH6s6x'
+    _MINLEN = 16
+
+    def __init__(self, srcdst, dl_addr):
+        super().__init__()
+        self._type = OpenflowActionType(srcdst) 
+        if self._type not in (OpenflowActionType.SetDlSrc, OpenflowActionType.SetDlDst):
+            raise ValueError("Invalid ActionType for ActionDlAddr")
+        self._dl_addr = EthAddr(dl_addr)
+
+    @property
+    def dl_addr(self):
+        return self._dl_addr
+
+    @dl_addr.setter
+    def dl_addr(self, value):
+        self._dl_addr = EthAddr(value)        
+
+    def from_bytes(self, raw):
+        self.type, ignorelen, self.dl_addr = struct.unpack(ActionDlAddr._PACKFMT, 
+            raw[:ActionDlAddr._MINLEN]) 
+        return raw[ActionDlAddr._MINLEN:]
+
+    def to_bytes(self):
+        return struct.pack(ActionDlAddr._PACKFMT, self._type.value, 
+                           ActionDlAddr._MINLEN, self._dl_addr.packed)
+
+    def size(self):
+        return ActionDlAddr._MINLEN
+
+
+class ActionNwAddr(_OpenflowAction):
+    __slots__ = ['_nw_addr']
+    _PACKFMT = '!HH4s'
+    _MINLEN = 8
+
+    def __init__(self, srcdst, nw_addr):
+        super().__init__()
+        self._type = OpenflowActionType(srcdst) 
+        if self._type not in (OpenflowActionType.SetNwSrc, OpenflowActionType.SetNwDst):
+            raise ValueError("Invalid ActionType for ActionNwAddr")
+        self._nw_addr = IPv4Address(nw_addr)
+
+    @property
+    def nw_addr(self):
+        return self._nw_addr
+
+    @nw_addr.setter
+    def nw_addr(self, value):
+        self._nw_addr = IPv4Address(value) 
+
+    def from_bytes(self, raw):
+        self.type, ignorelen, self.nw_addr = struct.unpack(ActionNwAddr._PACKFMT, 
+            raw[:ActionNwAddr._MINLEN]) 
+        return raw[ActionNwAddr._MINLEN:]
+
+    def to_bytes(self):
+        return struct.pack(ActionNwAddr._PACKFMT, self._type.value, 
+                           ActionNwAddr._MINLEN, self._nw_addr.packed)
+
+    def size(self):
+        return ActionNwAddr._MINLEN
+
+
+class ActionNwTos(_OpenflowAction):
+    __slots__ = ['_nw_tos']
+    _PACKFMT = '!HHB3x'
+    _MINLEN = 8
+
+    def __init__(self, tos):
+        super().__init__()
+        self._type = OpenflowActionType.SetNwTos
+        self._nw_tos = int(tos)
+
+    @property
+    def nw_tos(self):
+        return self._nw_tos
+
+    @nw_tos.setter
+    def nw_tos(self, value):
+        self._nw_tos = int(value)
+
+    def from_bytes(self, raw):
+        self.type, ignorelen, self.nw_tos = struct.unpack(ActionNwTos._PACKFMT, 
+            raw[:ActionNwTos._MINLEN]) 
+        return raw[ActionNwTos._MINLEN:]
+
+    def to_bytes(self):
+        return struct.pack(ActionNwTos._PACKFMT, self._type.value, 
+                           ActionNwTos._MINLEN, self._nw_tos)
+
+    def size(self):
+        return ActionNwTos._MINLEN
+
+
+class ActionTpPort(_OpenflowAction):
+    __slots__ = ['_tp_port']
+    _PACKFMT = '!HHH2x'
+    _MINLEN = 8
+
+    def __init__(self, srcdst, port):
+        super().__init__()
+        self._type = OpenflowActionType(srcdst) 
+        if self._type not in (OpenflowActionType.SetTpSrc, OpenflowActionType.SetTpDst):
+            raise ValueError("Invalid ActionType for ActionTpPort")
+        self._tp_port = int(port)
+
+    @property
+    def tp_port(self):
+        return self._tp_port
+
+    @tp_port.setter
+    def tp_port(self, value):
+        self._tp_port = int(value)
+
+    def from_bytes(self, raw):
+        self.type, ignorelen, self.tp_port = struct.unpack(ActionTpPort._PACKFMT, 
+            raw[:ActionTpPort._MINLEN]) 
+        return raw[ActionTpPort._MINLEN:]
+
+    def to_bytes(self):
+        return struct.pack(ActionTpPort._PACKFMT, self._type.value, 
+                           ActionTpPort._MINLEN, self._tp_port)
+
+    def size(self):
+        return ActionTpPort._MINLEN
+
+
+class ActionVendorHeader(_OpenflowAction):
+    __slots__ = ['_vendor', '_data']
+    _PACKFMT = '!HHI'
+    _MINLEN = 8
+
+    def __init__(self, vendor, data=b''):
+        super().__init__()
+        self._type = OpenflowActionType.Vendor
+        self._vendor = int(vendor)
+        self._data = bytes(data)
+
+    @property
+    def vendor(self):
+        return self._vendor
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, value):
+        self._data = bytes(value)
+        
+    def from_bytes(self, raw):
+        self.type, xlen, self.vendor = struct.unpack(ActionVendorHeader._PACKFMT, 
+            raw[:ActionVendorHeader._MINLEN]) 
+        datalen = xlen - ActionVendorHeader._MINLEN
+        self.data = raw[ActionVendorHeader._MINLEN:xlen]
+        return raw[xlen:]
+
+    def to_bytes(self):
+        raw =  struct.pack(ActionVendorHeader._PACKFMT, self._type.value, 
+                           self.size(), self._vendor) + self.data
+        lenmod = len(self._data) % 8
+        padbytes = 8-lenmod if lenmod > 0 else 0
+        return raw + padbytes * b'\x00'
+
+    def size(self):
+        datalen = ceil(len(self._data) / 8) * 8
+        return ActionVendorHeader._MINLEN + datalen
 
 
 class OpenflowEchoRequest(_OpenflowStruct):
@@ -821,7 +1095,7 @@ class OpenflowSwitchFeaturesReply(_OpenflowStruct):
             if v.value & fields[3] == 1:
                 self.capabilities = v
         # self.capabilities = fields[3]
-        for a in OpenflowActionTypes:
+        for a in OpenflowActionType:
             if a.value & fields[4] == 1:
                 self.actions = a
         # self.actions = fields[4]
@@ -926,9 +1200,9 @@ class OpenflowSwitchFeaturesReply(_OpenflowStruct):
     @actions.setter
     def actions(self, value):
         if isinstance(value, int):
-            value = OpenflowActionTypes(value)
-        if not isinstance(value, OpenflowActionTypes):
-            raise ValueError("Set value must be of type OpenflowActionTypes")
+            value = OpenflowActionType(value)
+        if not isinstance(value, OpenflowActionType):
+            raise ValueError("Set value must be of type OpenflowActionType")
         self._actions.add(value)
 
     def reset_actions(self):

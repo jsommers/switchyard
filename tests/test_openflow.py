@@ -132,7 +132,20 @@ class OpenflowPacketTests(unittest.TestCase):
         flowmod[1].match.nw_src = "149.43.0.0"
         flowmod[1].match.nwsrc_wildcard = 16
         flowmod[1].match.in_port = 42
-        flowmod[1].actions.append(ActionOutput(port=13))
+        flowmod[1].actions.append(ActionOutput(port=OpenflowPort.Flood))
+        flowmod[1].actions.append(ActionEnqueue(port=OpenflowPort.Flood, queue_id=13))
+        flowmod[1].actions.append(ActionVlanVid(vlan_vid=42))
+        flowmod[1].actions.append(ActionVlanPcp(vlan_pcp=2))
+        flowmod[1].actions.append(ActionDlAddr(OpenflowActionType.SetDlSrc, "55:44:33:22:11:00"))
+        flowmod[1].actions.append(ActionDlAddr(OpenflowActionType.SetDlDst, "aa:bb:cc:dd:ee:ff"))
+        flowmod[1].actions.append(ActionNwAddr(OpenflowActionType.SetNwSrc, "10.1.2.3"))
+        flowmod[1].actions.append(ActionNwAddr(OpenflowActionType.SetNwDst, "10.2.3.4"))
+        flowmod[1].actions.append(ActionNwTos(0x11))
+        flowmod[1].actions.append(ActionTpPort(OpenflowActionType.SetTpSrc, 1111))
+        flowmod[1].actions.append(ActionTpPort(OpenflowActionType.SetTpDst, 2222))
+        flowmod[1].actions.append(ActionTpPort(OpenflowActionType.SetTpDst, 2222))
+        flowmod[1].actions.append(ActionVendorHeader(0xbeefbeef, b'1234'))
+
         self._storePkt(flowmod)
 
     def testFlowRemoved(self):
