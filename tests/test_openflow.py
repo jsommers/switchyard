@@ -120,7 +120,20 @@ class OpenflowPacketTests(unittest.TestCase):
         pass
 
     def testFlowMod1(self):
-        pass
+        flowmod = OpenflowHeader.build(OpenflowType.FlowMod, 72) 
+        flowmod[1].priority = 0xffee
+        flowmod[1].hard_timeout = 3600
+        flowmod[1].idle_timeout = 1800
+        flowmod[1].buffer_id = 0xdeadbeef
+        flowmod[1].cookie = 0xcafebeefbabe0000
+        flowmod[1].match.add_wildcard(OpenflowWildcards.DlSrc)
+        flowmod[1].match.add_wildcard(OpenflowWildcards.DlVlan)
+        flowmod[1].match.dl_dst = "55:44:33:22:ab:cd"
+        flowmod[1].match.nw_src = "149.43.0.0"
+        flowmod[1].match.nwsrc_wildcard = 16
+        flowmod[1].match.in_port = 42
+        flowmod[1].actions.append(ActionOutput(port=13))
+        self._storePkt(flowmod)
 
     def testFlowRemoved(self):
         pass
