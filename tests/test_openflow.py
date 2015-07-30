@@ -3,7 +3,7 @@ from copy import deepcopy
 from switchyard.lib.openflow import *
 from switchyard.lib.address import EthAddr, IPv4Address, SpecialIPv4Addr
 from switchyard.lib.pcapffi import PcapDumper
-from switchyard.lib.packet import Ethernet, IPv4, TCP, TCPFlags
+from switchyard.lib.packet import Ethernet, IPv4, TCP, TCPFlags, ICMP
 from time import time
 
 
@@ -98,6 +98,8 @@ class OpenflowPacketTests(unittest.TestCase):
     def testMatchOverlap(self):
         m = OpenflowMatch()
         self.assertTrue(m.overlaps(m))
+        # FIXME: make something non-overlap and test
+
         
     def testError(self):
         e = OpenflowHeader.build(OpenflowType.Error, 0)
@@ -114,12 +116,23 @@ class OpenflowPacketTests(unittest.TestCase):
         self._storePkt(e)
 
     def testPacketIn(self):
-        pass
+        pktin = OpenflowHeader.build(OpenflowType.PacketIn, 44)
+        pktin[1].packet = Ethernet(src="11:22:33:44:55:66", dst="aa:bb:cc:dd:ee:ff") + \
+                          IPv4(src="1.2.3.4", dst="5.6.7.8") + ICMP()
+        self._storePkt(pktin)
+        # FIXME: assertions
 
     def testPacketOut(self):
-        pass
+        pktout = OpenflowHeader.build(OpenflowType.PacketOut, 43)
+        pktout[1].buffer = 0xffffffff
+        pktout[1].in_port = 4
+        pktout[1].packet = Ethernet(src="11:22:33:44:55:66", dst="aa:bb:cc:dd:ee:ff") + \
+                           IPv4(src="1.2.3.4", dst="5.6.7.8") + ICMP()
+        pktout[1].actions.append(ActionOutput(port=OpenflowPort.Flood))
+        self._storePkt(pktout)
+        # FIXME: assertions
 
-    def testFlowMod1(self):
+    def testFlowMod(self):
         flowmod = OpenflowHeader.build(OpenflowType.FlowMod, 72) 
         flowmod[1].priority = 0xffee
         flowmod[1].hard_timeout = 3600
@@ -145,25 +158,50 @@ class OpenflowPacketTests(unittest.TestCase):
         flowmod[1].actions.append(ActionTpPort(OpenflowActionType.SetTpDst, 2222))
         flowmod[1].actions.append(ActionTpPort(OpenflowActionType.SetTpDst, 2222))
         flowmod[1].actions.append(ActionVendorHeader(0xbeefbeef, b'1234'))
-
         self._storePkt(flowmod)
+        # FIXME: assertions
 
     def testFlowRemoved(self):
-        pass
+        flowrm = OpenflowHeader.build(OpenflowType.FlowRemoved, 43)
+        flowrm[1].match.wildcard_all()
+        flowrm[1].cookie = 42
+        flowrm[1].priority = 0xabcd
+        flowrm[1].duration = 5.005
+        self.assertEqual(flowrm[1].duration_sec, 5)
+        self.assertLessEqual(abs(flowrm[1].duration_nsec - 5000000), 1)
+        self._storePkt(flowrm)
+        # FIXME: assertions
 
     def testPortMod(self):
-        pass
+        portmod = OpenflowHeader.build(OpenflowType.PortMod)
+        portmod[1].hwaddr = "b2:00:1d:9c:4f:40"
+        portmod[1].set_config(OpenflowPortConfig.NoStp)
+        portmod[1].set_mask(OpenflowPortConfig.NoStp)
+        portmod[1].set_advertise(OpenflowPortFeatures.Pause)
+        portmod[1].set_advertise(OpenflowPortFeatures.Fiber)
+        portmod[1].set_advertise(OpenflowPortFeatures.e1Gb_Full)
+        self._storePkt(portmod)
+        # FIXME: assertions
+
+    def testPortStatus(self):
+        portstat = OpenflowHeader.build(OpenflowType.PortStatus)
+        portstat[1].port.name = "testport"
+        portstat[1].port.portnum = 13
+        # FIXME: config capabilities, etc.
+        self._storePkt(portstat)
+        # FIXME: assertions
 
     def testBarrier(self):
-        pass
+        barrierreq = OpenflowHeader.build(OpenflowType.BarrierRequest)
+        self._storePkt(barrierreq)
+        barrierreply = OpenflowHeader.build(OpenflowType.BarrierReply)
+        self._storePkt(barrierreply)
+        # FIXME: assertions
 
     def testQueueConfigRequest(self):
         pass
 
     def testQueueConfigReply(self):
-        pass
-
-    def testPortStatus(self):
         pass
 
     def testStatsRequest(self):
