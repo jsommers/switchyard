@@ -7,12 +7,21 @@ from math import ceil
 
 
 def _make_bitmap(xset):
+    '''
+    Given a set of enumerated values, build an integer (32 bit)
+    bitmap of the enum values.
+    '''
     val = 0x00000000
     for enumval in xset:
         val |= enumval.value
     return val
 
 def _unpack_bitmap(bitmap, xenum):
+    '''
+    Given an integer bitmap and an enumerated type, build
+    a set that includes zero or more enumerated type values
+    corresponding to the bitmap.
+    '''
     unpacked = set()
     for enval in xenum:
         if enval.value & bitmap == enval.value:
@@ -134,19 +143,20 @@ class OpenflowPhysicalPort(_OpenflowStruct):
         else:
             self._hwaddr = EthAddr()
         self._name = name
-        self._config = OpenflowPortConfig.NoConfig
-        self._state = OpenflowPortState.NoState
-        self._curr = 0
-        self._advertised = 0
-        self._supported = 0
-        self._peer = 0
+        self._config = set()
+        self._state = set()
+        self._curr = set()
+        self._advertised = set()
+        self._supported = set()
+        self._peer = set()
 
     def to_bytes(self):
         return struct.pack(OpenflowPhysicalPort._PACKFMT,
                            self._portnum, self._hwaddr.raw, self._name.encode(
                                'utf8'),
-                           self._config.value, self._state.value, self._curr,
-                           self._advertised, self._supported, self._peer)
+                           _make_bitmap(self._config), _make_bitmap(self._state), 
+                           _make_bitmap(self._curr), _make_bitmap(self._advertised),
+                           _make_bitmap(self._supported), _make_bitmap(self._peer))
 
     def from_bytes(self, raw):
         if len(raw) < OpenflowPhysicalPort._MINLEN:
@@ -157,12 +167,14 @@ class OpenflowPhysicalPort(_OpenflowStruct):
         self.portnum = fields[0]
         self.hwaddr = fields[1]
         self.name = fields[2].decode('utf8')
-        self.config = fields[3]
-        self.state = fields[4]
-        self.curr = fields[5]
-        self.advertised = fields[6]
-        self.supported = fields[7]
-        self.peer = fields[8]
+
+        self._config = _unpack_bitmap(fields[3], OpenflowPortConfig)
+        self._state = _unpack_bitmap(fields[4], OpenflowPortState)
+        self._curr = _unpack_bitmap(fields[5], OpenflowPortFeatures)
+        self._advertised = _unpack_bitmap(fields[6], OpenflowPortFeatures)
+        self._supported = _unpack_bitmap(fields[7], OpenflowPortFeatures)
+        self._peer = _unpack_bitmap(fields[8], OpenflowPortFeatures)
+
         return raw[OpenflowPhysicalPort._MINLEN:]
 
     def size(self):
@@ -196,12 +208,124 @@ class OpenflowPhysicalPort(_OpenflowStruct):
 
     @property
     def config(self):
+        return _make_bitmap(self._config)
+
+    def get_config(self):
         return self._config
 
-    @config.setter
-    def config(self, value):
-        # FIXME: fix all the bitmap stuff
-        pass
+    def add_config(self, value):
+        self._config.add(OpenflowPortConfig(value))
+
+    def clear_config(self):
+        self._config.clear()
+
+    @property
+    def state(self):
+        return _make_bitmap(self._state)
+
+    def get_state(self):
+        return self._state
+
+    def add_state(self, value):
+        self._state.add(OpenflowPortState(value))
+
+    def clear_state(self):
+        self._state.clear()
+
+    @property
+    def curr(self):
+        return _make_bitmap(self._curr)
+
+    def get_curr(self):
+        return self._curr
+
+    def add_curr(self, value):
+        self._curr.add(OpenflowPortFeatures(value))
+
+    def clear_curr(self):
+        self._curr.clear()
+
+    @property
+    def advertised(self):
+        return _make_bitmap(self._advertised)
+
+    def get_advertised(self):
+        return self._advertised
+
+    def add_advertised(self, value):
+        self._advertised.add(OpenflowPortFeatures(value))
+
+    def clear_advertised(self):
+        self._advertised.clear()
+
+    @property
+    def supported(self):
+        return _make_bitmap(self._supported)
+
+    def get_supported(self):
+        return self._supported
+
+    def add_supported(self, value):
+        self._supported.add(OpenflowPortFeatures(value))
+
+    def clear_supported(self):
+        self._supported.clear()
+
+    @property
+    def peer(self):
+        return _make_bitmap(self._peer)
+
+    def get_peer(self):
+        return self._peer
+
+    def add_peer(self, value):
+        self._peer.add(OpenflowPortFeatures(value))
+
+    def clear_peer(self):
+        self._peer.clear()
+
+
+class OpenflowQueuePropertyTypes(Enum):
+    NoProperty = 0
+    MinRate = 1
+
+class OpenflowQueueMinRateProperty(_OpenflowStruct):
+    __slots__ = ['_rate']
+    _PACKFMT = '!HH4xH6x'
+    _MINLEN = struct.calcsize(_PACKFMT)
+
+    def __init__(self):
+        self._rate = 0
+
+    @property
+    def rate(self):
+        return self._rate
+
+    @rate.setter
+    def rate(self, value):
+        self._rate = int(value)
+    
+    def size(self):
+        return OpenflowQueueMinRateProperty._MINLEN
+
+    def to_bytes(self):
+        return struct.pack(OpenflowQueueMinRateProperty._PACKFMT,
+            OpenflowQueuePropertyTypes.MinRate.value, OpenflowQueueMinRateProperty._MINLEN,
+            self._rate)
+
+    def from_bytes(self, raw):
+        if len(raw) < OpenflowQueueMinRateProperty._MINLEN:
+            raise Exception("Not enough data to unpack OpenflowQueueMinRateProperty")
+        fields = struct.unpack(OpenflowQueueMinRateProperty._PACKFMT, 
+            raw[:OpenflowQueueMinRateProperty._MINLEN])
+        assert(fields[0] == OpenflowQueuePropertyTypes.MinRate.value)
+        assert(fields[1] == OpenflowQueueMinRateProperty._MINLEN)
+        self.rate = fields[2]
+
+
+_QueuePropertyTypeClassMap = {
+    OpenflowQueuePropertyTypes.MinRate: OpenflowQueueMinRateProperty,
+}
 
 
 class OpenflowPacketQueue(_OpenflowStruct):
@@ -209,16 +333,45 @@ class OpenflowPacketQueue(_OpenflowStruct):
     _PACKFMT = '!IHxx'
     _MINLEN = struct.calcsize(_PACKFMT)
 
+    def __init__(self, queue_id=0):
+        _OpenflowStruct.__init__(self)
+        self._queue_id = queue_id
+        self._properties = []
 
-class OpenflowQueuePropertyTypes(Enum):
-    NoProperty = 0
-    MinRate = 1
+    @property
+    def queue_id(self):
+        return self._queue_id
 
+    @queue_id.setter
+    def queue_id(self, value):
+        self._queue_id = int(value)
 
-class OpenFlowQueueMinRateProperty(_OpenflowStruct):
-    __slots__ = ['_rate']
-    _PACKFMT = '!HH4xH6x'
-    _MINLEN = struct.calcsize(_PACKFMT)
+    @property
+    def properties(self):
+        return self._properties
+
+    def size(self):
+        return len(self.to_bytes())        
+
+    def to_bytes(self):
+        rawprops = b''.join(p.to_bytes() for p in self._properties)
+        return struct.pack(OpenflowPacketQueue._PACKFMT, self._queue_id,
+            len(rawprops) + OpenflowPacketQueue._MINLEN) + rawprops
+
+    def from_bytes(self, raw):
+        if len(raw) < OpenflowPacketQueue._MINLEN:
+            raise Exception("Not enough data to unpack OpenflowPacketQueue")
+        fields = struct.unpack(OpenflowPacketQueue._PACKFMT, raw[:OpenflowPacketQueue._MINLEN])
+        self.queue_id = fields[0]
+        raw = raw[OpenflowPacketQueue._MINLEN:]
+        self._properties = []
+        while len(raw) > 0:
+            prop, proplen = struct.unpack('!HH', raw[:4])
+            prop = OpenflowQueuePropertyTypes(prop)
+            propobj = _QueuePropertyTypeClassMap.get(prop)()
+            propobj.from_raw(raw[:proplen])
+            self._properties.append(propobj)
+            raw = raw[proplen:]
 
 
 class OpenflowMatch(_OpenflowStruct):
@@ -512,6 +665,9 @@ class OpenflowActionType(Enum):
 
 class _OpenflowAction(_OpenflowStruct):
     __slots__ = ['_type']
+    _PACKFMT = '!HH4x'
+    _MINLEN = struct.calcsize(_PACKFMT)
+
     def __init__(self):
         super().__init__()
         self._type = OpenflowActionType.Output
@@ -523,6 +679,24 @@ class _OpenflowAction(_OpenflowStruct):
     @type.setter
     def type(self, value):
         self._type = OpenflowActionType(value)
+
+    def from_bytes(self, raw):
+        self.type, ignorelen = struct.unpack(_OpenflowAction._PACKFMT, 
+            raw[:_OpenflowAction._MINLEN]) 
+        return raw[_OpenflowAction._MINLEN:]
+
+    def to_bytes(self):
+        return struct.pack(_OpenflowAction._PACKFMT, self._type.value, 
+                           _OpenflowAction._MINLEN)
+
+    def size(self):
+        return _OpenflowAction._MINLEN
+
+
+class ActionStripVlan(_OpenflowAction):
+    def __init__(self):
+        super().__init__()
+        self._type = OpenflowActionType.StripVlan
 
 
 class ActionOutput(_OpenflowAction):
@@ -839,6 +1013,40 @@ class ActionVendorHeader(_OpenflowAction):
         return ActionVendorHeader._MINLEN + datalen
 
 
+_ActionClassMap = {
+    OpenflowActionType.Output: ActionOutput,
+    OpenflowActionType.SetVlanVid: ActionVlanVid,
+    OpenflowActionType.SetVlanPcp: ActionVlanPcp,
+    OpenflowActionType.StripVlan: ActionStripVlan,
+    OpenflowActionType.SetDlSrc: ActionDlAddr,
+    OpenflowActionType.SetDlDst: ActionDlAddr,
+    OpenflowActionType.SetNwSrc: ActionNwAddr,
+    OpenflowActionType.SetNwDst: ActionNwAddr,
+    OpenflowActionType.SetNwTos: ActionNwTos,
+    OpenflowActionType.SetTpSrc: ActionTpPort,
+    OpenflowActionType.SetTpDst: ActionTpPort,
+    OpenflowActionType.Enqueue: ActionEnqueue,
+    OpenflowActionType.Vendor: ActionVendorHeader,
+}
+
+
+def _unpack_actions(raw):
+    '''
+    deserialize 1 or more actions; return a list of
+    Action* objects
+    '''
+    actions = []
+
+    while len(raw) > 0:
+        atype, alen = struct.unpack('!HH', raw[:4])
+        atype = OpenflowActionType(atype)
+        action = _ActionClassMap.get(atype)()
+        action.from_raw(raw[:alen])
+        raw = raw[alen:]
+        actions.append(action)
+    return actions
+
+
 class OpenflowEchoRequest(_OpenflowStruct):
     __slots__ = ['_data']
 
@@ -1102,18 +1310,8 @@ class OpenflowSwitchFeaturesReply(_OpenflowStruct):
         self.dpid = fields[0]
         self.nbuffers = fields[1]
         self.ntables = fields[2]
-
-        # FIXME
-        # OpenflowCapabilities
-        for v in OpenflowCapabilities:
-            if v.value & fields[3] == 1:
-                self.capabilities = v
-        # self.capabilities = fields[3]
-        for a in OpenflowActionType:
-            if a.value & fields[4] == 1:
-                self.actions = a
-        # self.actions = fields[4]
-
+        self._capabilities = _unpack_bitmap(fields[3], OpenflowCapabilities)
+        self._actions = _unpack_bitmap(fields[4], OpenflowActionType) 
         remain = raw[OpenflowSwitchFeaturesReply._MINLEN:]
         p = OpenflowPhysicalPort()
         while len(remain) >= p.size():
@@ -1205,7 +1403,16 @@ class OpenflowSwitchFeaturesReply(_OpenflowStruct):
         self._capabilities.add(value)
 
     def reset_capabilities(self):
-        self._capabilities = set()
+        self._capabilities.clear()
+
+    def clear_capabilities(self):
+        self._capabilities.clear()
+
+    def add_capabilities(self, value):
+        self._capabilities.add(OpenflowCapabilities(value))
+
+    def get_capabilities(self):
+        return self._capabilities
 
     @property
     def actions(self):
@@ -1220,7 +1427,16 @@ class OpenflowSwitchFeaturesReply(_OpenflowStruct):
         self._actions.add(value)
 
     def reset_actions(self):
-        self._actions = set()
+        self._actions.clear()
+
+    def clear_actions(self):
+        self._actions.clear()
+
+    def get_actions(self):
+        return self._actions
+
+    def add_actions(self, value):
+        self._actions.add(OpenflowActionType(value))
 
     @property
     def ports(self):
@@ -1237,7 +1453,6 @@ class OpenflowErrorType(Enum):
 
 
 class OpenflowErrorCode(Enum):
-    # FIXME
     pass
 
 
@@ -1549,13 +1764,92 @@ class OpenflowStatsReply(_OpenflowStruct):
 
 
 class OpenflowQueueGetConfigRequest(_OpenflowStruct):
-    # FIXME
-    pass
+    __slots__ = ('_port')
+    _PACKFMT = '!H2x'
+    _MINLEN = struct.calcsize(_PACKFMT)
+
+    def __init__(self, port=0):
+        _OpenflowStruct.__init__(self)
+        self._port = port
+
+    @property
+    def port(self):
+        return self._port
+
+    @port.setter
+    def port(self, value):
+        value = int(value)
+        try:
+            self._port = OpenflowPort(value)
+        except ValueError:
+            if 0 <= value < OpenflowPort.Max:
+                self._port = value
+            else:
+                raise ValueError("Invalid port number")        
+    
+    def size(self):
+        return OpenflowQueueGetConfigRequest._MINLEN
+
+    def to_bytes(self):
+        return struct.pack(OpenflowQueueGetConfigRequest._PACKFMT, 
+            int(self._port))
+
+    def from_bytes(self, raw):
+        if len(raw) < OpenflowQueueGetConfigRequest._MINLEN:
+            raise Exception("Not enough data to unpack OpenflowQueueGetConfigRequest")
+        fields = struct.pack(OpenflowQueueGetConfigRequest._PACKFMT, raw)
+        self.port = fields[0]
 
 
 class OpenflowQueueGetConfigReply(_OpenflowStruct):
-    # FIXME
-    pass
+    __slots__ = ('_port', '_queues')
+    _PACKFMT = '!H6x'
+    _MINLEN = struct.calcsize(_PACKFMT)
+
+    def __init__(self, port=0):
+        _OpenflowStruct.__init__(self)
+        self._port = port
+        self._queues = []
+
+    @property
+    def queues(self):
+        return self._queues
+    
+    @property
+    def port(self):
+        return self._port
+
+    @port.setter
+    def port(self, value):
+        value = int(value)
+        try:
+            self._port = OpenflowPort(value)
+        except ValueError:
+            if 0 <= value < OpenflowPort.Max:
+                self._port = value
+            else:
+                raise ValueError("Invalid port number")        
+    
+    def size(self):
+        rawqueues = b''.join([q.to_bytes() for q in self._queues])
+        return OpenflowQueueGetConfigReply._MINLEN + len(rawqueues)
+
+    def to_bytes(self):
+        return struct.pack(OpenflowQueueGetConfigReply._PACKFMT, 
+            int(self._port)) + \
+            b''.join([q.to_bytes() for q in self._queues])
+
+    def from_bytes(self, raw):
+        if len(raw) < OpenflowQueueGetConfigReply._MINLEN:
+            raise Exception("Not enough data to unpack OpenflowQueueGetConfigReply")
+        fields = struct.pack(OpenflowQueueGetConfigReply._PACKFMT, raw[:OpenflowQueueGetConfigReply._MINLEN])
+        self.port = fields[0]
+        while len(raw) > 0:
+            qid,qlen = struct.unpack('!IH', raw[:6])
+            rawqueue = raw[:qlen]
+            queue = OpenflowPacketQueue()
+            self._queues.append(queue.from_bytes(rawqueue))
+            raw = raw[qlen:]
 
 
 class OpenflowPacketInReason(Enum):
@@ -1708,13 +2002,7 @@ class OpenflowPacketOut(_OpenflowStruct):
             _unpack_actions(raw[OpenflowPacketOut._MINLEN:(OpenflowPacketOut._MINLEN+actionlen)])
         self.packet = raw[(OpenflowPacketIn._MINLEN+actionlen):]
 
-def _unpack_actions(raw):
-    '''
-    deserialize 1 or more actions; return a list of
-    Action* objects
-    '''
-    # FIXME
-    assert(False)
+
 
 class FlowRemovedReason(Enum):
     IdleTimeout = 0
