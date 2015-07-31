@@ -289,13 +289,14 @@ class OpenflowQueuePropertyTypes(Enum):
     NoProperty = 0
     MinRate = 1
 
+
 class OpenflowQueueMinRateProperty(_OpenflowStruct):
     __slots__ = ['_rate']
     _PACKFMT = '!HH4xH6x'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self):
-        self._rate = 0
+    def __init__(self, rate=0):
+        self._rate = int(rate)
 
     @property
     def rate(self):
@@ -1766,7 +1767,7 @@ class OpenflowStatsTypes(Enum):
 class SwitchDescriptionStats(_OpenflowStruct):
     __slots__ = ('_mfr_desc', '_hw_desc', '_sw_desc', '_serial_num', '_dp_desc')
     _PACKFMT = '!256s256s256s32s256s'
-    _MINLEN = struct.calcsize(_MINLEN)
+    _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
         _OpenflowStruct.__init__(self)
@@ -1831,14 +1832,14 @@ class OpenflowStatsRequest(_OpenflowStruct):
     _PACKFMT = '!HH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, xtype=OpenflowStatsTypes.SwitchDescription)
+    def __init__(self, xtype=OpenflowStatsTypes.SwitchDescription):
         _OpenflowStruct.__init__(self)
         self._type = xtype
         self._body = None
 
 
 
-class OpenflowStatsReplyHeader(_OpenflowStruct):
+class OpenflowStatsReply(_OpenflowStruct):
     __slots__ = ('_type', '_flags', '_body')
     _PACKFMT = '!HH'
     _MINLEN = struct.calcsize(_PACKFMT)

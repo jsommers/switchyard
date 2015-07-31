@@ -199,10 +199,18 @@ class OpenflowPacketTests(unittest.TestCase):
         # FIXME: assertions
 
     def testQueueConfigRequest(self):
-        pass
+        qcfg = OpenflowHeader.build(OpenflowType.QueueGetConfigRequest)
+        qcfg[1].port = 4
+        self._storePkt(qcfg)
+        # FIXME: assertions
 
     def testQueueConfigReply(self):
-        pass
+        qcfg = OpenflowHeader.build(OpenflowType.QueueGetConfigReply)
+        qcfg[1].port = 4
+        qcfg[1].queues.append(OpenflowPacketQueue(queue_id=0))
+        qcfg[1].queues[0].properties.append(OpenflowQueueMinRateProperty(rate=(40 * 10)))
+        self._storePkt(qcfg)
+        # FIXME: assertions
 
     def testStatsRequest(self):
         pass
