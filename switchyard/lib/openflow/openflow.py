@@ -28,6 +28,7 @@ def _unpack_bitmap(bitmap, xenum):
             unpacked.add(enval)
     return unpacked
 
+
 class OpenflowType(Enum):
     Hello = 0
     Error = 1
@@ -63,6 +64,16 @@ class OpenflowPort(IntEnum):
     Controller = 0xfffd
     Local = 0xfffe
     NoPort = 0xffff  # Can't use None!
+
+def _get_port(value):
+    value = int(value)
+    try:
+        value = OpenflowPort(value)
+    except ValueError:
+        if 0 <= value < OpenflowPort.Max:
+            return value
+        else:
+            raise ValueError("Invalid port number")        
 
 
 class OpenflowPortState(Enum):
@@ -1754,7 +1765,7 @@ class OpenflowPortStatus(_OpenflowStruct):
         return self._port
     
 
-class OpenflowStatsTypes(Enum):
+class OpenflowStatsType(Enum):
     SwitchDescription = 0
     IndividualFlow = 1
     AggregateFlow = 2
@@ -1764,13 +1775,253 @@ class OpenflowStatsTypes(Enum):
     Vendor = 0xffff
 
 
-class SwitchDescriptionStats(_OpenflowStruct):
+class OpenflowStatsRequest(_OpenflowStruct):
+    __slots__ = ('_type', '_flags', '_body')
+    _PACKFMT = '!HH'
+    _MINLEN = struct.calcsize(_PACKFMT)
+
+    def __init__(self):
+        _OpenflowStruct.__init__(self, xtype)
+        self._type = OpenflowStatsType(xtype)
+
+    @property
+    def type(self):
+        return self._type
+
+    @type.setter
+    def type(self, value):
+        self._type = OpenflowStatsType(value)
+
+    def size(self):
+        return OpenflowStatsRequest._MINLEN
+
+    def to_bytes(self):
+        return struct.pack(OpenflowStatsRequest._PACKFMT, self._type.value, 0)
+
+    def from_bytes(self, raw):
+        if len(raw) < OpenflowStatsRequest._MINLEN:
+            raise Exception("Not enough data to unpack OpenflowStatsRequest")
+        fields = struct.unpack(OpenflowStatsRequest._PACKFMT, raw[:OpenflowStatsRequest._MINLEN])
+        self.type = fields[0]
+
+
+class SwitchDescriptionStatsRequest(OpenflowStatsRequest):
+    # no body beyond header
+    def __init__(self):
+        OpenflowStatsRequest.__init__(self, OpenflowStatsType.SwitchDescription)
+
+
+class IndividualFlowStatsRequest(OpenflowStatsRequest):
+    __slots__ = ('_match', '_table_id', '_out_port')
+    _PACKFMT = '!BxH'
+    _MINLEN = OpenflowMatch.size() + OpenflowStatsRequest._MINLEN + struct.calcsize(_PACKFMT)
+
+    def __init__(self):
+        OpenflowStatsRequest.__init__(self, OpenflowStatsType.IndividualFlow)
+        self._match = OpenflowMatch()
+        self._table_id = 0
+        self._out_port = 0
+
+    @property
+    def match(self):
+        return self._match
+
+    @property
+    def table_id(self):
+        return self._table_id
+
+    @table_id.setter
+    def table_id(self, value):
+        self._table_id = int(value)
+
+    @property
+    def out_port(self):
+        return self._out_port
+
+    @out_port.setter
+    def out_port(self, value):
+        self._out_port = _get_port(value)
+
+    def size(self):
+        return IndividualFlowStatsRequest._MINLEN
+
+    def to_bytes(self):
+        return super().to_bytes() + self._match.to_bytes() + \
+            struct.pack(IndividualFlowStatsRequest._PACKFMT, self._table_id, self._out_port)
+
+    def from_bytes(self, raw):
+        if len(raw) < IndividualFlowStatsRequest._MINLEN:
+            raise Exception("Not enough data to unpack IndividualFlowStatsRequest")
+        super().from_bytes(raw[:OpenflowStatsRequest._MINLEN])
+        raw = raw[OpenflowStatsRequest._MINLEN:]
+        self.match.from_bytes(raw[:OpenflowMatch.size()])
+        raw = raw[OpenflowMatch.size():]
+        fields = struct.unpack(IndividualFlowStatsRequest._PACKFMT, raw)
+        self.table_id = fields[0]
+        self.out_port = fields[1]
+
+
+class AggregateFlowStatsRequest(IndividualFlowStatsRequest):
+    # body is same as individual flow stats request
+    pass
+
+
+class TableStatsRequest(OpenflowStatsRequest):
+    # no body beyond header
+    def __init__(self):
+        OpenflowStatsRequest.__init__(self, OpenflowStatsType.Table)
+
+
+class PortStatsRequest(OpenflowStatsRequest):
+    __slots__ = ('_port_no')
+    _PACKFMT = '!H6x'
+    _MINLEN = OpenflowStatsRequest._MINLEN + struct.calcsize(_PACKFMT)
+
+    def __init__(self):
+        OpenflowStatsRequest.__init__(self, OpenflowStatsType.Port)
+        self._port_no = OpenflowPort.NoPort
+
+    @property
+    def port_no(self):
+        return self._port_no
+
+    @port_no.setter
+    def port_no(self, value):
+        self._port_no = _get_port(value)
+
+    @property
+    def port(self):
+        return self.port_no
+
+    @port.setter
+    def port(self, value):
+        self.port_no = value
+    
+    def size(self):
+        return PortStatsRequest._MINLEN
+
+    def to_bytes(self):
+        return super.to_bytes() + struct.pack(PortStatsRequest._PACKFMT, self.port)
+
+    def from_bytes(self, raw):
+        if len(raw) < PortStatsRequest._MINLEN:
+            raise Exception("Not enough data to unpack PortStatsRequest")
+        super().from_bytes(raw[:OpenflowStatsRequest._MINLEN])
+        raw = raw[OpenflowStatsRequest._MINLEN:]
+        fields = struct.unpack(PortStatsRequest._PACKFMT, raw)
+        self.port = fields[0]
+
+
+class QueueStatsRequest(OpenflowStatsRequest):
+    __slots__ = ('_port_no', '_queue_id')
+    _PACKFMT = '!H2xI'
+    _MINLEN = OpenflowStatsRequest._MINLEN + struct.calcsize(_PACKFMT)
+
+    def __init__(self):
+        OpenflowStatsRequest.__init__(self, OpenflowStatsType.Queue)
+        self._port_no = OpenflowPort.NoPort
+        self._queue_id = 0
+
+    @property
+    def port_no(self):
+        return self._port_no
+
+    @port_no.setter
+    def port_no(self, value):
+        self._port_no = _get_port(value)
+
+    @property
+    def port(self):
+        return self.port_no
+
+    @port.setter
+    def port(self, value):
+        self.port_no = value
+      
+    @property
+    def queue_id(self):
+        return self._queue_id
+
+    @queue_id.setter
+    def queue_id(self, value):
+        self._queue_id = int(value)
+
+    def size(self):
+        return QueueStatsRequest._MINLEN
+
+    def to_bytes(self):
+        return super.to_bytes() + \
+            struct.pack(QueueStatsRequest._PACKFMT, self.port, self.queue_id)
+
+    def from_bytes(self, raw):
+        if len(raw) < QueueStatsRequest._MINLEN:
+            raise Exception("Not enough data to unpack QueueStatsRequest")
+        super().from_bytes(raw[:OpenflowStatsRequest._MINLEN])
+        raw = raw[OpenflowStatsRequest._MINLEN:]
+        fields = struct.unpack(QueueStatsRequest._PACKFMT, raw)
+        self.port = fields[0]
+        self.queue_id = fields[1]
+
+
+class VendorStatsRequest(OpenflowStatsRequest):
+    __slots__ = ('_vendor_id', '_data')
+    _PACKFMT = '!I'
+    _MINLEN = OpenflowStatsRequest._MINLEN + 4
+
+    def __init__(self):
+        OpenflowStatsRequest.__init__(self, OpenflowStatsType.Vendor)
+        self._vendor_id = 0xffffffff
+        self._data = b''
+
+    @property
+    def vendor_id(self):
+        return self._vendor_id
+
+    @vendor_id.setter
+    def vendor_id(self, value):
+        self._vendor_id = int(value)
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, value):
+        self._data = bytes(value)
+
+    def size(self):
+        return 4 + len(self._data)
+
+    def to_bytes(self):
+        return super().to_bytes() + struct.pack(VendorStatsRequest._PACKFMT, self._vendor) + \
+            self._data
+
+    def from_bytes(self, raw):
+        if len(raw) < VendorStatsRequest._MINLEN:
+            raise Exception("Not enough data to unpack VendorStatsRequest")
+        super().from_bytes(raw[:OpenflowStatsRequest._MINLEN])
+        raw = raw[OpenflowStatsRequest._MINLEN:]
+        fields = struct.unpack(VendorStatsRequest._PACKFMT, raw[:4])
+        self.vendor = fields[0]
+        self.data = raw[4:]
+
+
+class OpenflowStatsReply(_OpenflowStruct):
+    __slots__ = ('_type', '_flags', '_body')
+    _PACKFMT = '!HH'
+    _MINLEN = struct.calcsize(_PACKFMT)
+
+    def __init__(self):
+        pass
+
+
+class SwitchDescriptionStatsReply(OpenflowStatsReply):
     __slots__ = ('_mfr_desc', '_hw_desc', '_sw_desc', '_serial_num', '_dp_desc')
     _PACKFMT = '!256s256s256s32s256s'
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
-        _OpenflowStruct.__init__(self)
+        _OpenflowStatsReply.__init__(self)
         self._mfr_desc = '' 
         self._hw_desc = '' 
         self._sw_desc = '' 
@@ -1827,25 +2078,67 @@ class SwitchDescriptionStats(_OpenflowStruct):
         pass
     
 
-class OpenflowStatsRequest(_OpenflowStruct):
-    __slots__ = ('_type', '_flags', '_body')
-    _PACKFMT = '!HH'
-    _MINLEN = struct.calcsize(_PACKFMT)
-
-    def __init__(self, xtype=OpenflowStatsTypes.SwitchDescription):
-        _OpenflowStruct.__init__(self)
-        self._type = xtype
-        self._body = None
+class IndividualFlowStatsReply(OpenflowStatsReply):
+    pass
 
 
+class AggregateFlowStatsReply(OpenflowStatsReply):
+    pass
 
-class OpenflowStatsReply(_OpenflowStruct):
-    __slots__ = ('_type', '_flags', '_body')
-    _PACKFMT = '!HH'
-    _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self):
-        pass
+class TableStatsReply(OpenflowStatsReply):
+    pass
+
+
+class PortStatsReply(OpenflowStatsReply):
+    pass
+
+
+class QueueStatsReply(OpenflowStatsReply):
+    pass
+
+
+class VendorStatsReply(OpenflowStatsReply):
+    pass
+
+
+    # def _initbody(self, *args):
+    #     if self._type == OpenflowStatsType.SwitchDescription:
+    #         pass
+    #     elif self._type == OpenflowStatsType.IndividualFlow:
+    #         pass
+    #     elif self._type == OpenflowStatsType.AggregateFlow:
+    #         pass
+    #     elif self._type == OpenflowStatsType.Table:
+    #         pass
+    #     elif self._type == OpenflowStatsType.Port:
+    #         pass
+    #     elif self._type == OpenflowStatsType.Queue:
+    #         pass
+    #     elif self._type == OpenflowStatsType.Vendor:
+    #         pass
+
+
+
+_OpenflowStatsRequestClassMap = {
+    OpenflowStatsType.SwitchDescription: SwitchDescriptionStatsRequest,
+    OpenflowStatsType.IndividualFlow: IndividualFlowStatsRequest,
+    OpenflowStatsType.AggregateFlow: AggregateFlowStatsRequest,
+    OpenflowStatsType.Table: TableStatsRequest,
+    OpenflowStatsType.Port: PortStatsRequest,
+    OpenflowStatsType.Queue: QueueStatsRequest,
+    OpenflowStatsType.Vendor: VendorStatsRequest,
+}
+
+_OpenflowStatsReplyClassMap = {
+    OpenflowStatsType.SwitchDescription: SwitchDescriptionStatsReply,
+    OpenflowStatsType.IndividualFlow: IndividualFlowStatsReply,
+    OpenflowStatsType.AggregateFlow: AggregateFlowStatsReply,
+    OpenflowStatsType.Table: TableStatsReply,
+    OpenflowStatsType.Port: PortStatsReply,
+    OpenflowStatsType.Queue: QueueStatsReply,
+    OpenflowStatsType.Vendor: VendorStatsReply,
+}
 
 
 class OpenflowQueueGetConfigRequest(_OpenflowStruct):
@@ -1863,14 +2156,7 @@ class OpenflowQueueGetConfigRequest(_OpenflowStruct):
 
     @port.setter
     def port(self, value):
-        value = int(value)
-        try:
-            self._port = OpenflowPort(value)
-        except ValueError:
-            if 0 <= value < OpenflowPort.Max:
-                self._port = value
-            else:
-                raise ValueError("Invalid port number")        
+        self._port = _get_port(value)
     
     def size(self):
         return OpenflowQueueGetConfigRequest._MINLEN
@@ -1906,15 +2192,8 @@ class OpenflowQueueGetConfigReply(_OpenflowStruct):
 
     @port.setter
     def port(self, value):
-        value = int(value)
-        try:
-            self._port = OpenflowPort(value)
-        except ValueError:
-            if 0 <= value < OpenflowPort.Max:
-                self._port = value
-            else:
-                raise ValueError("Invalid port number")        
-    
+        self._port = _get_port(value)
+
     def size(self):
         rawqueues = b''.join([q.to_bytes() for q in self._queues])
         return OpenflowQueueGetConfigReply._MINLEN + len(rawqueues)
@@ -1988,14 +2267,7 @@ class OpenflowPacketIn(_OpenflowStruct):
 
     @in_port.setter
     def in_port(self, value):
-        value = int(value)
-        try:
-            self._in_port = OpenflowPort(value)
-        except ValueError:
-            if 0 <= value < OpenflowPort.Max:
-                self._in_port = value
-            else:
-                raise ValueError("Invalid port number")
+        self._in_port = _get_port(value)
 
     @property
     def reason(self):
@@ -2042,14 +2314,7 @@ class OpenflowPacketOut(_OpenflowStruct):
 
     @in_port.setter
     def in_port(self, value):
-        value = int(value)
-        try:
-            self._in_port = OpenflowPort(value)
-        except ValueError:
-            if 0 <= value < OpenflowPort.Max:
-                self._in_port = value
-            else:
-                raise ValueError("Invalid port number")
+        self._in_port = _get_port(value)
 
     @property
     def actions(self):
@@ -2094,6 +2359,7 @@ class FlowRemovedReason(Enum):
     HardTimeout = 1
     Delete = 2
     Unknown = 0xff
+
 
 class OpenflowFlowRemoved(_OpenflowStruct):
     __slots__ = ('_match', '_cookie', '_priority', '_reason',
