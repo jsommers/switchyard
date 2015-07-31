@@ -212,11 +212,12 @@ class OpenflowPacketTests(unittest.TestCase):
         self._storePkt(qcfg)
         # FIXME: assertions
 
-    def testStatsRequest(self):
-        pass
+    def testStats(self):
+        switchstatsreq = OpenflowHeader(OpenflowType.StatsRequest) + SwitchDescriptionStatsRequest()
+        print (switchstatsreq)
+        self._storePkt(switchstatsreq)
+        # FIXME: assertions
 
-    def testStatsReply(self):
-        pass
 
 if __name__ == '__main__':
     unittest.main()

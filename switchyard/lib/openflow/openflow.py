@@ -1780,8 +1780,8 @@ class OpenflowStatsRequest(_OpenflowStruct):
     _PACKFMT = '!HH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self):
-        _OpenflowStruct.__init__(self, xtype)
+    def __init__(self, xtype):
+        _OpenflowStruct.__init__(self)
         self._type = OpenflowStatsType(xtype)
 
     @property
