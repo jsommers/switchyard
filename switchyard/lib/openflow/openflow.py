@@ -1753,14 +1753,98 @@ class OpenflowPortStatus(_OpenflowStruct):
         return self._port
     
 
+class OpenflowStatsTypes(Enum):
+    SwitchDescription = 0
+    IndividualFlow = 1
+    AggregateFlow = 2
+    Table = 3
+    Port = 4
+    Queue = 5
+    Vendor = 0xffff
+
+
+class SwitchDescriptionStats(_OpenflowStruct):
+    __slots__ = ('_mfr_desc', '_hw_desc', '_sw_desc', '_serial_num', '_dp_desc')
+    _PACKFMT = '!256s256s256s32s256s'
+    _MINLEN = struct.calcsize(_MINLEN)
+
+    def __init__(self):
+        _OpenflowStruct.__init__(self)
+        self._mfr_desc = '' 
+        self._hw_desc = '' 
+        self._sw_desc = '' 
+        self._serial_num = ''
+        self._dp_desc = ''
+
+    @property
+    def mfr_desc(self):
+        return self._mfr_desc
+
+    @mfr_desc.setter
+    def mfr_desc(self, value):
+        self._mfr_desc = value
+
+    @property
+    def hw_desc(self):
+        return self._hw_desc
+
+    @hw_desc.setter
+    def hw_desc(self, value):
+        self._hw_desc = value
+
+    @property
+    def sw_desc(self):
+        return self._sw_desc
+
+    @sw_desc.setter
+    def sw_desc(self, value):
+        self._sw_desc = value
+
+    @property
+    def serial_num(self):
+        return self._serial_num
+
+    @serial_num.setter
+    def serial_num(self, value):
+        self._serial_num = value
+
+    @property
+    def dp_desc(self):
+        return self._dp_desc
+
+    @dp_desc.setter
+    def dp_desc(self, value):
+        self._dp_desc = value
+
+    def size(self):
+        pass
+
+    def to_bytes(self):
+        pass
+
+    def from_bytes(self, raw):
+        pass
+    
+
 class OpenflowStatsRequest(_OpenflowStruct):
-    # FIXME
-    pass
+    __slots__ = ('_type', '_flags', '_body')
+    _PACKFMT = '!HH'
+    _MINLEN = struct.calcsize(_PACKFMT)
+
+    def __init__(self, xtype=OpenflowStatsTypes.SwitchDescription)
+        _OpenflowStruct.__init__(self)
+        self._type = xtype
+        self._body = None
 
 
-class OpenflowStatsReply(_OpenflowStruct):
-    # FIXME
-    pass
+
+class OpenflowStatsReplyHeader(_OpenflowStruct):
+    __slots__ = ('_type', '_flags', '_body')
+    _PACKFMT = '!HH'
+    _MINLEN = struct.calcsize(_PACKFMT)
+
+    def __init__(self):
+        pass
 
 
 class OpenflowQueueGetConfigRequest(_OpenflowStruct):
