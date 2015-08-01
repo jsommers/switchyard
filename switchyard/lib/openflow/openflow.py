@@ -2110,10 +2110,134 @@ class IndividualFlowStatsReply(OpenflowStatsReply):
         return IndividualFlowStatsReply._MINLEN + len(actions)
 
     def to_bytes(self):
-        pass
+        part0 = super().to_bytes()
+        part2 = self.match.to_bytes()
+        part3 = struct.pack(IndividualFlowStatsReply._PACKFMT2, self.duration_sec, self.duration_nsec,
+            self.priority, self.idle_timeout, self.hard_timeout, self.cookie, self.packet_count,
+            self._byte_count)
+        part4 = b''.join([a.to_bytes() for a in self._actions])
+        xlen = IndividualFlowStatsReply._MINLEN + len(part4)
+        part1 = struct.pack(IndividualFlowStatsReply._PACKFMT1, xlen, self.table_id)
+        return part0 + part1 + part2 + part3 + part4
 
     def from_bytes(self, raw):
-        pass
+        if len(raw) < IndividualFlowStatsReply._MINLEN:
+            raise Exception("Not enough data to unpack IndividualFlowStatsReply")
+        super().from_bytes(raw[:OpenflowStatsReply._MINLEN])
+        raw = raw[OpenflowStatsReply._MINLEN:]
+        part0size = struct.calcsize(IndividualFlowStatsReply._PACKFMT1)
+        part2size = struct.calcsize(IndividualFlowStatsReply._PACKFMT2)
+        fields0 = struct.unpack(IndividualFlowStatsReply._PACKFMT1, raw[:part0size])
+        self.table_id = fields0[0]
+        raw = raw[part0size:]
+        self.match = OpenflowMatch()
+        self.match.from_bytes(raw[:OpenflowMatch.size()])
+        raw = raw[OpenflowMatch.size():]
+        fields1 = struct.unpack(IndividualFlowStatsReply._PACKFMT2, raw[:part2size])
+        self.duration_sec = fields1[0]
+        self.duration_nsec = fields1[1]
+        self.priority = fields1[2]
+        self.idle_timeout = fields1[3]
+        self.hard_timeout = fields1[4]
+        self.cookie = fields1[5]
+        self.packet_count = fields1[6]
+        self.byte_count = fields1[7]
+        self._actions = _unpack_actions(raw[part2size:])
+
+    @property
+    def table_id(self):
+        return self._table_id
+
+    @table_id.setter
+    def table_id(self, value):
+        self._table_id = int(value)     
+
+    @property
+    def match(self):
+        return self._match
+
+    @match.setter
+    def match(self, value):
+        if not isinstance(value, OpenflowMatch):
+            raise ValueError("match must be set to OpenflowMatch object")
+        self._match = value
+
+    @property
+    def cookie(self):
+        return self._cookie
+
+    @cookie.setter
+    def cookie(self, value):
+        self._cookie = int(value)
+
+    @property
+    def priority(self):
+        return self._priority
+
+    @priority.setter
+    def priority(self, value):
+        self._priority = int(value)
+
+    @property
+    def duration_sec(self):
+        return self._duration_sec
+
+    @duration_sec.setter
+    def duration_sec(self, value):
+        self._duration_sec = int(value)
+
+    @property
+    def duration_nsec(self):
+        return self._duration_nsec
+
+    @duration_nsec.setter
+    def duration_nsec(self, value):
+        self._duration_nsec = int(value)
+
+    @property
+    def duration(self):
+        return self._duration_sec + self._duration_nsec / 1e9
+    
+    @duration.setter
+    def duration(self, value):
+        self._duration_sec = int(value)
+        self._duration_nsec = int((value - self._duration_sec) * 1e9)
+
+    @property
+    def idle_timeout(self):
+        return self._idle_timeout
+
+    @idle_timeout.setter
+    def idle_timeout(self, value):
+        self._idle_timeout = int(value)
+
+    @property
+    def hard_timeout(self):
+        return self._hard_timeout
+
+    @idle_timeout.setter
+    def hard_timeout(self, value):
+        self._hard_timeout = int(value)
+
+    @property
+    def packet_count(self):
+        return self._packet_count
+
+    @packet_count.setter
+    def packet_count(self, value):
+        self._packet_count = int(value)
+
+    @property
+    def byte_count(self):
+        return self._byte_count
+
+    @byte_count.setter
+    def byte_count(self, value):
+        self._byte_count = int(value)
+
+    @property
+    def actions(self):
+        return self._actions
 
 
 class AggregateFlowStatsReply(OpenflowStatsReply):
@@ -2129,11 +2253,43 @@ class AggregateFlowStatsReply(OpenflowStatsReply):
         return AggregateFlowStatsReply._MINLEN
 
     def to_bytes(self):
-        pass
+        return super.to_bytes() + struct.pack(AggregateFlowStatsReply._PACKFMT,
+            self.byte_count, self.packet_count, self.flow_count)
 
     def from_bytes(self, raw):
-        pass
+        if len(raw) < AggregateFlowStatsReply._MINLEN:
+            raise Exception("Not enough data to unpack AggregateFlowStatsReply")
+        super().from_bytes(raw[:OpenflowStatsReply._MINLEN])
+        raw = raw[OpenflowStatsReply._MINLEN:]
+        fields = struct.unpack(AggregateFlowStatsReply._PACKFMT, raw)
+        self.byte_count = fields[0]
+        self.packet_count = fields[1]
+        self.flow_count = fields[2]
 
+    @property
+    def byte_count(self):
+        return self._byte_count
+
+    @byte_count.setter
+    def byte_count(self, value):
+        self._byte_count = int(value)
+
+    @property
+    def packet_count(self):
+        return self._packet_count
+
+    @packet_count.setter
+    def packet_count(self, value):
+        self._packet_count = int(value)
+
+    @property
+    def flow_count(self):
+        return self._flow_count
+
+    @flow_count.setter
+    def flow_count(self, value):
+        self._flow_count = int(value)
+    
 
 class TableStatsReply(OpenflowStatsReply):
     __slots__ = ('_table_id', '_wildcards', '_max_entries', 
@@ -2155,7 +2311,10 @@ class TableStatsReply(OpenflowStatsReply):
         pass
 
     def from_bytes(self, raw):
-        pass
+        if len(raw) < TableStatsReply._MINLEN:
+            raise Exception("Not enough data to unpack TableStatsReply")
+        super().from_bytes(raw[:OpenflowStatsReply._MINLEN])
+        raw = raw[OpenflowStatsReply._MINLEN:]
 
 
 class PortStatsReply(OpenflowStatsReply):
@@ -2182,7 +2341,10 @@ class PortStatsReply(OpenflowStatsReply):
         pass
 
     def from_bytes(self, raw):
-        pass
+        if len(raw) < PortStatsReply._MINLEN:
+            raise Exception("Not enough data to unpack PortStatsReply")
+        super().from_bytes(raw[:OpenflowStatsReply._MINLEN])
+        raw = raw[OpenflowStatsReply._MINLEN:]
 
 
 class QueueStatsReply(OpenflowStatsReply):
@@ -2202,7 +2364,10 @@ class QueueStatsReply(OpenflowStatsReply):
         pass
 
     def from_bytes(self, raw):
-        pass
+        if len(raw) < QueueStatsReply._MINLEN:
+            raise Exception("Not enough data to unpack QueueStatsReply")
+        super().from_bytes(raw[:OpenflowStatsReply._MINLEN])
+        raw = raw[OpenflowStatsReply._MINLEN:]
 
 
 class VendorStatsReply(OpenflowStatsReply):
@@ -2219,28 +2384,33 @@ class VendorStatsReply(OpenflowStatsReply):
         return VendorStatsReply._MINLEN + len(self._data)
 
     def to_bytes(self):
-        pass
+        return super().to_bytes + struct.pack(VendorStatsReply._PACKFMT, self.vendor_id) + \
+            self.data
 
     def from_bytes(self, raw):
-        pass
+        if len(raw) < VendorStatsReply._MINLEN:
+            raise Exception("Not enough data to unpack VendorStatsReply")
+        super().from_bytes(raw[:OpenflowStatsReply._MINLEN])
+        raw = raw[OpenflowStatsReply._MINLEN:]
+        fields = struct.unpack(VendorStatsReply._PACKFMT, raw[:4])
+        self.vendor_id = fields[0]
+        self.data = raw[4:]
 
+    @property
+    def vendor_id(self):
+        return self._vendor_id
 
-    # def _initbody(self, *args):
-    #     if self._type == OpenflowStatsType.SwitchDescription:
-    #         pass
-    #     elif self._type == OpenflowStatsType.IndividualFlow:
-    #         pass
-    #     elif self._type == OpenflowStatsType.AggregateFlow:
-    #         pass
-    #     elif self._type == OpenflowStatsType.Table:
-    #         pass
-    #     elif self._type == OpenflowStatsType.Port:
-    #         pass
-    #     elif self._type == OpenflowStatsType.Queue:
-    #         pass
-    #     elif self._type == OpenflowStatsType.Vendor:
-    #         pass
-
+    @vendor_id.setter
+    def vendor_id(self, value):
+        self._vendor_id = value
+    
+    @property
+    def data(self):
+        return self._data
+   
+    @data.setter
+    def data(self, value):
+        self._data = bytes(value) 
 
 
 _OpenflowStatsRequestClassMap = {
