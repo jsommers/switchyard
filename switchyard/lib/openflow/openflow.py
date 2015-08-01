@@ -2308,14 +2308,104 @@ class TableStatsReply(OpenflowStatsReply):
         return TableStatsReply._MINLEN
 
     def to_bytes(self):
-        pass
+        wildbits = _make_bitmap(self._wildcards)
+        return super.to_bytes() + \
+            struct.pack(TableStatsReply._PACKFMT, self.table_id, wildbits,
+                        self.max_entries, self.active_count, self.lookup_count,
+                        self.matched_count)
 
     def from_bytes(self, raw):
         if len(raw) < TableStatsReply._MINLEN:
             raise Exception("Not enough data to unpack TableStatsReply")
         super().from_bytes(raw[:OpenflowStatsReply._MINLEN])
         raw = raw[OpenflowStatsReply._MINLEN:]
+        fields = struct.unpack(TableStatsReply._PACKFMT, raw)
+        self._wildcards = set()
+        wildbits = fields[1]
+        if fields[1] == OpenflowWildcards.All.value:
+            self.wildcard_all()
+            self.nwsrc_wildcard = 32
+            self.nwdst_wildcard = 32
+        else:
+            for v in OpenflowWildcards:
+                if not v.name.endswith('All') and \
+                   not v.name.endswith('Mask') and \
+                   v.value & wildbits == v.value:
+                    self.add_wildcard(v)
 
+            # set nwsrc_wildcard, nwdst_wildcard
+            nwsrcbits = (wildbits & OpenflowWildcards.NwSrcMask.value) >> 8
+            self.nwsrc_wildcard = nwsrcbits
+            nwdstbits = (wildbits & OpenflowWildcards.NwDstMask.value) >> 14
+            self.nwdst_wildcard = nwdstbits
+
+        self.table_id = fields[0]
+        self.max_entries = fields[2]
+        self.active_count = fields[3]
+        self.lookup_count = fields[4]
+        self.matched_count = fields[5]
+ 
+    @property
+    def wildcards(self):
+        wcards = []
+        wcards.append("NwSrc:{}".format(self.nwsrc_wildcard))
+        wcards.append("NwDst:{}".format(self.nwdst_wildcard))
+        wcards.extend([w.name for w in self._wildcards])
+        return wcards
+
+    def add_wildcard(self, value):
+        value = OpenflowWildcards(value)
+        self._wildcards.add(value)
+
+    def reset_wildcards(self):
+        self._wildcards.clear()
+
+    def remove_wildcard(self, value):
+        self._wildcards.discard(value)
+
+    def wildcard_all(self):
+        self._wildcards = set([OpenflowWildcards.All])
+
+    @property
+    def table_id(self):
+        return self._table_id
+
+    @table_id.setter
+    def table_id(self, value):
+        self._table_id = int(value)
+    
+    @property
+    def max_entries(self):
+        return self._max_entries
+
+    @max_entries.setter
+    def max_entries(self, value):
+        self._max_entries = int(value)
+
+    @property
+    def active_count(self):
+        return self._active_count
+
+    @active_count.setter
+    def active_count(self, value):
+        self._active_count = int(value)
+
+    @property
+    def lookup_count(self):
+        return self._lookup_count
+
+    @lookup_count.setter
+    def lookup_count(self, value):
+        self._lookup_count = int(value)
+    
+    @property
+    def matched_count(self):
+        return self._matched_count
+
+    @matched_count.setter
+    def matched_count(self, value):
+        self._matched_count = int(value)
+    
 
 class PortStatsReply(OpenflowStatsReply):
     __slots__ = ('_port_no', '_rx_packets', '_tx_packets', '_rx_bytes',
@@ -2338,13 +2428,135 @@ class PortStatsReply(OpenflowStatsReply):
         return PortStatsReply._MINLEN
 
     def to_bytes(self):
-        pass
+        return super.to_bytes() + \
+            struct.pack(PortStatsReply._PACKFMT, self.port_no, self.rx_packets,
+                self.tx_packets, self.rx_bytes, self.tx_bytes, self.rx_dropped,
+                self.tx_dropped, self.rx_errors, self.tx_errors, self.rx_frame_errors,
+                self.rx_over_errors, self.rx_crc_errors, self.collisions)
 
     def from_bytes(self, raw):
         if len(raw) < PortStatsReply._MINLEN:
             raise Exception("Not enough data to unpack PortStatsReply")
         super().from_bytes(raw[:OpenflowStatsReply._MINLEN])
         raw = raw[OpenflowStatsReply._MINLEN:]
+        fields = struct.unpack(PortStatsReply._PACKFMT, raw)
+        self.port_no = fields[0]
+        self.rx_packets = fields[1]
+        self.tx_packets = fields[2]
+        self.rx_bytes = fields[3]
+        self.tx_bytes = fields[4]
+        self.rx_dropped = fields[5]
+        self.tx_dropped = fields[6]
+        self.rx_errors = fields[7]
+        self.tx_errors = fields[8]
+        self.rx_frame_errors = fields[9]
+        self.rx_over_errors = fields[10]
+        self.rx_crc_errors = fields[11]
+        self.collisions = fields[12]
+
+    @property
+    def port_no(self):
+        return self._port_no
+
+    @port_no.setter
+    def port_no(self, value):
+        self._port_no = int(value)
+
+    @property
+    def rx_packets(self):
+        return self._rx_packets
+
+    @rx_packets.setter
+    def rx_packets(self, value):
+        self._rx_packets = int(value)
+
+    @property
+    def tx_packets(self):
+        return self._tx_packets
+
+    @tx_packets.setter
+    def tx_packets(self, value):
+        self._tx_packets = int(value)
+
+    @property
+    def rx_bytes(self):
+        return self._rx_bytes
+
+    @rx_bytes.setter
+    def rx_bytes(self, value):
+        self._rx_bytes = int(value)
+
+    @property
+    def tx_bytes(self):
+        return self._tx_bytes
+
+    @tx_bytes.setter
+    def tx_bytes(self, value):
+        self._tx_bytes = int(value)
+
+    @property
+    def rx_dropped(self):
+        return self._rx_dropped
+
+    @rx_dropped.setter
+    def rx_dropped(self, value):
+        self._rx_dropped = int(value)
+
+    @property
+    def tx_dropped(self):
+        return self._tx_dropped
+
+    @tx_dropped.setter
+    def tx_dropped(self, value):
+        self._tx_dropped = int(value)
+
+    @property
+    def rx_errors(self):
+        return self._rx_errors
+
+    @rx_errors.setter
+    def rx_errors(self, value):
+        self._rx_errors = int(value)
+
+    @property
+    def tx_errors(self):
+        return self._tx_errors
+
+    @tx_errors.setter
+    def tx_errors(self, value):
+        self._tx_errors = int(value)
+    
+    @property
+    def rx_frame_errors(self):
+        return self._rx_frame_errors
+
+    @rx_frame_errors.setter
+    def rx_frame_errors(self, value):
+        self._rx_frame_errors = int(value)
+
+    @property
+    def rx_over_errors(self):
+        return self._rx_over_errors
+
+    @rx_over_errors.setter
+    def rx_over_errors(self, value):
+        self._rx_over_errors = int(value)
+    
+    @property
+    def rx_crc_errors(self):
+        return self._rx_crc_errors
+
+    @rx_crc_errors.setter
+    def rx_crc_errors(self, value):
+        self._rx_over_errors = int(value)
+
+    @property
+    def collisions(self):
+        return self._collisions
+
+    @collisions.setter
+    def collisions(self, value):
+        self._collisions = int(value)
 
 
 class QueueStatsReply(OpenflowStatsReply):
@@ -2361,13 +2573,60 @@ class QueueStatsReply(OpenflowStatsReply):
         return PortStatsReply._MINLEN
 
     def to_bytes(self):
-        pass
+        return super.to_bytes() + struct.pack(QueueStatsReply._PACKFMT,
+            self.port_no, self.queue_id, self.tx_bytes, self.tx_packets, self.tx_errors)
 
     def from_bytes(self, raw):
         if len(raw) < QueueStatsReply._MINLEN:
             raise Exception("Not enough data to unpack QueueStatsReply")
         super().from_bytes(raw[:OpenflowStatsReply._MINLEN])
         raw = raw[OpenflowStatsReply._MINLEN:]
+        fields = struct.unpack(QueueStatsReply._PACKFMT, raw)
+        self.port_no = fields[0]
+        self.queue_id = fields[1]
+        self.tx_bytes = fields[2]
+        self.tx_packets = fields[3]
+        self.tx_errors = fields[4]
+
+    @property
+    def port_no(self):
+        return self._port_no
+
+    @port_no.setter
+    def port_no(self, value):
+        self._port_no = int(value)
+
+    @property
+    def queue_id(self):
+        return self._queue_id
+
+    @queue_id.setter
+    def queue_id(self, value):
+        self._queue_id = int(value)
+
+    @property
+    def tx_bytes(self):
+        return self._tx_bytes
+
+    @tx_bytes.setter
+    def tx_bytes(self, value):
+        self._tx_bytes = int(value)
+    
+    @property
+    def tx_packets(self):
+        return self._tx_packets
+
+    @tx_packets.setter
+    def tx_packets(self, value):
+        self._tx_packets = int(value)
+
+    @property
+    def tx_errors(self):
+        return self._tx_errors
+      
+    @tx_errors.setter
+    def tx_errors(self, value):
+        self._tx_errors = int(value)
 
 
 class VendorStatsReply(OpenflowStatsReply):
