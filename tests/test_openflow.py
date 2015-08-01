@@ -212,11 +212,61 @@ class OpenflowPacketTests(unittest.TestCase):
         self._storePkt(qcfg)
         # FIXME: assertions
 
-    def testStats(self):
+    def testSwitchStats(self):
         switchstatsreq = OpenflowHeader(OpenflowType.StatsRequest) + SwitchDescriptionStatsRequest()
         self._storePkt(switchstatsreq)
+
+        switchstatsreply = OpenflowHeader(OpenflowType.StatsReply) + SwitchDescriptionStatsReply()
+        self._storePkt(switchstatsreply)
         # FIXME: assertions
 
+    def testIndividualFlowStats(self):
+        req = OpenflowHeader(OpenflowType.StatsRequest) + IndividualFlowStatsRequest()
+        self._storePkt(req)
+
+        reply = OpenflowHeader(OpenflowType.StatsReply) + IndividualFlowStatsReply()
+        self._storePkt(reply)
+        # FIXME: assertions
+
+    def testAggregateFlowStats(self):
+        req = OpenflowHeader(OpenflowType.StatsRequest) + AggregateFlowStatsRequest()
+        self._storePkt(req)
+
+        reply = OpenflowHeader(OpenflowType.StatsReply) + AggregateFlowStatsReply()
+        self._storePkt(reply)
+        # FIXME: assertions
+
+    def testTableStats(self):
+        req = OpenflowHeader(OpenflowType.StatsRequest) + TableStatsRequest()
+        self._storePkt(req)
+
+        reply = OpenflowHeader(OpenflowType.StatsReply) + TableStatsReply()
+        self._storePkt(reply)
+        # FIXME: assertions
+
+    def testPortStats(self):
+        req = OpenflowHeader(OpenflowType.StatsRequest) + PortStatsRequest()
+        self._storePkt(req)
+
+        reply = OpenflowHeader(OpenflowType.StatsReply) + PortStatsReply()
+        self._storePkt(reply)
+        # FIXME: assertions
+
+    def testQueueStats(self):
+        req = OpenflowHeader(OpenflowType.StatsRequest) + QueueStatsRequest()
+        self._storePkt(req)
+
+        reply = OpenflowHeader(OpenflowType.StatsReply) + QueueStatsReply()
+        self._storePkt(reply)
+        # FIXME: assertions
+
+    def testVendorStats(self):
+        req = OpenflowHeader(OpenflowType.StatsRequest) + VendorStatsRequest()
+        self._storePkt(req)
+
+        reply = OpenflowHeader(OpenflowType.StatsReply) + VendorStatsReply()
+        self._storePkt(reply)
+        # FIXME: assertions
 
 if __name__ == '__main__':
     unittest.main()
