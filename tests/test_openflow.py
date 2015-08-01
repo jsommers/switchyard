@@ -214,7 +214,6 @@ class OpenflowPacketTests(unittest.TestCase):
 
     def testStats(self):
         switchstatsreq = OpenflowHeader(OpenflowType.StatsRequest) + SwitchDescriptionStatsRequest()
-        print (switchstatsreq)
         self._storePkt(switchstatsreq)
         # FIXME: assertions
 

@@ -1776,7 +1776,7 @@ class OpenflowStatsType(Enum):
 
 
 class OpenflowStatsRequest(_OpenflowStruct):
-    __slots__ = ('_type', '_flags', '_body')
+    __slots__ = ('_type', '_flags')
     _PACKFMT = '!HH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
@@ -2006,22 +2006,18 @@ class VendorStatsRequest(OpenflowStatsRequest):
         self.data = raw[4:]
 
 
-class OpenflowStatsReply(_OpenflowStruct):
-    __slots__ = ('_type', '_flags', '_body')
-    _PACKFMT = '!HH'
-    _MINLEN = struct.calcsize(_PACKFMT)
-
-    def __init__(self):
-        pass
+class OpenflowStatsReply(OpenflowStatsRequest):
+    # reply has identical header as stats request
+    pass
 
 
 class SwitchDescriptionStatsReply(OpenflowStatsReply):
     __slots__ = ('_mfr_desc', '_hw_desc', '_sw_desc', '_serial_num', '_dp_desc')
     _PACKFMT = '!256s256s256s32s256s'
-    _MINLEN = struct.calcsize(_PACKFMT)
+    _MINLEN = OpenflowStatsReply._MINLEN + struct.calcsize(_PACKFMT)
 
     def __init__(self):
-        _OpenflowStatsReply.__init__(self)
+        OpenflowStatsReply.__init__(self, OpenflowStatsType.SwitchDescription)
         self._mfr_desc = '' 
         self._hw_desc = '' 
         self._sw_desc = '' 
@@ -2069,37 +2065,164 @@ class SwitchDescriptionStatsReply(OpenflowStatsReply):
         self._dp_desc = value
 
     def size(self):
-        pass
+        return SwitchDescriptionStatsReply._MINLEN
+
+    def to_bytes(self):
+        return super().to_bytes() + \
+            struct.pack(SwitchDescriptionStatsReply._PACKFMT, self.mfr_desc,
+                self.hw_desc, self.sw_desc, self.serial_num, self._dp_desc)
+
+    def from_bytes(self, raw):
+        if len(raw) < SwitchDescriptionStatsReply._MINLEN:
+            raise Exception("Not enough data to unpack SwitchDescriptionStatsReply")
+        super().from_bytes(raw[:OpenflowStatsReply._MINLEN])
+        raw = raw[OpenflowStatsReply._MINLEN:]
+        fields = struct.unpack(SwitchDescriptionStatsReply._PACKFMT, raw)
+        self.mfr_desc = fields[0]
+        self.hw_desc = fields[1]
+        self.sw_desc = fields[2]
+        self.serial_num = fields[3]
+        self.dp_desc = fields[4]
+    
+
+class IndividualFlowStatsReply(OpenflowStatsReply):
+    __slots__ = ('_table_id', '_match', '_duration_sec', '_duration_nsec',
+        '_priority', '_idle_timeout', '_hard_timeout', '_cookie', '_packet_count',
+        '_byte_count', '_actions')
+    _PACKFMT1 = '!HBx'
+    _PACKFMT2 = '!IIHHH6xQQQ'
+    _MINLEN = struct.calcsize(_PACKFMT1) + struct.calcsize(_PACKFMT2) + \
+        OpenflowMatch.size() + OpenflowStatsReply._MINLEN
+
+    def __init__(self):
+        OpenflowStatsReply.__init__(self, OpenflowStatsType.IndividualFlow)
+        self._table_id = 0
+        self._match = OpenflowMatch()
+        self._duration_sec = self._duration_nsec = 0
+        self._priority = 0
+        self._idle_timeout = self._hard_timeout = 0
+        self._cookie = 0
+        self._packet_count = self._byte_count = 0
+        self._actions = []
+
+    def size(self):
+        actions = b''.join([a.to_bytes() for a in self._actions])
+        return IndividualFlowStatsReply._MINLEN + len(actions)
 
     def to_bytes(self):
         pass
 
     def from_bytes(self, raw):
         pass
-    
-
-class IndividualFlowStatsReply(OpenflowStatsReply):
-    pass
 
 
 class AggregateFlowStatsReply(OpenflowStatsReply):
-    pass
+    __slots__ = ('_byte_count', '_packet_count', '_flow_count')
+    _PACKFMT = '!QQI'
+    _MINLEN = OpenflowStatsReply._MINLEN + struct.calcsize(_PACKFMT)
+
+    def __init__(self):
+        OpenflowStatsReply.__init__(self, OpenflowStatsType.AggregateFlow)
+        self._byte_count = self._packet_count = self._flow_count = 0
+
+    def size(self):
+        return AggregateFlowStatsReply._MINLEN
+
+    def to_bytes(self):
+        pass
+
+    def from_bytes(self, raw):
+        pass
 
 
 class TableStatsReply(OpenflowStatsReply):
-    pass
+    __slots__ = ('_table_id', '_wildcards', '_max_entries', 
+        '_active_count', '_lookup_count', '_matched_count')
+    _PACKFMT = '!B3x32sIIIQQ'
+    _MINLEN = OpenflowStatsReply._MINLEN + struct.calcsize(_PACKFMT)
+
+    def __init__(self):
+        OpenflowStatsReply.__init__(self, OpenflowStatsType.Table)
+        self._table_id = 0
+        self._wildcards = set()
+        self._max_entries = 0
+        self._active_count = self._lookup_count = self._matched_count = 0
+
+    def size(self):
+        return TableStatsReply._MINLEN
+
+    def to_bytes(self):
+        pass
+
+    def from_bytes(self, raw):
+        pass
 
 
 class PortStatsReply(OpenflowStatsReply):
-    pass
+    __slots__ = ('_port_no', '_rx_packets', '_tx_packets', '_rx_bytes',
+        '_tx_bytes', '_rx_dropped', '_tx_dropped', '_rx_errors', '_tx_errors',
+        '_rx_frame_errors', '_rx_over_errors', '_rx_crc_errors', '_collisions')
+    _PACKFMT = '!H6x12Q'
+    _MINLEN = OpenflowStatsReply._MINLEN + struct.calcsize(_PACKFMT)
+
+    def __init__(self):
+        OpenflowStatsReply.__init__(self, OpenflowStatsType.Port)
+        self._port_no = 0
+        self._rx_packets = self._tx_packets = 0
+        self._rx_bytes = self._tx_bytes = 0
+        self._rx_dropped = self._tx_dropped = 0
+        self._rx_errors = self._tx_errors = 0
+        self._rx_frame_errors = self._rx_over_errors = self._rx_crc_errors = 0
+        self._collisions = 0
+
+    def size(self):
+        return PortStatsReply._MINLEN
+
+    def to_bytes(self):
+        pass
+
+    def from_bytes(self, raw):
+        pass
 
 
 class QueueStatsReply(OpenflowStatsReply):
-    pass
+    __slots__ = ('_port_no', '_queue_id', '_tx_bytes', '_tx_packets', '_tx_errors')
+    _PACKFMT = '!H2xIQQQ'
+    _MINLEN = OpenflowStatsReply._MINLEN + struct.calcsize(_PACKFMT)
+
+    def __init__(self):
+        OpenflowStatsReply.__init__(self, OpenflowStatsType.Queue)
+        self._port_no = self._queue_id = 0
+        self._tx_bytes = self._tx_packets = self._tx_errors = 0
+
+    def size(self):
+        return PortStatsReply._MINLEN
+
+    def to_bytes(self):
+        pass
+
+    def from_bytes(self, raw):
+        pass
 
 
 class VendorStatsReply(OpenflowStatsReply):
-    pass
+    __slots__ = ('_vendor_id', '_data')
+    _PACKFMT = '!I'
+    _MINLEN = OpenflowStatsReply._MINLEN + struct.calcsize(_PACKFMT)
+
+    def __init__(self):
+        OpenflowStatsReply.__init__(self, OpenflowStatsType.Vendor)
+        self._vendor_id = 0
+        self._data = b''
+
+    def size(self):
+        return VendorStatsReply._MINLEN + len(self._data)
+
+    def to_bytes(self):
+        pass
+
+    def from_bytes(self, raw):
+        pass
 
 
     # def _initbody(self, *args):
