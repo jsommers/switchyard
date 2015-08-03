@@ -65,16 +65,17 @@ class OpenflowPort(IntEnum):
     Local = 0xfffe
     NoPort = 0xffff  # Can't use None!
 
+
 def _get_port(value):
     value = int(value)
     try:
         value = OpenflowPort(value)
+        return value
     except ValueError:
         if 0 <= value < OpenflowPort.Max:
             return value
         else:
             raise ValueError("Invalid port number")        
-
 
 class OpenflowPortState(Enum):
     NoState = 0
@@ -676,12 +677,13 @@ class OpenflowActionType(Enum):
 
 
 class _OpenflowAction(_OpenflowStruct):
-    __slots__ = ['_type']
-    _PACKFMT = '!HH4x'
+    __slots__ = ['_type','_len']
+    _PACKFMT = '!HH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
         super().__init__()
+        self._len = _OpenflowAction._MINLEN
         self._type = OpenflowActionType.Output
 
     @property
@@ -692,17 +694,25 @@ class _OpenflowAction(_OpenflowStruct):
     def type(self, value):
         self._type = OpenflowActionType(value)
 
+    @property
+    def len(self):
+        return self._len
+
+    @len.setter
+    def len(self, value):
+        self._len = int(value)    
+
     def from_bytes(self, raw):
-        self.type, ignorelen = struct.unpack(_OpenflowAction._PACKFMT, 
+        self.type, self.len = struct.unpack(_OpenflowAction._PACKFMT, 
             raw[:_OpenflowAction._MINLEN]) 
         return raw[_OpenflowAction._MINLEN:]
 
     def to_bytes(self):
         return struct.pack(_OpenflowAction._PACKFMT, self._type.value, 
-                           _OpenflowAction._MINLEN)
+                           self._len)
 
     def size(self):
-        return _OpenflowAction._MINLEN
+        return self._len
 
 
 class ActionStripVlan(_OpenflowAction):
@@ -713,14 +723,15 @@ class ActionStripVlan(_OpenflowAction):
 
 class ActionOutput(_OpenflowAction):
     __slots__ = ['_port', '_maxlen']
-    _PACKFMT = '!HHHH'
-    _MINLEN = 8
+    _PACKFMT = '!HH'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, port):
+    def __init__(self, port=OpenflowPort.NoPort):
         super().__init__()
         self._type = OpenflowActionType.Output
         self._port = int(port)
         self._maxlen = 1500
+        self.len = super()._MINLEN + ActionOutput._MINLEN
 
     @property
     def port(self):
@@ -728,7 +739,7 @@ class ActionOutput(_OpenflowAction):
 
     @port.setter
     def port(self, value):
-        self._port = int(port)    
+        self._port = int(value)    
 
     @property
     def maxlen(self):
@@ -739,28 +750,25 @@ class ActionOutput(_OpenflowAction):
         self._maxlen = int(value)
 
     def from_bytes(self, raw):
-        self.type, ignorelen, self.port, self.maxlen = struct.unpack(ActionOutput._PACKFMT, 
-            raw[:ActionOutput._MINLEN]) 
-        return raw[ActionOutput._MINLEN:]
+        raw = super().from_bytes(raw)
+        self.port, self.maxlen = struct.unpack(ActionOutput._PACKFMT, raw[:ActionOutput._MINLEN])
 
     def to_bytes(self):
-        return struct.pack(ActionOutput._PACKFMT, self._type.value, 
-                           ActionOutput._MINLEN, self._port, self._maxlen)
-
-    def size(self):
-        return ActionOutput._MINLEN
+        return super().to_bytes() + \
+            struct.pack(ActionOutput._PACKFMT, self._port, self._maxlen)
 
 
 class ActionEnqueue(_OpenflowAction):
     __slots__ = ['_port', '_queue_id']
-    _PACKFMT = '!HHH6xI'
-    _MINLEN = 16
+    _PACKFMT = '!H6xI'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, port, queue_id):
+    def __init__(self, port=OpenflowPort.NoPort, queue_id=0):
         super().__init__()
         self._type = OpenflowActionType.Enqueue
         self._port = int(port)
         self._queue_id = int(queue_id)
+        self.len = super()._MINLEN + ActionEnqueue._MINLEN
 
     @property
     def port(self):
@@ -779,27 +787,25 @@ class ActionEnqueue(_OpenflowAction):
         self._queue_id = int(value)
 
     def from_bytes(self, raw):
-        self.type, ignorelen, self.port, self.queue_id = struct.unpack(ActionEnqueue._PACKFMT, 
+        raw = super().from_bytes(raw)
+        self.port, self.queue_id = struct.unpack(ActionEnqueue._PACKFMT, 
             raw[:ActionEnqueue._MINLEN]) 
-        return raw[ActionEnqueue._MINLEN:]
 
     def to_bytes(self):
-        return struct.pack(ActionEnqueue._PACKFMT, self._type.value, 
-                           ActionEnqueue._MINLEN, self._port, self._queue_id)
-
-    def size(self):
-        return ActionEnqueue._MINLEN
+        return super().to_bytes() + struct.pack(ActionEnqueue._PACKFMT, 
+            self._port, self._queue_id)
 
 
 class ActionVlanVid(_OpenflowAction):
     __slots__ = ['_vlan_vid']
-    _PACKFMT = '!HHH2x'
-    _MINLEN = 8
+    _PACKFMT = '!H2x'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, vlan_vid):
+    def __init__(self, vlan_vid=0):
         super().__init__()
         self._type = OpenflowActionType.SetVlanVid
         self._vlan_vid = vlan_vid
+        self.len = super()._MINLEN + ActionVlanVid._MINLEN
 
     @property
     def vlan_vid(self):
@@ -810,27 +816,25 @@ class ActionVlanVid(_OpenflowAction):
         self._vlan_vid = int(value)  
     
     def from_bytes(self, raw):
-        self.type, ignorelen, self.vlan_vid = struct.unpack(ActionVlanVid._PACKFMT, 
-            raw[:ActionVlanVid._MINLEN]) 
-        return raw[ActionVlanVid._MINLEN:]
+        raw = super().from_bytes(raw)
+        self.vlan_vid = struct.unpack(ActionVlanVid._PACKFMT, 
+            raw[:ActionVlanVid._MINLEN])
 
     def to_bytes(self):
-        return struct.pack(ActionVlanVid._PACKFMT, self._type.value, 
-                           ActionVlanVid._MINLEN, self._vlan_vid)
-
-    def size(self):
-        return ActionVlanVid._MINLEN
+        return super().to_bytes() + struct.pack(ActionVlanVid._PACKFMT, 
+            self._vlan_vid)
 
 
 class ActionVlanPcp(_OpenflowAction):
     __slots__ = ['_vlan_pcp']
-    _PACKFMT = '!HHB3x'
-    _MINLEN = 8
+    _PACKFMT = '!B3x'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, vlan_pcp):
+    def __init__(self, vlan_pcp=0):
         super().__init__()
         self._type = OpenflowActionType.SetVlanPcp
         self._vlan_pcp = vlan_pcp
+        self.len = super()._MINLEN + ActionVlanPcp._MINLEN
 
     @property
     def vlan_pcp(self):
@@ -841,29 +845,27 @@ class ActionVlanPcp(_OpenflowAction):
         self._vlan_pcp = int(value)
     
     def from_bytes(self, raw):
-        self.type, ignorelen, self.vlan_pcp = struct.unpack(ActionVlanPcp._PACKFMT, 
+        raw = super().from_bytes(raw)
+        self.vlan_pcp = struct.unpack(ActionVlanPcp._PACKFMT, 
             raw[:ActionVlanPcp._MINLEN]) 
-        return raw[ActionVlanPcp._MINLEN:]
 
     def to_bytes(self):
-        return struct.pack(ActionVlanPcp._PACKFMT, self._type.value, 
-                           ActionVlanPcp._MINLEN, self._vlan_pcp)
-
-    def size(self):
-        return ActionVlanPcp._MINLEN
+        return super().to_bytes() + struct.pack(ActionVlanPcp._PACKFMT, 
+            self._vlan_pcp)
 
 
 class ActionDlAddr(_OpenflowAction):
     __slots__ = ['_dl_addr']
-    _PACKFMT = '!HH6s6x'
-    _MINLEN = 16
+    _PACKFMT = '!6s6x'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, srcdst, dl_addr):
+    def __init__(self, srcdst=OpenflowActionType.SetDlSrc, dl_addr="00:00:00:00:00:00"):
         super().__init__()
         self._type = OpenflowActionType(srcdst) 
         if self._type not in (OpenflowActionType.SetDlSrc, OpenflowActionType.SetDlDst):
             raise ValueError("Invalid ActionType for ActionDlAddr")
         self._dl_addr = EthAddr(dl_addr)
+        self.len = super()._MINLEN + ActionDlAddr._MINLEN
 
     @property
     def dl_addr(self):
@@ -874,29 +876,27 @@ class ActionDlAddr(_OpenflowAction):
         self._dl_addr = EthAddr(value)        
 
     def from_bytes(self, raw):
-        self.type, ignorelen, self.dl_addr = struct.unpack(ActionDlAddr._PACKFMT, 
+        raw = super().from_bytes(raw)
+        self.dl_addr = struct.unpack(ActionDlAddr._PACKFMT, 
             raw[:ActionDlAddr._MINLEN]) 
-        return raw[ActionDlAddr._MINLEN:]
 
     def to_bytes(self):
-        return struct.pack(ActionDlAddr._PACKFMT, self._type.value, 
-                           ActionDlAddr._MINLEN, self._dl_addr.packed)
-
-    def size(self):
-        return ActionDlAddr._MINLEN
+        return super().to_bytes() + struct.pack(ActionDlAddr._PACKFMT, 
+            self._dl_addr.packed)
 
 
 class ActionNwAddr(_OpenflowAction):
     __slots__ = ['_nw_addr']
-    _PACKFMT = '!HH4s'
-    _MINLEN = 8
+    _PACKFMT = '!4s'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, srcdst, nw_addr):
+    def __init__(self, srcdst=OpenflowActionType.SetNwSrc, nw_addr="0.0.0.0"):
         super().__init__()
         self._type = OpenflowActionType(srcdst) 
         if self._type not in (OpenflowActionType.SetNwSrc, OpenflowActionType.SetNwDst):
             raise ValueError("Invalid ActionType for ActionNwAddr")
         self._nw_addr = IPv4Address(nw_addr)
+        self.len = super()._MINLEN + ActionNwAddr._MINLEN
 
     @property
     def nw_addr(self):
@@ -907,27 +907,25 @@ class ActionNwAddr(_OpenflowAction):
         self._nw_addr = IPv4Address(value) 
 
     def from_bytes(self, raw):
-        self.type, ignorelen, self.nw_addr = struct.unpack(ActionNwAddr._PACKFMT, 
+        raw = super().from_bytes(raw)
+        self.nw_addr = struct.unpack(ActionNwAddr._PACKFMT, 
             raw[:ActionNwAddr._MINLEN]) 
-        return raw[ActionNwAddr._MINLEN:]
 
     def to_bytes(self):
-        return struct.pack(ActionNwAddr._PACKFMT, self._type.value, 
-                           ActionNwAddr._MINLEN, self._nw_addr.packed)
-
-    def size(self):
-        return ActionNwAddr._MINLEN
+        return super().to_bytes() + struct.pack(ActionNwAddr._PACKFMT, 
+            self._nw_addr.packed)
 
 
 class ActionNwTos(_OpenflowAction):
     __slots__ = ['_nw_tos']
-    _PACKFMT = '!HHB3x'
-    _MINLEN = 8
+    _PACKFMT = '!B3x'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, tos):
+    def __init__(self, tos=0x0):
         super().__init__()
         self._type = OpenflowActionType.SetNwTos
         self._nw_tos = int(tos)
+        self.len = super()._MINLEN + ActionNwTos._MINLEN
 
     @property
     def nw_tos(self):
@@ -938,29 +936,26 @@ class ActionNwTos(_OpenflowAction):
         self._nw_tos = int(value)
 
     def from_bytes(self, raw):
-        self.type, ignorelen, self.nw_tos = struct.unpack(ActionNwTos._PACKFMT, 
+        raw = super().from_bytes(raw)
+        self.nw_tos = struct.unpack(ActionNwTos._PACKFMT, 
             raw[:ActionNwTos._MINLEN]) 
-        return raw[ActionNwTos._MINLEN:]
 
     def to_bytes(self):
-        return struct.pack(ActionNwTos._PACKFMT, self._type.value, 
-                           ActionNwTos._MINLEN, self._nw_tos)
-
-    def size(self):
-        return ActionNwTos._MINLEN
+        return super().to_bytes() + struct.pack(ActionNwTos._PACKFMT, self._nw_tos)
 
 
 class ActionTpPort(_OpenflowAction):
     __slots__ = ['_tp_port']
-    _PACKFMT = '!HHH2x'
-    _MINLEN = 8
+    _PACKFMT = '!H2x'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, srcdst, port):
+    def __init__(self, srcdst=OpenflowActionType.SetTpSrc, port=0):
         super().__init__()
         self._type = OpenflowActionType(srcdst) 
         if self._type not in (OpenflowActionType.SetTpSrc, OpenflowActionType.SetTpDst):
             raise ValueError("Invalid ActionType for ActionTpPort")
         self._tp_port = int(port)
+        self.len = super()._MINLEN + ActionTpPort._MINLEN
 
     @property
     def tp_port(self):
@@ -971,28 +966,24 @@ class ActionTpPort(_OpenflowAction):
         self._tp_port = int(value)
 
     def from_bytes(self, raw):
-        self.type, ignorelen, self.tp_port = struct.unpack(ActionTpPort._PACKFMT, 
-            raw[:ActionTpPort._MINLEN]) 
-        return raw[ActionTpPort._MINLEN:]
+        raw = super().from_bytes(raw)
+        self.tp_port = struct.unpack(ActionTpPort._PACKFMT, raw[:ActionTpPort._MINLEN])
 
     def to_bytes(self):
-        return struct.pack(ActionTpPort._PACKFMT, self._type.value, 
-                           ActionTpPort._MINLEN, self._tp_port)
-
-    def size(self):
-        return ActionTpPort._MINLEN
+        return super().to_bytes() + struct.pack(ActionTpPort._PACKFMT, self._tp_port)
 
 
 class ActionVendorHeader(_OpenflowAction):
     __slots__ = ['_vendor', '_data']
-    _PACKFMT = '!HHI'
-    _MINLEN = 8
+    _PACKFMT = '!I'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, vendor, data=b''):
+    def __init__(self, vendor=0xffffffff, data=b''):
         super().__init__()
         self._type = OpenflowActionType.Vendor
         self._vendor = int(vendor)
         self._data = bytes(data)
+        self.len = super()._MINLEN + ActionVendorHeader._MINLEN + len(self._data)
 
     @property
     def vendor(self):
@@ -1005,24 +996,24 @@ class ActionVendorHeader(_OpenflowAction):
     @data.setter
     def data(self, value):
         self._data = bytes(value)
+        self.len = super()._MINLEN + ActionVendorHeader._MINLEN + self._calcdatalen()
         
     def from_bytes(self, raw):
-        self.type, xlen, self.vendor = struct.unpack(ActionVendorHeader._PACKFMT, 
+        raw = super().from_bytes(raw)
+        fields = struct.unpack(ActionVendorHeader._PACKFMT, 
             raw[:ActionVendorHeader._MINLEN]) 
-        datalen = xlen - ActionVendorHeader._MINLEN
-        self.data = raw[ActionVendorHeader._MINLEN:xlen]
-        return raw[xlen:]
+        self.vendor = fields[0]
+        datalen = len(raw) - ActionVendorHeader._MINLEN
+        self.data = raw[ActionVendorHeader._MINLEN:]
 
     def to_bytes(self):
-        raw =  struct.pack(ActionVendorHeader._PACKFMT, self._type.value, 
-                           self.size(), self._vendor) + self.data
-        lenmod = len(self._data) % 8
-        padbytes = 8-lenmod if lenmod > 0 else 0
-        return raw + padbytes * b'\x00'
+        raw = super().to_bytes() + struct.pack(ActionVendorHeader._PACKFMT, self.vendor) + \
+            self.data
+        padbytes = (self._calcdatalen() - len(self.data)) * b'\x00'
+        return raw + padbytes
 
-    def size(self):
-        datalen = ceil(len(self._data) / 8) * 8
-        return ActionVendorHeader._MINLEN + datalen
+    def _calcdatalen(self):
+        return ceil(len(self.data) / 8) * 8
 
 
 _ActionClassMap = {
@@ -1053,7 +1044,7 @@ def _unpack_actions(raw):
         atype, alen = struct.unpack('!HH', raw[:4])
         atype = OpenflowActionType(atype)
         action = _ActionClassMap.get(atype)()
-        action.from_raw(raw[:alen])
+        action.from_bytes(raw[:alen])
         raw = raw[alen:]
         actions.append(action)
     return actions
@@ -1200,7 +1191,7 @@ class OpenflowFlowMod(_OpenflowStruct):
     def from_bytes(self, raw):
         if len(raw) < OpenflowFlowMod._MINLEN:
             raise Exception("Not enough data to unpack OpenflowFlowMod")
-        self.match = OpenflowMatch()
+        self._match = OpenflowMatch()
         self.match.from_bytes(raw[:OpenflowMatch.size()])
         fields = struct.unpack(
             OpenflowFlowMod._PACKFMT, 
@@ -2813,6 +2804,7 @@ class OpenflowPacketIn(_OpenflowStruct):
         fields = struct.unpack(
             OpenflowPacketIn._PACKFMT, raw[:OpenflowPacketIn._MINLEN])
         self.buffer_id = fields[0]
+        xlen = fields[1]
         self.in_port = fields[2]
         self.reason = fields[3]
         self.packet = raw[OpenflowPacketIn._MINLEN:]
@@ -2900,7 +2892,6 @@ class OpenflowPacketOut(_OpenflowStruct):
 
     def to_bytes(self):
         actions = b''.join(a.to_bytes() for a in self._actions)
-        totallen = len(self.packet) + OpenflowPacketOut._MINLEN  + len(actions)
         return struct.pack(OpenflowPacketOut._PACKFMT, self.buffer_id,
                            self.in_port, len(actions)) + actions + self.packet
 
@@ -2912,10 +2903,9 @@ class OpenflowPacketOut(_OpenflowStruct):
         self.buffer_id = fields[0]
         self.in_port = fields[1]
         actionlen = fields[2]
-        self._actions = \
-            _unpack_actions(raw[OpenflowPacketOut._MINLEN:(OpenflowPacketOut._MINLEN+actionlen)])
-        self.packet = raw[(OpenflowPacketIn._MINLEN+actionlen):]
-
+        raw = raw[OpenflowPacketOut._MINLEN:]
+        self._actions = _unpack_actions(raw[:actionlen])
+        self.packet = raw[actionlen:]
 
 
 class FlowRemovedReason(Enum):

@@ -119,8 +119,22 @@ class OpenflowPacketTests(unittest.TestCase):
         pktin = OpenflowHeader.build(OpenflowType.PacketIn, 44)
         pktin[1].packet = Ethernet(src="11:22:33:44:55:66", dst="aa:bb:cc:dd:ee:ff") + \
                           IPv4(src="1.2.3.4", dst="5.6.7.8") + ICMP()
+        pktin[1].in_port = OpenflowPort.NoPort
         self._storePkt(pktin)
-        # FIXME: assertions
+        b = pktin.to_bytes()
+        pktin2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(pktin, pktin2)
+
+        pktin = OpenflowHeader.build(OpenflowType.PacketIn, 44)
+        pktin[1].packet = Ethernet(src="11:22:33:44:55:66", dst="aa:bb:cc:dd:ee:ff") + \
+                          IPv4(src="1.2.3.4", dst="5.6.7.8") + ICMP()
+        pktin[1].in_port = 42
+        pktin[1].buffer_id = 1334
+        pktin[1].reason = OpenflowPacketInReason.NoMatch
+        self._storePkt(pktin)
+        b = pktin.to_bytes()
+        pktin2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(pktin, pktin2)
 
     def testPacketOut(self):
         pktout = OpenflowHeader.build(OpenflowType.PacketOut, 43)
@@ -130,7 +144,9 @@ class OpenflowPacketTests(unittest.TestCase):
                            IPv4(src="1.2.3.4", dst="5.6.7.8") + ICMP()
         pktout[1].actions.append(ActionOutput(port=OpenflowPort.Flood))
         self._storePkt(pktout)
-        # FIXME: assertions
+        b = pktout.to_bytes()
+        pktout2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(pktout, pktout2)
 
     def testFlowMod(self):
         flowmod = OpenflowHeader.build(OpenflowType.FlowMod, 72) 
@@ -159,7 +175,9 @@ class OpenflowPacketTests(unittest.TestCase):
         flowmod[1].actions.append(ActionTpPort(OpenflowActionType.SetTpDst, 2222))
         flowmod[1].actions.append(ActionVendorHeader(0xbeefbeef, b'1234'))
         self._storePkt(flowmod)
-        # FIXME: assertions
+        # b = flowmod.to_bytes()
+        # flowmod2 = Packet.from_bytes(b, OpenflowHeader)
+        # self.assertEqual(flowmod, flowmod2)
 
     def testFlowRemoved(self):
         flowrm = OpenflowHeader.build(OpenflowType.FlowRemoved, 43)
