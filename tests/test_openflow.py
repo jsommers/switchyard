@@ -269,47 +269,74 @@ class OpenflowPacketTests(unittest.TestCase):
 
         reply = OpenflowHeader(OpenflowType.StatsReply) + IndividualFlowStatsReply()
         self._storePkt(reply)
-        # FIXME: assertions
+        b = reply.to_bytes()
+        reply2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(reply, reply2)
 
     def testAggregateFlowStats(self):
         req = OpenflowHeader(OpenflowType.StatsRequest) + AggregateFlowStatsRequest()
         self._storePkt(req)
+        b = req.to_bytes()
+        req2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(req, req2)
 
         reply = OpenflowHeader(OpenflowType.StatsReply) + AggregateFlowStatsReply()
         self._storePkt(reply)
-        # FIXME: assertions
+        b = reply.to_bytes()
+        reply2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(reply, reply2)
 
     def testTableStats(self):
         req = OpenflowHeader(OpenflowType.StatsRequest) + TableStatsRequest()
         self._storePkt(req)
+        b = req.to_bytes()
+        req2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(req, req2)
 
         reply = OpenflowHeader(OpenflowType.StatsReply) + TableStatsReply()
         self._storePkt(reply)
-        # FIXME: assertions
+        b = reply.to_bytes()
+        reply2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(reply, reply2)
 
     def testPortStats(self):
         req = OpenflowHeader(OpenflowType.StatsRequest) + PortStatsRequest()
         self._storePkt(req)
+        b = req.to_bytes()
+        req2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(req, req2)
 
         reply = OpenflowHeader(OpenflowType.StatsReply) + PortStatsReply()
         self._storePkt(reply)
-        # FIXME: assertions
+        b = reply.to_bytes()
+        reply2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(reply, reply2)
 
     def testQueueStats(self):
         req = OpenflowHeader(OpenflowType.StatsRequest) + QueueStatsRequest()
         self._storePkt(req)
+        b = req.to_bytes()
+        req2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(req, req2)
 
         reply = OpenflowHeader(OpenflowType.StatsReply) + QueueStatsReply()
         self._storePkt(reply)
-        # FIXME: assertions
+        b = reply.to_bytes()
+        reply2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(reply, reply2)
 
     def testVendorStats(self):
         req = OpenflowHeader(OpenflowType.StatsRequest) + VendorStatsRequest()
         self._storePkt(req)
+        b = req.to_bytes()
+        req2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(req, req2)
 
         reply = OpenflowHeader(OpenflowType.StatsReply) + VendorStatsReply()
         self._storePkt(reply)
-        # FIXME: assertions
+        b = reply.to_bytes()
+        reply2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(reply, reply2)
 
 if __name__ == '__main__':
     unittest.main()
