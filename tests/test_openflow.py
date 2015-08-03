@@ -263,6 +263,9 @@ class OpenflowPacketTests(unittest.TestCase):
     def testIndividualFlowStats(self):
         req = OpenflowHeader(OpenflowType.StatsRequest) + IndividualFlowStatsRequest()
         self._storePkt(req)
+        b = req.to_bytes()
+        req2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(req, req2)
 
         reply = OpenflowHeader(OpenflowType.StatsReply) + IndividualFlowStatsReply()
         self._storePkt(reply)
