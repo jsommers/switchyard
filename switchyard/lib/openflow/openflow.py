@@ -776,7 +776,7 @@ class ActionEnqueue(_OpenflowAction):
 
     @port.setter
     def port(self, value):
-        self._port = int(port)    
+        self._port = int(value)
 
     @property
     def queue_id(self):
@@ -817,7 +817,7 @@ class ActionVlanVid(_OpenflowAction):
     
     def from_bytes(self, raw):
         raw = super().from_bytes(raw)
-        self.vlan_vid = struct.unpack(ActionVlanVid._PACKFMT, 
+        (self.vlan_vid,) = struct.unpack(ActionVlanVid._PACKFMT, 
             raw[:ActionVlanVid._MINLEN])
 
     def to_bytes(self):
@@ -846,7 +846,7 @@ class ActionVlanPcp(_OpenflowAction):
     
     def from_bytes(self, raw):
         raw = super().from_bytes(raw)
-        self.vlan_pcp = struct.unpack(ActionVlanPcp._PACKFMT, 
+        (self.vlan_pcp,) = struct.unpack(ActionVlanPcp._PACKFMT, 
             raw[:ActionVlanPcp._MINLEN]) 
 
     def to_bytes(self):
@@ -877,7 +877,7 @@ class ActionDlAddr(_OpenflowAction):
 
     def from_bytes(self, raw):
         raw = super().from_bytes(raw)
-        self.dl_addr = struct.unpack(ActionDlAddr._PACKFMT, 
+        (self.dl_addr,) = struct.unpack(ActionDlAddr._PACKFMT, 
             raw[:ActionDlAddr._MINLEN]) 
 
     def to_bytes(self):
@@ -908,7 +908,7 @@ class ActionNwAddr(_OpenflowAction):
 
     def from_bytes(self, raw):
         raw = super().from_bytes(raw)
-        self.nw_addr = struct.unpack(ActionNwAddr._PACKFMT, 
+        (self.nw_addr,) = struct.unpack(ActionNwAddr._PACKFMT, 
             raw[:ActionNwAddr._MINLEN]) 
 
     def to_bytes(self):
@@ -937,7 +937,7 @@ class ActionNwTos(_OpenflowAction):
 
     def from_bytes(self, raw):
         raw = super().from_bytes(raw)
-        self.nw_tos = struct.unpack(ActionNwTos._PACKFMT, 
+        (self.nw_tos,) = struct.unpack(ActionNwTos._PACKFMT, 
             raw[:ActionNwTos._MINLEN]) 
 
     def to_bytes(self):
@@ -967,7 +967,7 @@ class ActionTpPort(_OpenflowAction):
 
     def from_bytes(self, raw):
         raw = super().from_bytes(raw)
-        self.tp_port = struct.unpack(ActionTpPort._PACKFMT, raw[:ActionTpPort._MINLEN])
+        (self.tp_port,) = struct.unpack(ActionTpPort._PACKFMT, raw[:ActionTpPort._MINLEN])
 
     def to_bytes(self):
         return super().to_bytes() + struct.pack(ActionTpPort._PACKFMT, self._tp_port)
@@ -989,6 +989,10 @@ class ActionVendorHeader(_OpenflowAction):
     def vendor(self):
         return self._vendor
 
+    @vendor.setter
+    def vendor(self, value):
+        self._vendor = int(value)
+        
     @property
     def data(self):
         return self._data
@@ -1164,7 +1168,7 @@ class OpenflowFlowMod(_OpenflowStruct):
     # NB: packfmt doesn't include match struct or actions
     # those are defined within other structures
     _PACKFMT = '!QHHHHIHH'
-    _MINLEN = OpenflowMatch.size() + struct.calcsize(_PACKFMT)
+    _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self, match=None):
         _OpenflowStruct.__init__(self)
@@ -1178,24 +1182,31 @@ class OpenflowFlowMod(_OpenflowStruct):
         self._priority = 0
         self._buffer_id = 0
         self._out_port = 0
-        self._flags = 0
+        self._flags = set()
         self._actions = []
 
     def to_bytes(self):
         return self._match.to_bytes() + \
             struct.pack(OpenflowFlowMod._PACKFMT, self._cookie, self._command.value,
                         self._idle_timeout, self._hard_timeout, self._priority, self._buffer_id,
-                        self._out_port, self._flags) + \
+                        self._out_port, self.flags) + \
             b''.join(a.to_bytes() for a in self._actions)
 
     def from_bytes(self, raw):
-        if len(raw) < OpenflowFlowMod._MINLEN:
+        if len(raw) < (OpenflowFlowMod._MINLEN + OpenflowMatch.size()):
             raise Exception("Not enough data to unpack OpenflowFlowMod")
         self._match = OpenflowMatch()
         self.match.from_bytes(raw[:OpenflowMatch.size()])
-        fields = struct.unpack(
-            OpenflowFlowMod._PACKFMT, 
-            raw[OpenflowMatch.size():(OpenflowMatch.size() + OpenflowPacketOut._MINLEN)])
+        raw = raw[OpenflowMatch.size():] 
+        fields = struct.unpack(OpenflowFlowMod._PACKFMT, raw[:OpenflowFlowMod._MINLEN])
+        self.cookie = fields[0]
+        self.command = fields[1]
+        self.idle_timeout = fields[2]
+        self.hard_timeout = fields[3]
+        self.priority = fields[4]
+        self.buffer_id = fields[5]
+        self.out_port = fields[6]
+        self._flags = _unpack_bitmap(fields[7], FlowModFlags) 
         self._actions = _unpack_actions(raw[OpenflowFlowMod._MINLEN:])
 
     def size(self):
@@ -1211,14 +1222,16 @@ class OpenflowFlowMod(_OpenflowStruct):
 
     @property
     def flags(self):
+        return _make_bitmap(self._flags)
+
+    def get_flags(self):
         return self._flags
 
-    @flags.setter
-    def flags(self, value):
-        self._flags |= (FlowModFlags(value)).value
+    def set_flag(self, value):
+        self._flags.add(FlowModFlags(value))
 
     def clear_flags(self):
-        self._flags = 0
+        self._flags.clear()
 
     @property 
     def cookie(self):
@@ -2723,7 +2736,7 @@ class OpenflowQueueGetConfigRequest(_OpenflowStruct):
     def from_bytes(self, raw):
         if len(raw) < OpenflowQueueGetConfigRequest._MINLEN:
             raise Exception("Not enough data to unpack OpenflowQueueGetConfigRequest")
-        fields = struct.pack(OpenflowQueueGetConfigRequest._PACKFMT, raw)
+        fields = struct.unpack(OpenflowQueueGetConfigRequest._PACKFMT, raw)
         self.port = fields[0]
 
 
@@ -2761,7 +2774,8 @@ class OpenflowQueueGetConfigReply(_OpenflowStruct):
     def from_bytes(self, raw):
         if len(raw) < OpenflowQueueGetConfigReply._MINLEN:
             raise Exception("Not enough data to unpack OpenflowQueueGetConfigReply")
-        fields = struct.pack(OpenflowQueueGetConfigReply._PACKFMT, raw[:OpenflowQueueGetConfigReply._MINLEN])
+        fields = struct.unpack(OpenflowQueueGetConfigReply._PACKFMT, 
+            raw[:OpenflowQueueGetConfigReply._MINLEN])
         self.port = fields[0]
         while len(raw) > 0:
             qid,qlen = struct.unpack('!IH', raw[:6])

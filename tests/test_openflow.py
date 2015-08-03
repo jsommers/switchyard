@@ -9,6 +9,9 @@ from time import time
 
 class OpenflowPacketTests(unittest.TestCase):
     def _storePkt(self, ofhdr, dstport=6633):
+        # comment the return to save pcap packets for analysis
+        return
+
         pkt = (Ethernet(src="11:22:33:44:55:66") + IPv4() + TCP()) + ofhdr
 
         xname = pkt[OpenflowHeader].type.name
@@ -175,9 +178,9 @@ class OpenflowPacketTests(unittest.TestCase):
         flowmod[1].actions.append(ActionTpPort(OpenflowActionType.SetTpDst, 2222))
         flowmod[1].actions.append(ActionVendorHeader(0xbeefbeef, b'1234'))
         self._storePkt(flowmod)
-        # b = flowmod.to_bytes()
-        # flowmod2 = Packet.from_bytes(b, OpenflowHeader)
-        # self.assertEqual(flowmod, flowmod2)
+        b = flowmod.to_bytes()
+        flowmod2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(flowmod, flowmod2)
 
     def testFlowRemoved(self):
         flowrm = OpenflowHeader.build(OpenflowType.FlowRemoved, 43)
@@ -188,7 +191,9 @@ class OpenflowPacketTests(unittest.TestCase):
         self.assertEqual(flowrm[1].duration_sec, 5)
         self.assertLessEqual(abs(flowrm[1].duration_nsec - 5000000), 1)
         self._storePkt(flowrm)
-        # FIXME: assertions
+        b = flowrm.to_bytes()
+        flowrm2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(flowrm, flowrm2)
 
     def testPortMod(self):
         portmod = OpenflowHeader.build(OpenflowType.PortMod)
@@ -199,7 +204,9 @@ class OpenflowPacketTests(unittest.TestCase):
         portmod[1].set_advertise(OpenflowPortFeatures.Fiber)
         portmod[1].set_advertise(OpenflowPortFeatures.e1Gb_Full)
         self._storePkt(portmod)
-        # FIXME: assertions
+        b = portmod.to_bytes()
+        portmod2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(portmod, portmod2)
 
     def testPortStatus(self):
         portstat = OpenflowHeader.build(OpenflowType.PortStatus)
@@ -207,20 +214,28 @@ class OpenflowPacketTests(unittest.TestCase):
         portstat[1].port.portnum = 13
         # FIXME: config capabilities, etc.
         self._storePkt(portstat)
-        # FIXME: assertions
+        b = portstat.to_bytes()
+        portstat2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(portstat, portstat2)
 
     def testBarrier(self):
         barrierreq = OpenflowHeader.build(OpenflowType.BarrierRequest)
         self._storePkt(barrierreq)
+        barrierreq2 = Packet.from_bytes(barrierreq.to_bytes(), OpenflowHeader)
+        self.assertEqual(barrierreq, barrierreq2)
+
         barrierreply = OpenflowHeader.build(OpenflowType.BarrierReply)
         self._storePkt(barrierreply)
-        # FIXME: assertions
+        barrierrep2 = Packet.from_bytes(barrierreply.to_bytes(), OpenflowHeader)
+        self.assertEqual(barrierreply, barrierrep2)
 
     def testQueueConfigRequest(self):
         qcfg = OpenflowHeader.build(OpenflowType.QueueGetConfigRequest)
         qcfg[1].port = 4
         self._storePkt(qcfg)
-        # FIXME: assertions
+        b = qcfg.to_bytes()
+        qcfg2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(qcfg, qcfg2)
 
     def testQueueConfigReply(self):
         qcfg = OpenflowHeader.build(OpenflowType.QueueGetConfigReply)
@@ -228,7 +243,9 @@ class OpenflowPacketTests(unittest.TestCase):
         qcfg[1].queues.append(OpenflowPacketQueue(queue_id=0))
         qcfg[1].queues[0].properties.append(OpenflowQueueMinRateProperty(rate=(40 * 10)))
         self._storePkt(qcfg)
-        # FIXME: assertions
+        b = qcfg.to_bytes()
+        qcfg2 = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(qcfg, qcfg2)
 
     def testSwitchStats(self):
         switchstatsreq = OpenflowHeader(OpenflowType.StatsRequest) + SwitchDescriptionStatsRequest()
