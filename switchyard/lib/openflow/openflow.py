@@ -2782,7 +2782,8 @@ class OpenflowQueueGetConfigReply(_OpenflowStruct):
             qid,qlen = struct.unpack('!IH', raw[:6])
             rawqueue = raw[:qlen]
             queue = OpenflowPacketQueue()
-            self._queues.append(queue.from_bytes(rawqueue))
+            queue.from_bytes(rawqueue)
+            self._queues.append(queue)
             raw = raw[qlen:]
 
 
