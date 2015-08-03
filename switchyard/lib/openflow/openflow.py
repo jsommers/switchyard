@@ -382,7 +382,7 @@ class OpenflowPacketQueue(_OpenflowStruct):
             prop, proplen = struct.unpack('!HH', raw[:4])
             prop = OpenflowQueuePropertyTypes(prop)
             propobj = _QueuePropertyTypeClassMap.get(prop)()
-            propobj.from_raw(raw[:proplen])
+            propobj.from_bytes(raw[:proplen])
             self._properties.append(propobj)
             raw = raw[proplen:]
 
@@ -983,7 +983,7 @@ class ActionVendorHeader(_OpenflowAction):
         self._type = OpenflowActionType.Vendor
         self._vendor = int(vendor)
         self._data = bytes(data)
-        self.len = super()._MINLEN + ActionVendorHeader._MINLEN + len(self._data)
+        self.len = super()._MINLEN + ActionVendorHeader._MINLEN + self._calcdatalen()
 
     @property
     def vendor(self):
@@ -992,7 +992,7 @@ class ActionVendorHeader(_OpenflowAction):
     @vendor.setter
     def vendor(self, value):
         self._vendor = int(value)
-        
+
     @property
     def data(self):
         return self._data
@@ -1013,11 +1013,11 @@ class ActionVendorHeader(_OpenflowAction):
     def to_bytes(self):
         raw = super().to_bytes() + struct.pack(ActionVendorHeader._PACKFMT, self.vendor) + \
             self.data
-        padbytes = (self._calcdatalen() - len(self.data)) * b'\x00'
+        padbytes = (self._calcdatalen() - len(self._data)) * b'\x00'
         return raw + padbytes
 
     def _calcdatalen(self):
-        return ceil(len(self.data) / 8) * 8
+        return ceil(len(self._data) / 8) * 8
 
 
 _ActionClassMap = {
@@ -2777,6 +2777,7 @@ class OpenflowQueueGetConfigReply(_OpenflowStruct):
         fields = struct.unpack(OpenflowQueueGetConfigReply._PACKFMT, 
             raw[:OpenflowQueueGetConfigReply._MINLEN])
         self.port = fields[0]
+        raw = raw[OpenflowQueueGetConfigReply._MINLEN:]
         while len(raw) > 0:
             qid,qlen = struct.unpack('!IH', raw[:6])
             rawqueue = raw[:qlen]

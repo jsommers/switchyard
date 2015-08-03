@@ -242,9 +242,11 @@ class OpenflowPacketTests(unittest.TestCase):
         qcfg[1].port = 4
         qcfg[1].queues.append(OpenflowPacketQueue(queue_id=0))
         qcfg[1].queues[0].properties.append(OpenflowQueueMinRateProperty(rate=(40 * 10)))
+        print (qcfg)
         self._storePkt(qcfg)
         b = qcfg.to_bytes()
         qcfg2 = Packet.from_bytes(b, OpenflowHeader)
+        print (qcfg2)
         self.assertEqual(qcfg, qcfg2)
 
     def testSwitchStats(self):
