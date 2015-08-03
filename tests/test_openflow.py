@@ -250,10 +250,15 @@ class OpenflowPacketTests(unittest.TestCase):
     def testSwitchStats(self):
         switchstatsreq = OpenflowHeader(OpenflowType.StatsRequest) + SwitchDescriptionStatsRequest()
         self._storePkt(switchstatsreq)
+        b = switchstatsreq.to_bytes()
+        sreq = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(switchstatsreq, sreq)
 
         switchstatsreply = OpenflowHeader(OpenflowType.StatsReply) + SwitchDescriptionStatsReply()
         self._storePkt(switchstatsreply)
-        # FIXME: assertions
+        b = switchstatsreply.to_bytes()
+        sreply = Packet.from_bytes(b, OpenflowHeader)
+        self.assertEqual(switchstatsreply, sreply)
 
     def testIndividualFlowStats(self):
         req = OpenflowHeader(OpenflowType.StatsRequest) + IndividualFlowStatsRequest()

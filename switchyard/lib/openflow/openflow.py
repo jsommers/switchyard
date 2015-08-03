@@ -1777,6 +1777,7 @@ class OpenflowStatsType(Enum):
     Port = 4
     Queue = 5
     Vendor = 0xffff
+    NoStatsType = 0xdead
 
 
 class _OpenflowStatsRequest(_OpenflowStruct):
@@ -1784,7 +1785,7 @@ class _OpenflowStatsRequest(_OpenflowStruct):
     _PACKFMT = '!HH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, xtype):
+    def __init__(self, xtype=OpenflowStatsType.NoStatsType):
         _OpenflowStruct.__init__(self)
         self._type = OpenflowStatsType(xtype)
 
@@ -2084,11 +2085,11 @@ class SwitchDescriptionStatsReply(_OpenflowStatsReply):
         super().from_bytes(raw[:_OpenflowStatsReply._MINLEN])
         raw = raw[_OpenflowStatsReply._MINLEN:]
         fields = struct.unpack(SwitchDescriptionStatsReply._PACKFMT, raw)
-        self.mfr_desc = fields[0]
-        self.hw_desc = fields[1]
-        self.sw_desc = fields[2]
-        self.serial_num = fields[3]
-        self.dp_desc = fields[4]
+        self.mfr_desc = fields[0].decode()
+        self.hw_desc = fields[1].decode()
+        self.sw_desc = fields[2].decode()
+        self.serial_num = fields[3].decode()
+        self.dp_desc = fields[4].decode()
     
 
 class IndividualFlowStatsReply(_OpenflowStatsReply):
@@ -3067,7 +3068,7 @@ class OpenflowHeader(PacketHeaderBase):
     This is a mostly-internal class used by the various
     OpenflowMessage type classes.
     '''
-    __slots__ = ['_version', '_type', '_length', '_xid']
+    __slots__ = ['_version', '_type', '_length', '_xid', '_subtype']
     _PACKFMT = '!BBHI'
     _MINLEN = struct.calcsize(_PACKFMT)
     _OpenflowTypeClasses = {
@@ -3103,6 +3104,7 @@ class OpenflowHeader(PacketHeaderBase):
         self._type = xtype
         self._length = OpenflowHeader._MINLEN
         self._xid = xid
+        self._subtype = None
 
     @staticmethod
     def build(xtype, xid=0):
@@ -3153,7 +3155,11 @@ class OpenflowHeader(PacketHeaderBase):
         self.type = fields[1]
         self.length = fields[2]
         self.xid = fields[3]
-        return raw[OpenflowHeader._MINLEN:]
+        raw = raw[OpenflowHeader._MINLEN:]
+        if self.type == OpenflowType.StatsRequest or self.type == OpenflowType.StatsReply:
+            (statstype,) = struct.unpack('!H', raw[:2])
+            self._subtype = OpenflowStatsType(statstype)
+        return raw
 
     def to_bytes(self):
         return struct.pack(OpenflowHeader._PACKFMT, self._version,
@@ -3164,6 +3170,14 @@ class OpenflowHeader(PacketHeaderBase):
 
     def next_header_class(self):
         hdrcls = OpenflowHeader._OpenflowTypeClasses.get(self.type, None)
+        if self.type == OpenflowType.StatsRequest or \
+           self.type == OpenflowType.StatsReply and \
+           self._subtype is not None:
+
+            clsname = "{}{}".format(self._subtype.name, self.type.name)
+            cls = globals()[clsname]
+            return cls
+
         return hdrcls
 
     def pre_serialize(self, raw, pkt, i):
