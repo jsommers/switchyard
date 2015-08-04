@@ -1,4 +1,5 @@
-from switchyard.lib.packet import PacketHeaderBase, Packet, IPProtocol, EtherType
+from switchyard.lib.packet import PacketHeaderBase, Packet, IPProtocol, \
+    EtherType, Ethernet, Vlan, IPv6, IPv4, ICMP, ICMPv6, TCP, UDP
 from switchyard.lib.address import EthAddr, IPv4Address, IPv4Network
 from switchyard.lib.common import log_debug
 from enum import Enum, IntEnum
@@ -516,9 +517,18 @@ class OpenflowMatch(_OpenflowStruct):
         pass
 
     @staticmethod
-    def from_packet(pkt):
+    def build_from_packet(pkt):
+        '''
+        Build and return a new OpenflowMatch object based on the
+        packet object passed as a parameter.
+        '''
         m = OpenflowMatch()
-        pass
+        for mf,pkttuple in OpenflowMatch._match_field_to_packet.items():
+            for pktcls,field in pkttuple:
+                if pkt.has_header(pktcls):
+                    setattr(m, mf, getattr(pkt[pktcls], field))
+                    continue
+        return m
 
     @property
     def wildcards(self):

@@ -130,6 +130,22 @@ class OpenflowPacketTests(unittest.TestCase):
         self.assertTrue(m.overlaps_with(m2))
         self.assertFalse(m.overlaps_with(m2, strict=True))
 
+    def testBuildMatch(self):
+        pkt = Ethernet(src="11:22:33:44:55:66", dst="aa:bb:cc:dd:ee:ff") + \
+              IPv4(src="1.2.3.4", dst="5.6.7.8", protocol=6) + \
+              TCP(srcport=4000, dstport=10000)
+        m = OpenflowMatch.build_from_packet(pkt)
+        self.assertEqual(m.dl_src, "11:22:33:44:55:66")
+        self.assertEqual(m.dl_dst, "aa:bb:cc:dd:ee:ff")
+        self.assertEqual(m.dl_vlan, 0)
+        self.assertEqual(m.dl_vlan_pcp, 0)
+        self.assertEqual(m.nw_proto.value, 6)
+        self.assertEqual(m.nw_tos, 0)
+        self.assertEqual(str(m.nw_src), "1.2.3.4")
+        self.assertEqual(str(m.nw_dst), "5.6.7.8")
+        self.assertEqual(m.tp_src, 4000)
+        self.assertEqual(m.tp_dst, 10000)
+
     def testPacketMatch(self):
         # FIXME
         pass
