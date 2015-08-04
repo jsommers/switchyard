@@ -473,19 +473,8 @@ class OpenflowMatch(_OpenflowStruct):
         attrs.discard('_wildcards')
         attrs.discard('_nwsrc_wildcard')
         attrs.discard('_nwdst_wildcard')
-        # for x in attrs:
-        #     print(x)
-
+        # FIXME
         return overlap
-
-    # def match_packet(self, packet):
-    #     '''
-    #     Does the packet match the elements in this structure?
-    #     Return True if so, False otherwise.
-    #     '''
-    # FIXME
-    #     null = NullPacketHeader()
-    #     header = packet.get_header(IPv4, null)
 
     @property
     def wildcards(self):
