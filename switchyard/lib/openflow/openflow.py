@@ -1,10 +1,11 @@
 from switchyard.lib.packet import PacketHeaderBase, Packet, IPProtocol, \
     EtherType, Ethernet, Vlan, IPv6, IPv4, ICMP, ICMPv6, TCP, UDP
-from switchyard.lib.address import EthAddr, IPv4Address, IPv4Network
+from switchyard.lib.address import EthAddr, IPv4Address
 from switchyard.lib.common import log_debug
 from enum import Enum, IntEnum
 import struct
 from math import ceil
+from ipaddress import ip_network
 
 
 def _make_bitmap(xset):
@@ -503,8 +504,8 @@ class OpenflowMatch(_OpenflowStruct):
                 wattr = "{}_wildcard".format(a)
                 currbits = 32 - getattr(self, wattr)
                 otherbits = 32 - getattr(othermatch, wattr)
-                currnet = IPv4Network("{}/{}".format(getattr(self, a), currbits))
-                othernet = IPv4Network("{}/{}".format(getattr(othermatch, a), otherbits))
+                currnet = ip_network("{}/{}".format(getattr(self, a), currbits), strict=False)
+                othernet = ip_network("{}/{}".format(getattr(othermatch, a), otherbits), strict=False)
                 iswildcarded = curr in othernet or other in currnet
             else:
                 wc = _wildcard_attr_map[a].name
@@ -513,8 +514,36 @@ class OpenflowMatch(_OpenflowStruct):
             overlap.append(iswildcarded or curr == other)
         return all(overlap)
 
-    def match(self, pkt):
-        pass
+    def matches_packet(self, pkt):
+        '''
+        Return True if the given packet matches this match object.
+        '''
+        match = []
+        for mf,pkttuple in OpenflowMatch._match_field_to_packet.items():
+            mf = "_{}".format(mf)
+
+            # if the attribute is a network address, respect the bits
+            if mf == '_nw_src' or mf == '_nw_dst':
+                # FIXME: clean me up.  lots of dup w/above and below :(
+                wattr = "{}_wildcard".format(mf)
+                bits = 32 - getattr(self, wattr)
+                if bits < 32:
+                    netaddr = ip_network("{}/{}".format(getattr(self, mf), bits), strict=False)
+                    for pktcls,field in pkttuple: 
+                        if pkt.has_header(pktcls):
+                            match.append(getattr(pkt[pktcls], field) in netaddr)
+                    continue
+
+            # if attribute is simple wildcard, just ignore the attr
+            elif _wildcard_attr_map[mf] in self._wildcards:
+                continue
+
+            # compare concrete values in packet with match object value
+            for pktcls,field in pkttuple:
+                if pkt.has_header(pktcls):
+                    match.append(getattr(pkt[pktcls], field) == getattr(self, mf))
+                    break
+        return all(match)
 
     @staticmethod
     def build_from_packet(pkt):

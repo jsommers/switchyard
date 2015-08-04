@@ -147,9 +147,23 @@ class OpenflowPacketTests(unittest.TestCase):
         self.assertEqual(m.tp_dst, 10000)
 
     def testPacketMatch(self):
-        # FIXME
-        pass
+        pkt = Ethernet(src="11:22:33:44:55:66", dst="aa:bb:cc:dd:ee:ff") + \
+              IPv4(src="1.2.3.4", dst="5.6.7.8", protocol=6) + \
+              TCP(srcport=4000, dstport=10000)
+        m = OpenflowMatch.build_from_packet(pkt)
+        self.assertTrue(m.matches_packet(pkt))
 
+        pkt[TCP].srcport = 42
+        self.assertFalse(m.matches_packet(pkt))
+
+        m.add_wildcard(OpenflowWildcard.TpSrc)
+        self.assertTrue(m.matches_packet(pkt))
+
+        pkt[IPv4].src = "1.2.3.0"
+        self.assertFalse(m.matches_packet(pkt))
+
+        m.nwsrc_wildcard = 8
+        self.assertTrue(m.matches_packet(pkt))
         
     def testError(self):
         e = OpenflowHeader.build(OpenflowType.Error, 0)
