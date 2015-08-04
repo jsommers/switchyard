@@ -1788,6 +1788,7 @@ class _OpenflowStatsRequest(_OpenflowStruct):
     def __init__(self, xtype=OpenflowStatsType.NoStatsType):
         _OpenflowStruct.__init__(self)
         self._type = OpenflowStatsType(xtype)
+        # NB: no flags are defined in OF 1.0 spec 
 
     @property
     def type(self):
@@ -2135,7 +2136,8 @@ class IndividualFlowStatsReply(_OpenflowStatsReply):
         part0size = struct.calcsize(IndividualFlowStatsReply._PACKFMT1)
         part2size = struct.calcsize(IndividualFlowStatsReply._PACKFMT2)
         fields0 = struct.unpack(IndividualFlowStatsReply._PACKFMT1, raw[:part0size])
-        self.table_id = fields0[0]
+        xlen = fields0[0]
+        self.table_id = fields0[1]
         raw = raw[part0size:]
         self.match = OpenflowMatch()
         self.match.from_bytes(raw[:OpenflowMatch.size()])
@@ -2222,7 +2224,7 @@ class IndividualFlowStatsReply(_OpenflowStatsReply):
     def hard_timeout(self):
         return self._hard_timeout
 
-    @idle_timeout.setter
+    @hard_timeout.setter
     def hard_timeout(self, value):
         self._hard_timeout = int(value)
 

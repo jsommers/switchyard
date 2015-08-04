@@ -267,7 +267,18 @@ class OpenflowPacketTests(unittest.TestCase):
         req2 = Packet.from_bytes(b, OpenflowHeader)
         self.assertEqual(req, req2)
 
-        reply = OpenflowHeader(OpenflowType.StatsReply) + IndividualFlowStatsReply()
+        reply = OpenflowHeader(OpenflowType.StatsReply, 42) + IndividualFlowStatsReply()
+        reply[1].table_id = 42
+        reply[1].match.wildcard_all()
+        reply[1].duration_sec = 5
+        reply[1].duration_nsec = 16384
+        reply[1].idle_timeout = 32
+        reply[1].hard_timeout = 48
+        reply[1].cookie = 4
+        reply[1].packet_count = 10
+        reply[1].byte_count = 11
+        reply[1].priority = 0x2222
+        reply[1].actions.append(ActionOutput(port=OpenflowPort.Flood))
         self._storePkt(reply)
         b = reply.to_bytes()
         reply2 = Packet.from_bytes(b, OpenflowHeader)
