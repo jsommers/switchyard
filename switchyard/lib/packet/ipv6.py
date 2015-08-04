@@ -602,12 +602,28 @@ class IPv6(PacketHeaderBase):
         self._srcip = IPv6Address(value)
 
     @property
+    def src(self):
+        return self.srcip 
+
+    @src.setter
+    def src(self, value):
+        self.srcip = value
+
+    @property
     def dstip(self):
         return self._dstip
 
     @dstip.setter
     def dstip(self, value):
         self._dstip = IPv6Address(value)
+
+    @property
+    def dst(self):
+        return self.dstip
+
+    @dst.setter
+    def dst(self, value):
+        self.dstip = value
 
     def __str__(self):
         return '{} {}->{} {}'.format(self.__class__.__name__, self.srcip, self.dstip, self.nextheader.name) 

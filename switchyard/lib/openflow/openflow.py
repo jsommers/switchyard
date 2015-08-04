@@ -396,6 +396,20 @@ class OpenflowMatch(_OpenflowStruct):
     _PACKFMT = '!IH6s6sHBxHBB2x4s4sHH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
+    _match_field_to_packet = {
+        'dl_src': ((Ethernet, 'src'),),
+        'dl_dst': ((Ethernet, 'dst'),),
+        'dl_vlan': ((Vlan, 'vlan'),),
+        'dl_vlan_pcp': ((Vlan, 'pcp'),),
+        'dl_type': ((Vlan, 'ethertype'), (Ethernet, 'ethertype')),
+        'nw_proto': ((IPv4, 'protocol'),(IPv6, 'protocol')),
+        'nw_tos': ((IPv4, 'tos'), (IPv6, 'trafficclass')),
+        'nw_src': ((IPv4, 'src'), (IPv6, 'src')),
+        'nw_dst': ((IPv4, 'dst'), (IPv6, 'dst')),
+        'tp_src': ((TCP, 'srcport'), (UDP, 'srcport'), (ICMP, 'icmptype'), (ICMPv6, 'icmptype')),
+        'tp_dst': ((TCP, 'dstport'), (TCP, 'dstport'), (ICMP, 'icmpcode'), (ICMPv6, 'icmpcode')),
+    }
+
     def __init__(self):
         _OpenflowStruct.__init__(self)
         self._wildcards = set()
@@ -463,7 +477,7 @@ class OpenflowMatch(_OpenflowStruct):
         self.tp_dst = fields[12]
         return raw[OpenflowMatch._MINLEN:]
 
-    def overlaps(self, othermatch):
+    def overlaps_with(self, othermatch, strict=False):
         '''
         Return True if this match overlaps with othermatch.  False
         otherwise.  
@@ -471,6 +485,9 @@ class OpenflowMatch(_OpenflowStruct):
         Two match objects overlap if the same packet can be matched 
         by both *and* they have the same priority.
         '''
+        if strict:
+            return self == othermatch
+
         attrs = set(self.__slots__)
         attrs.discard('_wildcards')
         attrs.discard('_nw_src_wildcard')
@@ -495,10 +512,12 @@ class OpenflowMatch(_OpenflowStruct):
             overlap.append(iswildcarded or curr == other)
         return all(overlap)
 
-    def match_packet(self, pkt):
+    def match(self, pkt):
         pass
 
-    def match_strict(self, othermatch):
+    @staticmethod
+    def from_packet(pkt):
+        m = OpenflowMatch()
         pass
 
     @property
@@ -1118,7 +1137,6 @@ class OpenflowEchoRequest(_OpenflowStruct):
 
 
 class OpenflowEchoReply(OpenflowEchoRequest):
-
     def __init__(self):
         OpenflowEchoRequest.__init__(self)
 

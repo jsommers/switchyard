@@ -100,34 +100,35 @@ class OpenflowPacketTests(unittest.TestCase):
 
     def testMatchOverlap1(self):
         m = OpenflowMatch()
-        self.assertTrue(m.overlaps(m))
+        self.assertTrue(m.overlaps_with(m))
 
     def testMatchOverlap2(self):
         m = OpenflowMatch()
         m2 = OpenflowMatch()
         m2.in_port = 5
-        self.assertFalse(m.overlaps(m2))
+        self.assertFalse(m.overlaps_with(m2))
 
     def testMatchOverlap3(self):
         m = OpenflowMatch()
         m2 = OpenflowMatch()
         m.in_port = 5
         m2.add_wildcard(OpenflowWildcard.InPort)
-        self.assertTrue(m.overlaps(m2))
+        self.assertTrue(m.overlaps_with(m2))
 
     def testMatchOverlap4(self):
         m = OpenflowMatch()
         m.nw_src = "1.2.3.4"
         m2 = OpenflowMatch()
         m2.nwsrc_wildcard = 32
-        self.assertTrue(m.overlaps(m2))
+        self.assertTrue(m.overlaps_with(m2))
 
     def testMatchOverlap5(self):
         m = OpenflowMatch()
         m.nw_src = "0.0.1.1"
         m2 = OpenflowMatch()
         m2.nwsrc_wildcard = 16
-        self.assertTrue(m.overlaps(m2))
+        self.assertTrue(m.overlaps_with(m2))
+        self.assertFalse(m.overlaps_with(m2, strict=True))
 
     def testPacketMatch(self):
         # FIXME
