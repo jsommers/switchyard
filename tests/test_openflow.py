@@ -92,17 +92,46 @@ class OpenflowPacketTests(unittest.TestCase):
         self.assertListEqual(['NwSrc:32','NwDst:32','All'], m2.wildcards) 
 
         m.reset_wildcards()
-        m.add_wildcard(OpenflowWildcards.DlSrc)
-        m.add_wildcard(OpenflowWildcards.DlDst)
+        m.add_wildcard(OpenflowWildcard.DlSrc)
+        m.add_wildcard(OpenflowWildcard.DlDst)
         xlist = m.wildcards
         m2.from_bytes(m.to_bytes())
         self.assertListEqual(xlist, m2.wildcards)
 
-    def testMatchOverlap(self):
+    def testMatchOverlap1(self):
         m = OpenflowMatch()
         self.assertTrue(m.overlaps(m))
-        
-        # FIXME: make something non-overlap and test
+
+    def testMatchOverlap2(self):
+        m = OpenflowMatch()
+        m2 = OpenflowMatch()
+        m2.in_port = 5
+        self.assertFalse(m.overlaps(m2))
+
+    def testMatchOverlap3(self):
+        m = OpenflowMatch()
+        m2 = OpenflowMatch()
+        m.in_port = 5
+        m2.add_wildcard(OpenflowWildcard.InPort)
+        self.assertTrue(m.overlaps(m2))
+
+    def testMatchOverlap4(self):
+        m = OpenflowMatch()
+        m.nw_src = "1.2.3.4"
+        m2 = OpenflowMatch()
+        m2.nwsrc_wildcard = 32
+        self.assertTrue(m.overlaps(m2))
+
+    def testMatchOverlap5(self):
+        m = OpenflowMatch()
+        m.nw_src = "0.0.1.1"
+        m2 = OpenflowMatch()
+        m2.nwsrc_wildcard = 16
+        self.assertTrue(m.overlaps(m2))
+
+    def testPacketMatch(self):
+        # FIXME
+        pass
 
         
     def testError(self):
@@ -159,8 +188,8 @@ class OpenflowPacketTests(unittest.TestCase):
         flowmod[1].idle_timeout = 1800
         flowmod[1].buffer_id = 0xdeadbeef
         flowmod[1].cookie = 0xcafebeefbabe0000
-        flowmod[1].match.add_wildcard(OpenflowWildcards.DlSrc)
-        flowmod[1].match.add_wildcard(OpenflowWildcards.DlVlan)
+        flowmod[1].match.add_wildcard(OpenflowWildcard.DlSrc)
+        flowmod[1].match.add_wildcard(OpenflowWildcard.DlVlan)
         flowmod[1].match.dl_dst = "55:44:33:22:ab:cd"
         flowmod[1].match.nw_src = "149.43.0.0"
         flowmod[1].match.nwsrc_wildcard = 16

@@ -1,5 +1,5 @@
 from switchyard.lib.packet import PacketHeaderBase, Packet, IPProtocol, EtherType
-from switchyard.lib.address import EthAddr, IPv4Address
+from switchyard.lib.address import EthAddr, IPv4Address, IPv4Network
 from switchyard.lib.common import log_debug
 from enum import Enum, IntEnum
 import struct
@@ -388,7 +388,7 @@ class OpenflowPacketQueue(_OpenflowStruct):
 
 
 class OpenflowMatch(_OpenflowStruct):
-    __slots__ = ['_wildcards', '_nwsrc_wildcard', '_nwdst_wildcard',
+    __slots__ = ['_wildcards', '_nw_src_wildcard', '_nw_dst_wildcard',
                  '_in_port', '_dl_src', '_dl_dst',
                  '_dl_vlan', '_dl_vlan_pcp', '_dl_type',
                  '_nw_tos', '_nw_proto', '_nw_src', '_nw_dst',
@@ -407,8 +407,8 @@ class OpenflowMatch(_OpenflowStruct):
         self._dl_type = EtherType.IP
         self._nw_tos = 0
         self._nw_proto = IPProtocol.ICMP
-        self._nwsrc_wildcard = 0
-        self._nwdst_wildcard = 0
+        self._nw_src_wildcard = 0
+        self._nw_dst_wildcard = 0
         self._nw_src = IPv4Address(0)
         self._nw_dst = IPv4Address(0)
         self._tp_src = 0
@@ -432,21 +432,21 @@ class OpenflowMatch(_OpenflowStruct):
         fields = struct.unpack(
             OpenflowMatch._PACKFMT, raw[:OpenflowMatch._MINLEN])
         self._wildcards = set()
-        if fields[0] == OpenflowWildcards.All.value:
+        if fields[0] == OpenflowWildcard.All.value:
             self.wildcard_all()
             self.nwsrc_wildcard = 32
             self.nwdst_wildcard = 32
         else:
-            for v in OpenflowWildcards:
+            for v in OpenflowWildcard:
                 if not v.name.endswith('All') and \
                    not v.name.endswith('Mask') and \
                    v.value & fields[0] == v.value:
                     self.add_wildcard(v)
 
-            # set nwsrc_wildcard, nwdst_wildcard
-            nwsrcbits = (fields[0] & OpenflowWildcards.NwSrcMask.value) >> 8
+            # set nw_src_wildcard, nwdst_wildcard
+            nwsrcbits = (fields[0] & OpenflowWildcard.NwSrcMask.value) >> 8
             self.nwsrc_wildcard = nwsrcbits
-            nwdstbits = (fields[0] & OpenflowWildcards.NwDstMask.value) >> 14
+            nwdstbits = (fields[0] & OpenflowWildcard.NwDstMask.value) >> 14
             self.nwdst_wildcard = nwdstbits
 
         self.in_port = fields[1]
@@ -466,15 +466,40 @@ class OpenflowMatch(_OpenflowStruct):
     def overlaps(self, othermatch):
         '''
         Return True if this match overlaps with othermatch.  False
-        otherwise.
+        otherwise.  
+
+        Two match objects overlap if the same packet can be matched 
+        by both *and* they have the same priority.
         '''
-        overlap = True
         attrs = set(self.__slots__)
         attrs.discard('_wildcards')
-        attrs.discard('_nwsrc_wildcard')
-        attrs.discard('_nwdst_wildcard')
-        # FIXME
-        return overlap
+        attrs.discard('_nw_src_wildcard')
+        attrs.discard('_nw_dst_wildcard')
+        overlap = []
+        for a in attrs:
+            curr = getattr(self, a)
+            other = getattr(othermatch, a)
+
+            if a == '_nw_src' or a == '_nw_dst':
+                # FIXME: clean this up
+                wattr = "{}_wildcard".format(a)
+                currbits = 32 - getattr(self, wattr)
+                otherbits = 32 - getattr(othermatch, wattr)
+                currnet = IPv4Network("{}/{}".format(getattr(self, a), currbits))
+                othernet = IPv4Network("{}/{}".format(getattr(othermatch, a), otherbits))
+                iswildcarded = curr in othernet or other in currnet
+            else:
+                wc = _wildcard_attr_map[a].name
+                iswildcarded = wc in self.wildcards or wc in othermatch.wildcards
+
+            overlap.append(iswildcarded or curr == other)
+        return all(overlap)
+
+    def match_packet(self, pkt):
+        pass
+
+    def match_strict(self, othermatch):
+        pass
 
     @property
     def wildcards(self):
@@ -485,7 +510,7 @@ class OpenflowMatch(_OpenflowStruct):
         return wcards
 
     def add_wildcard(self, value):
-        value = OpenflowWildcards(value)
+        value = OpenflowWildcard(value)
         self._wildcards.add(value)
 
     def reset_wildcards(self):
@@ -495,27 +520,27 @@ class OpenflowMatch(_OpenflowStruct):
         self._wildcards.discard(value)
 
     def wildcard_all(self):
-        self._wildcards = set([OpenflowWildcards.All])
+        self._wildcards = set([OpenflowWildcard.All])
 
     @property
     def nwsrc_wildcard(self):
-        return self._nwsrc_wildcard
+        return self._nw_src_wildcard
 
     @nwsrc_wildcard.setter
     def nwsrc_wildcard(self, value):
         value = max(0, int(value))
         value = min(32, value)
-        self._nwsrc_wildcard = value
+        self._nw_src_wildcard = value
 
     @property
     def nwdst_wildcard(self):
-        return self._nwsrc_wildcard
+        return self._nw_src_wildcard
 
     @nwdst_wildcard.setter
     def nwdst_wildcard(self, value):
         value = max(0, int(value))
         value = min(32, value)
-        self._nwdst_wildcard = value
+        self._nw_dst_wildcard = value
 
     @property
     def in_port(self):
@@ -625,7 +650,7 @@ class OpenflowMatch(_OpenflowStruct):
         self._tp_dst = value
 
 
-class OpenflowWildcards(Enum):
+class OpenflowWildcard(Enum):
     InPort = 1 << 0
     DlVlan = 1 << 1
     DlSrc = 1 << 2
@@ -647,6 +672,28 @@ class OpenflowWildcards(Enum):
     NwSrcAll = 32 << 8
     NwDstAll = 32 << 14
     All = ((1 << 22) - 1)
+
+
+def _make_wildcard_attr_map():
+    '''
+    Create a dictionary that maps an attribute name
+    in OpenflowMatch with a non-prefix-related wildcard
+    bit from the above OpenflowWildcard enumeration.
+    '''
+    _xmap = {}
+    for wc in OpenflowWildcard:
+        if not wc.name.endswith('All') and \
+            not wc.name.endswith('Mask'):
+            translated = ''
+            for ch in wc.name:
+                if ch.isupper():
+                    translated += '_' 
+                    translated += ch.lower()
+                else:
+                    translated += ch
+            _xmap[translated] = wc
+    return _xmap
+_wildcard_attr_map = _make_wildcard_attr_map()
 
 
 class OpenflowActionType(Enum):
@@ -2321,21 +2368,21 @@ class TableStatsReply(_OpenflowStatsReply):
         fields = struct.unpack(TableStatsReply._PACKFMT, raw)
         self._wildcards = set()
         wildbits = fields[2]
-        if fields[1] == OpenflowWildcards.All.value:
+        if fields[1] == OpenflowWildcard.All.value:
             self.wildcard_all()
             self.nwsrc_wildcard = 32
             self.nwdst_wildcard = 32
         else:
-            for v in OpenflowWildcards:
+            for v in OpenflowWildcard:
                 if not v.name.endswith('All') and \
                    not v.name.endswith('Mask') and \
                    v.value & wildbits == v.value:
                     self.add_wildcard(v)
 
             # set nwsrc_wildcard, nwdst_wildcard
-            nwsrcbits = (wildbits & OpenflowWildcards.NwSrcMask.value) >> 8
+            nwsrcbits = (wildbits & OpenflowWildcard.NwSrcMask.value) >> 8
             self.nwsrc_wildcard = nwsrcbits
-            nwdstbits = (wildbits & OpenflowWildcards.NwDstMask.value) >> 14
+            nwdstbits = (wildbits & OpenflowWildcard.NwDstMask.value) >> 14
             self.nwdst_wildcard = nwdstbits
 
         self.table_id = fields[0]
@@ -2362,7 +2409,7 @@ class TableStatsReply(_OpenflowStatsReply):
         return wcards
 
     def add_wildcard(self, value):
-        value = OpenflowWildcards(value)
+        value = OpenflowWildcard(value)
         self._wildcards.add(value)
 
     def reset_wildcards(self):
@@ -2372,7 +2419,7 @@ class TableStatsReply(_OpenflowStatsReply):
         self._wildcards.discard(value)
 
     def wildcard_all(self):
-        self._wildcards = set([OpenflowWildcards.All])
+        self._wildcards = set([OpenflowWildcard.All])
 
     @property
     def table_id(self):
