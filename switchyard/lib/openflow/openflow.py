@@ -648,6 +648,8 @@ class OpenflowMatch(_OpenflowStruct):
 
     @dl_type.setter
     def dl_type(self, value):
+        if int(value) == 0:
+            value = EtherType.NoType
         self._dl_type = EtherType(value)
 
     @property
