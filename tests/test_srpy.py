@@ -168,94 +168,89 @@ def main(obj):
     obj.send_packet('router-eth3', pkt)
 '''
 
-    def setUp(self):
-        self.writeFile('stest.py', TestFrameworkTests.CONTENTS1)
-        self.writeFile('ucode1.py', TestFrameworkTests.USERCODE1)
-        self.writeFile('ucode2.py', TestFrameworkTests.USERCODE2)
-        self.writeFile('ucode3.py', TestFrameworkTests.USERCODE3)
-        self.writeFile('ucode4.py', TestFrameworkTests.USERCODE4)
-        self.writeFile('ucode5.py', TestFrameworkTests.USERCODE5)
-        self.writeFile('ucode6.py', TestFrameworkTests.USERCODE6)
-        self.writeFile('ucode7.py', TestFrameworkTests.USERCODE7)
-        self.writeFile('ucode8.py', TestFrameworkTests.USERCODE8)
-        self.writeFile('ucode9.py', TestFrameworkTests.USERCODE9)
-        self.writeFile('ucode10.py', TestFrameworkTests.USERCODE10)
+    @classmethod
+    def setUpClass(cls):
+        def writeFile(name, contents):
+            outfile = open(name, 'w')
+            outfile.write(contents)
+            outfile.close()
+            
+        writeFile('stest.py', TestFrameworkTests.CONTENTS1)
+        writeFile('ucode1.py', TestFrameworkTests.USERCODE1)
+        writeFile('ucode2.py', TestFrameworkTests.USERCODE2)
+        writeFile('ucode3.py', TestFrameworkTests.USERCODE3)
+        writeFile('ucode4.py', TestFrameworkTests.USERCODE4)
+        writeFile('ucode5.py', TestFrameworkTests.USERCODE5)
+        writeFile('ucode6.py', TestFrameworkTests.USERCODE6)
+        writeFile('ucode7.py', TestFrameworkTests.USERCODE7)
+        writeFile('ucode8.py', TestFrameworkTests.USERCODE8)
+        writeFile('ucode9.py', TestFrameworkTests.USERCODE9)
+        writeFile('ucode10.py', TestFrameworkTests.USERCODE10)
+
         sys.path.append('.')
         sys.path.append(os.getcwd())
         sys.path.append(os.path.join(os.getcwd(),'tests'))
         sys.path.append(os.path.join(os.getcwd(),'..'))
 
-        self.opt_compile = Opt()
-        self.opt_compile.verbose = False
-        self.opt_compile.testmode = True
-        self.opt_compile.compile = True
-        self.opt_compile.debug = False
-        self.opt_compile.dryrun = False
-        self.opt_compile.nohandle = False
-        self.opt_compile.nopdb = True
+        cls.opt_compile = Opt()
+        cls.opt_compile.verbose = False
+        cls.opt_compile.testmode = True
+        cls.opt_compile.compile = True
+        cls.opt_compile.debug = False
+        cls.opt_compile.dryrun = False
+        cls.opt_compile.nohandle = False
+        cls.opt_compile.nopdb = True
 
-        self.opt_nocompile = copy.copy(self.opt_compile)
-        self.opt_nocompile.compile = False
+        cls.opt_nocompile = copy.copy(cls.opt_compile)
+        cls.opt_nocompile.compile = False
 
-        self.opt_dryrun = copy.copy(self.opt_compile)
-        self.opt_dryrun.compile = False
-        self.opt_dryrun.dryrun = True
+        cls.opt_dryrun = copy.copy(cls.opt_compile)
+        cls.opt_dryrun.compile = False
+        cls.opt_dryrun.dryrun = True
     
-    def tearDown(self):
-        self.removeFile('stest')
-        self.removeFile('ucode1')
-        self.removeFile('ucode2')
-        self.removeFile('ucode3')
-        self.removeFile('ucode4')
-        self.removeFile('ucode5')
-        self.removeFile('ucode6')
-        self.removeFile('ucode7')
-        self.removeFile('ucode8')
-        self.removeFile('ucode9')
-        self.removeFile('ucode10')
+    @classmethod
+    def tearDownClass(cls):
+        def removeFile(name):
+            try:
+                os.unlink(name + '.py')
+            except:
+                pass
+            try:
+                os.unlink(name + '.pyc')
+            except:
+                pass
+            try:
+                os.unlink(name + '.srpy')
+            except:
+                pass
 
-    def writeFile(self, name, contents):
-        outfile = open(name, 'w')
-        outfile.write(contents)
-        outfile.close()
-
-    def removeFile(self, name):
-        try:
-            os.unlink(name + '.py')
-        except:
-            pass
-        try:
-            os.unlink(name + '.pyc')
-        except:
-            pass
-        try:
-            os.unlink(name + '.srpy')
-        except:
-            pass
+        removeFile('stest')
+        for t in range(1, 11):
+            removeFile("ucode{}".format(t))
 
     def testDryRun(self):
         with self.assertLogs(level='INFO') as cm:
-            main_test('ucode1.py', ['stest'], self.opt_dryrun)
+            main_test('ucode1.py', ['stest'], TestFrameworkTests.opt_dryrun)
         self.assertIn('Imported your code successfully', cm.output[0])
         with self.assertLogs(level='INFO') as cm:
-            main_test('ucode1', ['stest'], self.opt_dryrun)
+            main_test('ucode1', ['stest'], TestFrameworkTests.opt_dryrun)
         self.assertIn('Imported your code successfully', cm.output[0])
 
     def testNoScenario(self):
         with self.assertLogs(level='ERROR') as cm:
-            main_test('ucode1', [], self.opt_compile)
+            main_test('ucode1', [], TestFrameworkTests.opt_compile)
         self.assertIn('no scenarios', cm.output[0])
 
     def testCompileOutput(self):
         with self.assertLogs(level='INFO') as cm:
-            main_test('ucode1', ['stest'], self.opt_compile)
+            main_test('ucode1', ['stest'], TestFrameworkTests.opt_compile)
         self.assertIn('Compiling', cm.output[0])
         self.assertIsNotNone(os.stat('stest.srpy'))
 
     def testEmptyUserProgram(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode1', ['stest'], self.opt_nocompile)
+                main_test('ucode1', ['stest'], TestFrameworkTests.opt_nocompile)
         self.assertIn('0 passed, 1 failed, 3 pending', xio.contents)
         self.assertNotIn('All tests passed', xio.contents)
 
@@ -268,7 +263,7 @@ def main(obj):
     def testOneRecvCall(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode2', ['stest'], self.opt_nocompile)
+                main_test('ucode2', ['stest'], TestFrameworkTests.opt_nocompile)
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, re.compile('Passed:\s*1\s*Incoming ARP request', re.M))
         self.assertRegex(xio.contents, re.compile('Failed:\s*Outgoing ARP reply',re.M))
@@ -276,7 +271,7 @@ def main(obj):
     def testTwoRecvCalls(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode3', ['stest'], self.opt_nocompile)
+                main_test('ucode3', ['stest'], TestFrameworkTests.opt_nocompile)
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, re.compile('Passed:\s*1\s*Incoming ARP request', re.M))
         self.assertRegex(xio.contents, re.compile('Failed:\s*Outgoing ARP reply',re.M))
@@ -285,7 +280,7 @@ def main(obj):
     def testDelayedSent(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode4', ['stest'], self.opt_nocompile)
+                main_test('ucode4', ['stest'], TestFrameworkTests.opt_nocompile)
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, re.compile('Passed:\s*1\s*Incoming ARP request', re.M))
         self.assertRegex(xio.contents, re.compile('Failed:\s*Outgoing ARP reply',re.M))
@@ -294,21 +289,21 @@ def main(obj):
     def testScenarioTimeoutHandledCorrectly(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode5', ['stest'], self.opt_nocompile)
+                main_test('ucode5', ['stest'], TestFrameworkTests.opt_nocompile)
         self.assertIn('4 passed, 0 failed, 0 pending', xio.contents)
         self.assertIn('All tests passed', xio.contents)
 
     def testShutdownSignal(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode6', ['stest'], self.opt_nocompile)
+                main_test('ucode6', ['stest'], TestFrameworkTests.opt_nocompile)
         self.assertIn('4 passed, 0 failed, 0 pending', xio.contents)
         self.assertIn('All tests passed', xio.contents)
 
     def testTooManySends(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode7', ['stest'], self.opt_nocompile)
+                main_test('ucode7', ['stest'], TestFrameworkTests.opt_nocompile)
         self.assertIn('4 passed, 0 failed, 0 pending', xio.contents)
         self.assertRegex(xio.contents, 
             re.compile('Your\s+code\s+didn\'t\s+crash,\s+but\s+something\s+unexpected\s+happened.', re.M))
@@ -317,7 +312,7 @@ def main(obj):
     def testEpicFail(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode8', ['stest'], self.opt_nocompile)
+                main_test('ucode8', ['stest'], TestFrameworkTests.opt_nocompile)
         self.assertNotIn('All tests passed', xio.contents)
         self.assertIn('0 passed, 1 failed, 3 pending', xio.contents)
         self.assertRegex(xio.contents, 
@@ -326,7 +321,7 @@ def main(obj):
     def testDeviceMatchFail(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode9', ['stest'], self.opt_nocompile)
+                main_test('ucode9', ['stest'], TestFrameworkTests.opt_nocompile)
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, 
             re.compile('output\s+on\s+device\s+router-eth2\s+unexpected', re.M))
@@ -334,7 +329,7 @@ def main(obj):
     def testPacketMatchFail(self):
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode10', ['stest'], self.opt_nocompile)
+                main_test('ucode10', ['stest'], TestFrameworkTests.opt_nocompile)
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, 
             re.compile('an\s+exact\s+match\s+failed', re.M | re.I))
@@ -342,6 +337,3 @@ def main(obj):
 if __name__ == '__main__':
     setup_logging(False)
     unittest.main() 
-
-# main_test: usercode, scenarios, options
-# used to be: 
