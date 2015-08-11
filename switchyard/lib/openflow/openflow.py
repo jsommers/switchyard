@@ -5,7 +5,7 @@ from switchyard.lib.common import log_debug
 from enum import Enum, IntEnum
 import struct
 from math import ceil
-from ipaddress import ip_network
+from ipaddress import ip_network, ip_address
 
 
 def _make_bitmap(xset):
@@ -683,7 +683,7 @@ class OpenflowMatch(_OpenflowStruct):
 
     @nw_dst.setter
     def nw_dst(self, value):
-        self._nw_dst = IPv4Address(value)
+        self._nw_dst = ip_address(value)
 
     @property
     def tp_src(self):
@@ -989,7 +989,7 @@ class ActionNwAddr(_OpenflowAction):
         self._type = OpenflowActionType(srcdst) 
         if self._type not in (OpenflowActionType.SetNwSrc, OpenflowActionType.SetNwDst):
             raise ValueError("Invalid ActionType for ActionNwAddr")
-        self._nw_addr = IPv4Address(nw_addr)
+        self._nw_addr = ip_address(nw_addr)
         self.len = super()._MINLEN + ActionNwAddr._MINLEN
 
     @property
@@ -998,7 +998,7 @@ class ActionNwAddr(_OpenflowAction):
 
     @nw_addr.setter
     def nw_addr(self, value):
-        self._nw_addr = IPv4Address(value) 
+        self._nw_addr = ip_address(value) 
 
     def from_bytes(self, raw):
         raw = super().from_bytes(raw)
