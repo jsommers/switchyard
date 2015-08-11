@@ -42,7 +42,7 @@ def port_in_use(p):
 
 _app_layer_lock = Lock()
 
-class _ApplicationLayer(object):
+class ApplicationLayer(object):
     _init = False
     _to_app = None
     _from_app = None
@@ -53,16 +53,16 @@ class _ApplicationLayer(object):
     @staticmethod
     def init():
         with _app_layer_lock:
-            if _ApplicationLayer._init:
+            if ApplicationLayer._init:
                 return
-            _ApplicationLayer._init = True
-            _ApplicationLayer._to_app = Queue()
-            _ApplicationLayer._from_app = Queue()
+            ApplicationLayer._init = True
+            ApplicationLayer._to_app = Queue()
+            ApplicationLayer._from_app = Queue()
 
     @staticmethod
     def recv_from_app(timeout=1.0):
         try:
-            data,local_addr,remote_addr = _ApplicationLayer._from_app.get(timeout=timeout)
+            data,local_addr,remote_addr = ApplicationLayer._from_app.get(timeout=timeout)
             return data,local_addr,remote_addr
         except Empty:
             pass
@@ -70,17 +70,17 @@ class _ApplicationLayer(object):
 
     @staticmethod
     def send_to_app(data, source_addr, dest_addr):
-        _ApplicationLayer._to_app.put( (data,source_addr,dest_addr) )
+        ApplicationLayer._to_app.put( (data,source_addr,dest_addr) )
 
     @staticmethod
     def queues():
-        return _ApplicationLayer._from_app, _ApplicationLayer._to_app
+        return ApplicationLayer._from_app, ApplicationLayer._to_app
 
 
 def setup_switchyard_stack(proto, localaddr):
     log_debug("Starting up stack thread")
-    _ApplicationLayer.init()
-    return _ApplicationLayer.queues()
+    ApplicationLayer.init()
+    return ApplicationLayer.queues()
 
 
 
@@ -122,8 +122,8 @@ class socket(object):
                 print(indent(traceback.format_exc(), '    '))
             sys.exit()
 
-        _ApplicationLayer.init()
-        self._socket_queue_to_stack, self._socket_queue_from_stack = _ApplicationLayer.queues()
+        ApplicationLayer.init()
+        self._socket_queue_to_stack, self._socket_queue_from_stack = ApplicationLayer.queues()
 
     @property
     def family(self):
