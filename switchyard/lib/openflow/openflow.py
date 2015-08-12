@@ -1,5 +1,5 @@
 from switchyard.lib.packet import PacketHeaderBase, Packet, IPProtocol, \
-    EtherType, Ethernet, Vlan, IPv6, IPv4, ICMP, ICMPv6, TCP, UDP
+    EtherType, Ethernet, Vlan, IPv6, IPv4, ICMP, ICMPv6, TCP, UDP, Arp
 from switchyard.lib.address import EthAddr, IPv4Address
 from switchyard.lib.common import log_debug
 from enum import Enum, IntEnum
@@ -404,10 +404,10 @@ class OpenflowMatch(_OpenflowStruct):
         'dl_vlan': ((Vlan, 'vlan'),),
         'dl_vlan_pcp': ((Vlan, 'pcp'),),
         'dl_type': ((Vlan, 'ethertype'), (Ethernet, 'ethertype')),
-        'nw_proto': ((IPv4, 'protocol'),(IPv6, 'protocol')),
+        'nw_proto': ((IPv4, 'protocol'),(IPv6, 'protocol'), (Arp, 'protocoltype')),
         'nw_tos': ((IPv4, 'tos'), (IPv6, 'trafficclass')),
-        'nw_src': ((IPv4, 'src'), (IPv6, 'src')),
-        'nw_dst': ((IPv4, 'dst'), (IPv6, 'dst')),
+        'nw_src': ((IPv4, 'src'), (IPv6, 'src'), (Arp, 'senderprotoaddr')),
+        'nw_dst': ((IPv4, 'dst'), (IPv6, 'dst'), (Arp, 'targetprotoaddr')),
         'tp_src': ((TCP, 'srcport'), (UDP, 'srcport'), (ICMP, 'icmptype'), (ICMPv6, 'icmptype')),
         'tp_dst': ((TCP, 'dstport'), (TCP, 'dstport'), (ICMP, 'icmpcode'), (ICMPv6, 'icmpcode')),
     }

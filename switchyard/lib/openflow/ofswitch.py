@@ -3,6 +3,7 @@ import ssl
 from threading import Thread
 import time
 from heapq import heappush, heappop, heapreplace
+from copy import deepcopy
 
 from switchyard.lib.packet import *
 from switchyard.lib.openflow import *
@@ -10,30 +11,86 @@ from switchyard.lib.address import *
 from switchyard.lib.common import *
 
 
+class FullBuffer(Exception):
+    pass
+
+
 class PacketBufferManager(object):
 
     def __init__(self, buffsize):
         self._buffsize = buffsize
+        self._buffer = {}
+
+    def add(self, pkt):
+        id = len(self._buffer) + 1
+        if id > self._buffsize:
+            raise FullBuffer()
+
+        self._buffer[id] = deepcopy(pkt)
+        return id
+
+    def pop(self, id):
+        return self._buffer.pop(id)
+
+    def lookup(self, id):
+        return self._buffer[id]
 
 
 class TableEntry(object):
 
-    def __init__(self, matcher):
-        self._match = matcher
-        self._cookie = 0
-        self._idle_timeout = self._hard_timeout = 0
-        self._actions = []
-        self._priority = 0
+    def __init__(self, fmod):
+        self._match = fmod.match
+        self._cookie = fmod.cookie
+        self._idle_timeout = fmod.idle_timeout
+        self._hard_timeout = fmod.hard_timeout
+        self._actions = fmod.actions
+        self._priority = fmod.priority
+        self._flags = fmod.flags
+        self._packets_matched = 0
+        self._bytes_matched = 0
 
     @property
     def priority(self):
         return self._priority
+
+    @property
+    def match(self):
+        return self._match
 
     def __cmp__(self, other):
         return cmp(self.priority, other.priority)
 
     def __hash__(self):
         return self._cookie
+
+
+class FlowTable(object):
+
+    def __init__(self):
+        self._table = []
+
+    def delete(self, matcher, strict=False):
+        tbd = []
+        for entry in self._table:
+            if entry.match.overlaps_with(matcher, strict):
+                tbd.append(entry)
+
+        print ("{} table entries deleted".format(len(tbd)))
+
+        # for each entry, remove it, and if flags say so, emit a
+        # flow removed message
+        notify = []
+        for entry in tbd:
+            if FlowModFlags.SendFlowRemove in entry.get_flags:
+                notify.append(entry)
+            self._table.remove(entry)
+        return notify
+
+    def match_packet(self, pkt):
+        for entry in self._table:
+            if entry.match.matches_packet(pkt):
+                return entry.actions
+        return None
 
 
 class OpenflowSwitch(object):
@@ -51,7 +108,7 @@ class OpenflowSwitch(object):
         self._miss_len = 1500
         self._flags = OpenflowConfigFlags.FragNormal
         self._ready = False
-        self._table = []
+        self._table = FlowTable()
 
     def add_controller(self, host, port):
         print("Switch connecting to controller {}:{}".format(host, port))
@@ -59,7 +116,7 @@ class OpenflowSwitch(object):
         sock.settimeout(1.0)
         sock.connect((host, port))
         t = Thread(target=self._controller_thread, args=(sock,))
-        self._controller_connections.append(t)
+        self._controller_connections.append((t,sock))
         t.start()
 
     @property
@@ -67,7 +124,19 @@ class OpenflowSwitch(object):
         self._xid += 1
         return self._xid
 
+    def _send_packet_in(self, port, packet):
+        ofpkt = OpenflowHeader.build(OpenflowType.PacketIn, self.xid)
+        ofpkt[1].packet = packet.to_bytes()[:self._miss_len]
+        ofpkt[1].buffer_id = self._buffer_manager.add(packet)
+        ofpkt[1].reason = OpenflowPacketInReason.NoMatch
+        ofpkt[1].in_port = port[-1]
+        for _,sock in self._controller_connections:
+            send_openflow_message(sock, ofpkt)
+
     def _controller_thread(self, sock):
+        def _send_removal_notification(notifylist):
+            raise Exception("Implement me")
+
         def _hello_handler(pkt):
             print("Hello version: {}".format(pkt[0].version))
             self._ready = True
@@ -107,16 +176,30 @@ class OpenflowSwitch(object):
             elif fmod.command == FlowModCommand.ModifyStrict:
                 print ("ModStrict")
             elif fmod.command == FlowModCommand.Delete:
-                print ("Delete")
+                notify = self._table.delete(fmod.match)
             elif fmod.command == FlowModCommand.DeleteStrict:
-                print ("DeleteStrict")
+                notify = self._table.delete(fmod.match, strict=True)
             else:
                 raise Exception("Unknown flowmod command {}".format(fmod.command))
+
+            if notify:
+                _send_removal_notification(notify)
 
         def _barrier_request_handler(pkt):
             print("Barrier request")
             reply = OpenflowHeader(OpenflowType.BarrierReply, xid=header.xid)
             send_openflow_message(sock, reply)
+
+        def _packet_out_handler(pkt):
+            actions = pkt[1].actions
+            if pkt[1].buffer_id != 0xffffffff:
+                outpkt = self._buffer_manager.pop(pkt[1].buffer_id)
+            else:
+                outpkt = pkt[1].packet
+            in_port = pkt[1].in_port
+            print ("pkt {} buffid {} actions {} inport {}".format(outpkt, pkt[1].buffer_id, actions, in_port))
+            self._process_actions(actions, outpkt)
+
 
         _handler_map = {
             OpenflowType.Hello: _hello_handler,
@@ -125,6 +208,7 @@ class OpenflowSwitch(object):
             OpenflowType.GetConfigRequest: _get_config_request_handler,
             OpenflowType.FlowMod: _flow_mod_handler,
             OpenflowType.BarrierRequest: _barrier_request_handler,
+            OpenflowType.PacketOut: _packet_out_handler,
         }
 
         def _unknown_type_handler(pkt):
@@ -144,6 +228,12 @@ class OpenflowSwitch(object):
                 header = pkt[0]
                 _handler_map.get(header.type, _unknown_type_handler)(pkt)
 
+
+    def _process_actions(self, actions, packet):
+        for a in actions:
+            print (a)
+        raise Exception("Do this!")
+
     def datapath_loop(self):
         print("datapath loop: not ready to receive")
         while not self._ready:
@@ -159,12 +249,16 @@ class OpenflowSwitch(object):
                 continue
 
             log_info("Packet arrived: {}->{}".format(port, packet))
+            actions = self._table.match_packet(packet)
+            if not actions:
+                self._send_packet_in(port, packet)
+            else:
+                self._process_actions(actions, packet)
 
-            # FIXME: process incoming packet on data plane
 
     def shutdown(self):
         self._running = False
-        for t in self._controller_connections:
+        for t,sock in self._controller_connections:
             t.join()
 
 
