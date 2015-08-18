@@ -514,11 +514,15 @@ class OpenflowMatch(_OpenflowStruct):
             overlap.append(iswildcarded or curr == other)
         return all(overlap)
 
+    def matches_rule(self, othermatch):
+        pass
+
     def matches_packet(self, pkt):
         '''
         Return True if the given packet matches this match object.
         '''
         match = []
+        wildbits = _make_bitmap(self._wildcards)
         for mf,pkttuple in OpenflowMatch._match_field_to_packet.items():
             mf = "_{}".format(mf)
 
@@ -535,7 +539,7 @@ class OpenflowMatch(_OpenflowStruct):
                     continue
 
             # if attribute is simple wildcard, just ignore the attr
-            elif _wildcard_attr_map[mf] in self._wildcards:
+            elif _wildcard_attr_map[mf].value & wildbits:
                 continue
 
             # compare concrete values in packet with match object value
@@ -573,12 +577,16 @@ class OpenflowMatch(_OpenflowStruct):
 
     def reset_wildcards(self):
         self._wildcards = set()
+        self.nwdst_wildcard = 0
+        self.nwsrc_wildcard = 0
 
     def remove_wildcard(self, value):
         self._wildcards.discard(value)
 
     def wildcard_all(self):
         self._wildcards = set([OpenflowWildcard.All])
+        self.nwsrc_wildcard = 32
+        self.nwdst_wildcard = 32
 
     @property
     def nwsrc_wildcard(self):
@@ -648,7 +656,7 @@ class OpenflowMatch(_OpenflowStruct):
 
     @dl_type.setter
     def dl_type(self, value):
-        if int(value) == 0:
+        if isinstance(value, int) and value == 0:
             value = EtherType.NoType
         self._dl_type = EtherType(value)
 
