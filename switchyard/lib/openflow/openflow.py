@@ -479,13 +479,34 @@ class OpenflowMatch(_OpenflowStruct):
         self.tp_dst = fields[12]
         return raw[OpenflowMatch._MINLEN:]
 
+    def __str__(self):
+        wildbits = _make_bitmap(self._wildcards)
+        return "{} {:08x} {} {}/{} ({} {}) {} {} {} {}/{}:{}/{} {}:{}".format(
+            self.__class__.__name__, wildbits,
+            self.in_port, self.dl_src, self.dl_dst, self.dl_vlan, 
+            self.dl_vlan_pcp, self.dl_type.name, self.nw_tos,
+            self.nw_proto.name, self.nw_src, self.nwsrc_wildcard, 
+            self.nw_dst, self.nwdst_wildcard, self.tp_src, self.tp_dst)
+
     def overlaps_with(self, othermatch, strict=False):
         '''
-        Return True if this match overlaps with othermatch.  False
-        otherwise.  
-
         Two match objects overlap if the same packet can be matched 
         by both *and* they have the same priority.
+        '''
+        one = self.matches_entry(othermatch, strict)
+        if strict:
+            return one
+        return one and othermatch.matches_entry(self, strict) 
+
+    def matches_entry(self, othermatch, strict=False):
+        '''
+        Return True if this match object matches another
+        match object (e.g., a flow table entry).
+
+        NB: from OF 1.0 spec:
+        A match occurs "when a flow entry exactly matches
+        or is more specific than one" [in a flow_mod command]
+        (likely to be self in this case).
         '''
         if strict:
             return self == othermatch
@@ -494,7 +515,7 @@ class OpenflowMatch(_OpenflowStruct):
         attrs.discard('_wildcards')
         attrs.discard('_nw_src_wildcard')
         attrs.discard('_nw_dst_wildcard')
-        overlap = []
+        matchtest = []
         for a in attrs:
             curr = getattr(self, a)
             other = getattr(othermatch, a)
@@ -502,17 +523,15 @@ class OpenflowMatch(_OpenflowStruct):
             if a == '_nw_src' or a == '_nw_dst':
                 # FIXME: clean this up
                 wattr = "{}_wildcard".format(a)
-                currbits = 32 - getattr(self, wattr)
                 otherbits = 32 - getattr(othermatch, wattr)
-                currnet = ip_network("{}/{}".format(getattr(self, a), currbits), strict=False)
                 othernet = ip_network("{}/{}".format(getattr(othermatch, a), otherbits), strict=False)
-                iswildcarded = curr in othernet or other in currnet
+                iswildcarded = curr in othernet
             else:
                 wc = _wildcard_attr_map[a].name
-                iswildcarded = wc in self.wildcards or wc in othermatch.wildcards
+                iswildcarded = wc in othermatch.wildcards
 
-            overlap.append(iswildcarded or curr == other)
-        return all(overlap)
+            matchtest.append(iswildcarded or curr == other)
+        return all(matchtest)
 
     def matches_packet(self, pkt):
         '''
