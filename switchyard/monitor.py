@@ -7,7 +7,7 @@ import queue
 from switchyard.lib.packet import *
 from switchyard.lib.address import EthAddr, IPAddr
 from switchyard.lib import pcapffi
-from switchyard.lib.importcode import import_user_code
+from switchyard.lib.importcode import import_or_die
 from switchyard.lib.common import LLNetBase, NoPackets, Shutdown
 from switchyard.lib.topo.topobuild import Interface
 
@@ -150,7 +150,7 @@ class CodeMonitor(AbstractMonitor):
     def __init__(self, node, intf, *args, **kwargs):
         super().__init__(args)
         module = args[0]
-        self.__usercode = import_user_code(module)
+        self.__usercode = import_or_die(module)
         self.__thread = threading.Thread(target=self.__thread_entry)
         self.__queue = queue.Queue()
         self.__debugnet = DebugInspector(node, Interface(intf,None,None), self.__queue)

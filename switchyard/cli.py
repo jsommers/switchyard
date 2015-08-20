@@ -4,7 +4,6 @@ from collections import namedtuple, defaultdict
 import threading
 from queue import Queue,Empty
 import time
-from importlib import import_module
 from cmd import Cmd
 import re
 from abc import ABCMeta,abstractmethod
@@ -14,7 +13,7 @@ from switchyard.monitor import *
 from switchyard.lib.topo import *
 from switchyard.lib.packet import *
 from switchyard.lib.textcolor import *
-from switchyard.lib.importcode import import_user_code
+from switchyard.lib.importcode import import_or_die
 from switchyard.nodeexec import NodeExecutor
 from switchyard.lib.pcapffi import PcapReader
 
@@ -721,7 +720,7 @@ class SyssGlue(object):
             if 'hostcode' in kwargs:
                 pass
 
-        # exec_module = import_module(swycode)
+        # exec_module = import_or_die(swycode)
         self.ingress_queues = {}
 
         for n in topo.nodes:
