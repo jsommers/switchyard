@@ -137,8 +137,13 @@ If you'd like even more verbose output, you can add the ``-v`` (verbose) and/or 
 If you don't like pdb
 ---------------------
 
-If you don't appreciate being dumped into the ``pdb`` debugger when something fails (maybe you're a cretin who really just likes ``printf``-style debugging?), you can add the ``--nopdb`` flag to ``srpy``
+If you don't appreciate being dumped into the ``pdb`` debugger when something fails (maybe you're a cretin who really just likes ``printf``-style debugging?), you can add the ``--nopdb`` flag to ``srpy``.  With the ``--nopdb`` option, Switchyard will print out information about test failure, but you'll go straight back to a command-line prompt.
 
+If you'd like to use a debugger, but just not ``pdb``, you can use the ``--nohandle`` (or ``-e``) option to tell Switchyard not to trap any exceptions, but to let them be raised normally.  You can then catch any exceptions using an alterative debugger.  For example, if you'd like to use the ``PuDB`` debugger, you could invoke ``srpy.py`` as follows::
+
+    $ python3 -m pudb.run srpy.py --nohandle ... 
+
+Where the ellipsis is replaced with other command-line arguments to ``srpy.py``.  
 .. _debugging:
 
 Debugging Switchyard code
