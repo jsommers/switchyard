@@ -510,7 +510,7 @@ class Scenario(object):
         self.completed_events = []
         self.timer = False
         self.next_timestamp = 0.0
-        self.timeoutval = 10
+        self._timeoutval = 60
         self.support_files = {}
         self._setup = None
         self._teardown = None
@@ -518,6 +518,14 @@ class Scenario(object):
     @property  
     def name(self):
         return self._name
+
+    @property
+    def timeout(self):
+        return self._timeoutval
+
+    @timeout.setter
+    def timeout(self, value):
+        self._timeoutval = int(value)
 
     def add_file(self, fname, text):
         self.support_files[fname] = text
@@ -615,7 +623,7 @@ class Scenario(object):
 
         if self.timer:
             log_debug("Timer expiration while expecting PacketOutputEvent")
-            raise ScenarioFailure("Expected send_packet to be called to match {} in scenario {}, but it wasn't called, and after {} seconds I gave up.".format(str(self.pending_events[0]), self.name, self.timeoutval))
+            raise ScenarioFailure("Expected send_packet to be called to match {} in scenario {}, but it wasn't called, and after {} seconds I gave up.".format(str(self.pending_events[0]), self.name, self.timeout))
         else:
             log_debug("Ignoring timer expiry with timer=False")
 
@@ -645,7 +653,7 @@ class Scenario(object):
         # or so to check that we actually receive a packet.
         if isinstance(self.pending_events[0].event, PacketOutputEvent):
             log_debug("Setting timer for next PacketOutputEvent")
-            signal.alarm(self.timeoutval)
+            signal.alarm(self.timeout)
             signal.signal(signal.SIGALRM, self.timer_expiry)
             self.timer = True
 

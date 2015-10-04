@@ -80,7 +80,7 @@ scenario = s
         self.scenario.next()
         self.scenario.testpass()
         self.scenario.next()
-        self.assertRaises(ScenarioFailure, time.sleep, 30)
+        self.assertRaises(ScenarioFailure, time.sleep, 61)
 
     def testNoMorePending(self):
         self.scenario = get_test_scenario_from_file('stest.py')
