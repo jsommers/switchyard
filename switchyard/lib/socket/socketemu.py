@@ -242,4 +242,3 @@ class socket(object):
     def shutdown(self, flag):
         pass
 
-        
