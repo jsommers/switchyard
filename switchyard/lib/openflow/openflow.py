@@ -824,6 +824,9 @@ class ActionStripVlan(_OpenflowAction):
         super().__init__()
         self._type = OpenflowActionType.StripVlan
 
+    def __call__(self, **kwargs):
+        raise Exception("Not implemented")
+
 
 class ActionOutput(_OpenflowAction):
     __slots__ = ['_port', '_maxlen']
@@ -861,6 +864,12 @@ class ActionOutput(_OpenflowAction):
         return super().to_bytes() + \
             struct.pack(ActionOutput._PACKFMT, self._port, self._maxlen)
 
+    def __call__(self, **kwargs):
+        net = kwargs['net']
+        packet = kwargs['packet']
+        controllers = kwargs['controllers']
+        for c in controllers:
+            c.send_packet(port=self._port, packet=packet)
 
 class ActionEnqueue(_OpenflowAction):
     __slots__ = ['_port', '_queue_id']
@@ -899,6 +908,8 @@ class ActionEnqueue(_OpenflowAction):
         return super().to_bytes() + struct.pack(ActionEnqueue._PACKFMT, 
             self._port, self._queue_id)
 
+    def __call__(self, **kwargs):
+        raise Exception("Not implemented")
 
 class ActionVlanVid(_OpenflowAction):
     __slots__ = ['_vlan_vid']
@@ -927,6 +938,9 @@ class ActionVlanVid(_OpenflowAction):
     def to_bytes(self):
         return super().to_bytes() + struct.pack(ActionVlanVid._PACKFMT, 
             self._vlan_vid)
+
+    def __call__(self, **kwargs):
+        raise Exception("Not implemented")
 
 
 class ActionVlanPcp(_OpenflowAction):
@@ -957,6 +971,8 @@ class ActionVlanPcp(_OpenflowAction):
         return super().to_bytes() + struct.pack(ActionVlanPcp._PACKFMT, 
             self._vlan_pcp)
 
+    def __call__(self, **kwargs):
+        raise Exception("Not implemented")
 
 class ActionDlAddr(_OpenflowAction):
     __slots__ = ['_dl_addr']
@@ -988,6 +1004,8 @@ class ActionDlAddr(_OpenflowAction):
         return super().to_bytes() + struct.pack(ActionDlAddr._PACKFMT, 
             self._dl_addr.packed)
 
+    def __call__(self, **kwargs):
+        raise Exception("Not implemented")
 
 class ActionNwAddr(_OpenflowAction):
     __slots__ = ['_nw_addr']
@@ -1019,6 +1037,9 @@ class ActionNwAddr(_OpenflowAction):
         return super().to_bytes() + struct.pack(ActionNwAddr._PACKFMT, 
             self._nw_addr.packed)
 
+    def __call__(self, **kwargs):
+        raise Exception("Not implemented")
+
 
 class ActionNwTos(_OpenflowAction):
     __slots__ = ['_nw_tos']
@@ -1046,6 +1067,9 @@ class ActionNwTos(_OpenflowAction):
 
     def to_bytes(self):
         return super().to_bytes() + struct.pack(ActionNwTos._PACKFMT, self._nw_tos)
+
+    def __call__(self, **kwargs):
+        raise Exception("Not implemented")
 
 
 class ActionTpPort(_OpenflowAction):
@@ -1075,6 +1099,9 @@ class ActionTpPort(_OpenflowAction):
 
     def to_bytes(self):
         return super().to_bytes() + struct.pack(ActionTpPort._PACKFMT, self._tp_port)
+
+    def __call__(self, **kwargs):
+        raise Exception("Not implemented")
 
 
 class ActionVendorHeader(_OpenflowAction):
@@ -1122,6 +1149,9 @@ class ActionVendorHeader(_OpenflowAction):
 
     def _calcdatalen(self):
         return ceil(len(self._data) / 8) * 8
+
+    def __call__(self, **kwargs):
+        raise Exception("Not implemented")
 
 
 _ActionClassMap = {

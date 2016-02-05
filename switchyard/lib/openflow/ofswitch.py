@@ -240,12 +240,18 @@ class OpenflowSwitch(object):
 
 
     def _process_actions(self, actions, packet):
+        '''
+        Process actions in two stages.  Each action implements a __call__, which
+        applies any packet-level changes or other non-output changes.  The functors
+        can optionally return another function to be applied at the second stage.
+        '''
+        apply_list = []
         for a in actions:
-            self._apply_action(packet, a)
-
-    def _apply_action(self, packet, action):
-        debugger()
-        raise Exception("Not implemented yet")
+            fn = a(packet=packet, net=self._switchyard_net)
+            if fn is not None:
+                apply_list.append(fn)
+        for fn in apply_list:
+            fn()
 
     def datapath_loop(self):
         log_debug("datapath loop: not ready to receive")
