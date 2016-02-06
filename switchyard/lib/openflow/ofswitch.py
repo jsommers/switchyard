@@ -209,7 +209,7 @@ class OpenflowSwitch(object):
                 outpkt = pkt[1].packet
             in_port = pkt[1].in_port
             log_debug ("pkt {} buffid {} actions {} inport {}".format(outpkt, pkt[1].buffer_id, actions, in_port))
-            self._process_actions(actions, outpkt)
+            self._process_actions(actions, outpkt, in_port)
 
         _handler_map = {
             OpenflowType.Hello: _hello_handler,
@@ -239,7 +239,7 @@ class OpenflowSwitch(object):
                 _handler_map.get(header.type, _unknown_type_handler)(pkt)
 
 
-    def _process_actions(self, actions, packet):
+    def _process_actions(self, actions, packet, inport=OpenflowPort.NoPort):
         '''
         Process actions in two stages.  Each action implements a __call__, which
         applies any packet-level changes or other non-output changes.  The functors
@@ -247,7 +247,9 @@ class OpenflowSwitch(object):
         '''
         apply_list = []
         for a in actions:
-            fn = a(packet=packet, net=self._switchyard_net)
+            fn = a(packet=packet, net=self._switchyard_net, 
+                   controllers=self._controller_connections, 
+                   inport=inport)
             if fn is not None:
                 apply_list.append(fn)
         for fn in apply_list:

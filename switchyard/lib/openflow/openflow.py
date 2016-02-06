@@ -868,8 +868,28 @@ class ActionOutput(_OpenflowAction):
         net = kwargs['net']
         packet = kwargs['packet']
         controllers = kwargs['controllers']
-        for c in controllers:
-            c.send_packet(port=self._port, packet=packet)
+        inport = kwargs['inport']
+        if self._port == OpenflowPort.Normal:
+            raise Exception("I'm not normal")
+        elif self._port == OpenflowPort.Flood:
+            for ifnum,intf in enumerate(net.interfaces()):
+                if ifnum != inport:
+                    net.send_packet(intf, packet)
+        elif self._port == OpenflowPort.All:
+            raise Exception("Not implemented")
+        elif self._port == OpenflowPort.Controller:
+            for c in controllers:
+                c.send_packet(port=self._port, packet=packet)
+        elif self._port == OpenflowPort.Local:
+            raise Exception("Not implemented")
+        elif self._port == OpenflowPort.InPort:
+            net.send_packet(inport, packet)
+        elif self._port == OpenflowPort.Table:
+            raise Exception("Not implemented")
+        elif self._port == OpenflowPort.NoPort:
+            raise Exception("Not implemented")
+        else:
+            net.send_packet(self._port, packet)
 
 class ActionEnqueue(_OpenflowAction):
     __slots__ = ['_port', '_queue_id']
