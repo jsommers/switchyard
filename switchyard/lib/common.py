@@ -37,6 +37,8 @@ class NoPackets(Exception):
 
 class Interface(object):
     __slots__ = ['__name','__ethaddr','__ipaddr','__ifnum']
+    __nextnum = 0
+
     '''
     Class that models a single logical interface on a network
     device.  An interface has a name, 48-bit Ethernet MAC address,
@@ -103,6 +105,9 @@ class Interface(object):
 
     @ifnum.setter
     def ifnum(self, value):
+        if not isinstance(value, int):
+            value = Interface.__nextnum
+            Interface.__nextnum += 1
         self.__ifnum = int(value)
 
     def __str__(self):
