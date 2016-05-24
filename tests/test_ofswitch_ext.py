@@ -46,8 +46,9 @@ def ofswitch_tests():
              "An Ethernet frame with a broadcast destination address should arrive on eth1")
     s.expect(PacketOutputEvent("eth0", testpkt, "eth2", testpkt, display=Ethernet),
              "The Ethernet frame with a broadcast destination address should be forwarded out ports eth0 and eth2")
-    s.expect(PacketInputEvent("eth1", testpkt, display=Ethernet),
-             "An Ethernet frame with a broadcast destination address should arrive on eth1")
+#    s.expect(PacketInputEvent("eth1", testpkt, display=Ethernet),
+#             "An Ethernet frame with a broadcast destination address should arrive on eth1")
+    s.expect(PacketInputTimeoutEvent(timeout=30), description="Wait for events to complete")
     return s
 
 
