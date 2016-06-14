@@ -68,6 +68,9 @@ class FakeControllerHandler(asyncore.dispatcher):
             self._features_request()
             self._inited = True
 
+    def sendall(self, *args):
+        print("Invoked sendall with: {}".format(''.join([str(x) for x in args])))
+
     @property
     def xid(self):
         x = self._xid

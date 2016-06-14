@@ -241,18 +241,16 @@ class OpenflowSwitch(object):
 
     def _process_actions(self, actions, packet, inport=OpenflowPort.NoPort):
         '''
-        Process actions in two stages.  Each action implements a __call__, which
+        Process actions in order, in two stages.  Each action implements a __call__, which
         applies any packet-level changes or other non-output changes.  The functors
         can optionally return another function to be applied at the second stage.
         '''
-        apply_list = []
+        second_stage = []
         for a in actions:
-            fn = a(packet=packet, net=self._switchyard_net, 
-                   controllers=self._controller_connections, 
-                   inport=inport)
-            if fn is not None:
-                apply_list.append(fn)
-        for fn in apply_list:
+            fn = a(packet=packet, net=self._switchyard_net, controllers=self._controller_connections, inport=inport)
+            if (fn):
+                second_stage.append(fn)
+        for fn in second_stage:
             fn()
 
     def datapath_loop(self):

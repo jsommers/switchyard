@@ -86,7 +86,9 @@ class FakePyLLNet(LLNetBase):
                 "send_packet was called, but the test scenario was finished.")
 
         if isinstance(devname, int):
-            device = self._lookup_devname(devname)
+            devname = self._lookup_devname(devname)
+        if isinstance(devname, Interface):
+            devname = devname.name
 
         ev = self.scenario.next()
         match_results = ev.match(

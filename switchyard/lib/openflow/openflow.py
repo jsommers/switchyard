@@ -872,8 +872,8 @@ class ActionOutput(_OpenflowAction):
         if self._port == OpenflowPort.Normal:
             raise Exception("I'm not normal")
         elif self._port == OpenflowPort.Flood:
-            for ifnum,intf in enumerate(net.interfaces()):
-                if ifnum != inport:
+            for intf in net.interfaces():
+                if intf.ifnum != inport:
                     net.send_packet(intf, packet)
         elif self._port == OpenflowPort.All:
             raise Exception("Not implemented")
@@ -3312,8 +3312,9 @@ class OpenflowHeader(PacketHeaderBase):
         self.xid = fields[3]
         raw = raw[OpenflowHeader._MINLEN:]
         if self.type == OpenflowType.StatsRequest or self.type == OpenflowType.StatsReply:
-            (statstype,) = struct.unpack('!H', raw[:2])
-            self._subtype = OpenflowStatsType(statstype)
+            if len(raw) >= 2: # JS??     
+                (statstype,) = struct.unpack('!H', raw[:2])
+                self._subtype = OpenflowStatsType(statstype)
         return raw
 
     def to_bytes(self):
