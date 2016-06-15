@@ -16,7 +16,6 @@ class FullBuffer(Exception):
 
 
 class PacketBufferManager(object):
-
     def __init__(self, buffsize):
         self._buffsize = buffsize
         self._buffer = {}
@@ -47,6 +46,8 @@ class TableEntry(object):
         self._flags = fmod.flags
         self._packets_matched = 0
         self._bytes_matched = 0
+        self._last_match = None
+        self._creation_time = time.time()
 
     @property
     def priority(self):
@@ -62,10 +63,29 @@ class TableEntry(object):
     def __hash__(self):
         return self._cookie
 
+    def update_counters(self, pkt):
+        self._last_match = time.time()
+        self._packets_matched += 1
+        self._bytes_matched += len(pkt)
+
+    def has_expired(self, timestamp):
+        idletime = timestamp - self._last_match if self._last_match else timestamp
+        createtime = timestamp - self._creation_time
+        if self._idle_timeout > 0 and \
+           idletime > self._idle_timeout:
+            return True
+        if self._hard_timeout > 0 and \
+           createtime > self._hard_timeout:
+            return True
+        return False
+
+    def send_expire_notice(self):
+        return self.flags & FlowModFlags.SendFlowRemove.value
 
 class FlowTable(object):
-    def __init__(self):
+    def __init__(self, callbacks):
         self._table = []
+        self._action_callbacks = callbacks
 
     def delete(self, matcher, strict=False):
         tbd = []
@@ -81,35 +101,69 @@ class FlowTable(object):
         for entry in tbd:
             if FlowModFlags.SendFlowRemove in entry.get_flags:
                 notify.append(entry)
+            self._action_callbacks.beforeTableEntryDelete(self._table, entry)
             self._table.remove(entry)
+            self._action_callbacks.afterTableEntryDelete(self._table, entry)
         return notify
 
-    def match_packet(self, pkt):
-        for entry in self._table:
-            if entry.match.matches_packet(pkt):
-                return entry.actions
+    def add(self, fmod):
+        self._action_callbacks.beforeTableEntryAdd(self._table, entry)
+        # match, cookie, idle_timeout, hard_timeout, priority, buffer_id, out_port, flags, actions
+        newentry = TableEntry(fmod)
+        if FlowModFlags.CheckOverlap in fmod.get_flags():
+            for entry in self._table:
+                if newentry.match.overlaps_with(entry, strict=True) and \
+                   entry.priority == newentry.priority:
+                    return OpenflowFlowModFailedCode.Overlap
+        self._table.append(newentry)            
+        self._table.sort()
+        self._action_callbacks.afterTableEntryAdd(self._table, entry)
         return None
 
+    def modify(self, fmod, strict=False):
+        self._action_callbacks.beforeTableEntryMod(self._table, entry)
+        newentry = TableEntry(fmod)
+        matches = []
+        for entry in self._table:
+            if newentry.match.overlaps_with(entry, strict=strict):
+                matches.append(entry)
+        if len(matches):
+            for entry in matches:
+                entry.match.actions = newentry.match.actions
+        else:
+            self._table.append(newentry)
+            self._table.sort()
 
-class SwitchAction(object):
-    '''
-    idea: want to wrap an OpenflowAction object and *apply* it on a packet.
-    do this as a functor (__call__).
+        self._action_callbacks.afterTableEntryMod(self._table, entry)
 
-    for some actions, need access to net object to do the output, other actions
-    just need to modify the packet.
+    def match_packet(self, pkt):
+        self._action_callbacks.beforeTableLookup(pkt, self._table)
+        for entry in self._table:
+            if entry.match.matches_packet(pkt):
+                self._action_callbacks.afterTableLookup(pkt, self._table)
+                entry.update_counters(pkt)
+                return entry.actions
+        self._action_callbacks.afterTableLookup(pkt, self._table)
+        return None
 
-    is that it?  maybe just give a reference to the switch itself?
-    '''
-    pass    
-
+    def expire_entries(self):
+        now = time.time()
+        expired = []
+        i = 0
+        while i < len(self._table):
+            entry = self._table[i]
+            if entry.has_expired() and entry.send_expire_notice():
+                expired.append(entry)
+                del self._table[i]
+            else:
+                i += 1
+        return expired
 
 class OpenflowSwitch(object):
     '''
     An Openflow v1.0 switch.
     '''
-
-    def __init__(self, switchyard_net, switchid):
+    def __init__(self, switchyard_net, switchid, callbacks):
         self._switchid = switchid  # aka, dpid
         self._controller_connections = []
         self._switchyard_net = switchyard_net
@@ -119,7 +173,8 @@ class OpenflowSwitch(object):
         self._miss_len = 1500
         self._flags = OpenflowConfigFlags.FragNormal
         self._ready = False
-        self._table = FlowTable()
+        self._table = FlowTable(callbacks)
+        self._action_callbacks = callbacks
 
     def add_controller(self, host, port):
         log_debug("Switch connecting to controller {}:{}".format(host, port))
@@ -129,6 +184,11 @@ class OpenflowSwitch(object):
         t = Thread(target=self._controller_thread, args=(sock,))
         self._controller_connections.append((t,sock))
         t.start()
+
+    def _send_openflow_message_internal(self, sock, pkt):
+        self._action_callbacks.beforeControllerSend(pkt)
+        send_openflow_message(sock, pkt)
+        self._action_callbacks.afterControllerSend(pkt)
 
     @property
     def xid(self):
@@ -142,15 +202,27 @@ class OpenflowSwitch(object):
         ofpkt[1].reason = OpenflowPacketInReason.NoMatch
         ofpkt[1].in_port = port[-1]
         for _,sock in self._controller_connections:
-            send_openflow_message(sock, ofpkt)
+            self._send_openflow_message_internal(sock, ofpkt)
 
     def _controller_thread(self, sock):
-        def _send_removal_notification(notifylist):
-            raise Exception("Implement me")
-
         def _hello_handler(pkt):
             log_debug("Hello version: {}".format(pkt[0].version))
             self._ready = True
+
+        def _send_removal_notification(entries, why=FlowRemovedReason.Unknown):
+            for e in entries:
+                header = OpenflowHeader(OpenflowType.FlowRemoved, self.xid)
+                removed = OpenflowFlowRemoved(why, e.match)
+                log_debug("Sending flow removal notification: {}".format(removed))
+                self._send_openflow_message_internal(sock, header + removed)
+
+        def _send_error(errorcode):
+            header = OpenflowHeader(OpenflowType.Error, self.xid)
+            err = OpenflowError() 
+            err.errortype = OpenflowErrorType.FlowModFailed
+            err.errorcode = errorcode
+            log_debug("Sending error message: {}".format(err))
+            self._send_openflow_message_internal(sock, header + err)
 
         def _features_request_handler(pkt):
             header = OpenflowHeader(OpenflowType.FeaturesReply, self.xid)
@@ -160,7 +232,7 @@ class OpenflowSwitch(object):
                 featuresreply.ports.append(
                     OpenflowPhysicalPort(i, intf.ethaddr, intf.name))
             log_debug("Sending features reply: {}".format(featuresreply))
-            send_openflow_message(sock, header + featuresreply)
+            self._send_openflow_message_internal(sock, header + featuresreply)
 
         def _set_config_handler(pkt):
             setconfig = pkt[1]
@@ -175,17 +247,19 @@ class OpenflowSwitch(object):
             reply = OpenflowGetConfigReply()
             reply.flags = self._flags
             reply.miss_send_len = self._miss_len
-            send_openflow_message(sock, header + reply)
+            self._send_openflow_message_internal(sock, header + reply)
 
         def _flow_mod_handler(pkt):
             log_debug("Flow mod")
             fmod = pkt[1]
             if fmod.command == FlowModCommand.Add:
-                log_debug ("Add")
+                rv = self._table.add(fmod)
+                if rv:
+                    _send_error(rv)
             elif fmod.command == FlowModCommand.Modify:
-                log_debug ("Modify")
+                self._table.modify(fmod, strict=False)
             elif fmod.command == FlowModCommand.ModifyStrict:
-                log_debug ("ModStrict")
+                self._table.modify(fmod, strict=True)
             elif fmod.command == FlowModCommand.Delete:
                 notify = self._table.delete(fmod.match)
             elif fmod.command == FlowModCommand.DeleteStrict:
@@ -199,7 +273,7 @@ class OpenflowSwitch(object):
         def _barrier_request_handler(pkt):
             log_debug("Barrier request")
             reply = OpenflowHeader(OpenflowType.BarrierReply, xid=header.xid)
-            send_openflow_message(sock, reply)
+            self._send_openflow_message_internal(sock, reply)
 
         def _packet_out_handler(pkt):
             actions = pkt[1].actions
@@ -226,13 +300,18 @@ class OpenflowSwitch(object):
 
         pkt = Packet()
         pkt += OpenflowHeader(OpenflowType.Hello, self.xid)
-        send_openflow_message(sock, pkt)
+        self._send_openflow_message_internal(sock, pkt)
 
         while self._running:
+            pkt = None
             try:
                 pkt = receive_openflow_message(sock)
             except socket.timeout:
-                continue
+                pass
+
+            entries = self._table.expire_entries()
+            if entries:
+                _send_removal_notification(entries)
 
             if pkt is not None:
                 header = pkt[0]
@@ -271,18 +350,66 @@ class OpenflowSwitch(object):
             actions = self._table.match_packet(packet)
             if not actions:
                 self._send_packet_in(port, packet)
-            else:
+            else    :
+                self._action_callbacks.beforeApplyActions(packet, actions)
                 self._process_actions(actions, packet)
-
+                self._action_callbacks.afterApplyActions(packet, actions)
 
     def shutdown(self):
         self._running = False
         for t,sock in self._controller_connections:
             t.join()
 
+class SwitchActionCallbacks(object):
+    '''
+    Callbacks that can be injected at various points of OF message processing
+    and in datapath packet processing.  Can be used to modify the nature of how
+    packets are processed, how rules are processed, and to inject artificial 
+    delays at any of these points.  Inherit from this class and override any
+    methods that will be useful for the particular application.
+    '''
+    def __init__(self):
+        pass
+
+    def beforeControllerSend(self, pkt):
+        pass
+
+    def afterControllerSend(self, pkt):
+        pass
+
+    def beforeApplyActions(self, pkt, actions):
+        pass
+
+    def afterApplyActions(self, pkt, actions):
+        pass
+
+    def beforeTableLookup(self, pkt, table):
+        pass
+
+    def afterTableLookup(self, pkt, table):
+        pass
+
+    def beforeTableEntryDelete(self, table, entry):
+        pass
+
+    def afterTableEntryDelete(self, table, entry):
+        pass
+
+    def beforeTableEntryAdd(self, table, entry):
+        pass
+
+    def afterTableEntryAdd(self, table, entry):
+        pass
+
+    def beforeTableEntryMod(self, table, entry):
+        pass
+
+    def afterTableEntryMod(self, table, entry):
+        pass
 
 def main(net, host='localhost', port=6633, switchid=EthAddr("de:ad:00:00:be:ef")):
-    switch = OpenflowSwitch(net, switchid)
+    callbacks = SwitchActionCallbacks()
+    switch = OpenflowSwitch(net, switchid, callbacks)
     switch.add_controller('localhost', 6633)
     switch.datapath_loop()
     switch.shutdown()

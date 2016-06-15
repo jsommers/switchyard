@@ -514,9 +514,6 @@ class OpenflowMatch(_OpenflowStruct):
             overlap.append(iswildcarded or curr == other)
         return all(overlap)
 
-    def matches_rule(self, othermatch):
-        pass
-
     def matches_packet(self, pkt):
         '''
         Return True if the given packet matches this match object.
@@ -825,7 +822,8 @@ class ActionStripVlan(_OpenflowAction):
         self._type = OpenflowActionType.StripVlan
 
     def __call__(self, **kwargs):
-        raise Exception("Not implemented")
+        packet = kwargs['packet']
+        Exception("Not implemented")
 
 
 class ActionOutput(_OpenflowAction):
