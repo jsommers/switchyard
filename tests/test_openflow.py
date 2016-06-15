@@ -95,12 +95,16 @@ class OpenflowPacketTests(unittest.TestCase):
         m.add_wildcard(OpenflowWildcard.DlSrc)
         m.add_wildcard(OpenflowWildcard.DlDst)
         xlist = m.wildcards
+        m2 = OpenflowMatch()
         m2.from_bytes(m.to_bytes())
         self.assertListEqual(xlist, m2.wildcards)
 
     def testMatchOverlap1(self):
         m = OpenflowMatch()
+        p = Ethernet() + IPv4() + ICMP()
         self.assertTrue(m.overlaps_with(m))
+        m.wildcard_all()
+        self.assertTrue(m.matches_packet(p))
 
     def testMatchOverlap2(self):
         m = OpenflowMatch()

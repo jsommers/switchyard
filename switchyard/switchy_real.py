@@ -131,6 +131,7 @@ class PyLLNet(LLNetBase):
         ipmaskosx = re.compile("inet (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+netmask (0x[0-9a-f]{8})")
         # FIXME: ip6
 
+        ifnum = 0
         for devname in self.devs:
             macaddr = None
             ipaddr = None
@@ -153,7 +154,8 @@ class PyLLNet(LLNetBase):
                     if mobj:
                         ipaddr = IPAddr(mobj.groups()[0])
                         mask = IPAddr(int(mobj.groups()[1], base=16))
-            devinfo[devname] = Interface(devname, macaddr, ipaddr, mask)
+            devinfo[devname] = Interface(devname, macaddr, ipaddr, mask, ifnum)
+            ifnum += 1
         return devinfo
 
     def __make_pcaps(self):
@@ -256,6 +258,9 @@ class PyLLNet(LLNetBase):
         Raises SwitchyException if packet object isn't valid, or device
         name isn't recognized.
         '''
+        if isinstance(devname, int):
+           device = self._lookup_devname(devname)
+
         pdev = self.pcaps.get(dev, None)
         if not pdev:
             raise SwitchyException("Unrecognized device name for packet send: {}".format(dev))

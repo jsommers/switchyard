@@ -1,5 +1,5 @@
 from switchyard.lib.packet import PacketHeaderBase, Packet, IPProtocol, \
-    EtherType, Ethernet, Vlan, IPv6, IPv4, ICMP, ICMPv6, TCP, UDP
+    EtherType, Ethernet, Vlan, IPv6, IPv4, ICMP, ICMPv6, TCP, UDP, Arp
 from switchyard.lib.address import EthAddr, IPv4Address
 from switchyard.lib.common import log_debug
 from enum import Enum, IntEnum
@@ -404,10 +404,10 @@ class OpenflowMatch(_OpenflowStruct):
         'dl_vlan': ((Vlan, 'vlan'),),
         'dl_vlan_pcp': ((Vlan, 'pcp'),),
         'dl_type': ((Vlan, 'ethertype'), (Ethernet, 'ethertype')),
-        'nw_proto': ((IPv4, 'protocol'),(IPv6, 'protocol')),
+        'nw_proto': ((IPv4, 'protocol'),(IPv6, 'protocol'), (Arp, 'protocoltype')),
         'nw_tos': ((IPv4, 'tos'), (IPv6, 'trafficclass')),
-        'nw_src': ((IPv4, 'src'), (IPv6, 'src')),
-        'nw_dst': ((IPv4, 'dst'), (IPv6, 'dst')),
+        'nw_src': ((IPv4, 'src'), (IPv6, 'src'), (Arp, 'senderprotoaddr')),
+        'nw_dst': ((IPv4, 'dst'), (IPv6, 'dst'), (Arp, 'targetprotoaddr')),
         'tp_src': ((TCP, 'srcport'), (UDP, 'srcport'), (ICMP, 'icmptype'), (ICMPv6, 'icmptype')),
         'tp_dst': ((TCP, 'dstport'), (TCP, 'dstport'), (ICMP, 'icmpcode'), (ICMPv6, 'icmpcode')),
     }
@@ -538,6 +538,7 @@ class OpenflowMatch(_OpenflowStruct):
         Return True if the given packet matches this match object.
         '''
         match = []
+        wildbits = _make_bitmap(self._wildcards)
         for mf,pkttuple in OpenflowMatch._match_field_to_packet.items():
             mf = "_{}".format(mf)
 
@@ -554,7 +555,7 @@ class OpenflowMatch(_OpenflowStruct):
                     continue
 
             # if attribute is simple wildcard, just ignore the attr
-            elif _wildcard_attr_map[mf] in self._wildcards:
+            elif _wildcard_attr_map[mf].value & wildbits:
                 continue
 
             # compare concrete values in packet with match object value
@@ -592,12 +593,16 @@ class OpenflowMatch(_OpenflowStruct):
 
     def reset_wildcards(self):
         self._wildcards = set()
+        self.nwdst_wildcard = 0
+        self.nwsrc_wildcard = 0
 
     def remove_wildcard(self, value):
         self._wildcards.discard(value)
 
     def wildcard_all(self):
         self._wildcards = set([OpenflowWildcard.All])
+        self.nwsrc_wildcard = 32
+        self.nwdst_wildcard = 32
 
     @property
     def nwsrc_wildcard(self):
@@ -667,6 +672,8 @@ class OpenflowMatch(_OpenflowStruct):
 
     @dl_type.setter
     def dl_type(self, value):
+        if isinstance(value, int) and value == 0:
+            value = EtherType.NoType
         self._dl_type = EtherType(value)
 
     @property
@@ -833,6 +840,10 @@ class ActionStripVlan(_OpenflowAction):
         super().__init__()
         self._type = OpenflowActionType.StripVlan
 
+    def __call__(self, **kwargs):
+        packet = kwargs['packet']
+        Exception("Not implemented")
+
 
 class ActionOutput(_OpenflowAction):
     __slots__ = ['_port', '_maxlen']
@@ -870,6 +881,32 @@ class ActionOutput(_OpenflowAction):
         return super().to_bytes() + \
             struct.pack(ActionOutput._PACKFMT, self._port, self._maxlen)
 
+    def __call__(self, **kwargs):
+        net = kwargs['net']
+        packet = kwargs['packet']
+        controllers = kwargs['controllers']
+        inport = kwargs['inport']
+        if self._port == OpenflowPort.Normal:
+            raise Exception("I'm not normal")
+        elif self._port == OpenflowPort.Flood:
+            for intf in net.interfaces():
+                if intf.ifnum != inport:
+                    net.send_packet(intf, packet)
+        elif self._port == OpenflowPort.All:
+            raise Exception("Not implemented")
+        elif self._port == OpenflowPort.Controller:
+            for c in controllers:
+                c.send_packet(port=self._port, packet=packet)
+        elif self._port == OpenflowPort.Local:
+            raise Exception("Not implemented")
+        elif self._port == OpenflowPort.InPort:
+            net.send_packet(inport, packet)
+        elif self._port == OpenflowPort.Table:
+            raise Exception("Not implemented")
+        elif self._port == OpenflowPort.NoPort:
+            raise Exception("Not implemented")
+        else:
+            net.send_packet(self._port, packet)
 
 class ActionEnqueue(_OpenflowAction):
     __slots__ = ['_port', '_queue_id']
@@ -908,6 +945,8 @@ class ActionEnqueue(_OpenflowAction):
         return super().to_bytes() + struct.pack(ActionEnqueue._PACKFMT, 
             self._port, self._queue_id)
 
+    def __call__(self, **kwargs):
+        raise Exception("Not implemented")
 
 class ActionVlanVid(_OpenflowAction):
     __slots__ = ['_vlan_vid']
@@ -936,6 +975,9 @@ class ActionVlanVid(_OpenflowAction):
     def to_bytes(self):
         return super().to_bytes() + struct.pack(ActionVlanVid._PACKFMT, 
             self._vlan_vid)
+
+    def __call__(self, **kwargs):
+        raise Exception("Not implemented")
 
 
 class ActionVlanPcp(_OpenflowAction):
@@ -966,6 +1008,8 @@ class ActionVlanPcp(_OpenflowAction):
         return super().to_bytes() + struct.pack(ActionVlanPcp._PACKFMT, 
             self._vlan_pcp)
 
+    def __call__(self, **kwargs):
+        raise Exception("Not implemented")
 
 class ActionDlAddr(_OpenflowAction):
     __slots__ = ['_dl_addr']
@@ -997,6 +1041,8 @@ class ActionDlAddr(_OpenflowAction):
         return super().to_bytes() + struct.pack(ActionDlAddr._PACKFMT, 
             self._dl_addr.packed)
 
+    def __call__(self, **kwargs):
+        raise Exception("Not implemented")
 
 class ActionNwAddr(_OpenflowAction):
     __slots__ = ['_nw_addr']
@@ -1028,6 +1074,9 @@ class ActionNwAddr(_OpenflowAction):
         return super().to_bytes() + struct.pack(ActionNwAddr._PACKFMT, 
             self._nw_addr.packed)
 
+    def __call__(self, **kwargs):
+        raise Exception("Not implemented")
+
 
 class ActionNwTos(_OpenflowAction):
     __slots__ = ['_nw_tos']
@@ -1055,6 +1104,9 @@ class ActionNwTos(_OpenflowAction):
 
     def to_bytes(self):
         return super().to_bytes() + struct.pack(ActionNwTos._PACKFMT, self._nw_tos)
+
+    def __call__(self, **kwargs):
+        raise Exception("Not implemented")
 
 
 class ActionTpPort(_OpenflowAction):
@@ -1084,6 +1136,9 @@ class ActionTpPort(_OpenflowAction):
 
     def to_bytes(self):
         return super().to_bytes() + struct.pack(ActionTpPort._PACKFMT, self._tp_port)
+
+    def __call__(self, **kwargs):
+        raise Exception("Not implemented")
 
 
 class ActionVendorHeader(_OpenflowAction):
@@ -1131,6 +1186,9 @@ class ActionVendorHeader(_OpenflowAction):
 
     def _calcdatalen(self):
         return ceil(len(self._data) / 8) * 8
+
+    def __call__(self, **kwargs):
+        raise Exception("Not implemented")
 
 
 _ActionClassMap = {
@@ -3271,8 +3329,9 @@ class OpenflowHeader(PacketHeaderBase):
         self.xid = fields[3]
         raw = raw[OpenflowHeader._MINLEN:]
         if self.type == OpenflowType.StatsRequest or self.type == OpenflowType.StatsReply:
-            (statstype,) = struct.unpack('!H', raw[:2])
-            self._subtype = OpenflowStatsType(statstype)
+            if len(raw) >= 2: # JS??     
+                (statstype,) = struct.unpack('!H', raw[:2])
+                self._subtype = OpenflowStatsType(statstype)
         return raw
 
     def to_bytes(self):

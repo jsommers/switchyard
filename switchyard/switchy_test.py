@@ -85,6 +85,11 @@ class FakePyLLNet(LLNetBase):
             raise ScenarioFailure(
                 "send_packet was called, but the test scenario was finished.")
 
+        if isinstance(devname, int):
+            devname = self._lookup_devname(devname)
+        if isinstance(devname, Interface):
+            devname = devname.name
+
         ev = self.scenario.next()
         match_results = ev.match(
             SwitchyTestEvent.EVENT_OUTPUT, device=devname, packet=pkt)

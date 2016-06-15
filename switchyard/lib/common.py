@@ -36,7 +36,9 @@ class NoPackets(Exception):
 
 
 class Interface(object):
-    __slots__ = ['__name','__ethaddr','__ipaddr']
+    __slots__ = ['__name','__ethaddr','__ipaddr','__ifnum']
+    __nextnum = 0
+
     '''
     Class that models a single logical interface on a network
     device.  An interface has a name, 48-bit Ethernet MAC address,
@@ -44,12 +46,13 @@ class Interface(object):
     as an ipaddress.IPv4/6Interface object, which includes
     the netmask/prefixlen.
     '''
-    def __init__(self, name, ethaddr, ipaddr, netmask=None):
+    def __init__(self, name, ethaddr, ipaddr, netmask=None, ifnum=None):
         self.__name = name
         self.ethaddr = ethaddr
         if netmask:
             ipaddr = "{}/{}".format(ipaddr,netmask)
         self.ipaddr = ipaddr
+        self.ifnum = ifnum
 
     @property
     def name(self):
@@ -95,6 +98,17 @@ class Interface(object):
             self.__ipaddr = ip_interface("{}/32".format(self.__ipaddr.ip))
         else:
             raise Exception("Invalid type assignment to netmask (must be IPAddr, string, or int)")
+
+    @property 
+    def ifnum(self):
+        return self.__ifnum
+
+    @ifnum.setter
+    def ifnum(self, value):
+        if not isinstance(value, int):
+            value = Interface.__nextnum
+            Interface.__nextnum += 1
+        self.__ifnum = int(value)
 
     def __str__(self):
         s =  "{} mac:{}".format(str(self.name), str(self.ethaddr))
@@ -225,6 +239,12 @@ class LLNetBase(metaclass=ABCMeta):
     @property
     def name(self):
         pass
+
+    def _lookup_devname(self, ifnum):
+        for devname,iface in self.devinfo.items():
+            if iface.ifnum == ifnum:
+                return devname
+        raise SwitchyException("No device has ifnum {}".format(ifnum)) 
 
 def make_device_list(includes, excludes):
     log_debug("Making device list.  Includes: {}, Excludes: {}".format(includes, excludes))
