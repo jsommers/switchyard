@@ -107,9 +107,9 @@ class FlowTable(object):
         return notify
 
     def add(self, fmod):
-        self._action_callbacks.beforeTableEntryAdd(self._table, entry)
-        # match, cookie, idle_timeout, hard_timeout, priority, buffer_id, out_port, flags, actions
         newentry = TableEntry(fmod)
+        self._action_callbacks.beforeTableEntryAdd(self._table, newentry)
+        # match, cookie, idle_timeout, hard_timeout, priority, buffer_id, out_port, flags, actions
         if FlowModFlags.CheckOverlap in fmod.get_flags():
             for entry in self._table:
                 if newentry.match.overlaps_with(entry, strict=True) and \
@@ -117,12 +117,12 @@ class FlowTable(object):
                     return OpenflowFlowModFailedCode.Overlap
         self._table.append(newentry)            
         self._table.sort()
-        self._action_callbacks.afterTableEntryAdd(self._table, entry)
+        self._action_callbacks.afterTableEntryAdd(self._table, newentry)
         return None
 
     def modify(self, fmod, strict=False):
-        self._action_callbacks.beforeTableEntryMod(self._table, entry)
         newentry = TableEntry(fmod)
+        self._action_callbacks.beforeTableEntryMod(self._table, newentry)
         matches = []
         for entry in self._table:
             if newentry.match.overlaps_with(entry, strict=strict):
@@ -134,7 +134,7 @@ class FlowTable(object):
             self._table.append(newentry)
             self._table.sort()
 
-        self._action_callbacks.afterTableEntryMod(self._table, entry)
+        self._action_callbacks.afterTableEntryMod(self._table, newentry)
 
     def match_packet(self, pkt):
         self._action_callbacks.beforeTableLookup(pkt, self._table)
@@ -152,7 +152,7 @@ class FlowTable(object):
         i = 0
         while i < len(self._table):
             entry = self._table[i]
-            if entry.has_expired() and entry.send_expire_notice():
+            if entry.has_expired(now) and entry.send_expire_notice():
                 expired.append(entry)
                 del self._table[i]
             else:
@@ -186,9 +186,15 @@ class OpenflowSwitch(object):
         t.start()
 
     def _send_openflow_message_internal(self, sock, pkt):
-        self._action_callbacks.beforeControllerSend(pkt)
+        self._action_callbacks.beforeControllerSend(sock, pkt)
         send_openflow_message(sock, pkt)
-        self._action_callbacks.afterControllerSend(pkt)
+        self._action_callbacks.afterControllerSend(sock, pkt)
+
+    def _receive_openflow_message_internal(self, sock):
+        self._action_callbacks.beforeControllerRecv(sock)
+        pkt = receive_openflow_message(sock)
+        self._action_callbacks.afterControllerRecv(sock, pkt)
+        return pkt
 
     @property
     def xid(self):
@@ -262,13 +268,14 @@ class OpenflowSwitch(object):
                 self._table.modify(fmod, strict=True)
             elif fmod.command == FlowModCommand.Delete:
                 notify = self._table.delete(fmod.match)
+                if notify:
+                    _send_removal_notification(notify)
             elif fmod.command == FlowModCommand.DeleteStrict:
                 notify = self._table.delete(fmod.match, strict=True)
+                if notify:
+                    _send_removal_notification(notify)
             else:
                 raise Exception("Unknown flowmod command {}".format(fmod.command))
-
-            if notify:
-                _send_removal_notification(notify)
 
         def _barrier_request_handler(pkt):
             log_debug("Barrier request")
@@ -305,7 +312,7 @@ class OpenflowSwitch(object):
         while self._running:
             pkt = None
             try:
-                pkt = receive_openflow_message(sock)
+                pkt = self._receive_openflow_message_internal(sock)
             except socket.timeout:
                 pass
 
@@ -371,10 +378,16 @@ class SwitchActionCallbacks(object):
     def __init__(self):
         pass
 
-    def beforeControllerSend(self, pkt):
+    def beforeControllerSend(self, sock, pkt):
         pass
 
-    def afterControllerSend(self, pkt):
+    def afterControllerSend(self, sock, pkt):
+        pass
+
+    def beforeControllerRecv(self, sock):
+        pass
+
+    def afterControllerRecv(self, sock, pkt):
         pass
 
     def beforeApplyActions(self, pkt, actions):

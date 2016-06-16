@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 
 '''
-OF switch tests with a fake controller (see FakeControllerHandler)
+OF switch unit tests.
 '''
 
 import sys
 import asyncore
 import socket
-from threading import Thread
+import unittest
+from unittest.mock import MagicMock
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
 from switchyard.lib.common import *
-from switchyard.lib.testing import *
 from switchyard.lib.openflow import *
+from switchyard.lib.openflow.ofswitch import OpenflowSwitch, SwitchActionCallbacks
 
 
 def mk_pkt(hwsrc, hwdst, ipsrc, ipdst, reply=False):
@@ -34,104 +35,47 @@ def mk_pkt(hwsrc, hwdst, ipsrc, ipdst, reply=False):
         icmppkt.icmptype = ICMPType.EchoRequest
     return ether + ippkt + icmppkt
 
+class NetConnection(LLNetBase):
+    def __init__(self):
+        LLNetBase.__init__(self)
+        self.devinfo['eth0'] = Interface('eth0', '11:22:33:44:55:66', '192.168.1.1', '255.255.255.0', 0)
+        self.lastsent = None
 
-def ofswitch_tests():
-    s = Scenario("Openflow Switch Tests")
-    s.add_interface('eth0', '10:00:00:00:00:01')
-    s.add_interface('eth1', '10:00:00:00:00:02')
-    s.add_interface('eth2', '10:00:00:00:00:03')
+    def recv_packet(self, timeout=None, timestamp=False):
+        time.sleep(0.5)
+        raise NoPackets()
 
-    # test case 1: a frame with broadcast destination should get sent out
-    # all ports except ingress
-    testpkt = mk_pkt(
-        "30:00:00:00:00:02", "ff:ff:ff:ff:ff:ff", "172.16.42.2", "255.255.255.255")
-    s.expect(PacketInputEvent("eth1", testpkt, display=Ethernet),
-             "An Ethernet frame with a broadcast destination address should arrive on eth1")
-    s.expect(PacketOutputEvent("eth0", testpkt, "eth2", testpkt, display=Ethernet),
-             "The Ethernet frame with a broadcast destination address should be forwarded out ports eth0 and eth2")
+    def send_packet(self, dev, packet):
+        self.lastsent = (dev, packet)
 
-    return s
+    def shutdown(self):
+        pass
 
+class SwitchUnitTests(unittest.TestCase):
+    def _receiver(self, sock, pkt):
+        self.lastrecv = pkt
 
-class FakeControllerHandler(asyncore.dispatcher):
+    def setUp(self):
+        socket.socket = MagicMock(return_value=MagicMock()) 
+        self.net = NetConnection()
+        self.cb = SwitchActionCallbacks()
 
-    def __init__(self, *args, **kwargs):
-        asyncore.dispatcher.__init__(self, *args, **kwargs)
-        self._inited = False
-        self._xid = 1000
+    def testHello(self):
+        def switch_off(*args):
+            self.switch._running = False
 
-    def handle_read(self):
-        pkt = receive_openflow_message(self)
-        print("Got OF message: {}".format(pkt))
-        if not self._inited:
-            self._hello()
-            self._features_request()
-            self._inited = True
+        self.switch = OpenflowSwitch(self.net, "abcdef00", self.cb)
+        self.switch._send_openflow_message_internal = self._receiver
+        hellopkt = OpenflowHeader.build(OpenflowType.Hello, xid=42)
+        self.switch._receive_openflow_message_internal = MagicMock(return_value=hellopkt, side_effect=switch_off)
+        self.switch._running = True
 
-    def sendall(self, *args):
-        print("Invoked sendall with: {}".format(''.join([str(x) for x in args])))
-
-    @property
-    def xid(self):
-        x = self._xid
-        self._xid += 1
-        return x
-
-    def _hello(self):
-        pkt = Packet()
-        pkt += OpenflowHeader(OpenflowType.Hello, self.xid)
-        send_openflow_message(self, pkt)
-
-    def _features_request(self):
-        pkt = Packet()
-        pkt += OpenflowHeader(OpenflowType.FeaturesRequest, self.xid)
-        send_openflow_message(self, pkt)
+        self.switch.add_controller('localhost', 6633)
+        self.switch._controller_thread(MagicMock())
+        self.assertEqual(self.lastrecv[0].type, hellopkt[0].type)
+        self.assertEqual(self.lastrecv[0].version, hellopkt[0].version)
+        self.assertEqual(self.lastrecv[0].length, hellopkt[0].length)
 
 
-class FakeControllerMaster(asyncore.dispatcher):
-
-    def __init__(self, *args, **kwargs):
-        asyncore.dispatcher.__init__(self, *args, **kwargs)
-        print("In master init")
-        self.create_socket()
-        self.set_reuse_addr()
-        self.bind(("0.0.0.0", 6633))
-        self.listen(5)
-
-    def handle_accepted(self, sock, addr):
-        print(
-            "Controller got connection from switch at {}:{}".format(addr[0], addr[1]))
-        global handler
-        handler = FakeControllerHandler(sock)
-
-
-def ofcontroller_thread():
-    # do this in a thread.
-    print("Starting fake ofcontroller")
-    global master
-    master = FakeControllerMaster()
-    asyncore.loop(timeout=10)
-
-
-def setup_ofcontroller():
-    print("Setting up controller")
-    global controller
-    controller.start()
-
-
-def stop_ofcontroller():
-    print("Tearing down controller")
-    global controller
-    global master
-    global handler
-    handler.close()
-    master.close()
-    controller.join()
-
-controller = Thread(target=ofcontroller_thread)
-master = None
-handler = None
-
-scenario = ofswitch_tests()
-scenario.setup = setup_ofcontroller
-scenario.teardown = stop_ofcontroller
+if __name__ == '__main__':
+    unittest.main()
