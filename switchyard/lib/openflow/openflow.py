@@ -3279,13 +3279,13 @@ class OpenflowHeader(PacketHeaderBase):
         self._subtype = None
 
     @staticmethod
-    def build(xtype, xid=0):
+    def build(xtype, *args, xid=0):
         pkt = Packet()
         header = OpenflowHeader(xtype=xtype, xid=xid)
         pkt += header
         clsname = OpenflowHeader._OpenflowTypeClasses.get(xtype)
         if clsname is not None:
-            pkt += clsname()
+            pkt += clsname(*args)
         return pkt
 
     @property

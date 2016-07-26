@@ -34,7 +34,7 @@ class OpenflowPacketTests(unittest.TestCase):
         dumper.close()
 
     def testHello(self):
-        hello = OpenflowHeader.build(OpenflowType.Hello, 0)
+        hello = OpenflowHeader.build(OpenflowType.Hello, xid=0)
         self.assertEqual(hello.to_bytes(), b'\x01\x00\x00\x08\x00\x00\x00\x00')
         hello[0].xid = 42
         self.assertEqual(hello.to_bytes(), b'\x01\x00\x00\x08\x00\x00\x00\x2a')
@@ -45,12 +45,12 @@ class OpenflowPacketTests(unittest.TestCase):
         self._storePkt(hello)
        
     def testSwitchFeatureRequest(self):
-        featuresreq = OpenflowHeader.build(OpenflowType.FeaturesRequest, 0)
+        featuresreq = OpenflowHeader.build(OpenflowType.FeaturesRequest, xid=0)
         self.assertEqual(featuresreq.to_bytes(), b'\x01\x05\x00\x08\x00\x00\x00\x00')
         self._storePkt(featuresreq)
 
     def testSwitchFeatureReply(self):
-        featuresreply = OpenflowHeader.build(OpenflowType.FeaturesReply, 0)
+        featuresreply = OpenflowHeader.build(OpenflowType.FeaturesReply, xid=0)
         featuresreply[1].dpid_low48 = EthAddr("00:01:02:03:04:05")
         featuresreply[1].dpid_high16 = b'\xab\xcd'
         p = OpenflowPhysicalPort(0, EthAddr("ab:cd:ef:ab:cd:ef"), "eth0")
@@ -61,7 +61,7 @@ class OpenflowPacketTests(unittest.TestCase):
         self._storePkt(featuresreply)
 
     def testEchoRequest(self):
-        echoreq = OpenflowHeader.build(OpenflowType.EchoRequest, 0)        
+        echoreq = OpenflowHeader.build(OpenflowType.EchoRequest, xid=0)        
         echoreq[1].data = b'\x01\x23\x45'
         b = echoreq.to_bytes()
         self.assertTrue(b.endswith(b'\x01\x23\x45'))
@@ -70,7 +70,7 @@ class OpenflowPacketTests(unittest.TestCase):
         self._storePkt(echoreq)
 
     def testEchoReply(self):
-        echorepl = OpenflowHeader.build(OpenflowType.EchoReply, 0)
+        echorepl = OpenflowHeader.build(OpenflowType.EchoReply, xid=0)
         echorepl[1].data = b'\x01\x23\x45'
         b = echorepl.to_bytes()
         self.assertTrue(b.endswith(b'\x01\x23\x45'))
@@ -176,7 +176,7 @@ class OpenflowPacketTests(unittest.TestCase):
         self.assertTrue(m.matches_packet(pkt))
         
     def testError(self):
-        e = OpenflowHeader.build(OpenflowType.Error, 0)
+        e = OpenflowHeader.build(OpenflowType.Error, xid=0)
         e[1].errortype = OpenflowErrorType.HelloFailed
         e[1].errorcode = OpenflowHelloFailedCode.PermissionsError
         e[1].data = b'\xef' * 10
@@ -190,7 +190,7 @@ class OpenflowPacketTests(unittest.TestCase):
         self._storePkt(e)
 
     def testPacketIn(self):
-        pktin = OpenflowHeader.build(OpenflowType.PacketIn, 44)
+        pktin = OpenflowHeader.build(OpenflowType.PacketIn, xid=44)
         pktin[1].packet = Ethernet(src="11:22:33:44:55:66", dst="aa:bb:cc:dd:ee:ff") + \
                           IPv4(src="1.2.3.4", dst="5.6.7.8") + ICMP()
         pktin[1].in_port = OpenflowPort.NoPort
@@ -199,7 +199,7 @@ class OpenflowPacketTests(unittest.TestCase):
         pktin2 = Packet.from_bytes(b, OpenflowHeader)
         self.assertEqual(pktin, pktin2)
 
-        pktin = OpenflowHeader.build(OpenflowType.PacketIn, 44)
+        pktin = OpenflowHeader.build(OpenflowType.PacketIn, xid=44)
         pktin[1].packet = Ethernet(src="11:22:33:44:55:66", dst="aa:bb:cc:dd:ee:ff") + \
                           IPv4(src="1.2.3.4", dst="5.6.7.8") + ICMP()
         pktin[1].in_port = 42
@@ -211,7 +211,7 @@ class OpenflowPacketTests(unittest.TestCase):
         self.assertEqual(pktin, pktin2)
 
     def testPacketOut(self):
-        pktout = OpenflowHeader.build(OpenflowType.PacketOut, 43)
+        pktout = OpenflowHeader.build(OpenflowType.PacketOut, xid=43)
         pktout[1].buffer = 0xffffffff
         pktout[1].in_port = 4
         pktout[1].packet = Ethernet(src="11:22:33:44:55:66", dst="aa:bb:cc:dd:ee:ff") + \
@@ -223,7 +223,7 @@ class OpenflowPacketTests(unittest.TestCase):
         self.assertEqual(pktout, pktout2)
 
     def testFlowMod(self):
-        flowmod = OpenflowHeader.build(OpenflowType.FlowMod, 72) 
+        flowmod = OpenflowHeader.build(OpenflowType.FlowMod, xid=72) 
         flowmod[1].priority = 0xffee
         flowmod[1].hard_timeout = 3600
         flowmod[1].idle_timeout = 1800
@@ -254,7 +254,7 @@ class OpenflowPacketTests(unittest.TestCase):
         self.assertEqual(flowmod, flowmod2)
 
     def testFlowRemoved(self):
-        flowrm = OpenflowHeader.build(OpenflowType.FlowRemoved, 43)
+        flowrm = OpenflowHeader.build(OpenflowType.FlowRemoved, xid=43)
         flowrm[1].match.wildcard_all()
         flowrm[1].cookie = 42
         flowrm[1].priority = 0xabcd
@@ -309,7 +309,7 @@ class OpenflowPacketTests(unittest.TestCase):
         self.assertEqual(qcfg, qcfg2)
 
     def testQueueConfigReply(self):
-        qcfg = OpenflowHeader.build(OpenflowType.QueueGetConfigReply, 2)
+        qcfg = OpenflowHeader.build(OpenflowType.QueueGetConfigReply, xid=2)
         qcfg[1].port = 4
         qcfg[1].queues.append(OpenflowPacketQueue(queue_id=7))
         qcfg[1].queues[0].properties.append(OpenflowQueueMinRateProperty(rate=(40 * 10)))

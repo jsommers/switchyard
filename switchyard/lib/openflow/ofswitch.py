@@ -57,8 +57,15 @@ class TableEntry(object):
     def match(self):
         return self._match
 
-    def __cmp__(self, other):
-        return cmp(self.priority, other.priority)
+    @property 
+    def actions(self):
+        return self._actions
+
+    def __lt__(self, other):
+        return self.priority < other.priority
+
+    def __eq__(self, other):
+        return self.priority == other.priority
 
     def __hash__(self):
         return self._cookie
@@ -87,6 +94,9 @@ class FlowTable(object):
         self._table = []
         self._action_callbacks = callbacks
 
+    def __len__(self):
+        return len(self._table)
+
     def delete(self, matcher, strict=False):
         tbd = []
         for entry in self._table:
@@ -112,7 +122,7 @@ class FlowTable(object):
         # match, cookie, idle_timeout, hard_timeout, priority, buffer_id, out_port, flags, actions
         if FlowModFlags.CheckOverlap in fmod.get_flags():
             for entry in self._table:
-                if newentry.match.overlaps_with(entry, strict=True) and \
+                if newentry.match.overlaps_with(entry.match, strict=True) and \
                    entry.priority == newentry.priority:
                     return OpenflowFlowModFailedCode.Overlap
         self._table.append(newentry)            
@@ -213,6 +223,9 @@ class OpenflowSwitch(object):
     def _controller_thread(self, sock):
         def _hello_handler(pkt):
             log_debug("Hello version: {}".format(pkt[0].version))
+            pkt = Packet()
+            pkt += OpenflowHeader(OpenflowType.Hello, self.xid)
+            self._send_openflow_message_internal(sock, pkt) 
             self._ready = True
 
         def _send_removal_notification(entries, why=FlowRemovedReason.Unknown):
@@ -305,9 +318,6 @@ class OpenflowSwitch(object):
         def _unknown_type_handler(pkt):
             log_debug("Unknown OF message type: {}".format(pkt[0].type))
 
-        pkt = Packet()
-        pkt += OpenflowHeader(OpenflowType.Hello, self.xid)
-        self._send_openflow_message_internal(sock, pkt)
 
         while self._running:
             pkt = None
