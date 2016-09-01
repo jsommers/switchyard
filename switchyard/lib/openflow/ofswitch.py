@@ -20,19 +20,19 @@ class PacketBufferManager(object):
         self._buffsize = buffsize
         self._buffer = {}
 
-    def add(self, pkt):
+    def add(self, pkt, port):
         id = len(self._buffer) + 1
         if id > self._buffsize:
             raise FullBuffer()
 
-        self._buffer[id] = deepcopy(pkt)
+        self._buffer[id] = (port, deepcopy(pkt))
         return id
 
     def pop(self, id):
         return self._buffer.pop(id)
 
     def lookup(self, id):
-        return self._buffer[id]
+        return self._buffer.get(id, None)
 
 
 class TableEntry(object):
@@ -87,7 +87,7 @@ class TableEntry(object):
         return False
 
     def send_expire_notice(self):
-        return self.flags & FlowModFlags.SendFlowRemove.value
+        return self._flags & FlowModFlags.SendFlowRemove.value
 
 class FlowTable(object):
     def __init__(self, callbacks):
@@ -214,7 +214,7 @@ class OpenflowSwitch(object):
     def _send_packet_in(self, port, packet):
         ofpkt = OpenflowHeader.build(OpenflowType.PacketIn, xid=self.xid)
         ofpkt[1].packet = packet.to_bytes()[:self._miss_len]
-        ofpkt[1].buffer_id = self._buffer_manager.add(packet)
+        ofpkt[1].buffer_id = self._buffer_manager.add(packet, port)
         ofpkt[1].reason = OpenflowPacketInReason.NoMatch
         ofpkt[1].in_port = port[-1]
         for _,sock in self._controller_connections:
@@ -269,21 +269,29 @@ class OpenflowSwitch(object):
             self._send_openflow_message_internal(sock, header + reply)
 
         def _flow_mod_handler(pkt):
-            log_debug("Flow mod")
             fmod = pkt[1]
             if fmod.command == FlowModCommand.Add:
+                log_debug("Flow mod add")
                 rv = self._table.add(fmod)
                 if rv:
                     _send_error(rv)
+                elif pkt[1].buffer_id != 2**32-1:
+                    port, packet = self._buffer_manager.pop(pkt[1].buffer_id)
+                    self._datapath_action(port, packet)
+
             elif fmod.command == FlowModCommand.Modify:
+                log_debug("Flow mod modify")
                 self._table.modify(fmod, strict=False)
             elif fmod.command == FlowModCommand.ModifyStrict:
+                log_debug("Flow mod modify strict")
                 self._table.modify(fmod, strict=True)
             elif fmod.command == FlowModCommand.Delete:
+                log_debug("Flow mod delete")
                 notify = self._table.delete(fmod.match)
                 if notify:
                     _send_removal_notification(notify)
             elif fmod.command == FlowModCommand.DeleteStrict:
+                log_debug("Flow mod delete strict")
                 notify = self._table.delete(fmod.match, strict=True)
                 if notify:
                     _send_removal_notification(notify)
@@ -298,7 +306,7 @@ class OpenflowSwitch(object):
         def _packet_out_handler(pkt):
             actions = pkt[1].actions
             if pkt[1].buffer_id != 0xffffffff:
-                outpkt = self._buffer_manager.pop(pkt[1].buffer_id)
+                in_port, outpkt = self._buffer_manager.pop(pkt[1].buffer_id)
             else:
                 outpkt = pkt[1].packet
             in_port = pkt[1].in_port
@@ -378,6 +386,16 @@ class OpenflowSwitch(object):
         for fn in second_stage:
             fn()
 
+    def _datapath_action(self, inport, packet):
+        log_info("Processing packet: {}->{}".format(inport, packet))
+        actions = self._table.match_packet(packet)
+        if not actions:
+            self._send_packet_in(inport, packet)
+        else    :
+            self._action_callbacks.beforeApplyActions(packet, actions)
+            self._process_actions(actions, packet)
+            self._action_callbacks.afterApplyActions(packet, actions)        
+
     def datapath_loop(self):
         log_debug("datapath loop: not ready to receive")
         while not self._ready:
@@ -392,14 +410,7 @@ class OpenflowSwitch(object):
             except NoPackets:
                 continue
 
-            log_info("Packet arrived: {}->{}".format(port, packet))
-            actions = self._table.match_packet(packet)
-            if not actions:
-                self._send_packet_in(port, packet)
-            else    :
-                self._action_callbacks.beforeApplyActions(packet, actions)
-                self._process_actions(actions, packet)
-                self._action_callbacks.afterApplyActions(packet, actions)
+            self._datapath_action(port, packet)
 
     def shutdown(self):
         self._running = False
