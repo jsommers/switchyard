@@ -130,8 +130,8 @@ class OpenflowCapabilities(Enum):
 
 class _OpenflowStruct(PacketHeaderBase):
 
-    def __init__(self):
-        PacketHeaderBase.__init__(self)
+    def __init__(self, **kwargs):
+        PacketHeaderBase.__init__(self, **kwargs)
 
     def __eq__(self, other):
         return self.to_bytes() == other.to_bytes()
@@ -1955,8 +1955,8 @@ class _OpenflowStatsRequest(_OpenflowStruct):
     _PACKFMT = '!HH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, xtype=OpenflowStatsType.NoStatsType):
-        _OpenflowStruct.__init__(self)
+    def __init__(self, xtype=OpenflowStatsType.NoStatsType, **kwargs):
+        _OpenflowStruct.__init__(self, **kwargs)
         self._type = OpenflowStatsType(xtype)
         # NB: no flags are defined in OF 1.0 spec 
 
@@ -1992,8 +1992,8 @@ class IndividualFlowStatsRequest(_OpenflowStatsRequest):
     _PACKFMT = '!BxH'
     _MINLEN = OpenflowMatch.size() + _OpenflowStatsRequest._MINLEN + struct.calcsize(_PACKFMT)
 
-    def __init__(self):
-        _OpenflowStatsRequest.__init__(self, OpenflowStatsType.IndividualFlow)
+    def __init__(self, **kwargs):
+        _OpenflowStatsRequest.__init__(self, OpenflowStatsType.IndividualFlow, **kwargs)
         self._match = OpenflowMatch()
         self._table_id = 0
         self._out_port = 0
@@ -2053,8 +2053,8 @@ class PortStatsRequest(_OpenflowStatsRequest):
     _PACKFMT = '!H6x'
     _MINLEN = _OpenflowStatsRequest._MINLEN + struct.calcsize(_PACKFMT)
 
-    def __init__(self):
-        _OpenflowStatsRequest.__init__(self, OpenflowStatsType.Port)
+    def __init__(self, **kwargs):
+        _OpenflowStatsRequest.__init__(self, OpenflowStatsType.Port, **kwargs)
         self._port_no = OpenflowPort.NoPort
 
     @property
@@ -2093,8 +2093,8 @@ class QueueStatsRequest(_OpenflowStatsRequest):
     _PACKFMT = '!H2xI'
     _MINLEN = _OpenflowStatsRequest._MINLEN + struct.calcsize(_PACKFMT)
 
-    def __init__(self):
-        _OpenflowStatsRequest.__init__(self, OpenflowStatsType.Queue)
+    def __init__(self, **kwargs):
+        _OpenflowStatsRequest.__init__(self, OpenflowStatsType.Queue, **kwargs)
         self._port_no = OpenflowPort.NoPort
         self._queue_id = 0
 
@@ -2144,7 +2144,7 @@ class VendorStatsRequest(_OpenflowStatsRequest):
     _PACKFMT = '!I'
     _MINLEN = _OpenflowStatsRequest._MINLEN + 4
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         _OpenflowStatsRequest.__init__(self, OpenflowStatsType.Vendor)
         self._vendor_id = 0xffffffff
         self._data = b''
@@ -2192,13 +2192,13 @@ class SwitchDescriptionStatsReply(_OpenflowStatsReply):
     _PACKFMT = '!256s256s256s32s256s'
     _MINLEN = _OpenflowStatsReply._MINLEN + struct.calcsize(_PACKFMT)
 
-    def __init__(self):
-        _OpenflowStatsReply.__init__(self, OpenflowStatsType.SwitchDescription)
+    def __init__(self, **kwargs):
         self._mfr_desc = '' 
         self._hw_desc = '' 
         self._sw_desc = '' 
         self._serial_num = ''
         self._dp_desc = ''
+        _OpenflowStatsReply.__init__(self, OpenflowStatsType.SwitchDescription, **kwargs)
 
     @property
     def mfr_desc(self):
@@ -2272,8 +2272,7 @@ class IndividualFlowStatsReply(_OpenflowStatsReply):
     _MINLEN = struct.calcsize(_PACKFMT1) + struct.calcsize(_PACKFMT2) + \
         OpenflowMatch.size() + _OpenflowStatsReply._MINLEN
 
-    def __init__(self):
-        _OpenflowStatsReply.__init__(self, OpenflowStatsType.IndividualFlow)
+    def __init__(self, **kwargs):
         self._table_id = 0
         self._match = OpenflowMatch()
         self._duration_sec = self._duration_nsec = 0
@@ -2282,6 +2281,7 @@ class IndividualFlowStatsReply(_OpenflowStatsReply):
         self._cookie = 0
         self._packet_count = self._byte_count = 0
         self._actions = []
+        _OpenflowStatsReply.__init__(self, OpenflowStatsType.IndividualFlow, **kwargs)
 
     def size(self):
         actions = b''.join([a.to_bytes() for a in self._actions])
@@ -2424,8 +2424,8 @@ class AggregateFlowStatsReply(_OpenflowStatsReply):
     _PACKFMT = '!QQI'
     _MINLEN = _OpenflowStatsReply._MINLEN + struct.calcsize(_PACKFMT)
 
-    def __init__(self):
-        _OpenflowStatsReply.__init__(self, OpenflowStatsType.AggregateFlow)
+    def __init__(self, **kwargs):
+        _OpenflowStatsReply.__init__(self, OpenflowStatsType.AggregateFlow, **kwargs)
         self._byte_count = self._packet_count = self._flow_count = 0
 
     def size(self):

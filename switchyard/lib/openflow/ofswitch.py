@@ -212,7 +212,7 @@ class OpenflowSwitch(object):
         return self._xid
 
     def _send_packet_in(self, port, packet):
-        ofpkt = OpenflowHeader.build(OpenflowType.PacketIn, self.xid)
+        ofpkt = OpenflowHeader.build(OpenflowType.PacketIn, xid=self.xid)
         ofpkt[1].packet = packet.to_bytes()[:self._miss_len]
         ofpkt[1].buffer_id = self._buffer_manager.add(packet)
         ofpkt[1].reason = OpenflowPacketInReason.NoMatch
@@ -292,7 +292,7 @@ class OpenflowSwitch(object):
 
         def _barrier_request_handler(pkt):
             log_debug("Barrier request")
-            reply = OpenflowHeader(OpenflowType.BarrierReply, xid=header.xid)
+            reply = OpenflowHeader(OpenflowType.BarrierReply, xid=pkt[0].xid)
             self._send_openflow_message_internal(sock, reply)
 
         def _packet_out_handler(pkt):
@@ -305,6 +305,34 @@ class OpenflowSwitch(object):
             log_debug ("pkt {} buffid {} actions {} inport {}".format(outpkt, pkt[1].buffer_id, actions, in_port))
             self._process_actions(actions, outpkt, in_port)
 
+        def _stats_request_handler(pkt):
+            log_debug("Stats request: {}".format(str(pkt)))
+            rheader = OpenflowHeader(OpenflowType.StatsReply, xid=pkt[0].xid)
+            if pkt[1].type == OpenflowStatsType.SwitchDescription:
+                statsbody = SwitchDescriptionStatsReply(mfr_desc='Switchyard', 
+                    hw_desc='Switchyard', sw_desc='Switchyard', 
+                    serial_num='0000', dp_desc=str(self._switchid))
+            elif pkt[1].type == OpenflowStatsType.IndividualFlow:
+                pass
+            elif pkt[1].type == OpenflowStatsType.AggregateFlow:
+                pass
+            elif pkt[1].type == OpenflowStatsType.Table:
+                pass
+            elif pkt[1].type == OpenflowStatsType.Port:
+                pass
+            elif pkt[1].type == OpenflowStatsType.Queue:
+                pass
+            elif pkt[1].type == OpenflowStatsType.Vendor:
+                pass
+            else:
+                log_info("Unrecognized stats request type")
+            self._send_openflow_message_internal(sock, rheader + statsbody)
+
+        def _echo_request_handler(pkt):
+            log_debug("Echo request: {}".format(str(pkt)))
+            reply = OpenflowHeader(OpenflowType.EchoReply, xid=pkt[0].xid)
+            self._send_openflow_message_internal(sock, reply)
+
         _handler_map = {
             OpenflowType.Hello: _hello_handler,
             OpenflowType.FeaturesRequest: _features_request_handler,
@@ -313,6 +341,8 @@ class OpenflowSwitch(object):
             OpenflowType.FlowMod: _flow_mod_handler,
             OpenflowType.BarrierRequest: _barrier_request_handler,
             OpenflowType.PacketOut: _packet_out_handler,
+            OpenflowType.StatsRequest: _stats_request_handler,
+            OpenflowType.EchoRequest: _echo_request_handler,
         }
 
         def _unknown_type_handler(pkt):
@@ -331,8 +361,7 @@ class OpenflowSwitch(object):
                 _send_removal_notification(entries)
 
             if pkt is not None:
-                header = pkt[0]
-                _handler_map.get(header.type, _unknown_type_handler)(pkt)
+                _handler_map.get(pkt[0].type, _unknown_type_handler)(pkt)
 
 
     def _process_actions(self, actions, packet, inport=OpenflowPort.NoPort):

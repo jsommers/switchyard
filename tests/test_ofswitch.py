@@ -63,21 +63,21 @@ class SwitchUnitTests(unittest.TestCase):
         self.net = NetConnection()
         self.cb = SwitchActionCallbacks()
 
-    # def testHello(self):
-    #     def switch_off(*args):
-    #         self.switch._running = False
+    def testHello(self):
+        def switch_off(*args):
+            self.switch._running = False
 
-    #     self.switch = OpenflowSwitch(self.net, "abcdef00", self.cb)
-    #     self.switch._send_openflow_message_internal = self._receiver
-    #     hellopkt = OpenflowHeader.build(OpenflowType.Hello, xid=42)
-    #     self.switch._receive_openflow_message_internal = MagicMock(return_value=hellopkt, side_effect=switch_off)
-    #     self.switch._running = True
+        self.switch = OpenflowSwitch(self.net, "abcdef00", self.cb)
+        self.switch._send_openflow_message_internal = self._receiver
+        hellopkt = OpenflowHeader.build(OpenflowType.Hello, xid=42)
+        self.switch._receive_openflow_message_internal = MagicMock(return_value=hellopkt, side_effect=switch_off)
+        self.switch._running = True
 
-    #     self.switch.add_controller('localhost', 6633)
-    #     self.switch._controller_thread(MagicMock())
-    #     self.assertEqual(self.lastrecv[0].type, hellopkt[0].type)
-    #     self.assertEqual(self.lastrecv[0].version, hellopkt[0].version)
-    #     self.assertEqual(self.lastrecv[0].length, hellopkt[0].length)
+        self.switch.add_controller('localhost', 6633)
+        self.switch._controller_thread(MagicMock())
+        self.assertEqual(self.lastrecv[0].type, hellopkt[0].type)
+        self.assertEqual(self.lastrecv[0].version, hellopkt[0].version)
+        self.assertEqual(self.lastrecv[0].length, hellopkt[0].length)
 
     def testTable1(self):
         table = FlowTable(self.cb)
