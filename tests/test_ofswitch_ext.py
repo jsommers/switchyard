@@ -47,6 +47,7 @@ def ofswitch_tests():
     s.expect(PacketInputTimeoutEvent(timeout=5), description="Wait for events to complete")
     s.expect(PacketOutputEvent("eth2", testpkt, "eth0", testpkt, display=Ethernet),
              "The Ethernet frame with a broadcast destination address should be forwarded out ports eth0 and eth2")
+    # test case 2: frame with dest 30:...:02 should be sent out eth 1 (from where bcast frame arrived)
     testpkt2 = mk_pkt(
         "30:00:00:00:00:03", "30:00:00:00:00:02", "10.0.42.200", "172.16.42.2")
     s.expect(PacketInputEvent("eth2", testpkt2, display=Ethernet),
@@ -55,6 +56,15 @@ def ofswitch_tests():
     s.expect(PacketOutputEvent("eth1", testpkt2, display=Ethernet),
              "An Ethernet frame with a destination address 172.16.42.2 should be forwarded out port eth1")
     s.expect(PacketInputTimeoutEvent(timeout=5), description="Wait for events to complete")
+
+    # test case 3: dest port for 30::03 should have been learned from previous exchange
+    testpkt3 = mk_pkt(
+        "30:00:00:00:00:01", "30:00:00:00:00:03", "172.16.42.2", "10.1.13.13")
+    s.expect(PacketInputEvent("eth0", testpkt3, display=Ethernet),
+             "An Ethernet frame with a destination address 10.1.13.13 should arrive on eth0")
+    s.expect(PacketInputTimeoutEvent(timeout=5), description="Wait for events to complete")
+    s.expect(PacketOutputEvent("eth2", testpkt3, display=Ethernet),
+             "An Ethernet frame with a destination address 10.1.13.13 should be forwarded out port eth2")
 
     return s
 
