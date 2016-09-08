@@ -20,12 +20,12 @@ class PacketBufferManager(object):
         self._buffsize = buffsize
         self._buffer = {}
 
-    def add(self, pkt, port):
+    def add(self, pkt):
         id = len(self._buffer) + 1
         if id > self._buffsize:
             raise FullBuffer()
 
-        self._buffer[id] = (port, deepcopy(pkt))
+        self._buffer[id] = deepcopy(pkt)
         return id
 
     def pop(self, id):
@@ -214,7 +214,7 @@ class OpenflowSwitch(object):
     def _send_packet_in(self, port, packet):
         ofpkt = OpenflowHeader.build(OpenflowType.PacketIn, xid=self.xid)
         ofpkt[1].packet = packet.to_bytes()[:self._miss_len]
-        ofpkt[1].buffer_id = self._buffer_manager.add(packet, port)
+        ofpkt[1].buffer_id = self._buffer_manager.add(packet)
         ofpkt[1].reason = OpenflowPacketInReason.NoMatch
         ofpkt[1].in_port = port[-1]
         for _,sock in self._controller_connections:
@@ -276,8 +276,8 @@ class OpenflowSwitch(object):
                 if rv:
                     _send_error(rv)
                 elif pkt[1].buffer_id != 2**32-1:
-                    port, packet = self._buffer_manager.pop(pkt[1].buffer_id)
-                    self._datapath_action(port, packet)
+                    packet = self._buffer_manager.pop(pkt[1].buffer_id)
+                    self._datapath_action(packet)
 
             elif fmod.command == FlowModCommand.Modify:
                 log_debug("Flow mod modify")
@@ -306,7 +306,7 @@ class OpenflowSwitch(object):
         def _packet_out_handler(pkt):
             actions = pkt[1].actions
             if pkt[1].buffer_id != 0xffffffff:
-                in_port, outpkt = self._buffer_manager.pop(pkt[1].buffer_id)
+                outpkt = self._buffer_manager.pop(pkt[1].buffer_id)
             else:
                 outpkt = pkt[1].packet
             in_port = pkt[1].in_port
@@ -386,12 +386,16 @@ class OpenflowSwitch(object):
         for fn in second_stage:
             fn()
 
-    def _datapath_action(self, inport, packet):
-        log_info("Processing packet: {}->{}".format(inport, packet))
-        actions = self._table.match_packet(packet)
-        if not actions:
-            self._send_packet_in(inport, packet)
-        else    :
+    def _datapath_action(self, packet, actions=None):
+        log_debug("Datapath action for {}".format(str(packet)))
+        if actions is None:
+            actions = self._table.match_packet(packet)
+
+        if actions is None:
+            log_warn("Fail: in datapath_action but no table match.")
+            debugger()
+        else:
+            log_debug("Applying action {}".format('/'.join([str(a) for a in actions])))
             self._action_callbacks.beforeApplyActions(packet, actions)
             self._process_actions(actions, packet)
             self._action_callbacks.afterApplyActions(packet, actions)        
@@ -410,7 +414,12 @@ class OpenflowSwitch(object):
             except NoPackets:
                 continue
 
-            self._datapath_action(port, packet)
+            log_info("Processing packet: {}->{}".format(port, packet))
+            actions = self._table.match_packet(packet)
+            if actions is None:
+                self._send_packet_in(port, packet)
+            else:
+                self._datapath_action(packet, actions=actions)
 
     def shutdown(self):
         self._running = False
