@@ -52,8 +52,7 @@ def ofswitch_tests():
     s.expect(PacketInputEvent("eth2", testpkt2, display=Ethernet),
              "An Ethernet frame with a destination address 172.16.42.2 should arrive on eth2")
     s.expect(PacketInputTimeoutEvent(timeout=5), description="Wait for events to complete")
-    s.expect(PacketInputTimeoutEvent(timeout=5), description="Wait for events to complete")
-    s.expect(PacketOutputEvent("eth1", testpkt2, "eth0", testpkt, display=Ethernet),
+    s.expect(PacketOutputEvent("eth1", testpkt2, display=Ethernet),
              "An Ethernet frame with a destination address 172.16.42.2 should be forwarded out port eth1")
     s.expect(PacketInputTimeoutEvent(timeout=5), description="Wait for events to complete")
 

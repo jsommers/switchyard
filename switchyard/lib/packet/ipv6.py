@@ -1,7 +1,7 @@
 import struct
 from ipaddress import IPv6Address
 from abc import ABCMeta, abstractmethod
-from enum import Enum
+from enum import IntEnum
 
 from switchyard.lib.common import log_warn
 from switchyard.lib.packet.packet import PacketHeaderBase,Packet
@@ -378,7 +378,7 @@ class IPv6HopOption(IPv6ExtensionHeader):
 class IPv6DestinationOption(IPv6HopOption):
     pass
 
-class IPv6MobilityHeaderType(Enum):
+class IPv6MobilityHeaderType(IntEnum):
     BindingRefreshRequest = 0
     HomeTestInit = 1
     CareOfTestInit = 2

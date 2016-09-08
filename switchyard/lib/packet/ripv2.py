@@ -1,5 +1,5 @@
 import struct
-from enum import Enum
+from enum import IntEnum
 from ipaddress import IPv4Network
 
 from switchyard.lib.packet.packet import PacketHeaderBase,Packet,RawPacketContents
@@ -10,7 +10,7 @@ References:
     IETF RFC 2453
 '''
 
-class RIPCommand(Enum):
+class RIPCommand(IntEnum):
     Request = 1
     Reply = 2
 

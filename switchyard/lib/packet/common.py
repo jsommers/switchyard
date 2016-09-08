@@ -1,9 +1,9 @@
 import struct
 import array
-from enum import Enum
+from enum import IntEnum
 from socket import ntohs
 
-class EtherType(Enum):
+class EtherType(IntEnum):
     NoType = 0xFFFF
     IP = 0x0800
     IPv4 = 0x0800
@@ -19,16 +19,16 @@ class EtherType(Enum):
     x8021AH = 0x88e7
     IEEE8023 = 0x05dc
 
-class ArpHwType(Enum):
+class ArpHwType(IntEnum):
     Ethernet = 1
 
-class ArpOperation(Enum):
+class ArpOperation(IntEnum):
     Request = 1
     Reply = 2
     RequestReverse = 3
     ReplyReverse = 4
 
-class IPProtocol(Enum):
+class IPProtocol(IntEnum):
     IPv6HopOption = 0
     ICMP = 1
     IGMP = 2
@@ -56,12 +56,12 @@ class IPProtocol(Enum):
     MPLSinIP = 137
     IPv6Shim6 = 140
 
-class IPFragmentFlag(Enum):
+class IPFragmentFlag(IntEnum):
     NoFragments = 0
     DontFragment = 2
     MoreFragments = 4
 
-class IPOptionNumber(Enum):
+class IPOptionNumber(IntEnum):
     EndOfOptionList = 0
     NoOperation = 1
     LooseSourceRouting = 3
@@ -72,7 +72,7 @@ class IPOptionNumber(Enum):
     MTUReply = 12
     RouterAlert = 20
 
-class ICMPType(Enum):
+class ICMPType(IntEnum):
     EchoReply = 0
     DestinationUnreachable = 3
     SourceQuench = 4
@@ -89,10 +89,10 @@ class ICMPType(Enum):
     AddressMaskRequest = 17
     AddressMaskReply = 18
 
-class ICMPCodeEchoReply(Enum):
+class ICMPCodeEchoReply(IntEnum):
     EchoReply = 0
 
-class ICMPCodeDestinationUnreachable(Enum):
+class ICMPCodeDestinationUnreachable(IntEnum):
     NetworkUnreachable = 0 
     HostUnreachable = 1 
     ProtocolUnreachable = 2 
@@ -110,49 +110,49 @@ class ICMPCodeDestinationUnreachable(Enum):
     HostPrecedenceViolation = 14
     PrecedenceCutoffInEffect = 15
 
-class ICMPCodeSourceQuench(Enum):
+class ICMPCodeSourceQuench(IntEnum):
     SourceQuench = 0
 
-class ICMPCodeRedirect(Enum):
+class ICMPCodeRedirect(IntEnum):
     RedirectForNetwork = 0
     RedirectForHost = 1
     RedirectForTOSAndNetwork = 2
     RedirectForTOSAndHost = 3
     
-class ICMPCodeEchoRequest(Enum):
+class ICMPCodeEchoRequest(IntEnum):
     EchoRequest = 0
 
-class ICMPCodeRouterAdvertisement(Enum):
+class ICMPCodeRouterAdvertisement(IntEnum):
     RouterAdvertisement = 0
 
-class ICMPCodeRouterSolicitation(Enum):
+class ICMPCodeRouterSolicitation(IntEnum):
     RouterSolicitation = 0
 
-class ICMPCodeTimeExceeded(Enum):
+class ICMPCodeTimeExceeded(IntEnum):
     TTLExpired = 0
     FragmentReassemblyTimeExceeded = 1
 
-class ICMPCodeParameterProblem(Enum):
+class ICMPCodeParameterProblem(IntEnum):
     PointerIndictatesError = 0
     MissingRequiredOption = 1
     BadLength = 2
 
-class ICMPCodeTimestamp(Enum):
+class ICMPCodeTimestamp(IntEnum):
     Timestamp = 0
 
-class ICMPCodeTimestampReply(Enum):
+class ICMPCodeTimestampReply(IntEnum):
     TimestampReply = 0
 
-class ICMPCodeInformationRequest(Enum):
+class ICMPCodeInformationRequest(IntEnum):
     InformationRequest = 0
 
-class ICMPCodeInformationReply(Enum):
+class ICMPCodeInformationReply(IntEnum):
     InformationReply = 0
 
-class ICMPCodeAddressMaskRequest(Enum):
+class ICMPCodeAddressMaskRequest(IntEnum):
     AddressMaskRequest = 0
 
-class ICMPCodeAddressMaskReply(Enum):
+class ICMPCodeAddressMaskReply(IntEnum):
     AddressMaskReply = 0
 
 ICMPTypeCodeMap = {
@@ -173,7 +173,7 @@ ICMPTypeCodeMap = {
     ICMPType.AddressMaskReply: ICMPCodeAddressMaskReply
 }
 
-class ICMPv6Type(Enum):
+class ICMPv6Type(IntEnum):
     DestinationUnreachable = 1
     PacketTooBig = 2
     TimeExceeded = 3

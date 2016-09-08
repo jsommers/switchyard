@@ -1,7 +1,7 @@
 from switchyard.lib.packet.packet import PacketHeaderBase,Packet
 from switchyard.lib.packet.common import checksum, ICMPType, ICMPTypeCodeMap
 import struct
-from enum import Enum
+from enum import IntEnum
 from ipaddress import IPv4Address
 
 '''
@@ -93,7 +93,7 @@ class ICMP(PacketHeaderBase):
 
     @icmpcode.setter
     def icmpcode(self,value):
-        if issubclass(value.__class__, Enum):
+        if issubclass(value.__class__, IntEnum):
             validcodes = self._valid_codes_map[self._type]
             if value not in validcodes:
                 raise ValueError("Invalid code {} for type {}".format(value, self._type))

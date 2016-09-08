@@ -174,6 +174,18 @@ class OpenflowPacketTests(unittest.TestCase):
 
         m.nwsrc_wildcard = 8
         self.assertTrue(m.matches_packet(pkt))
+
+    def testPacketMatch2(self):
+        pkt = Ethernet(src="30:00:00:00:00:03", dst="30:00:00:00:00:02") + \
+              IPv4(src="10.0.42.200", dst="172.16.42.2", protocol=1) + \
+              ICMP() 
+        m = OpenflowMatch(dl_src="30:00:00:00:00:03", dl_dst="30:00:00:00:00:02", \
+                          nw_src="10.0.42.200", nw_dst="172.16.42.2", \
+                          nw_proto=IPProtocol.ICMP, \
+                          tp_src=8, tp_dst=0, \
+                          dl_type=EtherType.IP, dl_vlan=65535, dl_vlan_pcp=0, \
+                          in_port=2)
+        self.assertTrue(m.matches_packet(pkt))
         
     def testError(self):
         e = OpenflowHeader.build(OpenflowType.Error, xid=0)

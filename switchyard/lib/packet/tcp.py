@@ -1,7 +1,7 @@
 from switchyard.lib.packet.packet import PacketHeaderBase,Packet
 from switchyard.lib.packet.common import checksum
 import struct
-from enum import Enum
+from enum import IntEnum
 from abc import ABCMeta, abstractmethod
 
 '''
@@ -51,7 +51,7 @@ class TCPOptions(PacketHeaderBase):
         # FIXME
         return 0
 
-class TCPFlags(Enum):
+class TCPFlags(IntEnum):
     FIN = 0
     SYN = 1
     RST = 2

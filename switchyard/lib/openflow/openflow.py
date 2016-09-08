@@ -2,7 +2,7 @@ from switchyard.lib.packet import PacketHeaderBase, Packet, IPProtocol, \
     EtherType, Ethernet, Vlan, IPv6, IPv4, ICMP, ICMPv6, TCP, UDP, Arp
 from switchyard.lib.address import EthAddr, IPv4Address
 from switchyard.lib.common import log_debug
-from enum import Enum, IntEnum
+from enum import IntEnum
 import struct
 from math import ceil
 from ipaddress import ip_network, ip_address
@@ -31,7 +31,7 @@ def _unpack_bitmap(bitmap, xenum):
     return unpacked
 
 
-class OpenflowType(Enum):
+class OpenflowType(IntEnum):
     Hello = 0
     Error = 1
     EchoRequest = 2
@@ -79,7 +79,7 @@ def _get_port(value):
         else:
             raise ValueError("Invalid port number")        
 
-class OpenflowPortState(Enum):
+class OpenflowPortState(IntEnum):
     NoState = 0
     LinkDown = 1 << 0
     StpListen = 0 << 8
@@ -89,7 +89,7 @@ class OpenflowPortState(Enum):
     StpMask = 3 << 8
 
 
-class OpenflowPortConfig(Enum):
+class OpenflowPortConfig(IntEnum):
     NoConfig = 0
     Down = 1 << 0
     NoStp = 1 << 1
@@ -100,7 +100,7 @@ class OpenflowPortConfig(Enum):
     NoPacketIn = 1 << 6
 
 
-class OpenflowPortFeatures(Enum):
+class OpenflowPortFeatures(IntEnum):
     NoFeatures = 0
     e10Mb_Half = 1 << 0
     e10Mb_Full = 1 << 1
@@ -116,7 +116,7 @@ class OpenflowPortFeatures(Enum):
     PauseAsym = 1 << 11
 
 
-class OpenflowCapabilities(Enum):
+class OpenflowCapabilities(IntEnum):
     NoCapabilities = 0
     FlowStats = 1 << 0
     TableStats = 1 << 1
@@ -299,7 +299,7 @@ class OpenflowPhysicalPort(_OpenflowStruct):
         self._peer.clear()
 
 
-class OpenflowQueuePropertyTypes(Enum):
+class OpenflowQueuePropertyTypes(IntEnum):
     NoProperty = 0
     MinRate = 1
 
@@ -412,8 +412,7 @@ class OpenflowMatch(_OpenflowStruct):
         'tp_dst': ((TCP, 'dstport'), (TCP, 'dstport'), (ICMP, 'icmpcode'), (ICMPv6, 'icmpcode')),
     }
 
-    def __init__(self):
-        _OpenflowStruct.__init__(self)
+    def __init__(self, **kwargs):
         self._wildcards = set()
         self._in_port = 0
         self._dl_src = EthAddr()
@@ -429,6 +428,7 @@ class OpenflowMatch(_OpenflowStruct):
         self._nw_dst = IPv4Address(0)
         self._tp_src = 0
         self._tp_dst = 0
+        _OpenflowStruct.__init__(self, **kwargs)
 
     @staticmethod
     def size(*args):
@@ -562,7 +562,6 @@ class OpenflowMatch(_OpenflowStruct):
             for pktcls,field in pkttuple:
                 if pkt.has_header(pktcls):
                     match.append(getattr(pkt[pktcls], field) == getattr(self, mf))
-                    break
         return all(match)
 
     @staticmethod
@@ -734,7 +733,7 @@ class OpenflowMatch(_OpenflowStruct):
         self._tp_dst = value
 
 
-class OpenflowWildcard(Enum):
+class OpenflowWildcard(IntEnum):
     InPort = 1 << 0
     DlVlan = 1 << 1
     DlSrc = 1 << 2
@@ -780,7 +779,7 @@ def _make_wildcard_attr_map():
 _wildcard_attr_map = _make_wildcard_attr_map()
 
 
-class OpenflowActionType(Enum):
+class OpenflowActionType(IntEnum):
     Output = 0
     SetVlanVid = 1
     SetVlanPcp = 2
@@ -906,6 +905,7 @@ class ActionOutput(_OpenflowAction):
         elif self._port == OpenflowPort.NoPort:
             raise Exception("Not implemented")
         else:
+            print("packet send on port {} <- {}".format(self._port, packet))
             net.send_packet(self._port, packet)
 
 class ActionEnqueue(_OpenflowAction):
@@ -1257,7 +1257,7 @@ class OpenflowEchoReply(OpenflowEchoRequest):
         OpenflowEchoRequest.__init__(self)
 
 
-class OpenflowConfigFlags(Enum):
+class OpenflowConfigFlags(IntEnum):
     FragNormal = 0
     FragDrop = 1
     FragReasm = 2
@@ -1313,7 +1313,7 @@ class OpenflowGetConfigReply(OpenflowSetConfig):
         OpenflowSetConfig.__init__(self)
 
 
-class FlowModCommand(Enum):
+class FlowModCommand(IntEnum):
     Add = 0
     Modify = 1
     ModifyStrict = 2
@@ -1321,7 +1321,7 @@ class FlowModCommand(Enum):
     DeleteStrict = 4
 
 
-class FlowModFlags(Enum):
+class FlowModFlags(IntEnum):
     NoFlag = 0
     SendFlowRemove = 1
     CheckOverlap = 2
@@ -1629,7 +1629,7 @@ class OpenflowSwitchFeaturesReply(_OpenflowStruct):
         return self._ports
 
 
-class OpenflowErrorType(Enum):
+class OpenflowErrorType(IntEnum):
     HelloFailed = 0
     BadRequest = 1
     BadAction = 2
@@ -1638,7 +1638,7 @@ class OpenflowErrorType(Enum):
     QueueOpFailed = 5
 
 
-class OpenflowErrorCode(Enum):
+class OpenflowErrorCode(IntEnum):
     pass
 
 
@@ -1895,7 +1895,7 @@ class OpenflowPortMod(_OpenflowStruct):
         self._advertise.clear()
 
 
-class PortStatusReason(Enum):
+class PortStatusReason(IntEnum):
     Add = 0
     Delete = 1
     Modify = 2
@@ -1939,7 +1939,7 @@ class OpenflowPortStatus(_OpenflowStruct):
         return self._port
     
 
-class OpenflowStatsType(Enum):
+class OpenflowStatsType(IntEnum):
     SwitchDescription = 0
     IndividualFlow = 1
     AggregateFlow = 2
@@ -2960,7 +2960,7 @@ class OpenflowQueueGetConfigReply(_OpenflowStruct):
             raw = raw[qlen:]
 
 
-class OpenflowPacketInReason(Enum):
+class OpenflowPacketInReason(IntEnum):
     NoMatch = 0
     Action = 1
     NoReason = 0xff
@@ -3097,7 +3097,7 @@ class OpenflowPacketOut(_OpenflowStruct):
         self.packet = raw[actionlen:]
 
 
-class FlowRemovedReason(Enum):
+class FlowRemovedReason(IntEnum):
     IdleTimeout = 0
     HardTimeout = 1
     Delete = 2
