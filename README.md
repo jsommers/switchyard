@@ -34,6 +34,9 @@ Documentation and Exercises
  * Sample exercises (in ReStructuredText format) can be found in the
    examples/exercises directory.  
 
+ * Instructor-only materials such as test scenarios and other scripts
+   available on request to the author of Switchyard (jsommers@colgate.edu).
+
 Credits
 -------
 
