@@ -258,8 +258,11 @@ class PyLLNet(LLNetBase):
         Raises SwitchyException if packet object isn't valid, or device
         name isn't recognized.
         '''
-        if isinstance(devname, int):
-           device = self._lookup_devname(devname)
+        if isinstance(dev, int):
+           dev = self._lookup_devname(dev)
+
+        if isinstance(dev, Interface):
+           dev = dev.name
 
         pdev = self.pcaps.get(dev, None)
         if not pdev:

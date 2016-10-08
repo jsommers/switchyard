@@ -87,6 +87,7 @@ class FakePyLLNet(LLNetBase):
 
         if isinstance(devname, int):
             devname = self._lookup_devname(devname)
+
         if isinstance(devname, Interface):
             devname = devname.name
 
