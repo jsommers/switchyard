@@ -48,8 +48,9 @@ class ApplicationLayer(object):
     _from_app = None
 
     def __init__(self):
-        raise RuntimeError("Don't init me.")
-
+        raise RuntimeError("Ouch.  Please don't try to create an instance "
+                           "of {}.  Use the static init() method "
+                           "instead.".format(self.__class__.__name__))
     @staticmethod
     def init():
         with _app_layer_lock:
@@ -62,7 +63,8 @@ class ApplicationLayer(object):
     @staticmethod
     def recv_from_app(timeout=1.0):
         try:
-            data,local_addr,remote_addr = ApplicationLayer._from_app.get(timeout=timeout)
+            data,local_addr,remote_addr = \
+                ApplicationLayer._from_app.get(timeout=timeout)
             return data,local_addr,remote_addr
         except Empty:
             pass
@@ -83,18 +85,22 @@ def setup_switchyard_stack(proto, localaddr):
     return ApplicationLayer.queues()
 
 
-
-# need to import lots of stuff out of base socket module so that we can avoid
+# FIXME: need to import lots of stuff out of base socket module so that we can avoid
 # completely reinventing the wheel here
 
 class socket(object):
-    __slots__ = ('_family','_socktype','_protoname','_proto','_timeout','_block','_remote_addr','_local_addr', '_socket_queue_to_stack','_socket_queue_from_stack')
+    __slots__ =  ('_family','_socktype','_protoname','_proto',
+        '_timeout','_block','_remote_addr','_local_addr',
+        '_socket_queue_to_stack','_socket_queue_from_stack')
     def __init__(self, family, xtype, proto=0, fileno=0):
         family = AddressFamily(family)
+        # FIXME: ip6
         if family != AddressFamily.AF_INET:
-            raise NotImplementedError("socket for family {} not implemented".format(family))
+            raise NotImplementedError(
+                "socket for family {} not implemented".format(family))
         if xtype not in [SOCK_DGRAM, SOCK_STREAM]:
-            raise NotImplementedError("socket type {} not implemented".format(xtype))
+            raise NotImplementedError(
+                "socket type {} not implemented".format(xtype))
         self._family = family
         self._socktype = xtype
         self._protoname = 'udp'
@@ -107,15 +113,22 @@ class socket(object):
         self._remote_addr = (None,None)
         self._local_addr = ('0.0.0.0',_get_ephemeral_port())
 
-        log_debug("Adding firewall/bpf rule {} dst port {}".format(self._protoname, self._local_addr[1]))
+        log_debug("Adding firewall/bpf rule {} dst port {}".format(
+            self._protoname, self._local_addr[1]))
         try:
-            Firewall.add_rule("{}:{}".format(self._protoname, self._local_addr[1]))
+            Firewall.add_rule("{}:{}".format(self._protoname,
+                self._local_addr[1]))
             # only get packets with destination port of local port, or any
             # icmp packets
-            PcapLiveDevice.set_bpf_filter_on_all_devices("{} dst port {} or icmp".format(self._protoname, self._local_addr[1]))
-        except: 
+            PcapLiveDevice.set_bpf_filter_on_all_devices(
+                # FIXME: icmp6
+                "{} dst port {} or icmp".format(self._protoname,
+                                                self._local_addr[1]))
+        except:
             with yellow():
-                print ("Unable to complete socket emulation setup (failed on firewall/bpf filter installation).  Did you start the program via srpy?")
+                print ("Unable to complete socket emulation setup (failed on "
+                       "firewall/bpf filter installation).  Did you start the "
+                       " program via srpy?")
                 import traceback
             print ("Here is the raw exception information:")
             with red():
@@ -123,7 +136,8 @@ class socket(object):
             sys.exit()
 
         ApplicationLayer.init()
-        self._socket_queue_to_stack, self._socket_queue_from_stack = ApplicationLayer.queues()
+        self._socket_queue_to_stack, self._socket_queue_from_stack = \
+            ApplicationLayer.queues()
 
     @property
     def family(self):
@@ -153,9 +167,11 @@ class socket(object):
         # set stack to only allow packets through for addr/port
         self._local_addr = address
         # update firewall and pcap filters
-        log_debug("Updating firewall/bpf rule on bind(): {} dst port {}".format(self._protoname, self._local_addr[1]))
+        log_debug("Updating firewall/bpf rule on bind(): {} dst port {}".format(
+            self._protoname, self._local_addr[1]))
         Firewall.add_rule("{}:{}".format(self._protoname, self._local_addr[1]))
-        PcapLiveDevice.set_bpf_filter_on_all_devices("{} dst port {}".format(self._protoname, self._local_addr[1]))
+        PcapLiveDevice.set_bpf_filter_on_all_devices("{} dst port {}".format(
+            self._protoname, self._local_addr[1]))
 
     def connect(self, address):
         self._remote_addr = address
@@ -200,7 +216,8 @@ class socket(object):
 
     def _recv(self, nbytes):
         try:
-            data,sourceaddr,destaddr = self._socket_queue_from_stack.get(block=self._block, timeout=self._timeout)
+            data,sourceaddr,destaddr = self._socket_queue_from_stack.get(
+                block=self._block, timeout=self._timeout)
             log_debug("recv from {}<-{}:{}".format(data,sourceaddr,destaddr))
             return data,sourceaddr,destaddr
         except Empty as e:
@@ -218,7 +235,8 @@ class socket(object):
         self._send(data, addr)
 
     def _send(self, data, remote_addr):
-        log_debug("socketemu send: {}->{}:{}".format(data, self._local_addr, remote_addr))
+        log_debug("socketemu send: {}->{}:{}".format(data,
+            self._local_addr, remote_addr))
         self._socket_queue_to_stack.put( (data, self._local_addr, remote_addr) )
 
     def sendall(self, data, flags):
@@ -241,4 +259,3 @@ class socket(object):
 
     def shutdown(self, flag):
         pass
-
