@@ -241,7 +241,7 @@ class ICMPDestinationUnreachable(ICMPData):
 
     @nexthopmtu.setter
     def nexthopmtu(self, value):
-        self.nexthopmtu = int(value)
+        self._nexthopmtu = int(value)
 
     def __str__(self):
         return '{} NextHopMTU: {}'.format(super().__str__(), self._nexthopmtu)
