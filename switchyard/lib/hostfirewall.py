@@ -25,6 +25,7 @@ def _sendcmd(progargs, cmdlist):
     st = pipe.wait()
     return st,output
 
+
 class Firewall(object):
     _instance = None
     def __init__(self, interfaces, rules):

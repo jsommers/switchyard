@@ -79,9 +79,9 @@ if __name__ == '__main__':
         log_failure("You need to specify the name of your module to run as the last argument")
         sys.exit()
 
-    waiters = 1
-    if args.app:
-        waiters = 2
+    waiters = 1 # wait for app layer to init
+    if args.app and not args.testmode:
+        waiters += 1 # also wait for firewall to init if not in test
     barrier = Barrier(waiters)
 
     if args.app:
