@@ -21,6 +21,11 @@ class ICMPv6(ICMP):
         self._code = self._valid_codes_map[self._type].EchoRequest
         self._icmpdata = ICMPv6ClassFromType(self._type)()
         self._checksum = 0
+        # if kwargs are given, must ensure that type gets set
+        # before code due to dependencies on validity.
+        if 'icmptype' in kwargs:
+            self.icmptype = kwargs['icmptype']
+            del kwargs['icmptype']
         super().__init__(**kwargs)
 
     def checksum(self):

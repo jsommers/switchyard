@@ -35,6 +35,11 @@ class ICMP(PacketHeaderBase):
         self._code = self._valid_codes_map[self._type].EchoRequest
         self._icmpdata = ICMPEchoRequest()
         self._checksum = 0
+        # because of dependencies between type/code, must ensure that
+        # if icmptype is a keyword arg it gets set *first*
+        if 'icmptype' in kwargs:
+            self.icmptype = kwargs['icmptype']            
+            del kwargs['icmptype']
         super().__init__(**kwargs)
 
     def size(self):
@@ -78,9 +83,12 @@ class ICMP(PacketHeaderBase):
         return self._code
 
     @icmptype.setter
-    def icmptype(self,value):
+    def icmptype(self, value):
         if not isinstance(value, self._valid_types):
-            raise ValueError("ICMP type must be an {} enumeration".format(type(self._valid_types)))
+            value = self._valid_types(value)
+            # JS: revised following line as above; too restrictive
+            # raise ValueError("ICMP type must be an {} enumeration".format(type(self._valid_types)))
+
         cls = self._classtype_from_icmptype(value)
         if not issubclass(self.icmpdata.__class__, cls):
             self.icmpdata = cls()
@@ -95,11 +103,15 @@ class ICMP(PacketHeaderBase):
     def icmpcode(self,value):
         if issubclass(value.__class__, IntEnum):
             validcodes = self._valid_codes_map[self._type]
-            if value not in validcodes:
-                raise ValueError("Invalid code {} for type {}".format(value, self._type))
+            self._check_typecode_consistency(value) 
             self._code = value
         elif isinstance(value, int):
             self._code = self._valid_codes_map[self.icmptype](value)
+
+    def _check_typecode_consistency(self, xcode):
+        validcodes = self._valid_codes_map[self._type]
+        if xcode not in validcodes:
+            raise ValueError("Invalid code {} for type {}".format(xcode, self._type.name, self._type))
 
     def __str__(self):
         typecode = self.icmptype.name

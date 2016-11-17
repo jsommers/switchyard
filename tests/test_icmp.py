@@ -4,14 +4,24 @@ from switchyard.lib.packet.common import ICMPType
 import unittest 
 
 class ICMPPacketTests(unittest.TestCase):
-    def testBadCode(self):
+    def testBadTypeCode(self):
         i = ICMP()
         with self.assertRaises(ValueError):
-            i.icmptype = 0
+            i.icmptype = 2
+
+        with self.assertRaises(ValueError):
+            i.icmptype = 19
+
+        with self.assertRaises(ValueError):
+            i.icmptype = 49
 
         with self.assertRaises(ValueError):
             i.icmpcode = ICMPType.EchoRequest
 
+        with self.assertRaises(ValueError):
+            i.icmpcode = 1
+
+        i.icmptype = 0 # echo reply; any code other than 0 is invalid
         with self.assertRaises(ValueError):
             i.icmpcode = 1
 
@@ -121,6 +131,42 @@ class ICMPPacketTests(unittest.TestCase):
         i.from_bytes(b'\x04\x00\xfb\xff\x00\x00\x00\x00')
         self.assertEqual(i.icmptype, ICMPType.SourceQuench)
         self.assertIsInstance(i.icmpdata, ICMPSourceQuench)
+
+        # not enough bytes
+        with self.assertRaises(Exception):
+            i.from_bytes(b'\x04\x00\xfb\xff\x00\x00\x00')
+
+    def testUnreachableMtu(self):
+        i = ICMP()
+        i.icmptype = ICMPType.DestinationUnreachable
+        i.icmpdata.nexthopmtu = 5
+        i.icmpdata.origdgramlen = 42
+        self.assertEqual(i.to_bytes()[-1], 5) 
+        self.assertEqual(i.icmpdata.origdgramlen, 42)
+
+    def testICMPKwArgsValid(self):
+        icmptype = ICMPType.DestinationUnreachable
+        # valid combination
+        i = ICMP(icmptype=icmptype, icmpcode=ICMPTypeCodeMap[icmptype].NetworkUnreachable)
+        self.assertIsInstance(i.icmpdata, ICMPDestinationUnreachable)
+        i2 = ICMP()
+        i2.from_bytes(i.to_bytes())
+        self.assertIsInstance(i2.icmpdata, ICMPDestinationUnreachable)
+        self.assertEqual(i2.icmptype, icmptype)
+        self.assertEqual(i2.icmpcode, ICMPTypeCodeMap[icmptype].NetworkUnreachable)
+
+    def testICMPKwArgsInvalid1(self):
+        with self.assertRaises(ValueError):
+            i = ICMP(icmptype=0, icmpcode=45)
+
+    def testICMPKwArgsInvalid2(self):
+        with self.assertRaises(ValueError):
+            i = ICMP(icmptype=ICMPType.EchoRequest, icmpcode=ICMPTypeCodeMap[ICMPType.DestinationUnreachable].CommunicationAdministrativelyProhibited)
+
+    def testStringify(self):
+        i = ICMP(icmptype=3, icmpcode=8)
+        s = str(i)
+        self.assertTrue(s.startswith('ICMP DestinationUnreachable:SourceHostIsolated'))
 
 
 if __name__ == '__main__':
