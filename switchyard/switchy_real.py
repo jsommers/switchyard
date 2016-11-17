@@ -183,7 +183,6 @@ class PyLLNet(LLNetBase):
                 # put dummy pkt in queue to unblock a 
                 # possibly stuck user thread
                 self.pktqueue.put( (None,None,None) )
-            self.pktqueue = Queue()
 
     @staticmethod
     def __low_level_dispatch(pcapdev, devname, pktqueue):
@@ -247,6 +246,8 @@ class PyLLNet(LLNetBase):
                 else:
                     return dev,pkt
             except Empty:
+                if not PyLLNet.running:
+                    raise Shutdown()
                 raise NoPackets()
         raise Shutdown()
 
