@@ -7,14 +7,15 @@ To run Switchyard in test mode, you should have a "scenario" file that includes 
 
 Let's say your program is named ``myhub.py``.  To invoke Switchyard in test mode and subject your program to a set of tests, at minimum you would invoke ``srpy.py`` as follows::
 
-    $ srpy.py -t -s hubtests.srpy myhub
+    $ srpy.py -t hubtests.srpy myhub
 
-Note that the ``-t`` option puts ``srpy`` in test mode.  The ``-s`` option
-specifies the test scenario to be executed, and the final argument is the
+Note that the ``-t`` option puts ``srpy`` in test mode.  The argument to
+the ``-t`` option should be the name of the 
+test scenario to be executed, and the final argument is the
 name of your code.  It doesn't matter whether you include the ``.py`` 
 extension on the end of your program name, so::
 
-    $ srpy.py -t -s hubtests.srpy myhub.py
+    $ srpy.py -t hubtests.srpy myhub.py
 
 would work the same as above.
 
@@ -51,7 +52,7 @@ Say that we've done something wrong in our code, which causes a test expectation
 
 ::
 
-    $ ./srpy.py -t -s examples/hubtests.py xhub.py  
+    $ ./srpy.py -t examples/hubtests.py xhub.py  
     19:15:56 2015/01/10     INFO Starting test scenario examples/hubtests.py
 
     Results for test scenario hub tests:1 passed, 1 failed, 6 pending

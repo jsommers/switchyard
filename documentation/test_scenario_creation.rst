@@ -128,6 +128,6 @@ Compiling a test scenario
 
 A test scenario can be run *directly* with ``srpy``, or it can be *compiled* into a form that can be distributed without giving away the code that was used to construct the reference packets.  To compile a test scenario, you can simply invoke ``srpy`` with the ``-c`` flag, as follows::
 
-    ./srpy.py -c -s examples/hubtests.py
+    ./srpy.py -c examples/hubtests.py
 
-The output from this command should be a new file named ``hubtests.srpy`` containing the obfuscated test scenario.  This file can be used as the argument to the ``-s`` option, just as you would supply a "normal" Python (.py) test scenario file.
+The output from this command should be a new file named ``hubtests.srpy`` containing the obfuscated test scenario.  This file can be used as the argument to the ``-c`` option.
