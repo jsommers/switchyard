@@ -1,6 +1,5 @@
 import sys
 from queue import Queue, Empty
-from threading import Thread, Lock
 from socket import timeout, AddressFamily, AF_INET, SOCK_DGRAM, SOCK_STREAM, IPPROTO_TCP, IPPROTO_UDP
 from socket import error as sockerr
 from subprocess import getoutput
@@ -40,8 +39,6 @@ def port_in_use(p):
     ports = _gather_ports()
     return p in ports
 
-_app_layer_lock = Lock()
-
 class ApplicationLayer(object):
     _init = False
     _to_app = None
@@ -53,12 +50,12 @@ class ApplicationLayer(object):
                            "instead.".format(self.__class__.__name__))
     @staticmethod
     def init():
-        with _app_layer_lock:
-            if ApplicationLayer._init:
-                return
-            ApplicationLayer._init = True
-            ApplicationLayer._to_app = Queue()
-            ApplicationLayer._from_app = Queue()
+        log_debug("Initializing application layer")
+        if ApplicationLayer._init:
+            return
+        ApplicationLayer._init = True
+        ApplicationLayer._to_app = Queue()
+        ApplicationLayer._from_app = Queue()
 
     @staticmethod
     def recv_from_app(timeout=1.0):
@@ -79,12 +76,6 @@ class ApplicationLayer(object):
         return ApplicationLayer._from_app, ApplicationLayer._to_app
 
 
-def setup_switchyard_stack(proto, localaddr):
-    log_debug("Starting up stack thread")
-    ApplicationLayer.init()
-    return ApplicationLayer.queues()
-
-
 # FIXME: need to import lots of stuff out of base socket module so that we can avoid
 # completely reinventing the wheel here
 
@@ -92,7 +83,9 @@ class socket(object):
     __slots__ =  ('_family','_socktype','_protoname','_proto',
         '_timeout','_block','_remote_addr','_local_addr',
         '_socket_queue_to_stack','_socket_queue_from_stack')
+
     def __init__(self, family, xtype, proto=0, fileno=0):
+        log_debug("In socket __init__")
         family = AddressFamily(family)
         # FIXME: ip6
         if family != AddressFamily.AF_INET:

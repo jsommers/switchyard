@@ -1,7 +1,7 @@
 import sys
 import importlib
 import os
-from switchyard.lib.common import log_failure
+from switchyard.lib.common import log_failure, log_debug
 
 def import_or_die(module_name, entrypoint_names):
     '''
@@ -9,6 +9,7 @@ def import_or_die(module_name, entrypoint_names):
 
     (str) -> function reference
     '''
+    log_debug("Importing {}".format(module_name))
     if module_name.endswith('.py'):
         module_name,ext = os.path.splitext(module_name)
     modname = os.path.basename(module_name)
@@ -26,7 +27,7 @@ def import_or_die(module_name, entrypoint_names):
         try:
             user_module = importlib.import_module(modname)
         except ImportError as e:
-            log_failure("Fatal error: couldn't import module {}".format(str(e)))
+            log_failure("Fatal error: couldn't import module {} while executing {}".format(str(e), module_name))
             sys.exit(-1)
 
     # if there aren't any functions to call into, then the caller

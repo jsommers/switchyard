@@ -28,11 +28,14 @@ def _sendcmd(progargs, cmdlist):
 
 class Firewall(object):
     _instance = None
-    def __init__(self, interfaces, rules):
+    def __init__(self, interfaces, rules, testmode=False):
         if Firewall._instance:
             raise Exception("Firewall can only be instantiated once.")
         Firewall._instance = self
-        cls = _osmap.get(sys.platform, None)
+        if testmode:
+            cls = TestModeFirewall
+        else:
+            cls = _osmap.get(sys.platform, None)
         if cls is None:
             raise Exception("{} can't run on {}".format(self.__class__.__name__, sys.platform))
         self._firewall_delegate = cls(interfaces, rules)
@@ -65,6 +68,22 @@ class AbstractFirewall(metaclass=ABCMeta):
     @abstractmethod
     def add_rule(self, rule):
         pass
+
+
+class TestModeFirewall(AbstractFirewall):
+    def __init__(self, interfaces, rules):
+        super().__init__(interfaces, rules)
+        self._rules = []
+
+    def block(self):
+        pass
+
+    def unblock(self):
+        pass
+
+    def add_rule(self, rule):
+        self._rules.append(rule)
+
 
 class LinuxFirewall(AbstractFirewall):
     def __init__(self, interfaces, rules):
