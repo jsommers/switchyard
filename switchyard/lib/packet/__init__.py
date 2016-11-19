@@ -1,22 +1,22 @@
-from switchyard.lib.packet.packet import *
-from switchyard.lib.packet.common import *
+from .packet import *
+from .common import *
 
-from switchyard.lib.packet.ethernet import *
-from switchyard.lib.packet.arp import *
-from switchyard.lib.packet.dhcp import *
+from .ethernet import *
+from .arp import *
+from .dhcp import *
 
-from switchyard.lib.packet.ipv4 import *
-from switchyard.lib.packet.ipv6 import *
-from switchyard.lib.packet.icmpv6 import *
+from .ipv4 import *
+from .ipv6 import *
+from .icmpv6 import *
 
-from switchyard.lib.packet.udp import *
-from switchyard.lib.packet.tcp import *
-from switchyard.lib.packet.icmp import *
-from switchyard.lib.packet.igmp import *
+from .udp import *
+from .tcp import *
+from .icmp import *
+from .igmp import *
 
-from switchyard.lib.packet.ripv2 import *
+from .ripv2 import *
 
-from switchyard.lib.packet.util import *
+from .util import *
 
-from switchyard.lib.packet.null import *
+from .null import *
 

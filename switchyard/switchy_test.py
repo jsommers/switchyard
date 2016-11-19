@@ -16,12 +16,12 @@ import copy
 import textwrap
 from collections import namedtuple
 
-from switchyard.lib.packet import *
-from switchyard.lib.address import *
-from switchyard.lib.common import *
-from switchyard.lib.testing import *
-from switchyard.lib.importcode import import_or_die
-from switchyard.lib.debug import *
+from lib.packet import *
+from lib.address import *
+from lib.common import *
+from lib.testing import *
+from lib.importcode import import_or_die
+from lib.debug import *
 
 
 class FakePyLLNet(LLNetBase):

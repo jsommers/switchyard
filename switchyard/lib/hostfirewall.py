@@ -4,7 +4,7 @@ import sys
 import re
 from subprocess import getstatusoutput, Popen, PIPE, STDOUT
 
-from switchyard.lib.common import log_warn, log_info, log_debug
+from .common import log_warn, log_info, log_debug
 
 #
 # Rule: 

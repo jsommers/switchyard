@@ -1,7 +1,7 @@
 import sys
 import importlib
 import os
-from switchyard.lib.common import log_failure, log_debug
+from .common import log_failure, log_debug
 
 def import_or_die(module_name, entrypoint_names):
     '''

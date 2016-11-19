@@ -1,4 +1,4 @@
-from switchyard.lib.packet import *
+from . import *
 
 def create_ip_arp_reply(srchw, dsthw, srcip, targetip):
     '''

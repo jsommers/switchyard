@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 
-import sys
-import os
-sys.path.append(os.getcwd())
-
-import switchyard.versioncheck
+# import sys
+# import os
+# sys.path.append(os.getcwd())
 
 import argparse
 from threading import Thread, Barrier
 from textwrap import indent
 
-from switchyard.lib.textcolor import *
-from switchyard.lib.hostfirewall import Firewall
-from switchyard.switchy_test import main_test
-from switchyard.switchy_real import main_real, PyLLNet
-from switchyard.lib.importcode import import_or_die
-from switchyard.lib.socket.socketemu import ApplicationLayer
-from switchyard.lib.common import *
-from switchyard.lib.testing import PacketFormatter
+import versioncheck
+
+from lib.textcolor import *
+from lib.hostfirewall import Firewall
+from switchy_test import main_test
+from switchy_real import main_real, PyLLNet
+from lib.importcode import import_or_die
+from lib.socket.socketemu import ApplicationLayer
+from lib.common import *
+from lib.testing import PacketFormatter
 
 setup_ok = False
 netobj = None

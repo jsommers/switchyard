@@ -2,8 +2,8 @@ import struct
 from enum import IntEnum
 from ipaddress import IPv4Network
 
-from switchyard.lib.packet.packet import PacketHeaderBase,Packet,RawPacketContents
-from switchyard.lib.address import SpecialIPv4Addr, IPv4Address
+from .packet import PacketHeaderBase,Packet,RawPacketContents
+from ..address import SpecialIPv4Addr, IPv4Address
 
 '''
 References:

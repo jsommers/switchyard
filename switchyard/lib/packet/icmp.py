@@ -1,8 +1,9 @@
-from switchyard.lib.packet.packet import PacketHeaderBase,Packet
-from switchyard.lib.packet.common import checksum, ICMPType, ICMPTypeCodeMap
 import struct
 from enum import IntEnum
 from ipaddress import IPv4Address
+
+from .packet import PacketHeaderBase,Packet
+from .common import checksum, ICMPType, ICMPTypeCodeMap
 
 '''
 References: https://www.ietf.org/rfc/rfc792.txt

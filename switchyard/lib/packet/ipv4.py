@@ -3,13 +3,13 @@ from abc import ABCMeta, abstractmethod
 from ipaddress import IPv4Address
 from collections import namedtuple
 
-from switchyard.lib.packet.packet import PacketHeaderBase,Packet
-from switchyard.lib.address import EthAddr,IPAddr,SpecialIPv4Addr,SpecialEthAddr
-from switchyard.lib.packet.common import IPProtocol,IPFragmentFlag,IPOptionNumber, checksum
-from switchyard.lib.packet.icmp import ICMP
-from switchyard.lib.packet.igmp import IGMP
-from switchyard.lib.packet.udp import UDP
-from switchyard.lib.packet.tcp import TCP
+from .packet import PacketHeaderBase,Packet
+from ..address import EthAddr,IPAddr,SpecialIPv4Addr,SpecialEthAddr
+from .common import IPProtocol,IPFragmentFlag,IPOptionNumber, checksum
+from .icmp import ICMP
+from .igmp import IGMP
+from .udp import UDP
+from .tcp import TCP
 
 '''
 References:

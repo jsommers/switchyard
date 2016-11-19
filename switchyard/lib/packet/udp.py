@@ -1,6 +1,7 @@
-from switchyard.lib.packet.packet import PacketHeaderBase
-from switchyard.lib.packet.common import checksum
 import struct
+
+from .packet import PacketHeaderBase
+from .common import checksum
 
 '''
 References:

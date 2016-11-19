@@ -1,8 +1,9 @@
-from switchyard.lib.packet.packet import PacketHeaderBase,Packet
-from switchyard.lib.packet.ipv4 import IPv4
-from switchyard.lib.packet.ipv6 import IPv6
 import struct
 import socket
+
+from .packet import PacketHeaderBase,Packet
+from .ipv4 import IPv4
+from .ipv6 import IPv6
 
 AFTypeClasses = {
     socket.AF_INET: IPv4,

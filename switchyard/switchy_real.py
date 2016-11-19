@@ -10,10 +10,10 @@ import textwrap
 from queue import Queue,Empty
 from socket import gethostname
 
-from switchyard.lib.address import *
-from switchyard.lib.packet import *
-from switchyard.lib.pcapffi import *
-from switchyard.lib.importcode import import_or_die
+from lib.address import *
+from lib.packet import *
+from lib.pcapffi import *
+from lib.importcode import import_or_die
 
 _dlt_to_decoder = {}
 _dlt_to_decoder[Dlt.DLT_EN10MB] = lambda raw: Packet(raw, first_header=Ethernet)
@@ -29,9 +29,9 @@ jsommers@colgate.edu
 
 USERMAIN = 'switchy_main'
 
-from switchyard.lib.common import Interface, SwitchyException, Shutdown, NoPackets, LLNetBase
-from switchyard.lib.common import setup_logging, log_info, log_debug, log_warn, log_failure
-from switchyard.lib.textcolor import *
+from lib.common import Interface, SwitchyException, Shutdown, NoPackets, LLNetBase
+from lib.common import setup_logging, log_info, log_debug, log_warn, log_failure
+from lib.textcolor import *
 
 
 class PyLLNet(LLNetBase):

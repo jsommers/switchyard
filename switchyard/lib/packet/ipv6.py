@@ -3,15 +3,15 @@ from ipaddress import IPv6Address
 from abc import ABCMeta, abstractmethod
 from enum import IntEnum
 
-from switchyard.lib.common import log_warn
-from switchyard.lib.packet.packet import PacketHeaderBase,Packet
-from switchyard.lib.address import EthAddr,IPAddr,SpecialIPv6Addr,SpecialEthAddr
-from switchyard.lib.packet.common import IPProtocol, checksum
+from ..common import log_warn
+from .packet import PacketHeaderBase,Packet
+from ..address import EthAddr,IPAddr,SpecialIPv6Addr,SpecialEthAddr
+from .common import IPProtocol, checksum
 
-from switchyard.lib.packet.icmpv6 import ICMPv6
-from switchyard.lib.packet.tcp import TCP
-from switchyard.lib.packet.udp import UDP
-from switchyard.lib.packet.igmp import IGMP
+from .icmpv6 import ICMPv6
+from .tcp import TCP
+from .udp import UDP
+from .igmp import IGMP
 
 '''
 References:

@@ -1,10 +1,10 @@
-from switchyard.lib.packet.packet import PacketHeaderBase,Packet
-from switchyard.lib.address import EthAddr,SpecialEthAddr
+from .packet import PacketHeaderBase,Packet
+from ..address import EthAddr,SpecialEthAddr
 import struct
-from switchyard.lib.packet.arp import Arp
-from switchyard.lib.packet.ipv4 import IPv4
-from switchyard.lib.packet.ipv6 import IPv6
-from switchyard.lib.packet.common import EtherType
+from .arp import Arp
+from .ipv4 import IPv4
+from .ipv6 import IPv6
+from .common import EtherType
 
 
 class Vlan(PacketHeaderBase):

@@ -7,10 +7,10 @@ import re
 import random
 from textwrap import indent
 
-from switchyard.lib.hostfirewall import Firewall
-from switchyard.lib.pcapffi import PcapLiveDevice
-from switchyard.lib.common import NoPackets, log_debug, log_info, setup_logging, red, yellow
-from switchyard.lib.packet import IPProtocol
+from ..hostfirewall import Firewall
+from ..pcapffi import PcapLiveDevice
+from ..common import NoPackets, log_debug, log_info, setup_logging, red, yellow
+from ..packet import IPProtocol
 
 def _gather_ports():
     portset = set()

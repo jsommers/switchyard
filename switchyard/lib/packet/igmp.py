@@ -1,5 +1,6 @@
-from switchyard.lib.packet.packet import PacketHeaderBase,Packet
 import struct
+
+from .packet import PacketHeaderBase,Packet
 
 '''
 References:

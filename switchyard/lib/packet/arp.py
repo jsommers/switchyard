@@ -1,7 +1,7 @@
-from switchyard.lib.packet.packet import PacketHeaderBase,Packet
-from switchyard.lib.address import EthAddr,IPAddr,SpecialIPv4Addr,SpecialEthAddr
+from .packet import PacketHeaderBase,Packet
+from ..address import EthAddr,IPAddr,SpecialIPv4Addr,SpecialEthAddr
 import struct
-from switchyard.lib.packet.common import EtherType, ArpHwType, ArpOperation
+from .common import EtherType, ArpHwType, ArpOperation
 
 '''
 References:

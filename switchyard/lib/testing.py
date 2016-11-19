@@ -1,4 +1,4 @@
-import switchyard.versioncheck
+import versioncheck
 
 import sys
 import argparse
@@ -21,11 +21,12 @@ from abc import ABCMeta, abstractmethod
 from dis import Bytecode
 
 
-from switchyard.lib.packet import *
-from switchyard.lib.address import *
-from switchyard.lib.common import *
-import switchyard.lib.debug as sdebug
-from switchyard.lib.importcode import import_or_die
+from .packet import *
+from .address import *
+from .common import *
+from .importcode import import_or_die
+
+from . import debug as sdebug
 
 
 class PacketFormatter(object):

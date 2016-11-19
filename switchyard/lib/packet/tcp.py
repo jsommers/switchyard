@@ -1,8 +1,9 @@
-from switchyard.lib.packet.packet import PacketHeaderBase,Packet
-from switchyard.lib.packet.common import checksum
 import struct
 from enum import IntEnum
 from abc import ABCMeta, abstractmethod
+
+from .packet import PacketHeaderBase,Packet
+from .common import checksum
 
 '''
 References:

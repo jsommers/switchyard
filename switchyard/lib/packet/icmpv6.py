@@ -1,8 +1,9 @@
 import struct
 from ipaddress import IPv6Address
-from switchyard.lib.packet.icmp import ICMP, ICMPEchoRequest, ICMPEchoReply
-from switchyard.lib.packet.common import ICMPv6Type, ICMPv6TypeCodeMap
-from switchyard.lib.packet.common import checksum as csum
+
+from .icmp import ICMP, ICMPEchoRequest, ICMPEchoReply
+from .common import ICMPv6Type, ICMPv6TypeCodeMap
+from .common import checksum as csum
 
 '''
 References:
