@@ -1,4 +1,4 @@
-import versioncheck
+from .. import versioncheck
 
 import sys
 import argparse
