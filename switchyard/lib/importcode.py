@@ -10,12 +10,15 @@ def import_or_die(module_name, entrypoint_names):
     (str) -> function reference
     '''
     log_debug("Importing {}".format(module_name))
+    module_name = os.path.abspath(module_name)
     if module_name.endswith('.py'):
         module_name,ext = os.path.splitext(module_name)
     modname = os.path.basename(module_name)
     dirname = os.path.dirname(module_name)
+    print(modname)
+    print(dirname)
     if dirname:
-        sys.path.append(os.path.abspath(dirname))
+        sys.path.append(dirname)
 
     # first, try to reload code
     if modname in sys.modules:
@@ -27,8 +30,8 @@ def import_or_die(module_name, entrypoint_names):
         try:
             user_module = importlib.import_module(modname)
         except ImportError as e:
-            log_failure("Fatal error: couldn't import module {} while executing {}".format(str(e), module_name))
-            sys.exit(-1)
+            log_failure("Fatal error: couldn't import module (error: {}) while executing {}".format(str(e), modname))
+            raise ImportError(e)
 
     # if there aren't any functions to call into, then the caller
     # just wanted the module/code to be imported, and that's it.

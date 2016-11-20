@@ -8,7 +8,7 @@ References:
     IETF RFC 768
 '''
 
-# FIXME: currently does *nothing* about checksum
+# FIXME: checksum is broken for ip6
 
 class UDP(PacketHeaderBase):
     __slots__ = ['_srcport','_dstport','_len','_checksum']

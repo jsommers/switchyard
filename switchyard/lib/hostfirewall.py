@@ -120,7 +120,7 @@ class LinuxFirewall(AbstractFirewall):
         cmds = []
         mobj = re.match('(tcp|udp|icmp):(\d+|\*)', rule)
         if mobj:
-            for intf in interfaces:
+            for intf in self._intf:
                 proto,port = mobj.groups()[:2]
                 cmds.append('iptables -t raw -P PREROUTING DROP --protocol {} -i {} --port {}'.format(proto, intf, port))
         elif rule == 'all':
@@ -147,7 +147,8 @@ class LinuxFirewall(AbstractFirewall):
         st,output = getstatusoutput("iptables -t raw -F")
         st,output = _sendcmd(["iptables-restore"], self._saved_iptables)
         for intf in self._intf:
-            st,output = getstatusoutput('sysctl -w net.ipv4.conf.{}.arp_ignore={}'.format(intf, self._arpignore[intf]))
+            if intf in self._arpignore:
+                st,output = getstatusoutput('sysctl -w net.ipv4.conf.{}.arp_ignore={}'.format(intf, self._arpignore[intf]))
 
 class MacOSFirewall(AbstractFirewall):
     def __init__(self, interfaces, rules):

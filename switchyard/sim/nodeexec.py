@@ -9,10 +9,10 @@ from cmd import Cmd
 import re
 from abc import ABCMeta,abstractmethod
 
-from switchyard.lib.common import LLNetBase,NoPackets,Shutdown,log_debug
-from switchyard.monitor import *
-from switchyard.lib.topo import *
-from switchyard.linkem import LinkEmulator
+from ..lib.common import LLNetBase,NoPackets,Shutdown,log_debug
+from .monitor import *
+from ..lib.topo import *
+from .linkem import LinkEmulator
 
 
 EgressPipe = namedtuple('EgressPipe', ['queue','delay','capacity','remote_devname'])

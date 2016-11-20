@@ -23,7 +23,6 @@ from .lib.testing import *
 from .lib.importcode import import_or_die
 from .lib.debug import *
 
-
 class FakePyLLNet(LLNetBase):
 
     '''

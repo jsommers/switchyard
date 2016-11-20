@@ -4,12 +4,12 @@ import threading
 import pdb
 import queue
 
-from switchyard.lib.packet import *
-from switchyard.lib.address import EthAddr, IPAddr
-from switchyard.lib import pcapffi
-from switchyard.lib.importcode import import_or_die
-from switchyard.lib.common import LLNetBase, NoPackets, Shutdown
-from switchyard.lib.topo.topobuild import Interface
+from ..lib.packet import *
+from ..lib.address import EthAddr, IPAddr
+from ..lib import pcapffi
+from ..lib.importcode import import_or_die
+from ..lib.common import LLNetBase, NoPackets, Shutdown
+from ..lib.topo.topobuild import Interface
 
 class MonitorManager(object):
     _monitors = []

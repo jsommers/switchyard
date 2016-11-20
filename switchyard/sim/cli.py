@@ -8,14 +8,15 @@ from cmd import Cmd
 import re
 from abc import ABCMeta,abstractmethod
 
-from switchyard.lib.common import *
-from switchyard.monitor import *
-from switchyard.lib.topo import *
-from switchyard.lib.packet import *
-from switchyard.lib.textcolor import *
-from switchyard.lib.importcode import import_or_die
-from switchyard.nodeexec import NodeExecutor
-from switchyard.lib.pcapffi import PcapReader
+from .monitor import *
+from .nodeexec import NodeExecutor
+
+from ..lib.common import *
+from ..lib.topo import *
+from ..lib.packet import *
+from ..lib.textcolor import *
+from ..lib.importcode import import_or_die
+from ..lib.pcapffi import PcapReader
 
 __author__ = 'jsommers@colgate.edu'
 __doc__ = 'SwitchYard Substrate Simulator'
@@ -28,7 +29,7 @@ class Cli(Cmd):
         self.topology = topology
         Cmd.__init__(self)
         self.unsaved_changes = False
-        self.prompt = '{}switchyard>{} '.format(TextColor.CYAN,TextColor.RESET)
+        self.prompt = 'switchyard> '
         self.use_rawinput = True
         self.doc_header = '''
 Below are the set of commands available for the Switchyard simulation substrate command-line interface.   Type help <command> for documentation on any of the commands shown.  
@@ -522,7 +523,8 @@ Note that any command can be abbreviated by typing enough characters to distingu
             if not xcontinue:
                 print ("Not exiting.")                 
                 return
-        log_info("{}Stopping nodes and cleaning up; please wait.{}".format(TextColor.YELLOW,TextColor.RESET))
+        with yellow():
+            log_info("Stopping nodes and cleaning up; please wait.")
         self.stop()
         return True
 
@@ -802,7 +804,8 @@ def run_simulation(topo, **kwargs):
     for t in threading.enumerate():
         log_debug("\tthread at startup {}".format(t.name))
 
-    log_info("{}Starting up switchyard simulation substrate.{}".format(TextColor.YELLOW,TextColor.RESET))
+    with yellow():
+        log_info("Starting up switchyard simulation substrate.")
     glue = SyssGlue(topo, **kwargs)
     cli = Cli(glue, topo)
     try:

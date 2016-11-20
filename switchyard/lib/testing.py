@@ -1,5 +1,3 @@
-from .. import versioncheck
-
 import sys
 import argparse
 import os
