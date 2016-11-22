@@ -120,7 +120,8 @@ if __name__ == '__main__':
         if args.usercode and args.compile:
             log_info("You specified user code to run with compile flag, "
                      "but I'm just doing compile.")
-        with Firewall([], args.fwconfig, testmode=True):
+        setattr(sys, "platform", "test")
+        with Firewall([], args.fwconfig):
             setup_ok = True
             barrier.wait() 
             main_test(args.usercode, args.tests, args)

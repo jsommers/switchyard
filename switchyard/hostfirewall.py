@@ -4,7 +4,7 @@ import sys
 import re
 from subprocess import getstatusoutput, Popen, PIPE, STDOUT
 
-from .lib.log_support import log_warn, log_info, log_debug
+from .lib.logging import log_warn, log_info, log_debug
 
 #
 # Rule: 
@@ -207,5 +207,6 @@ class MacOSFirewall(AbstractFirewall):
 
 _osmap = {
     'darwin': MacOSFirewall,
-    'linux': LinuxFirewall
+    'linux': LinuxFirewall,
+    'test': TestModeFirewall,
 }
