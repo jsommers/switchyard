@@ -15,8 +15,6 @@ def import_or_die(module_name, entrypoint_names):
         module_name,ext = os.path.splitext(module_name)
     modname = os.path.basename(module_name)
     dirname = os.path.dirname(module_name)
-    print(modname)
-    print(dirname)
     if dirname:
         sys.path.append(dirname)
 
