@@ -28,14 +28,11 @@ def _sendcmd(progargs, cmdlist):
 
 class Firewall(object):
     _instance = None
-    def __init__(self, interfaces, rules, testmode=False):
+    def __init__(self, interfaces, rules):
         if Firewall._instance:
             raise Exception("Firewall can only be instantiated once.")
         Firewall._instance = self
-        if testmode:
-            cls = TestModeFirewall
-        else:
-            cls = _osmap.get(sys.platform, None)
+        cls = _osmap.get(sys.platform, None)
         if cls is None:
             raise Exception("{} can't run on {}".format(self.__class__.__name__, sys.platform))
         self._firewall_delegate = cls(interfaces, rules)
