@@ -11,13 +11,13 @@ from textwrap import indent
 import switchyard.versioncheck
 
 from switchyard.lib.textcolor import *
-from switchyard.lib.hostfirewall import Firewall
-from switchyard.switchy_test import main_test
-from switchyard.switchy_real import main_real, PyLLNet
+from switchyard.hostfirewall import Firewall
+from switchyard.llnettest import main_test
+from switchyard.llnetreal import main_real, PyLLNet
 from switchyard.lib.importcode import import_or_die
 from switchyard.lib.socket.socketemu import ApplicationLayer
-from switchyard.lib.common import *
-from switchyard.lib.testing import PacketFormatter
+from switchyard.lib.log_support import setup_logging, log_failure
+from switchyard.test_support import PacketFormatter
 
 setup_ok = False
 netobj = None

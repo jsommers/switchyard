@@ -1,7 +1,7 @@
 import json
 from collections import defaultdict
 from ..address import EthAddr,IPAddr
-from ..common import Interface
+from ..interface import Interface
 from .util import *
 import networkx as nx
 from networkx.readwrite import json_graph

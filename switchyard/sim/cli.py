@@ -11,12 +11,12 @@ from abc import ABCMeta,abstractmethod
 from .monitor import *
 from .nodeexec import NodeExecutor
 
-from ..lib.common import *
 from ..lib.topo import *
 from ..lib.packet import *
 from ..lib.textcolor import *
 from ..lib.importcode import import_or_die
-from ..lib.pcapffi import PcapReader
+from ..lib.log_support import log_debug, log_info
+from ..pcapffi import PcapReader
 
 __author__ = 'jsommers@colgate.edu'
 __doc__ = 'SwitchYard Substrate Simulator'

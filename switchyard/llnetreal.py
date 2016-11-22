@@ -12,8 +12,14 @@ from socket import gethostname
 
 from .lib.address import *
 from .lib.packet import *
-from .lib.pcapffi import *
 from .lib.importcode import import_or_die
+from .lib.exceptions import SwitchyException, Shutdown, NoPackets
+from .lib.interface import Interface
+from .lib.log_support import setup_logging, log_info, log_debug, log_warn, log_failure
+from .lib.textcolor import *
+
+from .pcapffi import *
+from .llnetbase import LLNetBase
 
 _dlt_to_decoder = {}
 _dlt_to_decoder[Dlt.DLT_EN10MB] = lambda raw: Packet(raw, first_header=Ethernet)
@@ -28,10 +34,6 @@ jsommers@colgate.edu
 '''
 
 USERMAIN = 'switchy_main'
-
-from .lib.common import Interface, SwitchyException, Shutdown, NoPackets, LLNetBase
-from .lib.common import setup_logging, log_info, log_debug, log_warn, log_failure
-from .lib.textcolor import *
 
 
 class PyLLNet(LLNetBase):

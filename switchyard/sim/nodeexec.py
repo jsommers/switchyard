@@ -9,7 +9,9 @@ from cmd import Cmd
 import re
 from abc import ABCMeta,abstractmethod
 
-from ..lib.common import LLNetBase,NoPackets,Shutdown,log_debug
+from ..llnetbase import LLNetBase
+from ..lib.exceptions import NoPackets,Shutdown
+from ..lib.log_support import log_debug
 from .monitor import *
 from ..lib.topo import *
 from .linkem import LinkEmulator

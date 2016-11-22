@@ -18,14 +18,11 @@ from collections import namedtuple, defaultdict
 from abc import ABCMeta, abstractmethod
 from dis import Bytecode
 
+from .lib.packet import *
+from .lib.address import *
+from .lib.importcode import import_or_die
 
-from .packet import *
-from .address import *
-from .common import *
-from .importcode import import_or_die
-
-from . import debug as sdebug
-
+from . import debug_support as sdebug
 
 class PacketFormatter(object):
     _fulldisp = False

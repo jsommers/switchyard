@@ -16,12 +16,12 @@ import copy
 import textwrap
 from collections import namedtuple
 
+from .llnetbase import LLNetBase
 from .lib.packet import *
 from .lib.address import *
-from .lib.common import *
-from .lib.testing import *
 from .lib.importcode import import_or_die
-from .lib.debug import *
+from .test_support import *
+from .debug_support import *
 
 class FakePyLLNet(LLNetBase):
 

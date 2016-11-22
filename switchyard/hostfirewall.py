@@ -4,7 +4,7 @@ import sys
 import re
 from subprocess import getstatusoutput, Popen, PIPE, STDOUT
 
-from .common import log_warn, log_info, log_debug
+from .lib.log_support import log_warn, log_info, log_debug
 
 #
 # Rule: 
