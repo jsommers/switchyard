@@ -7,7 +7,7 @@ import argparse
 
 from switchyard import versioncheck
 
-from switchyard.lib.log_support import setup_logging
+from switchyard.lib.logging import setup_logging
 from switchyard.lib.topo import *
 from switchyard.sim.cli import run_simulation
 

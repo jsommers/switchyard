@@ -11,7 +11,7 @@ from abc import ABCMeta,abstractmethod
 
 from ..llnetbase import LLNetBase
 from ..lib.exceptions import NoPackets,Shutdown
-from ..lib.log_support import log_debug
+from ..lib.logging import log_debug
 from .monitor import *
 from ..lib.topo import *
 from .linkem import LinkEmulator

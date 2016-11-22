@@ -13,9 +13,9 @@ from .nodeexec import NodeExecutor
 
 from ..lib.topo import *
 from ..lib.packet import *
-from ..lib.textcolor import *
-from ..lib.importcode import import_or_die
-from ..lib.log_support import log_debug, log_info
+from ..textcolor import *
+from ..importcode import import_or_die
+from ..lib.logging import log_debug, log_info
 from ..pcapffi import PcapReader
 
 __author__ = 'jsommers@colgate.edu'

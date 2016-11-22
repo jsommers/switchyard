@@ -7,7 +7,7 @@ import queue
 from ..lib.packet import *
 from ..lib.address import EthAddr, IPAddr
 from .. import pcapffi
-from ..lib.importcode import import_or_die
+from ..importcode import import_or_die
 from ..llnetbase import LLNetBase
 from ..lib.exceptions import NoPackets, Shutdown
 from ..lib.topo.topobuild import Interface
