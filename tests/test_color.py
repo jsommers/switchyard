@@ -1,4 +1,4 @@
-from switchyard.lib.textcolor import green, red, blue, cyan, magenta, yellow
+from switchyard.textcolor import green, red, blue, cyan, magenta, yellow
 import unittest 
 
 class ColorlibTests(unittest.TestCase):

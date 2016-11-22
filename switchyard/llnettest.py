@@ -19,14 +19,16 @@ from collections import namedtuple
 from .llnetbase import LLNetBase
 from .lib.packet import *
 from .lib.address import *
-from .lib.importcode import import_or_die
-from .test_support import *
-from .debug_support import *
+from .importcode import import_or_die
+from .lib.testing import *
+from .lib.debugging import *
+from .lib.logging import log_debug, log_info, log_failure
+from .lib.exceptions import *
 
-class FakePyLLNet(LLNetBase):
+class LLNetTest(LLNetBase):
 
     '''
-    A class that can used for testing code that uses PyLLNet.  Doesn't
+    A class that can used for testing code that uses LLNetBase.  Doesn't
     actually do any "real" network interaction; just manufactures
     packets of various sorts to test whether an IP router using this
     class behaves in what appear to be correct ways.
@@ -48,7 +50,7 @@ class FakePyLLNet(LLNetBase):
 
     def shutdown(self):
         '''
-        For FakePyLLNet, do nothing.
+        For LLNetTest, do nothing.
         '''
         pass
 
@@ -81,7 +83,7 @@ class FakePyLLNet(LLNetBase):
 
     def send_packet(self, devname, pkt):
         if self.scenario.done():
-            raise ScenarioFailure(
+            raise TestScenarioFailure(
                 "send_packet was called, but the test scenario was finished.")
 
         if isinstance(devname, int):
@@ -149,7 +151,7 @@ def run_tests(scenario_names, usercode_entry_point, options):
         sobj = get_test_scenario_from_file(sname)
         sobj.write_files()
         sobj.do_setup()
-        net = FakePyLLNet(sobj)
+        net = LLNetTest(sobj)
 
         log_info("Starting test scenario {}".format(sname))
         exc, value, tb = None, None, None
@@ -158,7 +160,7 @@ def run_tests(scenario_names, usercode_entry_point, options):
             usercode_entry_point(net)
         except Shutdown:
             pass
-        except ScenarioFailure:
+        except TestScenarioFailure:
             exc, value, tb = sys.exc_info()
             if sobj.get_failed_test():
                 message = '''Your code didn't crash, but a test failed.'''

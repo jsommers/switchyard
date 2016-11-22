@@ -2,7 +2,7 @@ import sys
 import importlib
 import os
 
-from .log_support import log_failure, log_debug
+from .lib.logging import log_failure, log_debug
 
 def import_or_die(module_name, entrypoint_names):
     '''

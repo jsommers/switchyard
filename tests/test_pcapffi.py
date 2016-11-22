@@ -1,7 +1,7 @@
 import unittest 
 import os
 
-from switchyard.lib.pcapffi import *
+from switchyard.pcapffi import *
 from switchyard.lib.packet import *
 
 class PcapFfiTests(unittest.TestCase):

@@ -5,10 +5,10 @@ import unittest
 import copy
 import time
 
-from switchyard.test_support import *
+from switchyard.lib.testing import *
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
-from switchyard.lib.log_support import setup_logging
+from switchyard.lib.logging import setup_logging
 from switchyard.lib.exceptions import *
 
 
@@ -29,7 +29,7 @@ class SrpyMatcherTest(unittest.TestCase):
         pkt = Ethernet() + IPv4() + ICMP()
         matcher = PacketMatcher(pkt, exact=True)
         pkt[0].ethertype = EtherType.ARP
-        self.assertRaises(ScenarioFailure, matcher.match, pkt)
+        self.assertRaises(TestScenarioFailure, matcher.match, pkt)
 
     def testWildcardMatch0(self):
         pkt = Ethernet() + IPv4()
@@ -60,7 +60,7 @@ class SrpyMatcherTest(unittest.TestCase):
     def testPredicateMatch2(self):
         pkt = Ethernet() + IPv4()
         matcher = PacketMatcher(pkt, '''lambda pkt: pkt[0].src == '00:00:00:00:00:01' ''', exact=False)
-        with self.assertRaises(ScenarioFailure):
+        with self.assertRaises(TestScenarioFailure):
             matcher.match(pkt)
 
     def testPredicateMatch3(self):
@@ -107,7 +107,7 @@ class SrpyMatcherTest(unittest.TestCase):
         matcher = PacketMatcher(pkt, wildcard=['arp_tha'], exact=False)
         self.assertTrue(matcher.match(xcopy))
 
-        with self.assertRaises(ScenarioFailure):
+        with self.assertRaises(TestScenarioFailure):
             pkt[1].senderhwaddr = '00:ff:00:ff:00:ff'
             matcher = PacketMatcher(pkt, wildcard=['arp_tha'], exact=False)
             matcher.match(xcopy)
@@ -126,7 +126,7 @@ class SrpyMatcherTest(unittest.TestCase):
         self.assertEqual(rv, SwitchyTestEvent.MATCH_SUCCESS)
 
         outev = PacketOutputEvent("eth1", pkt, wildcard=('arp_tha','dl_src'), exact=False)
-        with self.assertRaises(ScenarioFailure) as exc:
+        with self.assertRaises(TestScenarioFailure) as exc:
             pktcopy[1].senderhwaddr = '00:ff:00:ff:00:ff'
             rv = outev.match(SwitchyTestEvent.EVENT_OUTPUT, device='eth1', packet=pktcopy)
         self.assertNotIn("IPv4", str(exc.exception))

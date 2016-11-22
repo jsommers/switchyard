@@ -1,11 +1,18 @@
 from ipaddress import ip_interface
+from enum import Enum
 
 from .address import IPAddr,EthAddr
+from .logging import log_debug
 from ..pcapffi import pcap_devices
-from .log_support import log_debug
+
+class InterfaceType(Enum):
+    Unknown=1
+    Loopback=2
+    Wired=3
+    Wireless=4
 
 class Interface(object):
-    __slots__ = ['__name','__ethaddr','__ipaddr','__ifnum']
+    __slots__ = ['__name','__ethaddr','__ipaddr','__ifnum','__iftype']
     __nextnum = 0
 
     '''
@@ -22,6 +29,7 @@ class Interface(object):
             ipaddr = "{}/{}".format(ipaddr,netmask)
         self.ipaddr = ipaddr
         self.ifnum = ifnum
+        self.__iftype = InterfaceType.Unknown
 
     @property
     def name(self):

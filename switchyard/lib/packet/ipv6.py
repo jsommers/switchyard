@@ -3,7 +3,7 @@ from ipaddress import IPv6Address
 from abc import ABCMeta, abstractmethod
 from enum import IntEnum
 
-from ..log_support import log_warn
+from ..logging import log_warn
 from .packet import PacketHeaderBase,Packet
 from ..address import EthAddr,IPAddr,SpecialIPv6Addr,SpecialEthAddr
 from .common import IPProtocol, checksum

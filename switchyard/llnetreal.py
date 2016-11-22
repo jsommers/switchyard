@@ -12,11 +12,11 @@ from socket import gethostname
 
 from .lib.address import *
 from .lib.packet import *
-from .lib.importcode import import_or_die
 from .lib.exceptions import SwitchyException, Shutdown, NoPackets
 from .lib.interface import Interface
-from .lib.log_support import setup_logging, log_info, log_debug, log_warn, log_failure
-from .lib.textcolor import *
+from .lib.logging import setup_logging, log_info, log_debug, log_warn, log_failure
+from .importcode import import_or_die
+from .textcolor import *
 
 from .pcapffi import *
 from .llnetbase import LLNetBase
@@ -25,18 +25,7 @@ _dlt_to_decoder = {}
 _dlt_to_decoder[Dlt.DLT_EN10MB] = lambda raw: Packet(raw, first_header=Ethernet)
 _dlt_to_decoder[Dlt.DLT_NULL] = lambda raw: Packet(raw, first_header=Null)
 
-'''
-Low-level-ish packet library for PyRouter project.  Uses a FFI-based
-pcap bridge library (pcapffi) for receiving and sending packets, 
-and the Switchyard packet library for packet parsing.
-
-jsommers@colgate.edu
-'''
-
-USERMAIN = 'switchy_main'
-
-
-class PyLLNet(LLNetBase):
+class LLNetReal(LLNetBase):
     '''
     A class that represents a collection of network devices
     on which packets can be received and sent.
@@ -58,7 +47,7 @@ class PyLLNet(LLNetBase):
         for devname, intf in self.devinfo.items():
             log_debug("{}: {}".format(devname, str(intf)))
 
-        PyLLNet.running = True
+        LLNetReal.running = True
         self.__spawn_threads()
 
         if name:
@@ -94,10 +83,10 @@ class PyLLNet(LLNetBase):
         being shut down.  (This method cleans up internal threads and network
         interaction objects.)
         '''
-        if not PyLLNet.running:
+        if not LLNetReal.running:
             return
 
-        PyLLNet.running = False
+        LLNetReal.running = False
         log_debug("Joining threads for shutdown")
         for t in self.threads:
             t.join()
@@ -114,7 +103,7 @@ class PyLLNet(LLNetBase):
         self.threads = []
         self.pktqueue = Queue()
         for devname,pdev in self.pcaps.items():
-            t = threading.Thread(target=PyLLNet.__low_level_dispatch, args=(pdev, devname, self.pktqueue))
+            t = threading.Thread(target=LLNetReal.__low_level_dispatch, args=(pdev, devname, self.pktqueue))
             t.start()
             self.threads.append(t)
 
@@ -180,7 +169,7 @@ class PyLLNet(LLNetBase):
         '''
         log_debug("Got SIGINT.")
         if signum == signal.SIGINT:
-            PyLLNet.running = False
+            LLNetReal.running = False
             if self.pktqueue.qsize() == 0:
                 # put dummy pkt in queue to unblock a 
                 # possibly stuck user thread
@@ -193,7 +182,7 @@ class PyLLNet(LLNetBase):
         for a single pcap device.
         '''
         count = 0
-        while PyLLNet.running:
+        while LLNetReal.running:
             # a non-zero timeout value is ok here; this is an
             # independent thread that handles input for this
             # one pcap device.  it throws any packets received
@@ -234,7 +223,7 @@ class PyLLNet(LLNetBase):
         while True:
             try:
                 dev,dlt,pktinfo = self.pktqueue.get(timeout=timeout)
-                if not PyLLNet.running:
+                if not LLNetReal.running:
                     break
 
                 decoder = _dlt_to_decoder.get(dlt, None)
@@ -248,7 +237,7 @@ class PyLLNet(LLNetBase):
                 else:
                     return dev,pkt
             except Empty:
-                if not PyLLNet.running:
+                if not LLNetReal.running:
                     raise Shutdown()
                 raise NoPackets()
         raise Shutdown()

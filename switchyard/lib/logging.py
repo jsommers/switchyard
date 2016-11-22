@@ -1,7 +1,7 @@
 import logging
 
-from .textcolor import *
-from ..debug_support import debugger
+from ..textcolor import *
+from .debugging import debugger
 
 def setup_logging(debug):
     '''

@@ -2,7 +2,7 @@ from switchyard.lib.packet import *
 from switchyard.lib.address import EthAddr, IPAddr
 from switchyard.lib.topo.util import *
 from switchyard.lib.topo.topobuild import *
-from switchyard.lib.common import Interface
+from switchyard.lib.interface import Interface
 import unittest 
 
 class TopologyTests(unittest.TestCase):

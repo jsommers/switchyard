@@ -7,7 +7,7 @@ from time import time,sleep
 from select import select
 from threading import Lock
 
-Interface = namedtuple('Interface', ['name','internal_name', 'description', 'isloop','isup','isrunning'])
+PcapInterface = namedtuple('PcapInterface', ['name','internal_name', 'description', 'isloop','isup','isrunning'])
 PcapStats = namedtuple('PcapStats', ['ps_recv','ps_drop','ps_ifdrop'])
 PcapPacket = namedtuple('PcapPacket', ['timestamp', 'capture_length', 'length', 'raw'])
 PcapDev = namedtuple('PcapDev', ['dlt','nonblock','snaplen','version','pcap'])
@@ -188,7 +188,7 @@ class _PcapFfi(object):
             isup = (tmp.flags & 0x2) == 0x2
             isrunning = (tmp.flags & 0x4) == 0x4
 
-            xif = Interface(ext_name, xname, xdesc, isloop, isup, isrunning)
+            xif = PcapInterface(ext_name, xname, xdesc, isloop, isup, isrunning)
 
             self._interfaces.append(xif)
             tmp = tmp.next

@@ -1,3 +1,4 @@
+import os
 from switchyard.lib.topo import *
 
 t = Topology()
@@ -12,3 +13,5 @@ t.addLink(s1,s2,1000000,"1 microsec")
 save_to_file(t, 'xtopo.txt')
 save_graph(t, 'xtopo.png', showaddrs=False, showintfs=True)
 
+os.unlink('xtopo.txt')
+os.unlink('xtopo.png')

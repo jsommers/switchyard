@@ -8,9 +8,10 @@ from io import StringIO
 from contextlib import ContextDecorator
 import re
 
-from switchyard.switchy_test import run_tests, main_test
-from switchyard.lib.common import ScenarioFailure, setup_logging
-from switchyard.lib.testing import Scenario,PacketInputEvent,PacketOutputEvent,compile_scenario,uncompile_scenario,get_test_scenario_from_file
+from switchyard.llnettest import run_tests, main_test
+from switchyard.lib.exceptions import TestScenarioFailure
+from switchyard.lib.logging import setup_logging
+from switchyard.lib.testing import TestScenario,PacketInputEvent,PacketOutputEvent,compile_scenario,uncompile_scenario,get_test_scenario_from_file
 from switchyard.lib.packet import *
 from switchyard.lib.address import *
 
@@ -42,11 +43,9 @@ class redirectio(ContextDecorator):
 
 class TestFrameworkTests(unittest.TestCase):
     CONTENTS1 = '''
-from switchyard.lib.testing import *
-from switchyard.lib.address import *
-from switchyard.lib.packet import *
+from switchyard.lib import *
 
-s = Scenario("ARP request")
+s = TestScenario("ARP request")
 s.add_interface('router-eth0', '40:00:00:00:00:00', '192.168.1.1', '255.255.255.0')
 s.add_interface('router-eth1', '40:00:00:00:00:01', '192.168.100.1', '255.255.255.0')
 s.add_interface('router-eth2', '40:00:00:00:00:02', '10.0.1.2', '255.255.255.0')

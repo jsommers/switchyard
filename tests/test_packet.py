@@ -1,9 +1,10 @@
-from switchyard.lib.packet import *
-from switchyard.lib.address import EthAddr, IPAddr
-from switchyard.lib.testing import PacketFormatter
 from io import StringIO
 import sys
 import unittest 
+
+from switchyard.lib.packet import *
+from switchyard.lib.address import EthAddr, IPAddr
+from switchyard.lib.testing import PacketFormatter
 
 class PacketTests(unittest.TestCase):
     def testEmptyPacket(self):

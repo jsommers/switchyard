@@ -10,24 +10,26 @@ from unittest.mock import Mock
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
 from switchyard.lib.interface import Interface, make_device_list
-from switchyard.test_support import Scenario, SwitchyTestEvent
-from switchyard.llnettest import FakePyLLNet
-from switchyard.llnetreal import PyLLNet
+from switchyard.lib.testing import TestScenario, SwitchyTestEvent
+from switchyard.llnettest import LLNetTest
+from switchyard.llnetreal import LLNetReal
 from switchyard.llnetbase import LLNetBase
 
-class WrapPyLLNet(PyLLNet):
+class WrapLLNet(LLNetReal):
     def __init__(self, devlist, name=None):
         LLNetBase.__init__(self)
-        # don't call up to PyLLNet; avoid any actual pcap stuff
+        # don't call up to LLNetBase; avoid any actual pcap stuff
         
     def _fix_devinfo(self, dlist):
         self.devinfo = {}
         for i,d in enumerate(dlist):
             self.devinfo[d] = Interface(d, EthAddr('00:00:00:00:00:00'), IPAddr(i), '255.255.255.255', i)
 
+
+
 class LLNetDevTests(unittest.TestCase):
     def setUp(self):
-        self.scenario = Scenario('test')
+        self.scenario = TestScenario('test')
         self.scenario.add_interface('eth1', '11:11:11:11:11:11')
         self.scenario.add_interface('eth0', '00:00:00:00:00:00')
         self.scenario.add_interface('eth2', '22:22:22:22:22:22')
@@ -36,10 +38,10 @@ class LLNetDevTests(unittest.TestCase):
         self.ev = Mock()
         self.ev.match = Mock(return_value=None)
         self.scenario.next = Mock(return_value=self.ev)
-        self.fake = FakePyLLNet(self.scenario)
+        self.fake = LLNetTest(self.scenario)
 
         self.devs = make_device_list([], [])
-        self.real = WrapPyLLNet(self.devs)
+        self.real = WrapLLNet(self.devs)
         self.real._fix_devinfo(self.devs)
         self.real.pcaps = Mock()
         self.real.pcaps.get = Mock(return_value=Mock())

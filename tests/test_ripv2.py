@@ -2,7 +2,7 @@ import unittest
 
 from switchyard.lib.packet import *
 from switchyard.lib.address import EthAddr, IPAddr
-from switchyard.lib.pcapffi import PcapDumper
+from switchyard.pcapffi import PcapDumper
 
 class RIPv2PacketTests(unittest.TestCase):
     def testRequest(self):

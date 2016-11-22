@@ -1,7 +1,7 @@
 from abc import ABCMeta,abstractmethod
 
 from .pcapffi import pcap_devices
-from .lib.log_support import log_debug
+from .lib.logging import log_debug
 
 class LLNetBase(metaclass=ABCMeta):
     '''

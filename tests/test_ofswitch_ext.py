@@ -7,7 +7,6 @@ OF switch tests for use with an external controller.
 import sys
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
-from switchyard.lib.common import *
 from switchyard.lib.testing import *
 from switchyard.lib.openflow import *
 
@@ -33,7 +32,7 @@ def mk_pkt(hwsrc, hwdst, ipsrc, ipdst, reply=False):
 
 
 def ofswitch_tests():
-    s = Scenario("Openflow Switch Tests")
+    s = TestScenario("Openflow Switch Tests")
     s.add_interface('eth0', '10:00:00:00:00:01')
     s.add_interface('eth1', '10:00:00:00:00:02')
     s.add_interface('eth2', '10:00:00:00:00:03')

@@ -18,12 +18,14 @@ from collections import namedtuple, defaultdict
 from abc import ABCMeta, abstractmethod
 from dis import Bytecode
 
-from .lib.packet import *
-from .lib.address import *
-from .lib.importcode import import_or_die
-from .lib.interface import Interface, make_device_list
-from .lib.exceptions import *
-from . import debug_support as sdebug
+from .packet import *
+from .address import *
+from ..importcode import import_or_die
+from .interface import Interface, make_device_list
+from .exceptions import *
+from .logging import log_debug
+from ..textcolor import *
+from . import debugging as sdebug
 
 class PacketFormatter(object):
     _fulldisp = False
@@ -327,7 +329,7 @@ class PacketMatcher(object):
         if all(results):
             return True
         else:
-            raise ScenarioFailure(self.__diagnose(packet, results))
+            raise TestScenarioFailure(self.__diagnose(packet, results))
 
     def __getstate__(self):
         rv = self.__dict__.copy()
@@ -462,9 +464,9 @@ class PacketOutputEvent(SwitchyTestEvent):
                 else:
                     return SwitchyTestEvent.MATCH_PARTIAL
             else:
-                raise ScenarioFailure("test failed when you called send_packet: output device {} is ok, but\n\t{}\n\tdoesn't match what I expected\n\t{}".format(device, self.format_pkt(pkt, self.display), matcher.show(self.display)))
+                raise TestScenarioFailure("test failed when you called send_packet: output device {} is ok, but\n\t{}\n\tdoesn't match what I expected\n\t{}".format(device, self.format_pkt(pkt, self.display), matcher.show(self.display)))
         else:
-            raise ScenarioFailure("test failed when you called send_packet: output on device {} unexpected (I expected this: {})".format(device, str(self)))
+            raise TestScenarioFailure("test failed when you called send_packet: output on device {} unexpected (I expected this: {})".format(device, str(self)))
 
     def __str__(self):
         s = "send_packet(s) "
@@ -495,7 +497,7 @@ class PacketOutputEvent(SwitchyTestEvent):
 
 TestScenarioEvent = namedtuple('TestScenarioEvent', ['event','description','timestamp'])
 
-class Scenario(object):
+class TestScenario(object):
     '''
     Test scenario definition.  Given a list of packetio event objects,
     generates input events and tests/verifies output events.
@@ -600,7 +602,7 @@ class Scenario(object):
         Return the next expected event to happen.
         '''
         if not self.pending_events:
-            raise ScenarioFailure("next() called on scenario '{}', but not expecting anything else for this scenario".format(self.name))
+            raise TestScenarioFailure("next() called on scenario '{}', but not expecting anything else for this scenario".format(self.name))
         else:
             return self.pending_events[0].event
 
@@ -609,7 +611,7 @@ class Scenario(object):
         Method to call if the current expected event does not
         occur, i.e., the test expectation wasn't met.
         '''
-        raise ScenarioFailure("{}".format(message))
+        raise TestScenarioFailure("{}".format(message))
 
     def timer_expiry(self, signum, stackframe):
         '''
@@ -622,7 +624,7 @@ class Scenario(object):
 
         if self.timer:
             log_debug("Timer expiration while expecting PacketOutputEvent")
-            raise ScenarioFailure("Expected send_packet to be called to match {} in scenario {}, but it wasn't called, and after {} seconds I gave up.".format(str(self.pending_events[0]), self.name, self.timeout))
+            raise TestScenarioFailure("Expected send_packet to be called to match {} in scenario {}, but it wasn't called, and after {} seconds I gave up.".format(str(self.pending_events[0]), self.name, self.timeout))
         else:
             log_debug("Ignoring timer expiry with timer=False")
 

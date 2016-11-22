@@ -8,7 +8,7 @@ class SwitchyException(Exception):
     def __repr__(self):
         return self.message
 
-class ScenarioFailure(SwitchyException):
+class TestScenarioFailure(SwitchyException):
     pass
 
 class Shutdown(Exception):
