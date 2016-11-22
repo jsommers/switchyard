@@ -21,7 +21,8 @@ from dis import Bytecode
 from .lib.packet import *
 from .lib.address import *
 from .lib.importcode import import_or_die
-
+from .lib.interface import Interface, make_device_list
+from .lib.exceptions import *
 from . import debug_support as sdebug
 
 class PacketFormatter(object):

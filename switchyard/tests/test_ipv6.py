@@ -3,7 +3,7 @@ from copy import deepcopy
 
 from switchyard.lib.packet import *
 from switchyard.lib.address import SpecialIPv6Addr
-from switchyard.lib.pcapffi import PcapDumper
+from switchyard.pcapffi import PcapDumper
 
 class IPv6PacketTests(unittest.TestCase):
     def setUp(self):

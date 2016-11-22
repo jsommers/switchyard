@@ -2,6 +2,7 @@ from ipaddress import ip_interface
 
 from .address import IPAddr,EthAddr
 from ..pcapffi import pcap_devices
+from .log_support import log_debug
 
 class Interface(object):
     __slots__ = ['__name','__ethaddr','__ipaddr','__ifnum']

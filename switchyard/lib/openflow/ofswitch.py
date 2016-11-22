@@ -8,7 +8,8 @@ from copy import deepcopy
 from switchyard.lib.packet import *
 from switchyard.lib.openflow import *
 from switchyard.lib.address import *
-from switchyard.lib.common import *
+from switchyard.lib.log_support import *
+from switchyard.lib.exceptions import *
 
 
 class FullBuffer(Exception):

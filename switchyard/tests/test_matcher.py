@@ -5,10 +5,11 @@ import unittest
 import copy
 import time
 
-from switchyard.lib.common import * 
-from switchyard.lib.testing import *
+from switchyard.test_support import *
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
+from switchyard.lib.log_support import setup_logging
+from switchyard.lib.exceptions import *
 
 
 class SrpyMatcherTest(unittest.TestCase):

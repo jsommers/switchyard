@@ -1,12 +1,12 @@
-from switchyard.lib.packet import PacketHeaderBase, Packet, IPProtocol, \
-    EtherType, Ethernet, Vlan, IPv6, IPv4, ICMP, ICMPv6, TCP, UDP, Arp
-from switchyard.lib.address import EthAddr, IPv4Address
-from switchyard.lib.common import log_debug
 from enum import IntEnum
 import struct
 from math import ceil
 from ipaddress import ip_network, ip_address
 
+from switchyard.lib.packet import PacketHeaderBase, Packet, IPProtocol, \
+    EtherType, Ethernet, Vlan, IPv6, IPv4, ICMP, ICMPv6, TCP, UDP, Arp
+from switchyard.lib.address import EthAddr, IPv4Address
+from switchyard.lib.log_support import log_debug
 
 def _make_bitmap(xset):
     '''

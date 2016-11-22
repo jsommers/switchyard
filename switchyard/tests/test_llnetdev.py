@@ -6,12 +6,14 @@ OF switch unit tests.
 
 import unittest
 from unittest.mock import Mock
+
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
-from switchyard.lib.common import *
-from switchyard.lib.testing import Scenario, SwitchyTestEvent
-from switchyard.switchy_test import FakePyLLNet
-from switchyard.switchy_real import PyLLNet
+from switchyard.lib.interface import Interface, make_device_list
+from switchyard.test_support import Scenario, SwitchyTestEvent
+from switchyard.llnettest import FakePyLLNet
+from switchyard.llnetreal import PyLLNet
+from switchyard.llnetbase import LLNetBase
 
 class WrapPyLLNet(PyLLNet):
     def __init__(self, devlist, name=None):
