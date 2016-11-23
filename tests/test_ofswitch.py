@@ -58,13 +58,13 @@ class NetConnection(LLNetBase):
 
 class SwitchUnitTests(unittest.TestCase):
     def _receiver(self, sock, pkt):
-        self.lastrecv = pkt
+        self.lastrecv.append(pkt)
 
     def setUp(self):
         setattr(socket, "socket", MagicMock(return_value=MagicMock()))
         self.net = NetConnection()
         self.cb = SwitchActionCallbacks()
-        self.lastrecv = None
+        self.lastrecv = []
 
     def testHello(self):
         self.switch = OpenflowSwitch(self.net, "abcdef00", self.cb)
@@ -74,9 +74,11 @@ class SwitchUnitTests(unittest.TestCase):
         self.switch._receive_openflow_message_internal = MagicMock(return_value=hellopkt) 
         self.switch._controller_thread(MagicMock())
 
-        self.assertEqual(self.lastrecv[0].type, OpenflowType.Hello)
-        self.assertEqual(self.lastrecv[0].version, hellopkt[0].version)
-        self.assertEqual(self.lastrecv[0].length, hellopkt[0].length)
+        self.assertEqual(len(self.lastrecv), 1)
+        pkt = self.lastrecv.pop()[0]
+        self.assertEqual(pkt.type, OpenflowType.Hello)
+        self.assertEqual(pkt.version, hellopkt[0].version)
+        self.assertEqual(pkt.length, hellopkt[0].length)
 
     def testBarrier(self):
         self.switch = OpenflowSwitch(self.net, "abcdef00", self.cb)
@@ -87,7 +89,32 @@ class SwitchUnitTests(unittest.TestCase):
         self.switch._receive_openflow_message_internal = MagicMock(return_value=barrier) 
         self.switch._controller_thread(MagicMock())
 
-        print(self.lastrecv)
+        self.assertEqual(len(self.lastrecv), 1)
+        pkt = self.lastrecv.pop()[0]
+        self.assertEqual(pkt.type, OpenflowType.BarrierReply)
+        self.assertEqual(pkt.version, barrier[0].version)
+        self.assertEqual(pkt.length, barrier[0].length)
+
+    def testFeaturesRequest(self):
+        self.switch = OpenflowSwitch(self.net, "abcdef00", self.cb)
+        self.switch._send_openflow_message_internal = self._receiver
+        self.switch._running = False
+
+        request = OpenflowHeader.build(OpenflowType.FeaturesRequest, xid=42, version=0x04)
+        self.switch._receive_openflow_message_internal = MagicMock(return_value=request) 
+        self.switch._controller_thread(MagicMock())
+
+        self.assertEqual(len(self.lastrecv), 1)
+        pkt = self.lastrecv.pop()[0]
+        print(pkt)
+
+    def testData1(self):
+        self.switch = OpenflowSwitch(self.net, "abcdef00", self.cb)
+        self.switch._send_openflow_message_internal = self._receiver
+        self.switch._running = False
+
+        self.switch._handle_datapath("eth0", Ethernet() + IPv4() + ICMP())
+
 
 
     # def testTable1(self):

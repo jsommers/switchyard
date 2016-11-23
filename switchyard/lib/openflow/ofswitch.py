@@ -325,7 +325,8 @@ class OpenflowSwitch(object):
 
         def _barrier_request_handler(pkt):
             log_debug("Barrier request")
-            reply = OpenflowHeader(OpenflowType.BarrierReply, xid=pkt[0].xid, version=self._version)
+            reply = Packet()
+            reply += OpenflowHeader(OpenflowType.BarrierReply, xid=pkt[0].xid, version=self._version)
             self._send_openflow_message_internal(sock, reply)
 
         def _packet_out_handler(pkt):
