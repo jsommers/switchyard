@@ -439,11 +439,19 @@ class OpenflowSwitch(object):
         inport = self._switchyard_net.port_by_name(inport)
         portnum = inport.ifnum
         log_info("Processing packet: {}->{}".format(portnum, packet))
-        actions = self._table.match_packet(portnum, packet)
-        if actions is None:
-            self._send_packet_in(portnum, packet)
-        else:
-            self._datapath_action(portnum, packet, actions=actions)
+        for tnum,t in enumerate(self._tables):
+            # FIXME: start at table 0
+            # if match: Update counters Execute instructions:
+            #           update action set
+            #           update packet/match set fields
+            #            update metadata
+            # if no match and table miss entry exists, do the above
+            # otherwise, drop the packet
+            actions = self._table.match_packet(portnum, packet)
+            if actions is None:
+                self._send_packet_in(portnum, packet)
+            else:
+                self._datapath_action(portnum, packet, actions=actions)
 
     def datapath_loop(self):
         log_debug("datapath loop: not ready to receive")
