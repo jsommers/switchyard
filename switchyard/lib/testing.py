@@ -20,12 +20,12 @@ from dis import Bytecode
 
 from .packet import *
 from .address import *
-from ..importcode import import_or_die
 from .interface import Interface, make_device_list
 from .exceptions import *
 from .logging import log_debug
-from ..textcolor import *
 from . import debugging as sdebug
+from ..textcolor import *
+from ..importcode import import_or_die
 
 class PacketFormatter(object):
     _fulldisp = False

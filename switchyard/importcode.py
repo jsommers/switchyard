@@ -16,7 +16,7 @@ def import_or_die(module_name, entrypoint_names):
         module_name,ext = os.path.splitext(module_name)
     modname = os.path.basename(module_name)
     dirname = os.path.dirname(module_name)
-    if dirname:
+    if dirname and dirname not in sys.path:
         sys.path.append(dirname)
 
     # first, try to reload code
@@ -42,4 +42,4 @@ def import_or_die(module_name, entrypoint_names):
         if method in existing_names:
             return getattr(user_module, method)
 
-    raise Exception("Required entrypoint function (one of {}) not found in your code".format(entrypoint_names))
+    raise ImportError("Required entrypoint function (one of {}) not found in your code".format(entrypoint_names))
