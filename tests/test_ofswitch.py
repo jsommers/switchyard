@@ -1,18 +1,20 @@
 #!/usr/bin/env python
 
 '''
-OF switch unit tests.
+OF (v13) switch unit tests.
 '''
 
 import sys
 import asyncore
 import socket
 import unittest
+
 from unittest.mock import MagicMock
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
 from switchyard.lib.exceptions import *
-from switchyard.lib.openflow import *
+import switchyard.lib.openflow13 as of13
+import switchyard.lib.openflow10 as of10
 from switchyard.lib.openflow.ofswitch import OpenflowSwitch, SwitchActionCallbacks, FlowTable
 from switchyard.llnetbase import LLNetBase
 from switchyard.lib.interface import Interface

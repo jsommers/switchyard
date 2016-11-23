@@ -6,7 +6,8 @@ from heapq import heappush, heappop, heapreplace
 from copy import deepcopy
 
 from switchyard.lib.packet import *
-from switchyard.lib.openflow import *
+import switchyard.lib.openflow10 as of10
+import switchyard.lib.openflow13 as of13
 from switchyard.lib.address import *
 from switchyard.lib.logging import *
 from switchyard.lib.exceptions import *

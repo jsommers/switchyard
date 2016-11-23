@@ -31,7 +31,7 @@ def _unpack_bitmap(bitmap, xenum):
     return unpacked
 
 
-class OpenflowType10(IntEnum):
+class OpenflowType(IntEnum):
     Hello = 0
     Error = 1
     EchoRequest = 2
@@ -56,40 +56,7 @@ class OpenflowType10(IntEnum):
     QueueGetConfigReply = 21
 
 
-class OpenflowType13(IntEnum):
-    Hello = 0
-    Error = 1
-    EchoRequest = 2
-    EchoReply = 3
-    Experimenter = 4
-    FeaturesRequest = 5
-    FeaturesReply = 6
-    GetConfigRequest = 7
-    GetConfigReply = 8
-    SetConfig = 9
-    PacketIn = 10
-    FlowRemoved = 11
-    PortStatus = 12
-    PacketOut = 13
-    FlowMod = 14
-    GroupMod = 15
-    PortMod = 16
-    TableMod = 17
-    MultipartRequest = 18
-    MultipartReply = 19
-    BarrierRequest = 20
-    BarrierReply = 21
-    QueueGetConfigRequest = 22
-    QueueGetConfigReply = 23
-    RoleRequest = 24
-    RoleReply = 25
-    GetAsyncRequest = 26
-    GetAsyncReply = 27
-    SetAsync = 28
-    MeterMod = 29
-
-
-class OpenflowPort10(IntEnum):
+class OpenflowPort(IntEnum):
     Max = 0xff00
     InPort = 0xfff8
     Table = 0xfff9
@@ -99,11 +66,6 @@ class OpenflowPort10(IntEnum):
     Controller = 0xfffd
     Local = 0xfffe
     NoPort = 0xffff  # Can't use None!
-
-
-class OpenflowPort13(IntEnum):
-
-    Any = 0x0000
 
 
 def _get_port(value):
@@ -1364,18 +1326,6 @@ class FlowModFlags(IntEnum):
     SendFlowRemove = 1
     CheckOverlap = 2
     Emergency = 4
-
-
-class GroupTableModCommand(IntEnum):
-    Add = 0
-    Modify = 1
-    Delete = 2
-
-
-class MeterModCommand(IntEnum):
-    Add = 0
-    Modify = 1
-    Delete = 2
 
 
 class OpenflowFlowMod(_OpenflowStruct):

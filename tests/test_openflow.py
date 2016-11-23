@@ -1,11 +1,11 @@
 import unittest 
 from copy import deepcopy
-from switchyard.lib.openflow import *
+from time import time
+
+from switchyard.lib.openflow10 import *
 from switchyard.lib.address import EthAddr, IPv4Address, SpecialIPv4Addr
 from switchyard.pcapffi import PcapDumper
 from switchyard.lib.packet import Ethernet, IPv4, TCP, TCPFlags, ICMP
-from time import time
-
 
 class OpenflowPacketTests(unittest.TestCase):
     def _storePkt(self, ofhdr, dstport=6633):
