@@ -18,6 +18,8 @@ from switchyard.importcode import import_or_die
 from switchyard.lib.socket.socketemu import ApplicationLayer
 from switchyard.lib.logging import setup_logging, log_failure
 from switchyard.lib.testing import PacketFormatter
+from switchyard.lib.topo import Topology
+from switchyard.sim.cli import run_simulation
 
 setup_ok = False
 netobj = None
@@ -89,6 +91,11 @@ if __name__ == '__main__':
         help="Don't trap exceptions.  Use of this option is helpful if you want"
              " to use Switchyard with a different symbolic debugger than pdb", 
              dest="nohandle", action="store_true", default=False)
+    parser.add_argument("--cli", help="Enter switchyard simulation command-line (EXPERIMENTAL!)", 
+        dest="cli", action="store_true", default=False)
+    parser.add_argument("--topology", help="Specify topology to use for simulation"
+        " (only used if --cli is specified)",
+        dest="topology", type=str, default=None)
     args = parser.parse_args()
 
     # assume test mode if the compile flag is set
@@ -100,6 +107,17 @@ if __name__ == '__main__':
         PacketFormatter.full_display(True)
 
     setup_logging(args.debug)
+
+    if args.cli:
+        t = Topology()
+        if args.topology:
+            try:
+                t = load_from_file(args.topology)
+            except FileNotFoundError:
+                print ("No such file {} exists to load topology.".format(args.topology))
+                sys.exit()
+        run_simulation(t)
+        sys.exit()
 
     if args.usercode is None and not args.compile:
         log_failure("You need to specify the name of your module to run "
