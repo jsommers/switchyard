@@ -184,19 +184,22 @@ class FlowTable(object):
 
 class OpenflowSwitch(object):
     '''
-    An Openflow v1.0 switch.
+    An Openflow v1.3 switch.
     '''
     def __init__(self, switchyard_net, switchid, callbacks):
         self._switchid = switchid  # aka, dpid
         self._controller_connections = []
         self._switchyard_net = switchyard_net
         self._running = True
+        self._version = 0x04
         self._buffer_manager = PacketBufferManager(100)
         self._xid = 0
         self._miss_len = 1500
         self._flags = OpenflowConfigFlags.FragNormal
         self._ready = False
-        self._table = FlowTable(callbacks)
+        self._tables = [ FlowTable(callbacks) ]
+        self._group_table = FlowTable(callbacks)
+        self._meter_table = None # not supported yet
         self._action_callbacks = callbacks
 
     def add_controller(self, host, port):
@@ -225,7 +228,7 @@ class OpenflowSwitch(object):
         return self._xid
 
     def _send_packet_in(self, port, packet):
-        ofpkt = OpenflowHeader.build(OpenflowType.PacketIn, xid=self.xid)
+        ofpkt = OpenflowHeader.build(OpenflowType.PacketIn, xid=self.xid, version=self._version)
         ofpkt[1].packet = packet.to_bytes()[:self._miss_len]
         ofpkt[1].buffer_id = self._buffer_manager.add(port, packet)
         ofpkt[1].reason = OpenflowPacketInReason.NoMatch
@@ -236,20 +239,29 @@ class OpenflowSwitch(object):
     def _controller_thread(self, sock):
         def _hello_handler(pkt):
             log_debug("Hello version: {}".format(pkt[0].version))
+            if (pkt[0].version < self._version):
+                log_info("Controller version {}; changing switch version to match.".format(pkt[0].version))
+                self._version = pkt[0].version
+            elif pkt[0].version > self._version:
+                log_warn("Controller wants a version we don't support ({})".format(pkt[0].version))
+                return
+            else:
+                log_info("Controller and switch want the same version {}.  Hurrah.".format(pkt[0].version))
+
             pkt = Packet()
-            pkt += OpenflowHeader(OpenflowType.Hello, self.xid)
+            pkt += OpenflowHeader(OpenflowType.Hello, xid=self.xid, version=self._version)
             self._send_openflow_message_internal(sock, pkt) 
             self._ready = True
 
         def _send_removal_notification(entries, why=FlowRemovedReason.Unknown):
             for e in entries:
-                header = OpenflowHeader(OpenflowType.FlowRemoved, self.xid)
+                header = OpenflowHeader(OpenflowType.FlowRemoved, xid=self.xid, version=self._version)
                 removed = OpenflowFlowRemoved(why, e.match)
                 log_debug("Sending flow removal notification: {}".format(removed))
                 self._send_openflow_message_internal(sock, header + removed)
 
         def _send_error(errorcode):
-            header = OpenflowHeader(OpenflowType.Error, self.xid)
+            header = OpenflowHeader(OpenflowType.Error, xid=self.xid, version=self._version)
             err = OpenflowError() 
             err.errortype = OpenflowErrorType.FlowModFailed
             err.errorcode = errorcode
@@ -257,7 +269,7 @@ class OpenflowSwitch(object):
             self._send_openflow_message_internal(sock, header + err)
 
         def _features_request_handler(pkt):
-            header = OpenflowHeader(OpenflowType.FeaturesReply, self.xid)
+            header = OpenflowHeader(OpenflowType.FeaturesReply, xid=self.xid, version=self._version)
             featuresreply = OpenflowSwitchFeaturesReply()
             featuresreply.dpid_low48 = self._switchid
             for i, intf in enumerate(self._switchyard_net.ports()):
@@ -275,7 +287,7 @@ class OpenflowSwitch(object):
 
         def _get_config_request_handler(pkt):
             log_debug("Get Config request")
-            header = OpenflowHeader(OpenflowType.GetConfigReply, self.xid)
+            header = OpenflowHeader(OpenflowType.GetConfigReply, xid=self.xid, version=self._version)
             reply = OpenflowGetConfigReply()
             reply.flags = self._flags
             reply.miss_send_len = self._miss_len
@@ -313,7 +325,7 @@ class OpenflowSwitch(object):
 
         def _barrier_request_handler(pkt):
             log_debug("Barrier request")
-            reply = OpenflowHeader(OpenflowType.BarrierReply, xid=pkt[0].xid)
+            reply = OpenflowHeader(OpenflowType.BarrierReply, xid=pkt[0].xid, version=self._version)
             self._send_openflow_message_internal(sock, reply)
 
         def _packet_out_handler(pkt):
@@ -328,7 +340,7 @@ class OpenflowSwitch(object):
 
         def _stats_request_handler(pkt):
             log_debug("Stats request: {}".format(str(pkt)))
-            rheader = OpenflowHeader(OpenflowType.StatsReply, xid=pkt[0].xid)
+            rheader = OpenflowHeader(OpenflowType.StatsReply, xid=pkt[0].xid, version=self._version)
             if pkt[1].type == OpenflowStatsType.SwitchDescription:
                 statsbody = SwitchDescriptionStatsReply(mfr_desc='Switchyard', 
                     hw_desc='Switchyard', sw_desc='Switchyard', 
@@ -351,7 +363,7 @@ class OpenflowSwitch(object):
 
         def _echo_request_handler(pkt):
             log_debug("Echo request: {}".format(str(pkt)))
-            reply = OpenflowHeader(OpenflowType.EchoReply, xid=pkt[0].xid)
+            reply = OpenflowHeader(OpenflowType.EchoReply, xid=pkt[0].xid, version=self._version)
             self._send_openflow_message_internal(sock, reply)
 
         _handler_map = {
@@ -369,6 +381,12 @@ class OpenflowSwitch(object):
         def _unknown_type_handler(pkt):
             log_debug("Unknown OF message type: {}".format(pkt[0].type))
 
+        def _expire_table_entries():
+            entries = []
+            for t in self._tables:
+                entries.extend(t.expire_entries())
+            if entries:
+                _send_removal_notification(entries)
 
         while True:
             pkt = None
@@ -377,16 +395,13 @@ class OpenflowSwitch(object):
             except socket.timeout:
                 pass
 
-            entries = self._table.expire_entries()
-            if entries:
-                _send_removal_notification(entries)
+            _expire_table_entries()
 
             if pkt is not None:
                 _handler_map.get(pkt[0].type, _unknown_type_handler)(pkt)
 
             if not self._running:
                 break
-
 
     def _process_actions(self, actions, inport, packet):
         '''
@@ -416,6 +431,19 @@ class OpenflowSwitch(object):
             self._process_actions(actions, inport, packet)
             self._action_callbacks.afterApplyActions(packet, actions)        
 
+    def _handle_datapath(self, inport, packet):
+        '''
+        Handle single packet on the data plane.
+        '''
+        inport = self._switchyard_net.port_by_name(inport)
+        portnum = inport.ifnum
+        log_info("Processing packet: {}->{}".format(portnum, packet))
+        actions = self._table.match_packet(portnum, packet)
+        if actions is None:
+            self._send_packet_in(portnum, packet)
+        else:
+            self._datapath_action(portnum, packet, actions=actions)
+
     def datapath_loop(self):
         log_debug("datapath loop: not ready to receive")
         while not self._ready:
@@ -429,15 +457,7 @@ class OpenflowSwitch(object):
                 break
             except NoPackets:
                 continue
-
-            inport = self._switchyard_net.port_by_name(inport)
-            portnum = inport.ifnum
-            log_info("Processing packet: {}->{}".format(portnum, packet))
-            actions = self._table.match_packet(portnum, packet)
-            if actions is None:
-                self._send_packet_in(portnum, packet)
-            else:
-                self._datapath_action(portnum, packet, actions=actions)
+            self._handle_datapath(inport, packet)
 
     def shutdown(self):
         self._running = False

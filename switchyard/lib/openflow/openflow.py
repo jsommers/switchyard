@@ -3268,20 +3268,20 @@ class OpenflowHeader(PacketHeaderBase):
         OpenflowType.QueueGetConfigReply: OpenflowQueueGetConfigReply,
     }
 
-    def __init__(self, xtype=OpenflowType.Hello, xid=0):
+    def __init__(self, xtype=OpenflowType.Hello, xid=0, version=0x04):
         '''
         ofp_header struct from Openflow v1.0.0 spec.
         '''
-        self._version = 0x01
+        self._version = version
         self._type = xtype
         self._length = OpenflowHeader._MINLEN
         self._xid = xid
         self._subtype = None
 
     @staticmethod
-    def build(xtype, *args, xid=0):
+    def build(xtype, *args, xid=0, version=0x04):
         pkt = Packet()
-        header = OpenflowHeader(xtype=xtype, xid=xid)
+        header = OpenflowHeader(xtype=xtype, xid=xid, version=version)
         pkt += header
         clsname = OpenflowHeader._OpenflowTypeClasses.get(xtype)
         if clsname is not None:
