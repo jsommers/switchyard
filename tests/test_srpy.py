@@ -1,6 +1,7 @@
 import sys
 import os
 import os.path
+import importlib
 import unittest
 import copy
 import time
@@ -43,7 +44,7 @@ class redirectio(ContextDecorator):
 
 class TestFrameworkTests(unittest.TestCase):
     CONTENTS1 = '''
-from switchyard.lib import *
+from switchyard.lib.userlib import *
 
 s = TestScenario("ARP request")
 s.add_interface('router-eth0', '40:00:00:00:00:00', '192.168.1.1', '255.255.255.0')
@@ -166,6 +167,9 @@ def main(obj):
     pkt = create_ip_arp_reply("40:00:00:00:00:AB", "30:00:00:00:00:CD", "10.1.1.2", "10.1.1.1")
     obj.send_packet('router-eth3', pkt)
 '''
+
+    def setUp(self):
+        importlib.invalidate_caches()
 
     @classmethod
     def setUpClass(cls):

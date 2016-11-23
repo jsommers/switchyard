@@ -27,7 +27,10 @@ def import_or_die(module_name, entrypoint_names):
     # try to.
     else:
         try:
-            user_module = importlib.import_module(modname)
+            mypaths = [ x for x in sys.path if ("Cellar" not in x and "packages" not in x)]
+            # print("Loading {} from {} ({})".format(modname, dirname, mypaths))
+            # user_module = importlib.import_module(modname)
+            user_module = importlib.__import__(modname)
         except ImportError as e:
             log_failure("Fatal error: couldn't import module (error: {}) while executing {}".format(str(e), modname))
             raise ImportError(e)

@@ -370,7 +370,7 @@ class OpenflowSwitch(object):
             log_debug("Unknown OF message type: {}".format(pkt[0].type))
 
 
-        while self._running:
+        while True:
             pkt = None
             try:
                 pkt = self._receive_openflow_message_internal(sock)
@@ -383,6 +383,9 @@ class OpenflowSwitch(object):
 
             if pkt is not None:
                 _handler_map.get(pkt[0].type, _unknown_type_handler)(pkt)
+
+            if not self._running:
+                break
 
 
     def _process_actions(self, actions, inport, packet):

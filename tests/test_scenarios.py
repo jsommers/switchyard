@@ -4,6 +4,7 @@ import os.path
 import unittest
 import copy
 import time
+import importlib
 
 from switchyard.lib.exceptions import TestScenarioFailure
 from switchyard.lib.logging import setup_logging
@@ -13,7 +14,7 @@ from switchyard.lib.address import *
 
 class SrpyCompileTest(unittest.TestCase):
     CONTENTS1 = '''
-from switchyard.lib import *
+from switchyard.lib.userlib import *
 
 s = TestScenario("ARP request")
 s.add_interface('router-eth0', '40:00:00:00:00:00', '192.168.1.1', '255.255.255.0')
@@ -32,6 +33,7 @@ scenario = s
 '''
 
     def setUp(self):
+        importlib.invalidate_caches()
         self.writeScenario1('stest.py', SrpyCompileTest.CONTENTS1)
     
     def tearDown(self):

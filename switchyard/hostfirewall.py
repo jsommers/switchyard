@@ -3,6 +3,7 @@ import os
 import sys
 import re
 from subprocess import getstatusoutput, Popen, PIPE, STDOUT
+from copy import deepcopy
 
 from .lib.logging import log_warn, log_info, log_debug
 
@@ -85,7 +86,7 @@ class TestModeFirewall(AbstractFirewall):
 class LinuxFirewall(AbstractFirewall):
     def __init__(self, interfaces, rules):
         super().__init__(interfaces, rules)
-        self._intf = interfaces
+        self._intf = deepcopy(list(interfaces))
         st,output = getstatusoutput("iptables-save")
         self._saved_iptables = output
         self._arpignore = {}

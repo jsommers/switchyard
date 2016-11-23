@@ -2,6 +2,8 @@ import unittest
 import sys
 import os
 import tempfile
+import importlib
+
 import switchyard.importcode as imp
 
 class TestImporter(unittest.TestCase):
@@ -11,10 +13,21 @@ class TestImporter(unittest.TestCase):
             print("def fn():", file=outf)
             print("    print(x)", file=outf)
 
+    def setUp(self):
+        importlib.invalidate_caches()
+
     def testImporter1(self):
-        name = "testimp1.py"
+        name = "firsttest.py"
         self._writeFile(name)
         mod = imp.import_or_die(name, None)
+        self.assertIsNone(mod)
+        self.assertIn(name[:-3], sys.modules)
+        os.unlink(name)
+
+    def testImporter1b(self):
+        name = "firsttwo_partdau.py"
+        self._writeFile(name)
+        mod = imp.import_or_die(name[:-3], None)
         self.assertIsNone(mod)
         self.assertIn(name[:-3], sys.modules)
         os.unlink(name)
@@ -39,11 +52,20 @@ class TestImporter(unittest.TestCase):
         name = "testimp4.py"
         xfile = os.path.join(tempfile.gettempdir(), name)
         self._writeFile(xfile)
-        xfn = imp.import_or_die(xfile, ["fn"])
+        xfn = imp.import_or_die(xfile, ["main","blob","fn"])
         self.assertIsNotNone(xfn)
         self.assertEqual(xfn.__name__, "fn")
         self.assertIn(name[:-3], sys.modules)
         os.unlink(xfile)
+
+    def testImporter5(self):
+        with self.assertRaises(ImportError):
+            imp.import_or_die("/tmp/notafile.py", None)
+        with self.assertRaises(ImportError):
+            imp.import_or_die("nothinghere.py", None)
+        with self.assertRaises(ImportError):
+            imp.import_or_die("nothinghere", None)
+
 
 if __name__ == '__main__':
     unittest.main()
