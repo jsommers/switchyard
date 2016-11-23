@@ -712,15 +712,21 @@ class SyssGlue(object):
         self.stop()
         self.xnode = {}
         execmodule = None
-        if 'nodeexec' in kwargs and kwargs['nodeexec'] is not None:
-            execmodule = import_user_code(kwargs['nodeexec'])
-        else:
-            if 'switchcode' in kwargs:
-                pass
-            if 'routercode' in kwargs:
-                pass
-            if 'hostcode' in kwargs:
-                pass
+
+        # FIXME: execmodule should be some ancillary part of topology
+        # specification in order to better isolate it.  node (and other
+        # elements) can be augmented with some generic data bucket to
+        # hold this sort of thing?
+
+        #if 'nodeexec' in kwargs and kwargs['nodeexec'] is not None:
+        #    execmodule = import_user_code(kwargs['nodeexec'])
+        #else:
+        #    if 'switchcode' in kwargs:
+        #        pass
+        #    if 'routercode' in kwargs:
+        #        pass
+        #    if 'hostcode' in kwargs:
+        #        pass
 
         # exec_module = import_or_die(swycode)
         self.ingress_queues = {}
@@ -814,19 +820,19 @@ def run_simulation(topo, **kwargs):
         print("Received SIGINT --- shutting down.")
         cli.stop()
 
-def main():
-    topofile = None
-    swycode = None
-    if len(sys.argv) > 1:
-        topofile = sys.argv[1]
-    if len(sys.argv) > 2:
-        swycode = sys.argv[2]
-    if not (topofile and swycode):
-        print ("Need topofile and swy code")
-        sys.exit(-1)
-
-    topo = load_from_file(topofile)
-    run_simulation(topo, swycode)
-
-if __name__ == '__main__':
-    main()
+#def main():
+#    topofile = None
+#    swycode = None
+#    if len(sys.argv) > 1:
+#        topofile = sys.argv[1]
+#    if len(sys.argv) > 2:
+#        swycode = sys.argv[2]
+#    if not (topofile and swycode):
+#        print ("Need topofile and swy code")
+#        sys.exit(-1)
+#
+#    topo = load_from_file(topofile)
+#    run_simulation(topo, swycode)
+#
+#if __name__ == '__main__':
+#    main()
