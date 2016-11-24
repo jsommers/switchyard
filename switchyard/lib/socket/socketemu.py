@@ -122,14 +122,16 @@ class socket(object):
             with yellow():
                 print ("Unable to complete socket emulation setup (failed on "
                        "firewall/bpf filter installation).  Did you start the "
-                       " program via srpy?")
+                       " program via switchyard?")
                 import traceback
             print ("Here is the raw exception information:")
             with red():
                 print(indent(traceback.format_exc(), '    '))
             sys.exit()
 
+        # FIXME: this can't go here!  what about multiple sockets?
         ApplicationLayer.init()
+
         self._socket_queue_to_stack, self._socket_queue_from_stack = \
             ApplicationLayer.queues()
 
