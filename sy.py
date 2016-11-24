@@ -16,10 +16,11 @@ from switchyard.llnettest import main_test
 from switchyard.llnetreal import main_real, LLNetReal
 from switchyard.importcode import import_or_die
 from switchyard.lib.socket.socketemu import ApplicationLayer
-from switchyard.lib.logging import setup_logging, log_failure
+from switchyard.lib.logging import *
 from switchyard.lib.testing import PacketFormatter
 from switchyard.lib.topo import Topology
 from switchyard.sim.cli import run_simulation
+from switchyard.lib.interface import make_device_list
 
 setup_ok = False
 netobj = None
@@ -171,5 +172,5 @@ if __name__ == '__main__':
         with Firewall(devlist, args.fwconfig):
             setup_ok = True
             barrier.wait()
-            netobj = PyLLNet(devlist)
+            netobj = LLNetReal(devlist)
             main_real(args.usercode, netobj, args)
