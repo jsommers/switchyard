@@ -5,7 +5,7 @@ coverage erase
 rm -rf htmlcov
 
 PAT='switchyard/*','switchyard/switch*'
-EXCLPAT='*__init__.py'
+EXCLPAT='*__init__.py','switchyard/sim/*'
 
 for f in tests/*.py
 do

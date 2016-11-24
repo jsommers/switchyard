@@ -2,6 +2,8 @@ from abc import ABCMeta,abstractmethod
 
 from .pcapffi import pcap_devices
 from .lib.logging import log_debug
+from .lib.exceptions import *
+from .lib.address import *
 
 class LLNetBase(metaclass=ABCMeta):
     '''
@@ -21,6 +23,28 @@ class LLNetBase(metaclass=ABCMeta):
         (function) -> None
         '''
         self.devupdown_callback = callback
+
+    def intf_down(self, interface):
+        '''
+        Can be called when an interface goes down.
+        FIXME: doesn't really do anything at this point.
+        '''
+        intf = self.devinfo.get(interface, None)
+        if intf and self.devupdown_callback:
+            self.devupdown_callback(intf, 'down')
+
+    def intf_up(self, interface):
+        '''
+        Can be called when an interface is put in service.
+        FIXME: not currently used; more needs to be done to
+        correctly put a new intf into service.
+        '''
+        if interface.name not in self.devinfo:
+            self.devinfo[interface.name] = interface
+            if self.devupdown_callback:
+                self.devupdown_callback(interface, 'up')
+        else:
+            raise SwitchyException("Interface already registered")
 
     def interfaces(self):
         '''
