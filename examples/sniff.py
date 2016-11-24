@@ -4,11 +4,9 @@
 Packet sniffer in Python
 '''
 
-from switchyard.lib.address import *
-from switchyard.lib.packet import *
-from switchyard.lib.common import *
+from switchyard.lib.userlib import *
 
-def switchy_main(net):
+def main(net):
     my_interfaces = net.interfaces() 
     log_info ("My interfaces: {}".format([intf.name for intf in my_interfaces]))
     while True:

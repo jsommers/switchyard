@@ -3,7 +3,7 @@ Simple tcpdump-like program that use Switchyard libraries for
 reading packets from a local device and dumping them to a file.
 '''
 
-from switchyard.lib.pcapffi import *
+from switchyard.pcapffi import *
 from switchyard.lib.packet import *
 
 reader = PcapLiveDevice('en0')

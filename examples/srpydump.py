@@ -3,8 +3,7 @@ Simple tcpdump-like program that use Switchyard libraries for
 reading packets from a local device and dumping them to a file.
 '''
 
-from switchyard.lib.packet import *
-from switchyard.lib.common import *
+from switchyard.lib.userlib import *
 
 def main(net):
     count = 0

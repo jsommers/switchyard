@@ -4,7 +4,7 @@ and prints packets to stdout.
 '''
 
 
-from switchyard.lib.pcapffi import *
+from switchyard.pcapffi import *
 from switchyard.lib.packet import *
 
 reader = PcapReader('tcpdump.pcap')

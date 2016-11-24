@@ -1,5 +1,4 @@
-from switchyard.lib.packet import *
-from switchyard.lib.address import EthAddr, IPAddr
+from switchyard.lib.userlib import *
 from switchyard.lib.topo.util import *
 from switchyard.lib.topo.topobuild import *
 
