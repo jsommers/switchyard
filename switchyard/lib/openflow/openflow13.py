@@ -3,33 +3,13 @@ import struct
 from math import ceil
 from ipaddress import ip_network, ip_address
 
-from switchyard.lib.packet import PacketHeaderBase, Packet, IPProtocol, \
+from ..packet import PacketHeaderBase, Packet, IPProtocol, \
     EtherType, Ethernet, Vlan, IPv6, IPv4, ICMP, ICMPv6, TCP, UDP, Arp
-from switchyard.lib.address import EthAddr, IPv4Address
-from switchyard.lib.logging import log_debug
+from ..address import EthAddr, IPv4Address
+from ..logging import log_debug
 
-def _make_bitmap(xset):
-    '''
-    Given a set of enumerated values, build an integer (32 bit)
-    bitmap of the enum values.
-    '''
-    val = 0x00000000
-    for enumval in xset:
-        val |= enumval.value
-    return val
-
-def _unpack_bitmap(bitmap, xenum):
-    '''
-    Given an integer bitmap and an enumerated type, build
-    a set that includes zero or more enumerated type values
-    corresponding to the bitmap.
-    '''
-    unpacked = set()
-    for enval in xenum:
-        if enval.value & bitmap == enval.value:
-            unpacked.add(enval)
-    return unpacked
-
+# import basic 1.0 support, then override/expand below
+from .openflow10 import *
 
 class OpenflowType(IntEnum):
     Hello = 0
@@ -76,36 +56,10 @@ class OpenflowPort(IntEnum):
     Any = 0xffffffff  
 
 
-def _get_port(value):
-    value = int(value)
-    try:
-        value = OpenflowPort(value)
-        return value
-    except ValueError:
-        if 0 <= value < OpenflowPort.Max:
-            return value
-        else:
-            raise ValueError("Invalid port number")        
-
 class OpenflowPortState(IntEnum):
-    NoState = 0
     LinkDown = 1 << 0
-    StpListen = 0 << 8
-    StpLearn = 1 << 8
-    StpForward = 2 << 8
-    StpBlock = 3 << 8
-    StpMask = 3 << 8
-
-
-class OpenflowPortConfig(IntEnum):
-    NoConfig = 0
-    Down = 1 << 0
-    NoStp = 1 << 1
-    NoRecv = 1 << 2
-    NoRecvStp = 1 << 3
-    NoFlood = 1 << 4
-    NoFwd = 1 << 5
-    NoPacketIn = 1 << 6
+    Blocked = 1 << 1
+    Live = 1 << 2
 
 
 class OpenflowPortFeatures(IntEnum):
@@ -117,11 +71,16 @@ class OpenflowPortFeatures(IntEnum):
     e1Gb_Half = 1 << 4
     e1Gb_Full = 1 << 5
     e10Gb_Full = 1 << 6
-    Copper = 1 << 7
-    Fiber = 1 << 8
-    AutoNeg = 1 << 9
-    Pause = 1 << 10
-    PauseAsym = 1 << 11
+    e40Gb_Full = 1 << 7
+    e100Gb_Full = 1 << 8
+    e1Tb_Full = 1 << 9
+    OtherSpeed = 1 << 10
+
+    Copper = 1 << 11
+    Fiber = 1 << 12
+    AutoNeg = 1 << 13
+    Pause = 1 << 14
+    PauseAsym = 1 << 15
 
 
 class OpenflowCapabilities(IntEnum):
@@ -129,36 +88,25 @@ class OpenflowCapabilities(IntEnum):
     FlowStats = 1 << 0
     TableStats = 1 << 1
     PortStats = 1 << 2
-    Stp = 1 << 3
-    Reserved = 1 << 4
+    GroupStats = 1 << 3
     IpReasm = 1 << 5
     QueueStats = 1 << 6
-    ArpMatchIp = 1 << 7
+    PortBlocked = 1 << 8
 
 
-class _OpenflowStruct(PacketHeaderBase):
-
-    def __init__(self, **kwargs):
-        PacketHeaderBase.__init__(self, **kwargs)
-
-    def __eq__(self, other):
-        return self.to_bytes() == other.to_bytes()
-
-    def next_header_class(self):
-        pass
-
-    def pre_serialize(self, *args):
-        pass
-
-
-class OpenflowPhysicalPort(_OpenflowStruct):
+class OpenflowPhysicalPort(OpenflowStruct):
+    '''
+    For 1.3, expands port num to 32 (plus some padding),
+    adds curr and max speeds.
+    '''
     __slots__ = ['_portnum', '_hwaddr', '_name', '_config',
-                 '_state', '_curr', '_advertised', '_supported', '_peer']
-    _PACKFMT = '!H6s16sIIIIII'
+                 '_state', '_curr', '_advertised', '_supported', '_peer', 
+                 '_curr_speed', '_max_speed']
+    _PACKFMT = '!I4x6s2x16sIIIIIIII'
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self, portnum=0, hwaddr='', name=''):
-        _OpenflowStruct.__init__(self)
+        OpenflowStruct.__init__(self)
         self._portnum = portnum
         if hwaddr:
             self._hwaddr = EthAddr(hwaddr)
@@ -171,6 +119,8 @@ class OpenflowPhysicalPort(_OpenflowStruct):
         self._advertised = set()
         self._supported = set()
         self._peer = set()
+        self._curr_speed = 0
+        self._max_speed = 0
 
     def to_bytes(self):
         return struct.pack(OpenflowPhysicalPort._PACKFMT,
@@ -178,7 +128,8 @@ class OpenflowPhysicalPort(_OpenflowStruct):
                                'utf8'),
                            _make_bitmap(self._config), _make_bitmap(self._state), 
                            _make_bitmap(self._curr), _make_bitmap(self._advertised),
-                           _make_bitmap(self._supported), _make_bitmap(self._peer))
+                           _make_bitmap(self._supported), _make_bitmap(self._peer),
+                           self._curr_speed, self._max_speed)
 
     def from_bytes(self, raw):
         if len(raw) < OpenflowPhysicalPort._MINLEN:
@@ -196,6 +147,8 @@ class OpenflowPhysicalPort(_OpenflowStruct):
         self._advertised = _unpack_bitmap(fields[6], OpenflowPortFeatures)
         self._supported = _unpack_bitmap(fields[7], OpenflowPortFeatures)
         self._peer = _unpack_bitmap(fields[8], OpenflowPortFeatures)
+        self.curr_speed = fields[9]
+        self.max_speed = fields[10]
 
         return raw[OpenflowPhysicalPort._MINLEN:]
 
@@ -305,14 +258,32 @@ class OpenflowPhysicalPort(_OpenflowStruct):
 
     def clear_peer(self):
         self._peer.clear()
+    
+    @property
+    def curr_speed(self):
+        return self._curr_speed
+
+    @curr_speed.setter
+    def curr_speed(self, value):
+        self._curr_speed = int(value)
+
+    @property
+    def max_speed(self):
+        return self._max_speed
+
+    @max_speed.setter
+    def max_speed(self, value):
+        self._max_speed = int(value)
 
 
 class OpenflowQueuePropertyTypes(IntEnum):
     NoProperty = 0
     MinRate = 1
+    MaxRate = 2
+    Experimenter = 0xffff
 
 
-class OpenflowQueueMinRateProperty(_OpenflowStruct):
+class OpenflowQueueMinRateProperty(OpenflowStruct):
     __slots__ = ['_rate']
     _PACKFMT = '!HH4xH6x'
     _MINLEN = struct.calcsize(_PACKFMT)
@@ -351,13 +322,13 @@ _QueuePropertyTypeClassMap = {
 }
 
 
-class OpenflowPacketQueue(_OpenflowStruct):
+class OpenflowPacketQueue(OpenflowStruct):
     __slots__ = ['_queue_id', '_properties']
     _PACKFMT = '!IHxx'
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self, queue_id=0):
-        _OpenflowStruct.__init__(self)
+        OpenflowStruct.__init__(self)
         self._queue_id = queue_id
         self._properties = []
 
@@ -397,7 +368,7 @@ class OpenflowPacketQueue(_OpenflowStruct):
             raw = raw[proplen:]
 
 
-class OpenflowMatch(_OpenflowStruct):
+class OpenflowMatch(OpenflowStruct):
     __slots__ = ['_wildcards', '_nw_src_wildcard', '_nw_dst_wildcard',
                  '_in_port', '_dl_src', '_dl_dst',
                  '_dl_vlan', '_dl_vlan_pcp', '_dl_type',
@@ -436,7 +407,7 @@ class OpenflowMatch(_OpenflowStruct):
         self._nw_dst = IPv4Address(0)
         self._tp_src = 0
         self._tp_dst = 0
-        _OpenflowStruct.__init__(self, **kwargs)
+        OpenflowStruct.__init__(self, **kwargs)
 
     @staticmethod
     def size(*args):
@@ -803,14 +774,14 @@ class OpenflowActionType(IntEnum):
     Vendor = 0xffff
 
 
-class _OpenflowAction(_OpenflowStruct):
+class OpenflowAction(OpenflowStruct):
     __slots__ = ['_type','_len']
     _PACKFMT = '!HH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
         super().__init__()
-        self._len = _OpenflowAction._MINLEN
+        self._len = OpenflowAction._MINLEN
         self._type = OpenflowActionType.Output
 
     @property
@@ -830,19 +801,19 @@ class _OpenflowAction(_OpenflowStruct):
         self._len = int(value)    
 
     def from_bytes(self, raw):
-        self.type, self.len = struct.unpack(_OpenflowAction._PACKFMT, 
-            raw[:_OpenflowAction._MINLEN]) 
-        return raw[_OpenflowAction._MINLEN:]
+        self.type, self.len = struct.unpack(OpenflowAction._PACKFMT, 
+            raw[:OpenflowAction._MINLEN]) 
+        return raw[OpenflowAction._MINLEN:]
 
     def to_bytes(self):
-        return struct.pack(_OpenflowAction._PACKFMT, self._type.value, 
+        return struct.pack(OpenflowAction._PACKFMT, self._type.value, 
                            self._len)
 
     def size(self):
         return self._len
 
 
-class ActionStripVlan(_OpenflowAction):
+class ActionStripVlan(OpenflowAction):
     def __init__(self):
         super().__init__()
         self._type = OpenflowActionType.StripVlan
@@ -852,12 +823,12 @@ class ActionStripVlan(_OpenflowAction):
         Exception("Not implemented")
 
 
-class ActionOutput(_OpenflowAction):
+class ActionOutput(OpenflowAction):
     __slots__ = ['_port', '_maxlen']
     _PACKFMT = '!HH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, port=OpenflowPort.NoPort):
+    def __init__(self, port=OpenflowPort.Any):
         super().__init__()
         self._type = OpenflowActionType.Output
         self._port = int(port)
@@ -910,18 +881,18 @@ class ActionOutput(_OpenflowAction):
             net.send_packet(inport, packet)
         elif self._port == OpenflowPort.Table:
             raise Exception("Not implemented")
-        elif self._port == OpenflowPort.NoPort:
+        elif self._port == OpenflowPort.Any:
             raise Exception("Not implemented")
         else:
             print("packet send on port {} <- {}".format(self._port, packet))
             net.send_packet(self._port, packet)
 
-class ActionEnqueue(_OpenflowAction):
+class ActionEnqueue(OpenflowAction):
     __slots__ = ['_port', '_queue_id']
     _PACKFMT = '!H6xI'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, port=OpenflowPort.NoPort, queue_id=0):
+    def __init__(self, port=OpenflowPort.Any, queue_id=0):
         super().__init__()
         self._type = OpenflowActionType.Enqueue
         self._port = int(port)
@@ -956,7 +927,7 @@ class ActionEnqueue(_OpenflowAction):
     def __call__(self, **kwargs):
         raise Exception("Not implemented")
 
-class ActionVlanVid(_OpenflowAction):
+class ActionVlanVid(OpenflowAction):
     __slots__ = ['_vlan_vid']
     _PACKFMT = '!H2x'
     _MINLEN = struct.calcsize(_PACKFMT)
@@ -988,7 +959,7 @@ class ActionVlanVid(_OpenflowAction):
         raise Exception("Not implemented")
 
 
-class ActionVlanPcp(_OpenflowAction):
+class ActionVlanPcp(OpenflowAction):
     __slots__ = ['_vlan_pcp']
     _PACKFMT = '!B3x'
     _MINLEN = struct.calcsize(_PACKFMT)
@@ -1019,7 +990,7 @@ class ActionVlanPcp(_OpenflowAction):
     def __call__(self, **kwargs):
         raise Exception("Not implemented")
 
-class ActionDlAddr(_OpenflowAction):
+class ActionDlAddr(OpenflowAction):
     __slots__ = ['_dl_addr']
     _PACKFMT = '!6s6x'
     _MINLEN = struct.calcsize(_PACKFMT)
@@ -1052,7 +1023,7 @@ class ActionDlAddr(_OpenflowAction):
     def __call__(self, **kwargs):
         raise Exception("Not implemented")
 
-class ActionNwAddr(_OpenflowAction):
+class ActionNwAddr(OpenflowAction):
     __slots__ = ['_nw_addr']
     _PACKFMT = '!4s'
     _MINLEN = struct.calcsize(_PACKFMT)
@@ -1086,7 +1057,7 @@ class ActionNwAddr(_OpenflowAction):
         raise Exception("Not implemented")
 
 
-class ActionNwTos(_OpenflowAction):
+class ActionNwTos(OpenflowAction):
     __slots__ = ['_nw_tos']
     _PACKFMT = '!B3x'
     _MINLEN = struct.calcsize(_PACKFMT)
@@ -1117,7 +1088,7 @@ class ActionNwTos(_OpenflowAction):
         raise Exception("Not implemented")
 
 
-class ActionTpPort(_OpenflowAction):
+class ActionTpPort(OpenflowAction):
     __slots__ = ['_tp_port']
     _PACKFMT = '!H2x'
     _MINLEN = struct.calcsize(_PACKFMT)
@@ -1149,7 +1120,7 @@ class ActionTpPort(_OpenflowAction):
         raise Exception("Not implemented")
 
 
-class ActionVendorHeader(_OpenflowAction):
+class ActionVendorHeader(OpenflowAction):
     __slots__ = ['_vendor', '_data']
     _PACKFMT = '!I'
     _MINLEN = struct.calcsize(_PACKFMT)
@@ -1233,11 +1204,11 @@ def _unpack_actions(raw):
     return actions
 
 
-class OpenflowEchoRequest(_OpenflowStruct):
+class OpenflowEchoRequest(OpenflowStruct):
     __slots__ = ['_data']
 
     def __init__(self):
-        _OpenflowStruct.__init__(self)
+        OpenflowStruct.__init__(self)
         self._data = b''
 
     def size(self):
@@ -1260,25 +1231,27 @@ class OpenflowEchoRequest(_OpenflowStruct):
         self.data = raw
 
 
+
 class OpenflowEchoReply(OpenflowEchoRequest):
     def __init__(self):
         OpenflowEchoRequest.__init__(self)
 
 
-class OpenflowConfigFlags(IntEnum):
-    FragNormal = 0
-    FragDrop = 1
-    FragReasm = 2
-    FragMask = 3
+# in 1.3, hello is a header + some arbitrary TLV data
+# we don't do any interpretation of that here.
+class OpenflowHello(OpenflowEchoRequest):
+    def __init__(self):
+        OpenflowEchoRequest.__init__(self)
 
 
-class OpenflowSetConfig(_OpenflowStruct):
+
+class OpenflowSetConfig(OpenflowStruct):
     __slots__ = ['_flags', '_miss_send_len']
     _PACKFMT = '!HH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
-        _OpenflowStruct.__init__(self)
+        OpenflowStruct.__init__(self)
         self._flags = OpenflowConfigFlags.FragNormal
         self._miss_send_len = 1500
 
@@ -1348,7 +1321,7 @@ class MeterModCommand(IntEnum):
     Delete = 2
 
 
-class OpenflowFlowMod(_OpenflowStruct):
+class OpenflowFlowMod(OpenflowStruct):
     '''
     Flowmod message
     '''
@@ -1361,7 +1334,7 @@ class OpenflowFlowMod(_OpenflowStruct):
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self, match=None):
-        _OpenflowStruct.__init__(self)
+        OpenflowStruct.__init__(self)
         if match is None:
             match = OpenflowMatch()
         self._match = match
@@ -1480,21 +1453,22 @@ class OpenflowFlowMod(_OpenflowStruct):
         return self._actions
    
 
-class OpenflowSwitchFeaturesReply(_OpenflowStruct):
+class OpenflowSwitchFeaturesReply(OpenflowStruct):
 
     '''
     Switch features response message, not including the header.
     '''
-    __slots__ = ['_dpid', '_nbuffers', '_ntables', '_capabilities',
-                 '_actions', '_ports']
-    _PACKFMT = '!8sIBxxxII'
+    __slots__ = ['_dpid', '_nbuffers', '_ntables', '_auxid'
+                 '_capabilities', '_actions', '_ports']
+    _PACKFMT = '!8sIBBxxII'
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
-        _OpenflowStruct.__init__(self)
+        OpenflowStruct.__init__(self)
         self.dpid = b'\x00' * 8
         self.nbuffers = 0
         self.ntables = 1
+        self.auxid = 0
         self._capabilities = set()
         self._actions = set()
         self._ports = []
@@ -1502,7 +1476,7 @@ class OpenflowSwitchFeaturesReply(_OpenflowStruct):
     def to_bytes(self):
         rawpkt = struct.pack(OpenflowSwitchFeaturesReply._PACKFMT,
                              self._dpid, self._nbuffers, self._ntables,
-                             self.capabilities, self.actions)
+                             self.auxid, self.capabilities, self.actions)
         for p in self._ports:
             rawpkt += p.to_bytes()
         return rawpkt
@@ -1516,8 +1490,9 @@ class OpenflowSwitchFeaturesReply(_OpenflowStruct):
         self.dpid = fields[0]
         self.nbuffers = fields[1]
         self.ntables = fields[2]
-        self._capabilities = _unpack_bitmap(fields[3], OpenflowCapabilities)
-        self._actions = _unpack_bitmap(fields[4], OpenflowActionType) 
+        self.auxid = fields[3]
+        self._capabilities = _unpack_bitmap(fields[4], OpenflowCapabilities)
+        self._actions = _unpack_bitmap(fields[5], OpenflowActionType) 
         remain = raw[OpenflowSwitchFeaturesReply._MINLEN:]
         p = OpenflowPhysicalPort()
         while len(remain) >= p.size():
@@ -1571,6 +1546,14 @@ class OpenflowSwitchFeaturesReply(_OpenflowStruct):
         else:
             raise ValueError(
                 "Setting high-order 16 bits of dpid must be done with bytes")
+
+    @property
+    def auxid(self):
+        return self._auxid
+
+    @auxid.setter
+    def auxid(self, value):
+        self._auxid = int(value)
 
     @property
     def nbuffers(self):
@@ -1721,13 +1704,13 @@ OpenflowErrorTypeCodes = {
 }
 
 
-class OpenflowError(_OpenflowStruct):
+class OpenflowError(OpenflowStruct):
     __slots__ = ('_type', '_code', '_data')
     _PACKFMT = '!HH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
-        _OpenflowStruct.__init__(self)
+        OpenflowStruct.__init__(self)
         self._type = 0
         self._code = 0
         self._data = b''
@@ -1774,27 +1757,27 @@ class OpenflowError(_OpenflowStruct):
         self._data = bytes(value)
 
 
-class OpenflowVendor(_OpenflowStruct):
+class OpenflowExperimenter(OpenflowStruct):
     __slots__ = ('_vendor', '_data')
     _PACKFMT = '!I'
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
-        _OpenflowStruct.__init__(self)
+        OpenflowStruct.__init__(self)
         self._vendor = 0
         self._data = b''
 
     def size(self):
-        return OpenflowVendor._MINLEN + len(self.data)
+        return OpenflowExperimenter._MINLEN + len(self.data)
 
     def to_bytes(self):
-        return struct.pack(OpenflowVendor._PACKFMT, self.vendor) + self.data
+        return struct.pack(OpenflowExperimenter._PACKFMT, self.vendor) + self.data
 
     def from_bytes(self, raw):
-        fields = struct.unpack(OpenflowVendor._PACKFMT,
-                               raw[:OpenflowVendor._MINLEN])
+        fields = struct.unpack(OpenflowExperimenter._PACKFMT,
+                               raw[:OpenflowExperimenter._MINLEN])
         self.vendor = fields[0]
-        self.data = raw[OpenflowVendor._MINLEN:]
+        self.data = raw[OpenflowExperimenter._MINLEN:]
 
     @property
     def vendor(self):
@@ -1813,13 +1796,13 @@ class OpenflowVendor(_OpenflowStruct):
         self._data = bytes(value)
 
 
-class OpenflowPortMod(_OpenflowStruct):
+class OpenflowPortMod(OpenflowStruct):
     __slots__ = ('_port_no', '_ethaddr', '_config', '_mask', '_advertise')
     _PACKFMT = '!H6sIII4x'
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
-        _OpenflowStruct.__init__(self)
+        OpenflowStruct.__init__(self)
         self._port_no = 0
         self._ethaddr = EthAddr()
         self._config = set()
@@ -1921,13 +1904,13 @@ class PortStatusReason(IntEnum):
     Modify = 2
 
 
-class OpenflowPortStatus(_OpenflowStruct):
+class OpenflowPortStatus(OpenflowStruct):
     __slots__ = ('_reason', '_port')
     _PACKFMT = '!B7x'
     _MINLEN = 8 + OpenflowPhysicalPort._MINLEN
 
     def __init__(self):
-        _OpenflowStruct.__init__(self)
+        OpenflowStruct.__init__(self)
         self._reason = PortStatusReason.Modify
         self._port = OpenflowPhysicalPort()
 
@@ -1970,13 +1953,13 @@ class OpenflowStatsType(IntEnum):
     NoStatsType = 0xdead
 
 
-class _OpenflowStatsRequest(_OpenflowStruct):
+class _OpenflowStatsRequest(OpenflowStruct):
     __slots__ = ('_type', '_flags')
     _PACKFMT = '!HH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self, xtype=OpenflowStatsType.NoStatsType, **kwargs):
-        _OpenflowStruct.__init__(self, **kwargs)
+        OpenflowStruct.__init__(self, **kwargs)
         self._type = OpenflowStatsType(xtype)
         # NB: no flags are defined in OF 1.0 spec 
 
@@ -2075,7 +2058,7 @@ class PortStatsRequest(_OpenflowStatsRequest):
 
     def __init__(self, **kwargs):
         _OpenflowStatsRequest.__init__(self, OpenflowStatsType.Port, **kwargs)
-        self._port_no = OpenflowPort.NoPort
+        self._port_no = OpenflowPort.Any
 
     @property
     def port_no(self):
@@ -2115,7 +2098,7 @@ class QueueStatsRequest(_OpenflowStatsRequest):
 
     def __init__(self, **kwargs):
         _OpenflowStatsRequest.__init__(self, OpenflowStatsType.Queue, **kwargs)
-        self._port_no = OpenflowPort.NoPort
+        self._port_no = OpenflowPort.Any
         self._queue_id = 0
 
     @property
@@ -2902,13 +2885,13 @@ _OpenflowStatsReplyClassMap = {
 }
 
 
-class OpenflowQueueGetConfigRequest(_OpenflowStruct):
+class OpenflowQueueGetConfigRequest(OpenflowStruct):
     __slots__ = ('_port')
     _PACKFMT = '!H2x'
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self, port=0):
-        _OpenflowStruct.__init__(self)
+        OpenflowStruct.__init__(self)
         self._port = port
 
     @property
@@ -2933,13 +2916,13 @@ class OpenflowQueueGetConfigRequest(_OpenflowStruct):
         self.port = fields[0]
 
 
-class OpenflowQueueGetConfigReply(_OpenflowStruct):
+class OpenflowQueueGetConfigReply(OpenflowStruct):
     __slots__ = ('_port', '_queues')
     _PACKFMT = '!H6x'
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self, port=0):
-        _OpenflowStruct.__init__(self)
+        OpenflowStruct.__init__(self)
         self._port = port
         self._queues = []
 
@@ -2986,15 +2969,15 @@ class OpenflowPacketInReason(IntEnum):
     NoReason = 0xff
 
 
-class OpenflowPacketIn(_OpenflowStruct):
+class OpenflowPacketIn(OpenflowStruct):
     __slots__ = ('_buffer_id', '_in_port', '_reason', '_packet_data')
     _PACKFMT = '!IHHBx'
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self):
-        _OpenflowStruct.__init__(self)
+        OpenflowStruct.__init__(self)
         self._buffer_id = 0xffffffff
-        self._in_port = OpenflowPort.NoPort
+        self._in_port = OpenflowPort.Any
         self._reason = OpenflowPacketInReason.NoReason
         self._packet_data = b''
 
@@ -3053,15 +3036,15 @@ class OpenflowPacketIn(_OpenflowStruct):
         self._packet_data = bytes(value)
 
 
-class OpenflowPacketOut(_OpenflowStruct):
+class OpenflowPacketOut(OpenflowStruct):
     __slots__ = ('_buffer_id', '_in_port', '_actions', '_packet_data')
     _PACKFMT = '!IHH'
     _MINLEN = 8
 
     def __init__(self):
-        _OpenflowStruct.__init__(self)
+        OpenflowStruct.__init__(self)
         self._buffer_id = 0xffffffff
-        self._in_port = OpenflowPort.NoPort
+        self._in_port = OpenflowPort.Any
         self._actions = []
         self._packet = b''
 
@@ -3124,7 +3107,7 @@ class FlowRemovedReason(IntEnum):
     Unknown = 0xff
 
 
-class OpenflowFlowRemoved(_OpenflowStruct):
+class OpenflowFlowRemoved(OpenflowStruct):
     __slots__ = ('_match', '_cookie', '_priority', '_reason',
                  '_duration_sec', '_duration_nsec', '_idle_timeout',
                  '_packet_count', '_byte_count')
@@ -3132,7 +3115,7 @@ class OpenflowFlowRemoved(_OpenflowStruct):
     _MINLEN = struct.calcsize(_PACKFMT) + OpenflowMatch.size()
 
     def __init__(self, reason=FlowRemovedReason.Unknown, match=None):
-        _OpenflowStruct.__init__(self)
+        OpenflowStruct.__init__(self)
         if match is None:
             match = OpenflowMatch()
         self._match = match
@@ -3268,7 +3251,7 @@ class OpenflowHeader(PacketHeaderBase):
         OpenflowType.Error: OpenflowError,
         OpenflowType.EchoRequest: OpenflowEchoRequest,
         OpenflowType.EchoReply: OpenflowEchoReply,
-        OpenflowType.Vendor: OpenflowVendor,
+        OpenflowType.Experimenter: OpenflowExperimenter,
         OpenflowType.FeaturesRequest: None,
         OpenflowType.FeaturesReply: OpenflowSwitchFeaturesReply,
         OpenflowType.GetConfigRequest: None,
@@ -3280,8 +3263,8 @@ class OpenflowHeader(PacketHeaderBase):
         OpenflowType.PacketOut: OpenflowPacketOut,
         OpenflowType.FlowMod: OpenflowFlowMod,
         OpenflowType.PortMod: OpenflowPortMod,
-        OpenflowType.StatsRequest: _OpenflowStatsRequest,
-        OpenflowType.StatsReply: _OpenflowStatsReply,
+        # OpenflowType.StatsRequest: _OpenflowStatsRequest,
+        # OpenflowType.StatsReply: _OpenflowStatsReply,
         OpenflowType.BarrierRequest: None,
         OpenflowType.BarrierReply: None,
         OpenflowType.QueueGetConfigRequest: OpenflowQueueGetConfigRequest,

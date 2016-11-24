@@ -13,8 +13,8 @@ from unittest.mock import MagicMock
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
 from switchyard.lib.exceptions import *
-import switchyard.lib.openflow13 as of13
-import switchyard.lib.openflow10 as of10
+import switchyard.lib.openflow.openflow13 as of13
+import switchyard.lib.openflow.openflow10 as of10
 from switchyard.lib.openflow.ofswitch import OpenflowSwitch, SwitchActionCallbacks, FlowTable
 from switchyard.llnetbase import LLNetBase
 from switchyard.lib.interface import Interface
@@ -66,44 +66,59 @@ class SwitchUnitTests(unittest.TestCase):
         setattr(socket, "socket", MagicMock(return_value=MagicMock()))
         self.net = NetConnection()
         self.cb = SwitchActionCallbacks()
-        self.lastrecv = []
 
-    def testHello(self):
+    def _setup_switch(self, pkt):
         self.switch = OpenflowSwitch(self.net, "abcdef00", self.cb)
+        self.lastrecv = []
         self.switch._send_openflow_message_internal = self._receiver
         self.switch._running = False
-        hellopkt = OpenflowHeader.build(OpenflowType.Hello, xid=42)
-        self.switch._receive_openflow_message_internal = MagicMock(return_value=hellopkt) 
+        self.switch._receive_openflow_message_internal = MagicMock(return_value=pkt) 
+
+    def testHello10(self):
+        hellopkt = of10.OpenflowHeader.build(of10.OpenflowType.Hello, xid=42)
+        self._setup_switch(hellopkt)
         self.switch._controller_thread(MagicMock())
 
         self.assertEqual(len(self.lastrecv), 1)
         pkt = self.lastrecv.pop()[0]
-        self.assertEqual(pkt.type, OpenflowType.Hello)
-        self.assertEqual(pkt.version, hellopkt[0].version)
+        self.assertEqual(pkt.type, of10.OpenflowType.Hello)
+        self.assertEqual(pkt.version, 0x01)
         self.assertEqual(pkt.length, hellopkt[0].length)
 
-    def testBarrier(self):
-        self.switch = OpenflowSwitch(self.net, "abcdef00", self.cb)
-        self.switch._send_openflow_message_internal = self._receiver
-        self.switch._running = False
-
-        barrier = OpenflowHeader.build(OpenflowType.BarrierRequest, xid=42)
-        self.switch._receive_openflow_message_internal = MagicMock(return_value=barrier) 
+    def testHello13(self):
+        hellopkt = of13.OpenflowHeader.build(of13.OpenflowType.Hello, xid=42)
+        self._setup_switch(hellopkt)
         self.switch._controller_thread(MagicMock())
 
         self.assertEqual(len(self.lastrecv), 1)
         pkt = self.lastrecv.pop()[0]
-        self.assertEqual(pkt.type, OpenflowType.BarrierReply)
+        self.assertEqual(pkt.type, of13.OpenflowType.Hello)
+        self.assertEqual(pkt.version, 0x04)
+        self.assertEqual(pkt.length, hellopkt[0].length)
+
+    def testBarrier10(self):
+        barrier = of10.OpenflowHeader.build(of10.OpenflowType.BarrierRequest, xid=42)
+        self._setup_switch(barrier)
+        self.switch._controller_thread(MagicMock())
+
+        pkt = self.lastrecv.pop()[0]
+        self.assertEqual(pkt.type, of10.OpenflowType.BarrierReply)
         self.assertEqual(pkt.version, barrier[0].version)
         self.assertEqual(pkt.length, barrier[0].length)
 
-    def testFeaturesRequest(self):
-        self.switch = OpenflowSwitch(self.net, "abcdef00", self.cb)
-        self.switch._send_openflow_message_internal = self._receiver
-        self.switch._running = False
+    def testBarrier13(self):
+        barrier = of13.OpenflowHeader.build(of13.OpenflowType.BarrierRequest, xid=42)
+        self._setup_switch(barrier)
+        self.switch._controller_thread(MagicMock())
 
-        request = OpenflowHeader.build(OpenflowType.FeaturesRequest, xid=42, version=0x04)
-        self.switch._receive_openflow_message_internal = MagicMock(return_value=request) 
+        pkt = self.lastrecv.pop()[0]
+        self.assertEqual(pkt.type, of13.OpenflowType.BarrierReply)
+        self.assertEqual(pkt.version, barrier[0].version)
+        self.assertEqual(pkt.length, barrier[0].length)
+
+    def testFeaturesRequest10(self):
+        request = of10.OpenflowHeader.build(of10.OpenflowType.FeaturesRequest, xid=42)
+        self._setup_switch(request)
         self.switch._controller_thread(MagicMock())
 
         self.assertEqual(len(self.lastrecv), 1)

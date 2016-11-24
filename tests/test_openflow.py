@@ -2,7 +2,7 @@ import unittest
 from copy import deepcopy
 from time import time
 
-from switchyard.lib.openflow10 import *
+from switchyard.lib.openflow.openflow10 import *
 from switchyard.lib.address import EthAddr, IPv4Address, SpecialIPv4Addr
 from switchyard.pcapffi import PcapDumper
 from switchyard.lib.packet import Ethernet, IPv4, TCP, TCPFlags, ICMP

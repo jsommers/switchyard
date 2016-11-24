@@ -1,11 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''
-Ethernet hub in Python.
+Ethernet hub in Switchyard.
 '''
-from switchyard.lib.address import *
-from switchyard.lib.packet import *
-from switchyard.lib.common import *
+from switchyard.lib.userlib import *
 
 def switchy_main(net):
     my_interfaces = net.interfaces() 
