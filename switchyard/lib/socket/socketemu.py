@@ -1,17 +1,32 @@
 import sys
 from queue import Queue, Empty
-from socket import timeout, AddressFamily, AF_INET, SOCK_DGRAM, SOCK_STREAM, IPPROTO_TCP, IPPROTO_UDP
-from socket import error as sockerr
 from subprocess import getoutput
 import re
 import random
 from textwrap import indent
+from copy import copy
+from collections import namedtuple
+import socket
+from socket import error as sockerr
+import importlib
+
+# carefully control what we export to user code; we provide our own
+# implementation for some symbols, and others simply aren't supported
+explist = copy(socket.__all__)
+dontimport = ('setdefaulttimeout', 'getdefaulttimeout', 'has_ipv6', 
+    'socket', 'socketpair', 'fromfd', 'dup', 'create_connection')
+for name in dontimport:
+    explist.remove(name)
+__all__ = explist
+from socket import *
 
 from ...hostfirewall import Firewall
 from ...pcapffi import PcapLiveDevice
 from ..exceptions import NoPackets
-from ..logging import log_debug, log_info, setup_logging, red, yellow
+from ..logging import log_debug, log_info, log_warn, setup_logging, red, yellow
 from ..packet import IPProtocol
+
+has_ipv6 = True
 
 def _gather_ports():
     portset = set()
@@ -36,9 +51,17 @@ def _get_ephemeral_port():
         if p not in ports:
             return p
 
-def port_in_use(p):
-    ports = _gather_ports()
-    return p in ports
+ApplicationLayerData = namedtuple('ApplicationLayerData', 
+    ['timestamp', 'flowaddr', 'message'])
+
+_default_timeout = 1.0
+
+def getdefaulttimeout():
+    return _default_timeout
+
+def setdefaulttimeout(tmo):
+    global _default_timeout
+    _default_timeout = tmo
 
 class ApplicationLayer(object):
     _init = False
@@ -55,11 +78,11 @@ class ApplicationLayer(object):
         if ApplicationLayer._init:
             return
         ApplicationLayer._init = True
-        ApplicationLayer._to_app = Queue()
+        ApplicationLayer._to_app = {}
         ApplicationLayer._from_app = Queue()
 
     @staticmethod
-    def recv_from_app(timeout=1.0):
+    def recv_from_app(timeout=_default_timeout):
         try:
             data,local_addr,remote_addr = \
                 ApplicationLayer._from_app.get(timeout=timeout)
@@ -73,12 +96,22 @@ class ApplicationLayer(object):
         ApplicationLayer._to_app.put( (data,source_addr,dest_addr) )
 
     @staticmethod
-    def queues():
-        return ApplicationLayer._from_app, ApplicationLayer._to_app
+    def register_socket(s):
+        sock_queue = Queue()
+        ApplicationLayer._to_app[s._sockid()] = sock_queue
+        return ApplicationLayer._from_app, sock_queue
 
+    @staticmethod
+    def registry_update(s, oldid):
+        sock_queue = ApplicationLayer._to_app.pop(oldid)
+        ApplicationLayer._to_app[s._sockid()] = sock_queue
 
-# FIXME: need to import lots of stuff out of base socket module so that we can avoid
-# completely reinventing the wheel here
+    @staticmethod
+    def unregister_socket(s):
+        sock_queue = ApplicationLayer._to_app.pop(s._sockid())
+        if not sock_queue.empty():
+            log_warn("Socket being destroyed still has data enqueued for application layer.")
+
 
 class socket(object):
     __slots__ =  ('_family','_socktype','_protoname','_proto',
@@ -88,11 +121,10 @@ class socket(object):
     def __init__(self, family, xtype, proto=0, fileno=0):
         log_debug("In socket __init__")
         family = AddressFamily(family)
-        # FIXME: ip6
-        if family != AddressFamily.AF_INET:
+        if family not in (AddressFamily.AF_INET, AddressFamily.AF_INET6):
             raise NotImplementedError(
                 "socket for family {} not implemented".format(family))
-        if xtype not in [SOCK_DGRAM, SOCK_STREAM]:
+        if xtype not in (SOCK_DGRAM, SOCK_STREAM):
             raise NotImplementedError(
                 "socket type {} not implemented".format(xtype))
         self._family = family
@@ -102,11 +134,17 @@ class socket(object):
         if self._socktype == SOCK_STREAM:
             self._protoname = 'tcp'
             self._proto = IPProtocol.TCP
-        self._timeout = None
+        if proto != 0:
+            self._proto = proto
+        self._timeout = _default_timeout
         self._block = True
         self._remote_addr = (None,None)
         self._local_addr = ('0.0.0.0',_get_ephemeral_port())
+        self.__set_fw_rules() 
+        self._socket_queue_to_stack, self._socket_queue_from_stack = \
+            ApplicationLayer.register_socket(self)
 
+    def __set_fw_rules(self):
         log_debug("Adding firewall/bpf rule {} dst port {}".format(
             self._protoname, self._local_addr[1]))
         try:
@@ -115,8 +153,7 @@ class socket(object):
             # only get packets with destination port of local port, or any
             # icmp packets
             PcapLiveDevice.set_bpf_filter_on_all_devices(
-                # FIXME: icmp6
-                "{} dst port {} or icmp".format(self._protoname,
+                "{} dst port {} or icmp or icmp6".format(self._protoname,
                                                 self._local_addr[1]))
         except:
             with yellow():
@@ -129,23 +166,23 @@ class socket(object):
                 print(indent(traceback.format_exc(), '    '))
             sys.exit()
 
-        # FIXME: this can't go here!  what about multiple sockets?
-        ApplicationLayer.init()
-
-        self._socket_queue_to_stack, self._socket_queue_from_stack = \
-            ApplicationLayer.queues()
-
     @property
     def family(self):
         return self._family
 
     @property
     def type(self):
-        return self._proto
+        return self._socktype
 
     @property
     def proto(self):
         return self._proto
+
+    def _sockid(self):
+        return (self._family, self._proto, *self._local_addr)
+
+    def _flowaddr(self):
+        return (self._proto, *self._local_addr, *self._remote_addr) 
 
     def __del__(self):
         log_debug("Exiting socket code")
@@ -155,19 +192,16 @@ class socket(object):
         pass
 
     def close(self):
-        # join the queue?
-        pass
+        ApplicationLayer.unregister_socket(self)
 
     def bind(self, address):
+        oldid = self._sockid()
         # block firewall port
         # set stack to only allow packets through for addr/port
         self._local_addr = address
         # update firewall and pcap filters
-        log_debug("Updating firewall/bpf rule on bind(): {} dst port {}".format(
-            self._protoname, self._local_addr[1]))
-        Firewall.add_rule("{}:{}".format(self._protoname, self._local_addr[1]))
-        PcapLiveDevice.set_bpf_filter_on_all_devices("{} dst port {}".format(
-            self._protoname, self._local_addr[1]))
+        self.__set_fw_rules()
+        ApplicationLayer.registry_update(self, oldid)
 
     def connect(self, address):
         self._remote_addr = address
@@ -178,22 +212,18 @@ class socket(object):
         pass
 
     def getpeername(self):
-        # ??
-        pass
+        return self._remote_addr
 
     def getsockname(self):
-        # ??
-        pass
+        return self._local_addr
 
     def getsocktopt(self, option, buffersize=0):
-        # ??
-        pass
+        raise NotImplementedError("set/get sockopt calls aren't implemented")
 
     def gettimeout(self):
         return self._timeout
 
     def listen(self, backlog):
-        # null op?
         pass
 
     def recv(self, buffersize, flags=0):
@@ -222,18 +252,18 @@ class socket(object):
         raise timeout("timed out")
 
     def send(self, data, flags):
-        self._send(data, self._remote_addr)
+        self._send(data, self._flowaddr())
 
     def sendto(self, data, arg2, arg3=None):
         addr = arg3
         if arg3 is None:
             addr = arg2
-        self._send(data, addr)
+        self._send(data, (self._proto, *self._local_addr, *addr))
 
-    def _send(self, data, remote_addr):
-        log_debug("socketemu send: {}->{}:{}".format(data,
-            self._local_addr, remote_addr))
-        self._socket_queue_to_stack.put( (data, self._local_addr, remote_addr) )
+    def _send(self, data, flowaddr):
+        log_debug("socketemu send: {}->{}".format(data, str(flowaddr)))
+        self._socket_queue_to_stack.put( ApplicationLayerData(timestamp=time.time(), 
+            flowaddr=flowaddr, message=data) )
 
     def sendall(self, data, flags):
         raise NotImplementedError("sendall isn't implemented")
@@ -248,10 +278,10 @@ class socket(object):
         self._block = bool(flags)
 
     def setsockopt(self, level, option, value):
-        pass
+        raise NotImplementedError("set/get sockopt calls aren't implemented")
 
     def settimeout(self, timeout):
         self._timeout = float(timeout)
 
     def shutdown(self, flag):
-        pass
+        ApplicationLayer.unregister_socket(self)
