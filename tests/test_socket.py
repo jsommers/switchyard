@@ -46,14 +46,14 @@ class SocketEmuTests(unittest.TestCase):
         self.assertEqual(len(sock.ApplicationLayer._to_app), 0)
 
     def testSockBind(self):
-        s = sock.socket(sock.AF_INET, sock.SOCK_STREAM)
+        s = sock.socket(sock.AF_INET, sock.SOCK_DGRAM)
         localport = s._local_addr[1]
-        self.assertEqual(s._protoname, 'tcp')
-        self.firemock.add_rule.assert_called_with('tcp:{}'.format(localport))
-        self.pcapmock.set_bpf_filter_on_all_devices.assert_called_with('tcp dst port {} or icmp or icmp6'.format(localport))
+        self.assertEqual(s._protoname, 'udp')
+        self.firemock.add_rule.assert_called_with('udp:{}'.format(localport))
+        self.pcapmock.set_bpf_filter_on_all_devices.assert_called_with('udp dst port {} or icmp or icmp6'.format(localport))
         s.bind(('10.1.1.1', 5555))
-        self.firemock.add_rule.assert_called_with('tcp:{}'.format(5555))
-        self.pcapmock.set_bpf_filter_on_all_devices.assert_called_with('tcp dst port {} or icmp or icmp6'.format(5555))
+        self.firemock.add_rule.assert_called_with('udp:{}'.format(5555))
+        self.pcapmock.set_bpf_filter_on_all_devices.assert_called_with('udp dst port {} or icmp or icmp6'.format(5555))
 
     def testDefaults(self):
         self.assertEqual(sock.getdefaulttimeout(), 1.0)

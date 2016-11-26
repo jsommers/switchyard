@@ -124,7 +124,8 @@ class socket(object):
         if family not in (AddressFamily.AF_INET, AddressFamily.AF_INET6):
             raise NotImplementedError(
                 "socket for family {} not implemented".format(family))
-        if xtype not in (SOCK_DGRAM, SOCK_STREAM):
+        # only UDP is supported right now...
+        if xtype not in (SOCK_DGRAM,):
             raise NotImplementedError(
                 "socket type {} not implemented".format(xtype))
         self._family = family
