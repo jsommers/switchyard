@@ -8,6 +8,7 @@ from copy import copy
 from collections import namedtuple
 import socket
 from socket import error as sockerr
+from time import time
 import importlib
 
 # carefully control what we export to user code; we provide our own
@@ -25,6 +26,7 @@ from ...pcapffi import PcapLiveDevice
 from ..exceptions import NoPackets
 from ..logging import log_debug, log_info, log_warn, setup_logging, red, yellow
 from ..packet import IPProtocol
+from ..address import ip_address
 
 has_ipv6 = True
 
@@ -92,8 +94,15 @@ class ApplicationLayer(object):
         raise NoPackets()
 
     @staticmethod
-    def send_to_app(data, source_addr, dest_addr):
-        ApplicationLayer._to_app.put( (data,source_addr,dest_addr) )
+    def send_to_app(data, proto, source_addr, dest_addr):
+        xtup = (IPProtocol(proto), *dest_addr)
+        sockqueue = ApplicationLayer._to_app.get(xtup, None)
+        if sockqueue is not None:
+            log_debug("Sending {} to local socket {}".format(data, xtup))
+            sockqueue.put(data,source_addr,dest_addr)
+        else:
+            log_warn("No socket queue found for local proto/address: {}".format(xtup))
+            log_warn("Here's what I have: {}".format(ApplicationLayer._to_app))
 
     @staticmethod
     def register_socket(s):
@@ -140,7 +149,7 @@ class socket(object):
         self._timeout = _default_timeout
         self._block = True
         self._remote_addr = (None,None)
-        self._local_addr = ('0.0.0.0',_get_ephemeral_port())
+        self._local_addr = (ip_address('127.0.0.1'),_get_ephemeral_port())
         self.__set_fw_rules() 
         self._socket_queue_to_stack, self._socket_queue_from_stack = \
             ApplicationLayer.register_socket(self)
@@ -180,7 +189,7 @@ class socket(object):
         return self._proto
 
     def _sockid(self):
-        return (self._family, self._proto, *self._local_addr)
+        return (IPProtocol(self._proto), *self._local_addr)
 
     def _flowaddr(self):
         return (self._proto, *self._local_addr, *self._remote_addr) 
@@ -263,7 +272,7 @@ class socket(object):
 
     def _send(self, data, flowaddr):
         log_debug("socketemu send: {}->{}".format(data, str(flowaddr)))
-        self._socket_queue_to_stack.put( ApplicationLayerData(timestamp=time.time(), 
+        self._socket_queue_to_stack.put( ApplicationLayerData(timestamp=time(), 
             flowaddr=flowaddr, message=data) )
 
     def sendall(self, data, flags):
