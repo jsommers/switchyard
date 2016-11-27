@@ -1,9 +1,11 @@
 import unittest
 from unittest.mock import Mock
 from queue import Queue
+from ipaddress import IPv4Address
 
 import switchyard.lib.socket.socketemu as sock
 from switchyard.lib.packet import IPProtocol
+from switchyard.lib.exceptions import *
 
 class SocketEmuTests(unittest.TestCase):
     def setUp(self):
@@ -62,6 +64,41 @@ class SocketEmuTests(unittest.TestCase):
         s = sock.socket(sock.AF_INET, sock.SOCK_DGRAM)
         self.assertEqual(s._timeout, 2.0)
 
+    def testNoInstance(self):
+        with self.assertRaises(RuntimeError):
+            sock.ApplicationLayer()
+
+    def testAppSockRegister(self):
+        s = sock.socket(sock.AF_INET, sock.SOCK_DGRAM)
+        fromapp,toapp = sock.ApplicationLayer.register_socket(s)
+        self.assertIn(s._sockid(), sock.ApplicationLayer._to_app)
+        self.assertEqual(len(sock.ApplicationLayer._to_app), 1)
+
+        sock.ApplicationLayer.registry_update(s, s._sockid())
+        self.assertIn(s._sockid(), sock.ApplicationLayer._to_app)
+        self.assertEqual(len(sock.ApplicationLayer._to_app), 1)
+
+        sock.ApplicationLayer.unregister_socket(s)
+        self.assertEqual(len(sock.ApplicationLayer._to_app), 0)
+
+    def testAppSendRecv(self):
+        s = sock.socket(sock.AF_INET, sock.SOCK_DGRAM)
+        fromapp,toapp = sock.ApplicationLayer.register_socket(s)
+
+        with self.assertRaises(NoPackets):
+            sock.ApplicationLayer.recv_from_app(timeout=0.1)
+
+        s.sendto("testme!", ('127.0.0.1', 10000))
+        self.assertEqual(sock.ApplicationLayer._from_app.qsize(), 1)
+
+        ts,addrs,data = sock.ApplicationLayer.recv_from_app(timeout=0.1)
+        self.assertEqual(data, "testme!")
+        self.assertEqual(addrs[0], 17)
+        self.assertEqual(str(addrs[1]), '127.0.0.1')
+        self.assertEqual(str(addrs[3]), '127.0.0.1')
+        self.assertEqual(addrs[4], 10000)
+
+        
 
 
 if __name__ == '__main__':

@@ -267,12 +267,10 @@ class socket(object):
     def send(self, data, flags):
         self._send(data, self._flowaddr())
 
-    def sendto(self, data, arg2, arg3=None):
-        addr = arg3
-        if arg3 is None:
-            addr = arg2
-        self._send(data, (self._proto, self._local_addr[0], 
-            self._local_addr[1], addr[0], addr[1]))
+    def sendto(self, data, *args):
+        addr = args[-1]
+        self._send(data, (self._proto, ip_address(self._local_addr[0]), 
+            self._local_addr[1], ip_address(addr[0]), addr[1]))
 
     def _send(self, data, flowaddr):
         log_debug("socketemu send: {}->{}".format(data, str(flowaddr)))
