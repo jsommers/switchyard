@@ -32,7 +32,7 @@ class LLNetDevTests(unittest.TestCase):
         self.scenario.add_interface('eth1', '11:11:11:11:11:11')
         self.scenario.add_interface('eth0', '00:00:00:00:00:00')
         self.scenario.add_interface('eth2', '22:22:22:22:22:22')
-        self.scenario.add_interface('eth7', '77:77:77:77:77:77', '192.168.1.1', '255.255.255.0')
+        self.scenario.add_interface('eth7', '77:77:77:77:77:77', ipaddr='192.168.1.1', netmask='255.255.255.0')
         self.scenario.done = Mock(return_value=False)
         self.ev = Mock()
         self.ev.match = Mock(return_value=None)

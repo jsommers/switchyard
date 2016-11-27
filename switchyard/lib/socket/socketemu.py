@@ -95,11 +95,12 @@ class ApplicationLayer(object):
 
     @staticmethod
     def send_to_app(data, proto, source_addr, dest_addr):
-        xtup = (IPProtocol(proto), *dest_addr)
+        xtup = (IPProtocol(proto), dest_addr[0], dest_addr[1])
         sockqueue = ApplicationLayer._to_app.get(xtup, None)
         if sockqueue is not None:
             log_debug("Sending {} to local socket {}".format(data, xtup))
             sockqueue.put(data,source_addr,dest_addr)
+            log_debug("sockqueue len: {}".format(sockqueue.length()))
         else:
             log_warn("No socket queue found for local proto/address: {}".format(xtup))
             log_warn("Here's what I have: {}".format(ApplicationLayer._to_app))
@@ -189,10 +190,11 @@ class socket(object):
         return self._proto
 
     def _sockid(self):
-        return (IPProtocol(self._proto), *self._local_addr)
+        return (IPProtocol(self._proto), self._local_addr[0], self._local_addr[1])
 
     def _flowaddr(self):
-        return (self._proto, *self._local_addr, *self._remote_addr) 
+        return (self._proto, self._local_addr[0], self._local_addr[1], 
+            self._remote_addr[0], self._remote_addr[1]) 
 
     def __del__(self):
         log_debug("Exiting socket code")
@@ -251,6 +253,7 @@ class socket(object):
         raise NotImplementedError("*_into calls aren't implemented")
 
     def _recv(self, nbytes):
+        log_debug("Attempting receive (socket emu layer) queue len {}".format(self._socket_queue_from_stack.length()))
         try:
             data,sourceaddr,destaddr = self._socket_queue_from_stack.get(
                 block=self._block, timeout=self._timeout)
@@ -268,7 +271,8 @@ class socket(object):
         addr = arg3
         if arg3 is None:
             addr = arg2
-        self._send(data, (self._proto, *self._local_addr, *addr))
+        self._send(data, (self._proto, self._local_addr[0], 
+            self._local_addr[1], addr[0], addr[1]))
 
     def _send(self, data, flowaddr):
         log_debug("socketemu send: {}->{}".format(data, str(flowaddr)))

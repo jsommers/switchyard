@@ -1,9 +1,13 @@
 from abc import ABCMeta,abstractmethod
+from collections import namedtuple
 
 from .pcapffi import pcap_devices
 from .lib.logging import log_debug
 from .lib.exceptions import *
 from .lib.address import *
+
+ReceivedPacket = namedtuple('ReceivedPacket', 
+    ['timestamp', 'ingress_dev', 'packet'])
 
 class LLNetBase(metaclass=ABCMeta):
     '''
@@ -108,6 +112,10 @@ class LLNetBase(metaclass=ABCMeta):
 
     @abstractmethod
     def recv_packet(self, timeout=None, timestamp=False):
+        '''
+        ordinarily will return the ReceivedPacket named tuple
+        (timestamp, ingress_dev, packet)
+        '''
         raise NoPackets()
 
     @abstractmethod

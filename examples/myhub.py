@@ -11,7 +11,7 @@ def switchy_main(net):
 
     while True:
         try:
-            dev,packet = net.recv_packet()
+            timestamp,dev,packet = net.recv_packet()
         except NoPackets:
             continue
         except Shutdown:

@@ -8,18 +8,18 @@ import time
 import threading
 import textwrap
 from queue import Queue,Empty
-from socket import gethostname
+from socket import gethostname, if_nametoindex
 
 from .lib.address import *
 from .lib.packet import *
 from .lib.exceptions import SwitchyException, Shutdown, NoPackets
-from .lib.interface import Interface
+from .lib.interface import Interface, InterfaceType
 from .lib.logging import setup_logging, log_info, log_debug, log_warn, log_failure
 from .importcode import import_or_die
 from .textcolor import *
 
 from .pcapffi import *
-from .llnetbase import LLNetBase
+from .llnetbase import LLNetBase, ReceivedPacket
 
 _dlt_to_decoder = {}
 _dlt_to_decoder[Dlt.DLT_EN10MB] = lambda raw: Packet(raw, first_header=Ethernet)
@@ -39,7 +39,7 @@ class LLNetReal(LLNetBase):
         signal.signal(signal.SIGUSR1, self._sig_handler)
         signal.signal(signal.SIGUSR2, self._sig_handler)
 
-        self.devs = devlist # self.__initialize_devices(includelist, excludelist)
+        self.devs = devlist 
         self.devinfo = self.__assemble_devinfo()
         self.pcaps = {}
         self.__make_pcaps()
@@ -116,37 +116,83 @@ class LLNetReal(LLNetBase):
         devinfo = {}
 
         # beautiful/ugly regular expressions
-        hwaddr = re.compile("HWaddr ([0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})")
-        ether = re.compile("ether ([0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})")
-        ipmasklinux = re.compile("inet addr:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+Bcast:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+Mask:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})")
-        ipmaskosx = re.compile("inet (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+netmask (0x[0-9a-f]{8})")
-        # FIXME: ip6
+        ethaddr_match = '([0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})'
+        hwaddr = re.compile("HWaddr {}".format(ethaddr_match))
+        ether = re.compile("ether {}".format(ethaddr_match))
 
-        ifnum = 0
+        ipaddr_match = '(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+        ipmasklinux = re.compile("inet addr:{0}\s+Bcast:{0}\s+Mask:{0}".format(ipaddr_match))
+        ipmaskosx_pat = "inet {}".format(ipaddr_match)
+        ipmaskosx_pat += "\s+netmask (0x[0-9a-f]\{8\})"
+        ipmaskosx = re.compile(ipmaskosx_pat)
+
+        ip6addr_match = "(?P<ip6addr>[0-9a-f:]+[0-9a-f]{1,4})(%[a-f0-9]+)?"
+        ip6maskosx = re.compile("inet6\s+{} netmask (?P<masklen>\d+) scopeid (?P<scope>0x[0-9a-f]+)".format(ip6addr_match))
+        ip6masklinux = re.compile("inet6 addr:\s*{}/(?P<masklen>\d+)\s+Scope:(?P<scope>\w+)".format(ip6addr_match))
+
+        devtype = {}
+        for p in pcap_devices():
+            if p.isloop:
+                devtype[p.name] = InterfaceType.Loopback
+            else:
+                if sys.platform == 'linux':
+                    st,output = subprocess.getstatusoutput(["iwconfig", p.name])
+                    if "no wireless extensions" in output:
+                        devtype[p.name] = InterfaceType.Wired
+                    else:
+                        devtype[p.name] = InterfaceType.Wireless
+                elif sys.platform == 'darwin':
+                    devtype[p.name] = InterfaceType.Unknown
+                else:
+                    devtype[p.name] = InterfaceType.Unknown
+
         for devname in self.devs:
             macaddr = None
             ipaddr = None
             mask = None
-            output = subprocess.check_output(["ifconfig", devname])
-            for line in output.decode('ascii','').split('\n'):
+            ip6addr = None
+            ip6mask = None
+            ip6scope = None
+            st,output = subprocess.getstatusoutput(["ifconfig", devname])
+
+            if isinstance(output, bytes):
+                output = output.decode('ascii','')
+            for line in output.split('\n'):
                 mobj = hwaddr.search(line)
                 if mobj:
                     macaddr = EthAddr(mobj.groups()[0])
+                    continue
                 else:
                     mobj = ether.search(line)
                     if mobj:
                         macaddr = EthAddr(mobj.groups()[0])
+                        continue
                 mobj = ipmasklinux.search(line)
                 if mobj:
                     ipaddr = IPAddr(mobj.groups()[0])
                     mask = IPAddr(mobj.groups()[2])
+                    continue
                 else:
                     mobj = ipmaskosx.search(line)
                     if mobj:
                         ipaddr = IPAddr(mobj.groups()[0])
                         mask = IPAddr(int(mobj.groups()[1], base=16))
-            devinfo[devname] = Interface(devname, macaddr, ipaddr, mask, ifnum)
-            ifnum += 1
+                        continue
+                mobj = ip6masklinux.search(line)
+                if mobj:
+                    gd = mobj.groupdict()
+                    ip6addr = gd['ip6addr']
+                    ip6mask = gd['masklen']
+                    ip6scope = gd['scope']
+                else:
+                    mobj = ip6maskosx.search(line)
+                    if mobj:
+                        ip6addr = gd['ip6addr']
+                        ip6mask = gd['masklen']
+                        ip6scope = gd['scope']
+                        continue
+            ifnum = if_nametoindex(devname)
+            devinfo[devname] = Interface(devname, macaddr, ipaddr, netmask=mask, ifnum=ifnum, iftype=devtype[devname])
         return devinfo
 
     def __make_pcaps(self):
@@ -159,8 +205,6 @@ class LLNetReal(LLNetBase):
         for dev in self.devs:
             thismac = self.devinfo[dev].ethaddr
             pdev = PcapLiveDevice(dev) # default snaplen is 64k
-            # pcap FIXME
-            # pdev.setfilter("not ether src {}".format(thismac))
             self.pcaps[dev] = pdev
 
     def _sig_handler(self, signum, stack):
@@ -181,7 +225,6 @@ class LLNetReal(LLNetBase):
         Thread entrypoint for doing low-level receive and dispatch
         for a single pcap device.
         '''
-        count = 0
         while LLNetReal.running:
             # a non-zero timeout value is ok here; this is an
             # independent thread that handles input for this
@@ -191,18 +234,13 @@ class LLNetReal(LLNetBase):
             pktinfo = pcapdev.recv_packet(timeout=0.2)
             if pktinfo is None:
                 continue
-            log_debug("Got packet on device {}, dlt {}".format(devname, pcapdev.dlt))
             pktqueue.put( (devname,pcapdev.dlt,pktinfo) )
-            count += 1
-            if count % 100 == 0:
-                stats = pcapdev.stats()
-                log_debug("Periodic device statistics {}: {} received, {} dropped, {} dropped/if".format(devname, stats.ps_recv, stats.ps_drop, stats.ps_ifdrop))
 
         log_debug("Receiver thread for {} exiting".format(devname))
         stats = pcapdev.stats()
         log_debug("Final device statistics {}: {} received, {} dropped, {} dropped/if".format(devname, stats.ps_recv, stats.ps_drop, stats.ps_ifdrop))
 
-    def recv_packet(self, timeout=None, timestamp=False):
+    def recv_packet(self, timeout=None):
         '''
         Receive packets from any device on which one is available.
         Blocks until it receives a packet, unless a timeout value >=0
@@ -210,15 +248,7 @@ class LLNetReal(LLNetBase):
         down (i.e., on a SIGINT to the process).  Raises NoPackets when 
         there are no packets that can be read.
 
-        Returns a tuple of length 2 or 3, depending on whether the
-        timestamp is desired.
-
-         * device: network device name on which packet was received
-           as a string
-         * timestamp: floating point value of time at which packet
-           was received (optionally returned; only if
-           timestamp=True)
-         * packet: Switchyard Packet object.
+        Returns a ReceivedPacket named tuple (timestamp, ingress_dev, packet)
         '''
         while True:
             try:
@@ -232,10 +262,8 @@ class LLNetReal(LLNetBase):
                     continue
 
                 pkt = decoder(pktinfo.raw) 
-                if timestamp:
-                    return dev,pktinfo.timestamp,pkt
-                else:
-                    return dev,pkt
+                return ReceivedPacket(timestamp=pktinfo.timestamp, 
+                    ingress_dev=dev, packet=pkt)
             except Empty:
                 if not LLNetReal.running:
                     raise Shutdown()

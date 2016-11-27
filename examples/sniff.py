@@ -11,7 +11,7 @@ def main(net):
     log_info ("My interfaces: {}".format([intf.name for intf in my_interfaces]))
     while True:
         try:
-            dev,packet = net.recv_packet(timeout=1.0)
+            timestamp,dev,packet = net.recv_packet(timeout=1.0)
         except NoPackets:
             continue
         except Shutdown:

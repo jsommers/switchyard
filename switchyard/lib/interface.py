@@ -1,5 +1,6 @@
-from ipaddress import ip_interface
+from ipaddress import ip_interface, IPv6Interface, IPv4Interface, IPv6Address, IPv4Address
 from enum import Enum
+from socket import if_nametoindex
 
 from .address import IPAddr,EthAddr
 from .logging import log_debug
@@ -22,14 +23,14 @@ class Interface(object):
     as an ipaddress.IPv4/6Interface object, which includes
     the netmask/prefixlen.
     '''
-    def __init__(self, name, ethaddr, ipaddr, netmask=None, ifnum=None):
+    def __init__(self, name, ethaddr, ipaddr, netmask=None, ifnum=None, iftype=InterfaceType.Unknown):
         self.__name = name
         self.ethaddr = ethaddr
         if netmask:
             ipaddr = "{}/{}".format(ipaddr,netmask)
         self.ipaddr = ipaddr
         self.ifnum = ifnum
-        self.__iftype = InterfaceType.Unknown
+        self.__iftype = iftype
 
     @property
     def name(self):
@@ -87,6 +88,10 @@ class Interface(object):
             Interface.__nextnum += 1
         self.__ifnum = int(value)
 
+    @property
+    def iftype(self):
+        return self.__iftype
+
     def __str__(self):
         s =  "{} mac:{}".format(str(self.name), str(self.ethaddr))
         if int(self.ipaddr) != 0:
@@ -95,8 +100,14 @@ class Interface(object):
 
 def make_device_list(includes, excludes):
     log_debug("Making device list.  Includes: {}, Excludes: {}".format(includes, excludes))
-    # devs = set([ dev.name for dev in pcap_devices() if dev.isrunning and not dev.isloop ])
+    non_interfaces = set()
     devs = set([ dev.name for dev in pcap_devices() if not dev.isloop or dev.name in includes])
+    for d in devs:
+        try:
+            ifnum = if_nametoindex(d)
+        except:
+            non_interfaces.add(d)
+    devs.difference_update(non_interfaces)
     log_debug("Devices found: {}".format(devs))
 
     # remove devs from excludelist

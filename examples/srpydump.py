@@ -9,7 +9,7 @@ def main(net):
     count = 0
     while True:
         try:
-            input_port,tstamp,packet = net.recv_packet(timestamp=True,timeout=0.5)
+            tstamp,input_port,packet = net.recv_packet(timeout=0.5)
         except Shutdown:
             # got shutdown signal
             break

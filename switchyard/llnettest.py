@@ -16,7 +16,7 @@ import copy
 import textwrap
 from collections import namedtuple
 
-from .llnetbase import LLNetBase
+from .llnetbase import LLNetBase, ReceivedPacket
 from .lib.packet import *
 from .lib.address import *
 from .importcode import import_or_die
@@ -54,7 +54,7 @@ class LLNetTest(LLNetBase):
         '''
         pass
 
-    def recv_packet(self, timeout=None, timestamp=False):
+    def recv_packet(self, timeout=None):
         '''
         Receive packets from any device on which one is available.
         Blocks until it receives a packet unless a timeout value >= 0 is
@@ -62,12 +62,7 @@ class LLNetTest(LLNetBase):
         down (i.e., on a SIGINT to the process) and raises NoPackets
         if there are no packets that could be read before a timeout occurred.
 
-        Returns a tuple of length 2 or 3, depending whether the timestamp
-        is desired.
-
-        * device: network device name on which packet was received as a string
-        * timestamp: floating point value of time at which packet was received
-        * packet: Switchyard Packet object
+        Returns a ReceivedPacket namedtuple: timestamp, ingress_dev, packet.
         '''
         # check if we're done with test scenario
         if self.scenario.done():
@@ -76,7 +71,7 @@ class LLNetTest(LLNetBase):
         ev = self.scenario.next()
         if ev.match(SwitchyTestEvent.EVENT_INPUT) == SwitchyTestEvent.MATCH_SUCCESS:
             self.scenario.testpass()
-            return ev.generate_packet(timestamp, self.timestamp)
+            return ev.generate_packet(self.timestamp)
         else:
             self.scenario.testfail(
                 "recv_packet called, but I was expecting {}".format(str(ev)))

@@ -30,7 +30,7 @@ class SocketEmuTests(unittest.TestCase):
         self.assertEqual(s.proto, IPProtocol.UDP)
         localport = s._local_addr[1]
         self.assertEqual(len(sock.ApplicationLayer._to_app), 1)
-        self.assertIn((sock.AF_INET, IPProtocol.UDP, '0.0.0.0', localport), sock.ApplicationLayer._to_app)
+        self.assertIn((IPProtocol.UDP, IPv4Address('127.0.0.1'), localport), sock.ApplicationLayer._to_app)
 
         self.firemock.add_rule.assert_called_with('udp:{}'.format(localport))
         self.pcapmock.set_bpf_filter_on_all_devices.assert_called_with('udp dst port {} or icmp or icmp6'.format(localport))

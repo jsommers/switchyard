@@ -20,12 +20,13 @@ from dis import Bytecode
 
 from .packet import *
 from .address import *
-from .interface import Interface, make_device_list
+from .interface import Interface
 from .exceptions import *
 from .logging import log_debug
 from . import debugging as sdebug
 from ..textcolor import *
 from ..importcode import import_or_die
+from ..llnetbase import ReceivedPacket
 
 class PacketFormatter(object):
     _fulldisp = False
@@ -371,7 +372,7 @@ class PacketInputTimeoutEvent(SwitchyTestEvent):
         else:
             return SwitchyTestEvent.MATCH_FAIL
 
-    def generate_packet(self, use_timestamp, timestamp):
+    def generate_packet(self, timestamp):
         time.sleep(self.timeout)
         raise NoPackets()
 
@@ -411,15 +412,12 @@ class PacketInputEvent(SwitchyTestEvent):
         else:
             return SwitchyTestEvent.MATCH_FAIL
 
-    def generate_packet(self, use_timestamp, timestamp):
+    def generate_packet(self, timestamp):
         # ensure that the packet is fully parsed before
         # delivering it.  cost is immaterial since this
         # is just testing code!
         self.packet = Packet(raw=self.packet.to_bytes())
-        if use_timestamp:
-            return self.device, timestamp, self.packet
-        else:
-            return self.device, self.packet
+        return ReceivedPacket(timestamp=timestamp, ingress_dev=self.device, packet=self.packet)
 
 class PacketOutputEvent(SwitchyTestEvent):
     '''
@@ -566,7 +564,7 @@ class TestScenario(object):
         '''
         if ifnum is None:
             ifnum = len(self.interface_map)
-        intf = Interface(interface_name, macaddr, ipaddr, netmask, ifnum)
+        intf = Interface(interface_name, macaddr, ipaddr=ipaddr, netmask=netmask, ifnum=ifnum)
         self.interface_map[interface_name] = intf
 
     def interfaces(self):

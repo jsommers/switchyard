@@ -48,7 +48,7 @@ class NetConnection(LLNetBase):
         self.devinfo['eth0'] = Interface('eth0', '11:22:33:44:55:66', '192.168.1.1', '255.255.255.0', 0)
         self.lastsent = None
 
-    def recv_packet(self, timeout=None, timestamp=False):
+    def recv_packet(self, timeout=None):
         time.sleep(0.5)
         raise NoPackets()
 
