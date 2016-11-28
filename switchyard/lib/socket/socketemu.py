@@ -18,7 +18,9 @@ dontimport = ('setdefaulttimeout', 'getdefaulttimeout', 'has_ipv6',
     'socket', 'socketpair', 'fromfd', 'dup', 'create_connection')
 for name in dontimport:
     explist.remove(name)
+explist.append('ApplicationLayer')
 __all__ = explist
+
 from socket import *
 
 from ...hostfirewall import Firewall
@@ -38,7 +40,6 @@ def _gather_ports():
         if len(fields) < 5:
             continue
         ports = fields[3].strip()
-        # print (ports)
         mobj = re.search('[\.:](\d+|\*)$', ports)
         if mobj:
             port = (mobj.groups()[0])
@@ -53,9 +54,6 @@ def _get_ephemeral_port():
         if p not in ports:
             return p
 
-ApplicationLayerData = namedtuple('ApplicationLayerData', 
-    ['timestamp', 'flowaddr', 'message'])
-
 _default_timeout = 1.0
 
 def getdefaulttimeout():
@@ -65,59 +63,106 @@ def setdefaulttimeout(tmo):
     global _default_timeout
     _default_timeout = tmo
 
+def _normalize_addrs(addrtuple):
+    return (ip_address(addrtuple[0]), int(addrtuple[1]))
+
+def _stringify_addrs(addrtuple):
+    return (str(addrtuple[0]), int(addrtuple[1]))
+
 class ApplicationLayer(object):
-    _init = False
+    _isinit = False
     _to_app = None
     _from_app = None
 
     def __init__(self):
+        '''
+        Don't try to create an instance of this class.  Switchyard internally
+        handles initialization.  Users should only ever call the
+        recv_from_app() and send_to_app() static methods.
+        '''
         raise RuntimeError("Ouch.  Please don't try to create an instance "
                            "of {}.  Use the static init() method "
                            "instead.".format(self.__class__.__name__))
     @staticmethod
-    def init():
-        log_debug("Initializing application layer")
-        if ApplicationLayer._init:
+    def _init():
+        '''
+        Internal switchyard static initialization method.  
+        '''
+        if ApplicationLayer._isinit:
             return
-        ApplicationLayer._init = True
+        ApplicationLayer._isinit = True
         ApplicationLayer._to_app = {}
         ApplicationLayer._from_app = Queue()
 
     @staticmethod
     def recv_from_app(timeout=_default_timeout):
+        '''
+        Called by a network stack implementer to receive application-layer
+        data for sending on to a remote location.  
+
+        Can optionally take a timeout value.  If no data are available,
+        raises NoPackets exception.
+
+        Returns a 2-tuple: flowaddr and data.
+        The flowaddr consists of 5 items: protocol, localaddr, localport, remoteaddr,
+        remoteport.
+        '''
         try:
-            data,local_addr,remote_addr = \
-                ApplicationLayer._from_app.get(timeout=timeout)
-            return data,local_addr,remote_addr
+            return ApplicationLayer._from_app.get(timeout=timeout)
         except Empty:
             pass
         raise NoPackets()
 
     @staticmethod
-    def send_to_app(data, proto, source_addr, dest_addr):
-        xtup = (IPProtocol(proto), dest_addr[0], dest_addr[1])
+    def send_to_app(proto, local_addr, remote_addr, data):
+        '''
+        Called by a network stack implementer to push application-layer
+        data "up" from the stack.
+
+        Arguments are protocol number, remote_addr, and local_addr.  The
+        two address arguments are two-tuples with address and port (or some
+        other integer end-point identifier). 
+
+        Returns None.
+        '''
+        proto = IPProtocol(proto)
+        local_addr = _normalize_addrs(local_addr)
+        remote_addr = _normalize_addrs(remote_addr)
+        xtup = (proto, local_addr[0], local_addr[1])
         sockqueue = ApplicationLayer._to_app.get(xtup, None)
         if sockqueue is not None:
-            log_debug("Sending {} to local socket {}".format(data, xtup))
-            sockqueue.put(data,source_addr,dest_addr)
-            log_debug("sockqueue len: {}".format(sockqueue.length()))
+            sockqueue.put((local_addr,remote_addr,data))
         else:
             log_warn("No socket queue found for local proto/address: {}".format(xtup))
             log_warn("Here's what I have: {}".format(ApplicationLayer._to_app))
 
     @staticmethod
-    def register_socket(s):
-        sock_queue = Queue()
-        ApplicationLayer._to_app[s._sockid()] = sock_queue
-        return ApplicationLayer._from_app, sock_queue
+    def _register_socket(s):
+        '''
+        Internal method used by socket emulation layer to create a new "upward"
+        queue for an app-layer socket and to register the socket object.
+        Returns two queues: "downward" (fromapp) and "upward" (toapp).
+        '''
+        queue_to_app = Queue()
+        ApplicationLayer._to_app[s._sockid()] = queue_to_app
+        return ApplicationLayer._from_app, queue_to_app
 
     @staticmethod
-    def registry_update(s, oldid):
+    def _registry_update(s, oldid):
+        '''
+        Internal method used to update an existing socket registry when the socket
+        is re-bound to a different local port number.  Requires the socket object
+        and old sockid.  Returns None.
+        '''
         sock_queue = ApplicationLayer._to_app.pop(oldid)
         ApplicationLayer._to_app[s._sockid()] = sock_queue
 
     @staticmethod
-    def unregister_socket(s):
+    def _unregister_socket(s):
+        '''
+        Internal method used to remove the socket from AppLayer registry.
+        Warns if the "upward" socket queue has any left-over data.  
+        '''
         sock_queue = ApplicationLayer._to_app.pop(s._sockid())
         if not sock_queue.empty():
             log_warn("Socket being destroyed still has data enqueued for application layer.")
@@ -126,10 +171,9 @@ class ApplicationLayer(object):
 class socket(object):
     __slots__ =  ('_family','_socktype','_protoname','_proto',
         '_timeout','_block','_remote_addr','_local_addr',
-        '_socket_queue_to_stack','_socket_queue_from_stack')
+        '_socket_queue_app_to_stack','_socket_queue_stack_to_app')
 
     def __init__(self, family, xtype, proto=0, fileno=0):
-        log_debug("In socket __init__")
         family = AddressFamily(family)
         if family not in (AddressFamily.AF_INET, AddressFamily.AF_INET6):
             raise NotImplementedError(
@@ -142,9 +186,6 @@ class socket(object):
         self._socktype = xtype
         self._protoname = 'udp'
         self._proto = IPProtocol.UDP
-        if self._socktype == SOCK_STREAM:
-            self._protoname = 'tcp'
-            self._proto = IPProtocol.TCP
         if proto != 0:
             self._proto = proto
         self._timeout = _default_timeout
@@ -152,8 +193,8 @@ class socket(object):
         self._remote_addr = (None,None)
         self._local_addr = (ip_address('127.0.0.1'),_get_ephemeral_port())
         self.__set_fw_rules() 
-        self._socket_queue_to_stack, self._socket_queue_from_stack = \
-            ApplicationLayer.register_socket(self)
+        self._socket_queue_app_to_stack, self._socket_queue_stack_to_app = \
+            ApplicationLayer._register_socket(self)
 
     def __set_fw_rules(self):
         log_debug("Adding firewall/bpf rule {} dst port {}".format(
@@ -196,32 +237,26 @@ class socket(object):
         return (self._proto, self._local_addr[0], self._local_addr[1], 
             self._remote_addr[0], self._remote_addr[1]) 
 
-    def __del__(self):
-        log_debug("Exiting socket code")
-
     def accept(self):
-        # block until we receive a TCP SYN, return a new socket object
-        pass
+        raise NotImplementedError()
 
     def close(self):
-        ApplicationLayer.unregister_socket(self)
+        ApplicationLayer._unregister_socket(self)
 
     def bind(self, address):
         oldid = self._sockid()
         # block firewall port
         # set stack to only allow packets through for addr/port
-        self._local_addr = address
+        self._local_addr = _normalize_addrs(address)
         # update firewall and pcap filters
         self.__set_fw_rules()
-        ApplicationLayer.registry_update(self, oldid)
+        ApplicationLayer._registry_update(self, oldid)
 
     def connect(self, address):
-        self._remote_addr = address
-        pass
+        self._remote_addr = _normalize_addrs(address)
 
     def connect_ex(self, address):
-        # ??
-        pass
+        self._remote_addr = _normalize_addrs(address)
 
     def getpeername(self):
         return self._remote_addr
@@ -229,53 +264,55 @@ class socket(object):
     def getsockname(self):
         return self._local_addr
 
-    def getsocktopt(self, option, buffersize=0):
-        raise NotImplementedError("set/get sockopt calls aren't implemented")
+    def getsockopt(self, option, buffersize=0):
+        raise NotImplementedError()
 
     def gettimeout(self):
         return self._timeout
 
+    @property 
+    def timeout(self):
+        return self._timeout
+
     def listen(self, backlog):
-        pass
+        raise NotImplementedError()
 
     def recv(self, buffersize, flags=0):
-        data,source,dest = self._recv(buffersize)
+        localaddr,remoteaddr,data = self._recv(buffersize)
         return data
 
     def recv_into(self, *args):
         raise NotImplementedError("*_into calls aren't implemented")
 
     def recvfrom(self, buffersize, flags=0):
-        data,source,dest = self._recv(buffersize)
-        return data,source
+        localaddr,remoteaddr,data = self._recv(buffersize)
+        return data,remoteaddr
 
     def recvfrom_into(self, *args):
         raise NotImplementedError("*_into calls aren't implemented")
 
     def _recv(self, nbytes):
-        log_debug("Attempting receive (socket emu layer) queue len {}".format(self._socket_queue_from_stack.length()))
         try:
-            data,sourceaddr,destaddr = self._socket_queue_from_stack.get(
+            localaddr,remoteaddr,data = self._socket_queue_stack_to_app.get(
                 block=self._block, timeout=self._timeout)
-            log_debug("recv from {}<-{}:{}".format(data,sourceaddr,destaddr))
-            return data,sourceaddr,destaddr
+            return _stringify_addrs(localaddr),_stringify_addrs(remoteaddr),data
         except Empty as e:
             pass
-        log_debug("recv timed out")
         raise timeout("timed out")
 
     def send(self, data, flags):
+        if self._remote_addr == (None,None):
+            raise sockerr("ENOTCONN: socket not connected")
         self._send(data, self._flowaddr())
 
     def sendto(self, data, *args):
-        addr = args[-1]
-        self._send(data, (self._proto, ip_address(self._local_addr[0]), 
-            self._local_addr[1], ip_address(addr[0]), addr[1]))
+        remoteaddr = args[-1]
+        remoteaddr = _normalize_addrs(remoteaddr)
+        self._send(data, (self._proto, self._local_addr[0], 
+            self._local_addr[1], remoteaddr[0], remoteaddr[1]))
 
     def _send(self, data, flowaddr):
-        log_debug("socketemu send: {}->{}".format(data, str(flowaddr)))
-        self._socket_queue_to_stack.put( ApplicationLayerData(timestamp=time(), 
-            flowaddr=flowaddr, message=data) )
+        self._socket_queue_app_to_stack.put( (flowaddr, data) )
 
     def sendall(self, data, flags):
         raise NotImplementedError("sendall isn't implemented")
@@ -296,4 +333,4 @@ class socket(object):
         self._timeout = float(timeout)
 
     def shutdown(self, flag):
-        ApplicationLayer.unregister_socket(self)
+        ApplicationLayer._unregister_socket(self)

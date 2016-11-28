@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock
 from queue import Queue
-from ipaddress import IPv4Address
+from ipaddress import IPv4Address, ip_address
 
 import switchyard.lib.socket.socketemu as sock
 from switchyard.lib.packet import IPProtocol
@@ -9,8 +9,10 @@ from switchyard.lib.exceptions import *
 
 class SocketEmuTests(unittest.TestCase):
     def setUp(self):
-        sock.ApplicationLayer.init()
+        sock.ApplicationLayer._init()
         sock.ApplicationLayer._to_app = {}
+        sock.ApplicationLayer._from_app = Queue()
+
         self.firemock = Mock()
         self.firemock.add_rule = Mock()
         self.pcapmock = Mock()
@@ -70,35 +72,68 @@ class SocketEmuTests(unittest.TestCase):
 
     def testAppSockRegister(self):
         s = sock.socket(sock.AF_INET, sock.SOCK_DGRAM)
-        fromapp,toapp = sock.ApplicationLayer.register_socket(s)
         self.assertIn(s._sockid(), sock.ApplicationLayer._to_app)
         self.assertEqual(len(sock.ApplicationLayer._to_app), 1)
 
-        sock.ApplicationLayer.registry_update(s, s._sockid())
+        sock.ApplicationLayer._registry_update(s, s._sockid())
         self.assertIn(s._sockid(), sock.ApplicationLayer._to_app)
         self.assertEqual(len(sock.ApplicationLayer._to_app), 1)
 
-        sock.ApplicationLayer.unregister_socket(s)
+        sock.ApplicationLayer._unregister_socket(s)
         self.assertEqual(len(sock.ApplicationLayer._to_app), 0)
 
-    def testAppSendRecv(self):
+        fromapp,toapp = sock.ApplicationLayer._register_socket(s)
+        toapp.put((0,0,0))
+        with self.assertLogs() as cm:
+            sock.ApplicationLayer._unregister_socket(s)
+        self.assertIn("WARNING", cm.output[0])
+        self.assertIn("still has data enqueued", cm.output[0])
+
+    def testAppSend(self):
         s = sock.socket(sock.AF_INET, sock.SOCK_DGRAM)
-        fromapp,toapp = sock.ApplicationLayer.register_socket(s)
+        self.assertIsInstance(sock.ApplicationLayer._from_app, Queue)
+        self.assertIsInstance(sock.ApplicationLayer._to_app[s._sockid()], Queue)
 
         with self.assertRaises(NoPackets):
             sock.ApplicationLayer.recv_from_app(timeout=0.1)
 
         s.sendto("testme!", ('127.0.0.1', 10000))
         self.assertEqual(sock.ApplicationLayer._from_app.qsize(), 1)
+        self.assertFalse(sock.ApplicationLayer._from_app.empty())
 
-        ts,addrs,data = sock.ApplicationLayer.recv_from_app(timeout=0.1)
+        addrs,data = sock.ApplicationLayer.recv_from_app(timeout=0.1)
         self.assertEqual(data, "testme!")
         self.assertEqual(addrs[0], 17)
         self.assertEqual(str(addrs[1]), '127.0.0.1')
         self.assertEqual(str(addrs[3]), '127.0.0.1')
         self.assertEqual(addrs[4], 10000)
 
-        
+    def testAppRecv(self):
+        s = sock.socket(sock.AF_INET, sock.SOCK_DGRAM)
+        self.assertIsInstance(sock.ApplicationLayer._from_app, Queue)
+        self.assertIsInstance(sock.ApplicationLayer._to_app[s._sockid()], Queue)
+        toapp = sock.ApplicationLayer._to_app[s._sockid()]
+
+        data = "testme!"
+        localport = s._local_addr[1]
+        localaddr = (ip_address('127.0.0.1'), localport)
+        remoteaddr = (ip_address('127.0.0.1'), 10000)
+        toapp.put((localaddr, remoteaddr, data))
+        rdata,addr = s.recvfrom(1500)
+        self.assertEqual(data, rdata)
+        self.assertEqual(addr[0], '127.0.0.1')
+        self.assertEqual(addr[1], 10000)
+        self.assertTrue(toapp.empty())
+
+        sock.ApplicationLayer.send_to_app(IPProtocol.UDP, 
+            ('127.0.0.1', localport), ('127.0.0.1', 10000), data)
+        self.assertFalse(sock.ApplicationLayer._to_app[s._sockid()].empty())
+        self.assertEqual(sock.ApplicationLayer._to_app[s._sockid()].qsize(), 1)
+        rdata,addr = s.recvfrom(1500)
+        self.assertEqual(data, rdata)
+        self.assertEqual(addr[0], '127.0.0.1')
+        self.assertEqual(addr[1], 10000)
+        self.assertTrue(toapp.empty())
 
 
 if __name__ == '__main__':

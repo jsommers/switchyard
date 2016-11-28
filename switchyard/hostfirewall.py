@@ -173,7 +173,7 @@ class MacOSFirewall(AbstractFirewall):
                 if port == '*':
                     cmds.append('block drop on {0} proto {1} from any to any'.format(intf, proto))
                 else:
-                    cmds.append('block drop on {0} proto {1} to any port {2}'.format(intf, proto, port))
+                    cmds.append('block drop on {0} proto {1} from any port {2} to any port {2}'.format(intf, proto, port))
             elif rule == 'all':
                 cmds.append('block drop on {} all'.format(intf))
             else:

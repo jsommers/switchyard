@@ -131,7 +131,7 @@ if __name__ == '__main__':
     barrier = Barrier(waiters)
 
     if args.app:
-        ApplicationLayer.init()
+        ApplicationLayer._init()
         _appt = Thread(target=start_app, args=(args.app,barrier))
         _appt.start()
 
