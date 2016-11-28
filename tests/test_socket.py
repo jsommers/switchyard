@@ -13,6 +13,8 @@ class SocketEmuTests(unittest.TestCase):
         sock.ApplicationLayer._to_app = {}
         sock.ApplicationLayer._from_app = Queue()
 
+        sock.setdefaulttimeout(1.0)
+
         self.firemock = Mock()
         self.firemock.add_rule = Mock()
         self.pcapmock = Mock()
@@ -134,6 +136,111 @@ class SocketEmuTests(unittest.TestCase):
         self.assertEqual(addr[0], '127.0.0.1')
         self.assertEqual(addr[1], 10000)
         self.assertTrue(toapp.empty())
+
+
+        sock.ApplicationLayer.send_to_app(IPProtocol.UDP, 
+            ('127.0.0.1', localport), ('127.0.0.1', 10000), data)
+        self.assertFalse(sock.ApplicationLayer._to_app[s._sockid()].empty())
+        self.assertEqual(sock.ApplicationLayer._to_app[s._sockid()].qsize(), 1)
+        rdata = s.recv(1500)
+        self.assertEqual(data, rdata)
+        self.assertTrue(toapp.empty())        
+
+        with self.assertLogs() as cm:
+            sock.ApplicationLayer.send_to_app(IPProtocol.UDP, 
+                ('127.0.0.1', 8888), ('127.0.0.1', 9999), data)
+        self.assertIn("No socket queue found for", cm.output[0])
+
+    def testConnect(self):
+        s = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, 55)
+        self.assertEqual(s.proto, 55)
+
+        with self.assertRaises(sock.error):
+            s.send("testsend") 
+
+        s.connect(('127.0.0.1', 4567))
+        s.send("testsend") 
+        self.assertEqual(sock.ApplicationLayer._from_app.qsize(), 1)
+        self.assertFalse(sock.ApplicationLayer._from_app.empty())
+
+        addrs,data = sock.ApplicationLayer.recv_from_app(timeout=0.1)
+        self.assertEqual(data, "testsend")
+        self.assertEqual(addrs[0], 55)
+        self.assertEqual(str(addrs[1]), '127.0.0.1')
+        self.assertEqual(str(addrs[3]), '127.0.0.1')
+        self.assertEqual(addrs[4], 4567)
+
+        s.connect_ex(('127.0.0.1', 5678))
+        self.assertEqual(s._remote_addr, (ip_address('127.0.0.1'), 5678))
+
+    def testUnimplemented(self):
+        s = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, 55)
+        with self.assertRaises(NotImplementedError):
+            s.accept()
+        with self.assertRaises(NotImplementedError):
+            s.listen(128)
+        with self.assertRaises(NotImplementedError):
+            s.getsockopt(sock.SOL_SOCKET, sock.SO_REUSEADDR)
+        with self.assertRaises(NotImplementedError):
+            s.setsockopt(sock.SOL_SOCKET, sock.SO_REUSEADDR, 1)
+        buf = []
+        with self.assertRaises(NotImplementedError):
+            s.recv_into(buf)
+        with self.assertRaises(NotImplementedError):
+            s.recvfrom_into(buf)
+        with self.assertRaises(NotImplementedError):
+            s.recvfrom_into(buf)
+        with self.assertRaises(NotImplementedError):
+            s.recvmsg(buf)
+        with self.assertRaises(NotImplementedError):
+            s.sendmsg(buf)
+        with self.assertRaises(NotImplementedError):
+            s.sendall('blahblahblah')
+
+    def testSockName(self):
+        s = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, 55)
+        s.connect(('127.0.0.1', 4567))
+        localport = s._local_addr[1]
+        self.assertEqual(s.getsockname(), ('127.0.0.1', localport))
+        self.assertEqual(s.getpeername(), ('127.0.0.1', 4567))
+
+    def testTimeouts(self):
+        t = sock.getdefaulttimeout()
+        s = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, 55)
+        self.assertEqual(t, s.gettimeout())
+        s.settimeout(2.0)
+        self.assertEqual(s.gettimeout(), 2.0)
+        sock.setdefaulttimeout(3.0)
+        s2 = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, 55)
+        self.assertEqual(3.0, s2.gettimeout())
+        self.assertEqual(s2.timeout, 3.0)
+
+    def testCloseShutdown(self):
+        s = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, 55)
+        self.assertEqual(len(sock.ApplicationLayer._to_app), 1)
+        s.shutdown(1)
+        self.assertEqual(len(sock.ApplicationLayer._to_app), 0)
+        s.shutdown(1)
+        self.assertEqual(len(sock.ApplicationLayer._to_app), 0)
+        s.close()
+        self.assertEqual(len(sock.ApplicationLayer._to_app), 0)
+        s.close()
+        self.assertEqual(len(sock.ApplicationLayer._to_app), 0)
+
+    def testBlocking(self):
+        s = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, 55)
+        s.settimeout(None)
+        self.assertIsNone(s._timeout)
+        self.assertTrue(s._block)
+        s.settimeout(1.0)
+        self.assertFalse(s._block)
+        s.setblocking(False)
+        self.assertEqual(s.timeout, 0.0)
+        s.setblocking(True)
+        self.assertIsNone(s.timeout)
+        s.setblocking(False)
+        with self.assertRaises(sock.timeout):
+            s.recv(1500)
 
 
 if __name__ == '__main__':

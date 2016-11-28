@@ -54,7 +54,7 @@ def _get_ephemeral_port():
         if p not in ports:
             return p
 
-_default_timeout = 1.0
+_default_timeout = None
 
 def getdefaulttimeout():
     return _default_timeout
@@ -134,7 +134,6 @@ class ApplicationLayer(object):
             sockqueue.put((local_addr,remote_addr,data))
         else:
             log_warn("No socket queue found for local proto/address: {}".format(xtup))
-            log_warn("Here's what I have: {}".format(ApplicationLayer._to_app))
 
     @staticmethod
     def _register_socket(s):
@@ -241,7 +240,11 @@ class socket(object):
         raise NotImplementedError()
 
     def close(self):
-        ApplicationLayer._unregister_socket(self)
+        try:
+            ApplicationLayer._unregister_socket(self)
+        except:
+            # ignore any errors (e.g., double-close)
+            pass
 
     def bind(self, address):
         oldid = self._sockid()
@@ -259,12 +262,12 @@ class socket(object):
         self._remote_addr = _normalize_addrs(address)
 
     def getpeername(self):
-        return self._remote_addr
+        return _stringify_addrs(self._remote_addr)
 
     def getsockname(self):
-        return self._local_addr
+        return _stringify_addrs(self._local_addr)
 
-    def getsockopt(self, option, buffersize=0):
+    def getsockopt(self, level, option, buffersize=0):
         raise NotImplementedError()
 
     def gettimeout(self):
@@ -278,14 +281,14 @@ class socket(object):
         raise NotImplementedError()
 
     def recv(self, buffersize, flags=0):
-        localaddr,remoteaddr,data = self._recv(buffersize)
+        _,_,data = self._recv(buffersize)
         return data
 
     def recv_into(self, *args):
         raise NotImplementedError("*_into calls aren't implemented")
 
     def recvfrom(self, buffersize, flags=0):
-        localaddr,remoteaddr,data = self._recv(buffersize)
+        _,remoteaddr,data = self._recv(buffersize)
         return data,remoteaddr
 
     def recvfrom_into(self, *args):
@@ -300,7 +303,7 @@ class socket(object):
             pass
         raise timeout("timed out")
 
-    def send(self, data, flags):
+    def send(self, data, flags=0):
         if self._remote_addr == (None,None):
             raise sockerr("ENOTCONN: socket not connected")
         self._send(data, self._flowaddr())
@@ -314,7 +317,7 @@ class socket(object):
     def _send(self, data, flowaddr):
         self._socket_queue_app_to_stack.put( (flowaddr, data) )
 
-    def sendall(self, data, flags):
+    def sendall(self, *args):
         raise NotImplementedError("sendall isn't implemented")
 
     def sendmsg(self, *args):
@@ -325,12 +328,24 @@ class socket(object):
 
     def setblocking(self, flags):
         self._block = bool(flags)
+        if self._block:
+            self._timeout = None
+        else:
+            self._timeout = 0.0
 
-    def setsockopt(self, level, option, value):
+    def setsockopt(self, *args):
         raise NotImplementedError("set/get sockopt calls aren't implemented")
 
     def settimeout(self, timeout):
-        self._timeout = float(timeout)
+        if timeout is None:
+            self._timeout = None
+            self._block = True
+        else:
+            self._timeout = float(timeout)
+            self._block = self._timeout == 0
 
     def shutdown(self, flag):
-        ApplicationLayer._unregister_socket(self)
+        try:
+            ApplicationLayer._unregister_socket(self)
+        except:
+            pass
