@@ -175,17 +175,18 @@ class Packet(object):
             if not (0 <= index < len(self._headers)):
                 raise IndexError("Index out of range")
             return index
-        raise TypeError("Indexes must be integers (slices are not supported)")
         
     def __getitem__(self, index):
         if isinstance(index, int):
             index = self._checkidx(index)
             return self._headers[index]
-        elif issubclass(index, PacketHeaderBase):
+        elif isinstance(index, type) and issubclass(index, PacketHeaderBase):
             idx = self.get_header_index(index)
             if idx == -1:
                 raise KeyError("No such header type exists.")
             return self._headers[idx]
+        else:
+            raise IndexError("Indexes must be integers or header class names")
 
     def __setitem__(self, index, value):
         index = self._checkidx(index)
@@ -203,11 +204,13 @@ class Packet(object):
         if isinstance(index, int):
             index = self._checkidx(index)
             del self._headers[index]
-        elif issubclass(index, PacketHeaderBase):
+        elif isinstance(index, type) and issubclass(index, PacketHeaderBase):
             idx = self.get_header_index(index)
             if idx == -1:
                 raise KeyError("No such header type exists.")
             del self._headers[idx]
+        else:
+            raise IndexError("Indexes must be integers or header class names")
 
     def __eq__(self, other):
         if not isinstance(other, Packet):

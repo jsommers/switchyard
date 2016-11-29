@@ -18,13 +18,44 @@ class PacketTests(unittest.TestCase):
         self.assertEqual(len(p), 14)
         self.assertTrue(isinstance(list(p)[0], Ethernet))
 
-    def testAdd(self):
+    def testAddInsert(self):
         e1 = Ethernet()
         e2 = Ethernet()
         p = e1 + e2
         self.assertTrue(isinstance(p, Packet))
         self.assertEqual(len(list(p)), 2)
         self.assertEqual(len(p), 28)
+
+        with self.assertRaises(Exception):
+            p += p
+
+        p1 = Packet()
+        p1 += Ethernet()
+        p2 = Packet()
+        p2 += IPv4()
+        p3 = p1 + p2
+        self.assertEqual(p3[0], p1[0])
+        self.assertEqual(p3[1], p2[0])
+
+        with self.assertRaises(Exception):
+            p3 = p3 + "hello, bob!"
+
+        p = IPv4() + ICMP()
+        p.prepend_header(Ethernet())
+        self.assertEqual(p.num_headers(), 3)
+        self.assertEqual(p[0], Ethernet())
+
+        p.add_payload(b'Some raw gunk')
+        self.assertEqual(p[3].to_bytes(), b'Some raw gunk')
+
+        with self.assertRaises(Exception):
+            p.add_header(42)
+
+        self.assertTrue(p.has_header("IPv4"))
+        self.assertFalse(p.has_header(IPv6))
+        self.assertFalse(p.has_header("IPv6"))
+        self.assertFalse(p.has_header("IPv13"))
+
 
     def testIndexing(self):
         e1 = Ethernet()
@@ -36,6 +67,12 @@ class PacketTests(unittest.TestCase):
         self.assertEqual(p[1], e1)
         with self.assertRaises(IndexError):
             e = p[2]
+
+        with self.assertRaises(IndexError):
+            e = p["a"]
+
+        with self.assertRaises(IndexError):
+            del p["a"]
 
     def testFormatter(self):
         e = Ethernet()
