@@ -10,6 +10,11 @@ AFTypeClasses = {
     socket.AF_INET6: IPv6
 }
 
+AFTypeNames = {
+    socket.AF_INET: "AF_INET",
+    socket.AF_INET6: "AF_INET6"
+}
+
 class Null(PacketHeaderBase):
     __slots__ = ['_af']
 
@@ -58,5 +63,5 @@ class Null(PacketHeaderBase):
         return self.af == other.af
 
     def __str__(self):
-        return '{}: {}'.format(self.__class__.__name__, self.af)
+        return '{}: {}'.format(self.__class__.__name__, AFTypeNames.get(self.af, "?"))
 

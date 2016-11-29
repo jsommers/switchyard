@@ -242,6 +242,5 @@ class SocketEmuTests(unittest.TestCase):
         with self.assertRaises(sock.timeout):
             s.recv(1500)
 
-
 if __name__ == '__main__':
     unittest.main()

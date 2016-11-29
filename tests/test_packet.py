@@ -80,9 +80,5 @@ class PacketTests(unittest.TestCase):
         with self.assertRaises(KeyError):
             del p[Ethernet]
 
-    def testNull(self):
-        n = Null()
-        self.assertEqual(n.to_bytes(), b'\x02\x00\x00\x00')
-
 if __name__ == '__main__':
     unittest.main()
