@@ -24,6 +24,14 @@ class ArpTests(unittest.TestCase):
         other.from_bytes(serialized)
         self.assertEqual(arp, other)
         self.assertEqual(len(arp), 28)
+        with self.assertRaises(Exception):
+            other.from_bytes(serialized[:-3])
+        xbytes = arp.to_bytes()
+        # inject an invalid arp operation
+        xbytes = xbytes[:6] + b'\xff\xff' + xbytes[8:]
+        a = Arp()
+        with self.assertRaises(Exception):
+            a.from_bytes(xbytes)
 
     def testArpReply(self):
         p = create_ip_arp_reply("aa:bb:cc:dd:ee:ff", "00:00:00:11:22:33", "10.11.12.13", "1.2.3.4")

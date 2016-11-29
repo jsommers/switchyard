@@ -159,6 +159,7 @@ class PacketTests(unittest.TestCase):
         self.assertEqual(repr(nph), "NullPacketHeader()")
         self.assertEqual(nph, nph)
         self.assertNotEqual(nph, IPv4())
+        self.assertIs(getattr(nph, 'blahblah'), nph)
 
     def testRawPacket(self):
         raw = RawPacketContents(b'abc')
@@ -181,6 +182,9 @@ class PacketTests(unittest.TestCase):
 
         raw.from_bytes(b'diolch yn fawr')
         self.assertEqual(str(raw), "RawPacketContents (14 bytes) b'diolch yn '...")
+
+        raw.from_bytes(b'diolch')
+        self.assertEqual(str(raw), "RawPacketContents (6 bytes) b'diolch'")
 
         with self.assertRaises(TypeError):
             raw.from_bytes(1234567890)
