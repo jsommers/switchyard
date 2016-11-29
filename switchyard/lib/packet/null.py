@@ -49,11 +49,9 @@ class Null(PacketHeaderBase):
         return raw[4:]
 
     def next_header_class(self):
-        if self.af not in AFTypeClasses:
-            raise Exception("No mapping for address family {} to a packet header class".format(self.af))
         cls = AFTypeClasses.get(self.af, None)
         if cls is None:
-            print ("Warning: no class exists to parse next protocol type: {}".format(self.af))
+            raise Exception("No mapping from address family {} to a packet header class".format(self.af))
         return cls
 
     def pre_serialize(self, raw, pkt, i):

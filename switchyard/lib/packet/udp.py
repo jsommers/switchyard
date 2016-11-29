@@ -18,6 +18,7 @@ class UDP(PacketHeaderBase):
     def __init__(self, **kwargs):
         self.srcport = self.dstport = 0
         self._len = self.size()
+        self._checksum = 0
         super().__init__(**kwargs)
 
     def size(self):

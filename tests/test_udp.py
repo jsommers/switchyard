@@ -23,6 +23,20 @@ class UDPPacketTests(unittest.TestCase):
         newpkt = Packet(raw=b)
         self.assertEqual(b, newpkt.to_bytes())
 
+        b = b[:-15] # slice into the udp header
+        with self.assertRaises(Exception):
+            newpkt = Packet(raw=b)
+
+    def testChecksum(self):
+        u = UDP()
+        self.assertEqual(u.checksum, 0)
+
+        p = IPv4() + u
+        p[0].protocol = IPProtocol.UDP
+        b = p.to_bytes()
+        self.assertEqual(u.checksum, 65502)
+
+
 
 if __name__ == '__main__':
     unittest.main()

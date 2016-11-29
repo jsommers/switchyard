@@ -156,11 +156,9 @@ class Ethernet(PacketHeaderBase):
         return raw[Ethernet._MINLEN:]
 
     def next_header_class(self):
-        if self.ethertype not in EtherTypeClasses:
-            raise Exception("No mapping for ethertype {} to a packet header class".format(self.ethertype))
         cls = EtherTypeClasses.get(self.ethertype, None)
         if cls is None:
-            print ("Warning: no class exists to parse next protocol type: {}".format(self.ethertype))
+            raise Exception("No mapping from ethertype {} to a packet header class".format(self.ethertype))
         return cls
 
     def pre_serialize(self, raw, pkt, i):
