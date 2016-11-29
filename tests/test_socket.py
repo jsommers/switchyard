@@ -242,5 +242,29 @@ class SocketEmuTests(unittest.TestCase):
         with self.assertRaises(sock.timeout):
             s.recv(1500)
 
+    def testMultiSocket(self):
+        s1 = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, 17)
+        s2 = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, 6)
+        s3 = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, 55)
+        self.assertEqual(len(sock.ApplicationLayer._to_app), 3)
+
+        self.assertEqual(s1.bind(('127.0.0.1', 80)), 0)
+        with self.assertLogs() as cm:
+            self.assertEqual(s2.bind(('127.0.0.1', 80)), -1)
+        self.assertIn("in use", cm.output[0])
+
+        sock.ApplicationLayer.send_to_app(IPProtocol.UDP, 
+            s1.getsockname(), ('127.0.0.1', 4567), "to s1")
+
+        self.assertFalse(sock.ApplicationLayer._to_app[s1._sockid()].empty())
+        self.assertTrue(sock.ApplicationLayer._to_app[s2._sockid()].empty())
+        self.assertTrue(sock.ApplicationLayer._to_app[s3._sockid()].empty())
+
+        with self.assertLogs() as cm:
+            sock.ApplicationLayer.send_to_app(IPProtocol.UDP,
+                ('1.2.3.4', 5678), s2.getsockname(), "failure")
+        self.assertIn("No socket queue found", cm.output[0])
+
+
 if __name__ == '__main__':
     unittest.main()

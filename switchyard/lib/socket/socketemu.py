@@ -95,6 +95,13 @@ class ApplicationLayer(object):
         ApplicationLayer._from_app = Queue()
 
     @staticmethod
+    def _emuports():
+        s = set()
+        for sockid,_ in ApplicationLayer._to_app.items():
+            s.add(sockid[-1])
+        return s
+
+    @staticmethod
     def recv_from_app(timeout=_default_timeout):
         '''
         Called by a network stack implementer to receive application-layer
@@ -245,8 +252,14 @@ class socket(object):
         except:
             # ignore any errors (e.g., double-close)
             pass
+        return 0
 
     def bind(self, address):
+        portset = _gather_ports().union(ApplicationLayer._emuports())
+        if address[1] in portset:
+            log_warn("Port is already in use.")
+            return -1
+
         oldid = self._sockid()
         # block firewall port
         # set stack to only allow packets through for addr/port
@@ -254,12 +267,15 @@ class socket(object):
         # update firewall and pcap filters
         self.__set_fw_rules()
         ApplicationLayer._registry_update(self, oldid)
+        return 0
 
     def connect(self, address):
         self._remote_addr = _normalize_addrs(address)
+        return 0
 
     def connect_ex(self, address):
         self._remote_addr = _normalize_addrs(address)
+        return 0
 
     def getpeername(self):
         return _stringify_addrs(self._remote_addr)
@@ -306,16 +322,17 @@ class socket(object):
     def send(self, data, flags=0):
         if self._remote_addr == (None,None):
             raise sockerr("ENOTCONN: socket not connected")
-        self._send(data, self._flowaddr())
+        return self._send(data, self._flowaddr())
 
     def sendto(self, data, *args):
         remoteaddr = args[-1]
         remoteaddr = _normalize_addrs(remoteaddr)
-        self._send(data, (self._proto, self._local_addr[0], 
+        return self._send(data, (self._proto, self._local_addr[0], 
             self._local_addr[1], remoteaddr[0], remoteaddr[1]))
 
     def _send(self, data, flowaddr):
         self._socket_queue_app_to_stack.put( (flowaddr, data) )
+        return len(data)
 
     def sendall(self, *args):
         raise NotImplementedError("sendall isn't implemented")
@@ -349,3 +366,4 @@ class socket(object):
             ApplicationLayer._unregister_socket(self)
         except:
             pass
+        return 0
