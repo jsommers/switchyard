@@ -56,6 +56,9 @@ class PacketTests(unittest.TestCase):
         self.assertFalse(p.has_header("IPv6"))
         self.assertFalse(p.has_header("IPv13"))
 
+        with self.assertRaises(Exception):
+            IPv6() + "ugh"
+
 
     def testIndexing(self):
         e1 = Ethernet()
@@ -144,9 +147,43 @@ class PacketTests(unittest.TestCase):
         p1.insert_header(0, IPv4())
         self.assertNotEqual(p1, p2)
 
-
     def testNullPacketHeader(self):
         nph = NullPacketHeader()
+        self.assertEqual(nph.to_bytes(), b'')
+        self.assertEqual(nph.size(), 0)
+        self.assertEqual(nph.from_bytes(b'abc'), b'abc')
+        self.assertIsNone(nph.next_header_class())
+        self.assertIsNone(nph.pre_serialize(None, None, None))
+        self.assertIs(nph(), nph)
+        self.assertEqual(str(nph), "NullPacketHeader")
+        self.assertEqual(repr(nph), "NullPacketHeader()")
+        self.assertEqual(nph, nph)
+        self.assertNotEqual(nph, IPv4())
+
+    def testRawPacket(self):
+        raw = RawPacketContents(b'abc')
+        with self.assertRaises(TypeError):
+            RawPacketContents(42)
+        with self.assertRaises(TypeError):
+            RawPacketContents(IPv4())
+        self.assertEqual(raw.to_bytes(), b'abc')
+        raw.from_bytes('hwyl')
+        self.assertEqual(raw.to_bytes(), b'hwyl')
+        self.assertIsNone(raw.next_header_class())
+        self.assertEqual(raw.size(), 4)
+
+        i = ICMP()
+        raw.from_bytes(i.to_bytes())
+        raw2 = RawPacketContents(i.to_bytes())
+        self.assertNotEqual(raw, i)
+        self.assertNotEqual(raw, raw.to_bytes())
+        self.assertEqual(raw, raw2)
+
+        raw.from_bytes(b'diolch yn fawr')
+        self.assertEqual(str(raw), "RawPacketContents (14 bytes) b'diolch yn '...")
+
+        with self.assertRaises(TypeError):
+            raw.from_bytes(1234567890)
 
 
 if __name__ == '__main__':

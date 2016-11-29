@@ -299,7 +299,6 @@ class PacketHeaderBase(metaclass=ABCMeta):
     def __str__(self):
         return self.__class__.__name__
 
-
 class NullPacketHeader(PacketHeaderBase):
     def __init__(self):
         PacketHeaderBase.__init__(self)
@@ -329,7 +328,7 @@ class NullPacketHeader(PacketHeaderBase):
         return 'NullPacketHeader'
 
     def __eq__(self, other):
-        return self.to_bytes() == other.to_bytes()
+        return isinstance(self, other.__class__) 
 
     def __repr__(self):
         return 'NullPacketHeader()'
@@ -351,7 +350,12 @@ class RawPacketContents(PacketHeaderBase):
         return self._raw    
 
     def from_bytes(self, raw):
-        self._raw = bytes(raw)
+        if isinstance(raw, bytes):
+            self._raw = bytes(raw)
+        elif isinstance(raw, str):
+            self._raw = bytes(raw, 'utf8')
+        else:
+            raise TypeError("RawPacketContents must be initialized with either str or bytes.  You gave me {}".format(raw.__class__.__name__))
 
     def next_header_class(self):
         return None
@@ -363,7 +367,8 @@ class RawPacketContents(PacketHeaderBase):
         return len(self._raw)
 
     def __eq__(self, other):
-        return self.to_bytes() == other.to_bytes()
+        return isinstance(self, other.__class__) and \
+            self.to_bytes() == other.to_bytes()
 
     def __str__(self):
         ellipse = '...'
