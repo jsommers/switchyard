@@ -117,5 +117,37 @@ class PacketTests(unittest.TestCase):
         with self.assertRaises(KeyError):
             del p[Ethernet]
 
+        with self.assertRaises(TypeError):
+            p["a"] = ICMP()
+
+        with self.assertRaises(TypeError):
+            p[0] = "abc"
+
+        self.assertIn(icmp, p)
+        icmp2 = ICMP(icmptype=ICMPType.Redirect)
+        self.assertNotIn(icmp2, p)
+        icmp3 = ICMP()
+        self.assertIn(icmp3, p)
+
+    def testEquality(self):
+        p1 = Packet()
+        p2 = Packet()
+        self.assertEqual(p1, p2)
+        with self.assertRaises(TypeError):
+            p1 == "hello, crash"
+        p1 += ICMP()
+        self.assertNotEqual(p1, p2)
+        p2 += ICMP()
+        self.assertEqual(p1, p2)
+        p2[0].icmptype = ICMPType.Redirect
+        self.assertNotEqual(p1, p2)
+        p1.insert_header(0, IPv4())
+        self.assertNotEqual(p1, p2)
+
+
+    def testNullPacketHeader(self):
+        nph = NullPacketHeader()
+
+
 if __name__ == '__main__':
     unittest.main()

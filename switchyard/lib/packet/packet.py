@@ -189,6 +189,8 @@ class Packet(object):
             raise IndexError("Indexes must be integers or header class names")
 
     def __setitem__(self, index, value):
+        if not isinstance(index, int):
+            raise TypeError("Index must be an integer")
         index = self._checkidx(index)
         if not isinstance(value, (PacketHeaderBase, bytes)):
             raise TypeError("Can't assign a non-packet header in a packet")
@@ -196,7 +198,8 @@ class Packet(object):
 
     def __contains__(self, obj):
         for ph in self._headers:
-            if ph == obj:
+            if ph is obj or \
+                (isinstance(obj, ph.__class__) and ph == obj):
                 return True
         return False
 
@@ -218,7 +221,8 @@ class Packet(object):
         if len(self.headers()) != len(other.headers()):
             return False
         for i in range(len(other.headers())):
-            if self[i] != other[i]:
+            if not isinstance(other[i], self[i].__class__) \
+                    or self[i] != other[i]:
                 return False
         return True
 
@@ -324,8 +328,11 @@ class NullPacketHeader(PacketHeaderBase):
     def __str__(self):
         return 'NullPacketHeader'
 
+    def __eq__(self, other):
+        return self.to_bytes() == other.to_bytes()
+
     def __repr__(self):
-        return '<NullPacketHeader>'
+        return 'NullPacketHeader()'
 
 
 class RawPacketContents(PacketHeaderBase):
