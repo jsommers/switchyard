@@ -44,16 +44,20 @@ class Interface(object):
     def ethaddr(self, value):
         if isinstance(value, EthAddr):
             self.__ethaddr = value
-        elif isinstance(value, str):
+        elif isinstance(value, (str,bytes)):
             self.__ethaddr = EthAddr(value)
         elif value is None:
             self.__ethaddr = EthAddr('00:00:00:00:00:00')
         else:
-            self.__ethaddr = value
+            raise ValueError("Can't initialize ethaddr with {}".format(value))
 
     @property 
     def ipaddr(self):
         return self.__ipaddr.ip
+
+    @property
+    def ipinterface(self):
+        return self.__ipaddr
 
     @ipaddr.setter
     def ipaddr(self, value):
@@ -98,10 +102,13 @@ class Interface(object):
             s += " ip:{}".format(self.__ipaddr)
         return s 
 
-def make_device_list(includes, excludes):
+def make_device_list(includes=set(), excludes=set()):
     log_debug("Making device list.  Includes: {}, Excludes: {}".format(includes, excludes))
     non_interfaces = set()
     devs = set([ dev.name for dev in pcap_devices() if not dev.isloop or dev.name in includes])
+    includes = set(includes) # may have been given as a list
+    includes.intersection_update(devs) # only include devs that actually exist
+
     for d in devs:
         try:
             ifnum = if_nametoindex(d)
@@ -116,8 +123,7 @@ def make_device_list(includes, excludes):
     # if includelist is non-empty, perform
     # intersection with devs found and includelist
     if includes:
-        devs.intersection_update(set(includes))
+        devs.intersection_update(includes)
 
     log_debug("Using these devices: {}".format(devs))
     return devs
-

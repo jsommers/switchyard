@@ -2,8 +2,9 @@ from switchyard.lib.packet import *
 from switchyard.lib.address import EthAddr, IPAddr
 from switchyard.lib.topo.util import *
 from switchyard.lib.topo.topobuild import *
-from switchyard.lib.interface import Interface
+import switchyard.lib.interface as intfmod
 import unittest 
+from unittest.mock import Mock
 
 class TopologyTests(unittest.TestCase):
     def testHumanizeCap(self):
@@ -178,7 +179,7 @@ class TopologyTests(unittest.TestCase):
         self.assertEqual(rdict['interfaces'], d)
 
     def testInterface(self):
-        intf = Interface("test", None, None, None)
+        intf = intfmod.Interface("test", None, None, None)
         self.assertTrue(str(intf).startswith("test"))
         self.assertTrue("mac:00:00:00:00:00:00" in str(intf))
         intf.ethaddr = EthAddr("00:11:22:33:44:55")
@@ -194,6 +195,64 @@ class TopologyTests(unittest.TestCase):
         self.assertTrue("ip:1.2.3.4/22" in str(intf))
         with self.assertRaises(Exception):
             intf.netmask = True
+        with self.assertRaises(Exception):
+            intf.ethaddr = True
+        intf.ethaddr = b'\x01\x02\x03\x04\x05\x06'
+        self.assertEqual(intf.ethaddr, EthAddr("01:02:03:04:05:06"))
+        intf.ipaddr = "9.8.7.6"
+        intf.netmask = None
+        self.assertEqual(intf.ipaddr, IPv4Address("9.8.7.6"))
+        self.assertEqual(str(intf.ipinterface), "9.8.7.6/32")
+        with self.assertRaises(Exception):
+            intf.netmask = 4.5
+        self.assertEqual(intf.iftype, intfmod.InterfaceType.Unknown)
+        with self.assertRaises(Exception):
+            intf.iftype = intfmod.InterfaceType.Wireless
+
+    def testDevListMaker(self):
+        import switchyard.pcapffi as pf
+        import socket as sock
+
+        # name, intname, desc, loop, up, running
+        dlist = [
+            pf.PcapInterface("a", "aint", "", False, True, True),
+        ]
+        devmock = Mock(return_value=dlist)
+        ifnum = Mock(side_effect=range(0,100))
+        setattr(intfmod, "pcap_devices", devmock)
+        setattr(intfmod, "if_nametoindex", ifnum)
+        # includes, excludes
+        rv = intfmod.make_device_list(set({"a"}), set())
+        self.assertEqual(len(rv), 1)
+        self.assertIn("a", rv)
+        rv = intfmod.make_device_list(set(), set())
+        self.assertEqual(len(rv), 1)
+        self.assertIn("a", rv)
+        rv = intfmod.make_device_list(set(), set({"a"}))
+        self.assertEqual(len(rv), 0)
+        rv = intfmod.make_device_list(set({"xyz"}), set({"a"}))
+        self.assertEqual(len(rv), 0)
+        dlist = [
+            pf.PcapInterface("a", "aint", "", False, True, True),
+            pf.PcapInterface("b", "bint", "", True, True, True),
+            pf.PcapInterface("c", "cint", "", False, True, True),
+        ]
+        devmock = Mock(return_value=dlist)
+        setattr(intfmod, "pcap_devices", devmock)
+
+        rv = intfmod.make_device_list(includes=set({"xyz"}), excludes=set({"a"}))
+        self.assertEqual(len(rv), 1)
+        self.assertIn("c", rv)
+        
+        rv = intfmod.make_device_list(excludes=set({"a"}))
+        self.assertEqual(len(rv), 1)
+        self.assertIn("c", rv)
+
+        ifnum = Mock(side_effect=Exception)
+        setattr(intfmod, "if_nametoindex", ifnum)
+        rv = intfmod.make_device_list(includes=set(), excludes=set())
+        self.assertEqual(len(rv), 0)
+
 
 if __name__ == '__main__':
-    unittest.main()
+        unittest.main()
