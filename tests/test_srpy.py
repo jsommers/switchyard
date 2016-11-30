@@ -47,6 +47,7 @@ class TestFrameworkTests(unittest.TestCase):
 from switchyard.lib.userlib import *
 
 s = TestScenario("ARP request")
+s.timeout = 1.0
 s.add_interface('router-eth0', '40:00:00:00:00:00', '192.168.1.1', '255.255.255.0')
 s.add_interface('router-eth1', '40:00:00:00:00:01', '192.168.100.1', '255.255.255.0')
 s.add_interface('router-eth2', '40:00:00:00:00:02', '10.0.1.2', '255.255.255.0')
@@ -58,7 +59,7 @@ arprep = create_ip_arp_reply("40:00:00:00:00:03", "30:00:00:00:00:01", "10.1.1.2
 
 s.expect(PacketInputEvent("router-eth3", arpreq), "Incoming ARP request")
 s.expect(PacketOutputEvent("router-eth3", arprep), "Outgoing ARP reply (1)")
-s.expect(PacketInputTimeoutEvent(3), "Timeout on recv")
+s.expect(PacketInputTimeoutEvent(0.5), "Timeout on recv")
 s.expect(PacketOutputEvent("router-eth3", arprep), "Outgoing ARP reply (2)")
 
 scenario = s

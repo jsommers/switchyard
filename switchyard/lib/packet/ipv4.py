@@ -7,7 +7,6 @@ from .packet import PacketHeaderBase,Packet
 from ..address import EthAddr,IPAddr,SpecialIPv4Addr,SpecialEthAddr
 from .common import IPProtocol,IPFragmentFlag,IPOptionNumber, checksum
 from .icmp import ICMP
-from .igmp import IGMP
 from .udp import UDP
 from .tcp import TCP
 
@@ -23,7 +22,6 @@ IPTypeClasses = {
     IPProtocol.ICMP: ICMP,
     IPProtocol.TCP: TCP,
     IPProtocol.UDP: UDP,
-    IPProtocol.IGMP: IGMP,
 }
 
 

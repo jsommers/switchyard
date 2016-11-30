@@ -36,6 +36,18 @@ class ICMP(PacketHeaderBase):
         self._code = self._valid_codes_map[self._type].EchoRequest
         self._icmpdata = ICMPEchoRequest()
         self._checksum = 0
+        # make sure that icmptype is set first; this has the
+        # side-effect of also creating the "right" icmpdata object.
+        if 'icmptype' in kwargs:
+            self.icmptype = kwargs.pop('icmptype')
+        # as a convenience, allow kw syntax to set icmpdata values
+        popattr = []
+        for attr,val in kwargs.items():
+            if hasattr(self.icmpdata, attr):
+                setattr(self.icmpdata, attr, val)
+                popattr.append(attr)
+        for pattr in popattr:
+            kwargs.pop(pattr)
         super().__init__(**kwargs)
 
     def size(self):
@@ -162,9 +174,6 @@ class ICMPData(PacketHeaderBase):
     def __eq__(self, other):
         return self.data == other.data
 
-    def __hash__(self):
-        return sum(self._rawpayload)
-
     def __str__(self):
         return '{} bytes of raw payload ({})'.format(len(self._rawpayload), self._rawpayload[:10])
 
@@ -196,6 +205,8 @@ class ICMPRedirect(ICMPData):
         return b''.join( (self._redirectto.packed,super().to_bytes()) )
 
     def from_bytes(self, raw):
+        if len(raw) < 4:
+            raise Exception("Not enough bytes ({}) to reconstruct ICMPRedirect data object".format(len(raw)))
         fields = struct.unpack('!I', raw[:4])
         self._redirectto = IPv4Address(fields[0])
         super().from_bytes(raw[4:])
@@ -223,6 +234,8 @@ class ICMPDestinationUnreachable(ICMPData):
         return b''.join( (struct.pack('!xBH', self._origdgramlen, self._nexthopmtu), super().to_bytes()) )
 
     def from_bytes(self, raw):
+        if len(raw) < 4:
+            raise Exception("Not enough bytes ({}) to reconstruct ICMPDestinationUnreachable data object".format(len(raw)))
         fields = struct.unpack('!xBH', raw[:4])
         self._origdgramlen = fields[0]
         self._nexthopmtu = fields[1]
@@ -268,6 +281,8 @@ class ICMPEchoRequest(ICMPData):
         return self._MINLEN + super().size()
 
     def from_bytes(self, raw):
+        if len(raw) < 4:
+            raise Exception("Not enough bytes ({}) to reconstruct {} data object".format(len(raw)))
         fields = struct.unpack(ICMPEchoRequest._PACKFMT, 
             raw[:ICMPEchoRequest._MINLEN])
         self._identifier = fields[0]
@@ -297,11 +312,11 @@ class ICMPEchoRequest(ICMPData):
    
     @identifier.setter
     def identifier(self, value):
-        self._identifier = value
+        self._identifier = int(value)
 
     @sequence.setter
     def sequence(self, value):
-        self._sequence = value
+        self._sequence = int(value)
 
 class ICMPEchoReply(ICMPEchoRequest):
     pass
@@ -317,6 +332,8 @@ class ICMPTimeExceeded(ICMPData):
         # FIXME: origdgram len should be padded to 4 bytes for v4, and 8 bytes for v6
 
     def from_bytes(self, raw):
+        if len(raw) < 4:
+            raise Exception("Not enough bytes ({}) to reconstruct ICMPTimeExceeded data object".format(len(raw)))
         fields = struct.unpack('!xBH', raw[:4])
         self._origdgramlen = fields[0]
         self._nexthopmtu = fields[1]

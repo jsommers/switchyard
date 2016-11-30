@@ -11,7 +11,6 @@ from .common import IPProtocol, checksum
 from .icmpv6 import ICMPv6
 from .tcp import TCP
 from .udp import UDP
-from .igmp import IGMP
 
 '''
 References:
@@ -475,7 +474,6 @@ class IPv6Mobility(IPv6ExtensionHeader):
 IPTypeClasses = {
     IPProtocol.TCP: TCP,
     IPProtocol.UDP: UDP,
-    IPProtocol.IGMP: IGMP,
     IPProtocol.ICMPv6: ICMPv6,
 
     # IPv6 extension headers

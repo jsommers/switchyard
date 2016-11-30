@@ -28,20 +28,40 @@ class ICMPPacketTests(unittest.TestCase):
         other.from_bytes(i.to_bytes())
         self.assertEqual(i, other)
 
+        with self.assertRaises(Exception):
+            other.from_bytes(i.to_bytes()[:-1])
+        i.icmpdata.origdgramlen = 28
+        self.assertEqual(i.icmpdata.origdgramlen, 28)
+        i.icmpdata.nexthopmtu = 288
+        self.assertEqual(i.icmpdata.nexthopmtu, 288)
+
         i.icmptype = ICMPType.SourceQuench
         self.assertEqual(i.icmptype, ICMPType.SourceQuench)
         other.from_bytes(i.to_bytes())
         self.assertEqual(i, other)
+        self.assertEqual(i.icmpdata.size(), 4)
 
         i.icmptype = ICMPType.Redirect
         self.assertEqual(i.icmptype, ICMPType.Redirect)
         other.from_bytes(i.to_bytes())
         self.assertEqual(i, other)
+        i.icmpdata.redirectto = '149.43.80.25'
+        self.assertEqual(i.icmpdata.redirectto, IPv4Address('149.43.80.25'))
+        self.assertIn("RedirectAddress: 149.43.80.25", str(i))
+        with self.assertRaises(Exception):
+            other.from_bytes(i.to_bytes()[:-1])
 
         i.icmptype = ICMPType.EchoRequest
         self.assertEqual(i.icmptype, ICMPType.EchoRequest)
         other.from_bytes(i.to_bytes())
         self.assertEqual(i, other)
+        i.icmpdata.identifier = 13
+        i.icmpdata.sequence = 42
+        self.assertEqual(i.icmpdata.identifier, 13)
+        self.assertEqual(i.icmpdata.sequence, 42)
+
+        with self.assertRaises(Exception):
+            other.from_bytes(i.to_bytes()[:-1])
 
         i.icmptype = ICMPType.RouterAdvertisement
         self.assertEqual(i.icmptype, ICMPType.RouterAdvertisement)
@@ -57,6 +77,12 @@ class ICMPPacketTests(unittest.TestCase):
         self.assertEqual(i.icmptype, ICMPType.TimeExceeded)
         other.from_bytes(i.to_bytes())
         self.assertEqual(i, other)
+        i.icmpdata.origdgramlen = 28
+        self.assertEqual(i.icmpdata.origdgramlen, 28)
+
+        with self.assertRaises(Exception):
+            other.from_bytes(i.to_bytes()[:-1])
+        self.assertIn("OrigDgramLen: 28", str(i))
 
         i.icmptype = ICMPType.ParameterProblem
         self.assertEqual(i.icmptype, ICMPType.ParameterProblem)
@@ -87,11 +113,26 @@ class ICMPPacketTests(unittest.TestCase):
         self.assertEqual(i.icmptype, ICMPType.AddressMaskRequest)
         other.from_bytes(i.to_bytes())
         self.assertEqual(i, other)
+        with self.assertRaises(Exception):
+            other.from_bytes(i.to_bytes()[:-1])
+        self.assertIsNone(i.icmpdata.next_header_class())
+        self.assertIsNone(i.icmpdata.pre_serialize(None, None, None))
+        self.assertEqual(i.icmpdata.size(), 4)
+        i.icmpdata.addrmask = IPv4Address("255.255.255.0")
+        i.icmpdata.identifier = 13
+        i.icmpdata.sequence = 42
+        self.assertEqual(str(i.icmpdata.addrmask), "255.255.255.0")
+        self.assertEqual(i.icmpdata.identifier, 13)
+        self.assertEqual(i.icmpdata.sequence, 42)
+        ix = ICMP(icmptype=ICMPType.AddressMaskRequest, 
+                addrmask="255.255.255.0", identifier=13, sequence=42)
+        self.assertEqual(ix, i)
 
         i.icmptype = ICMPType.AddressMaskReply
         self.assertEqual(i.icmptype, ICMPType.AddressMaskReply)
         other.from_bytes(i.to_bytes())
         self.assertEqual(i, other)
+        self.assertIn("0 0 0.0.0.0", str(other))
 
     def testValidCode(self):
         i = ICMP()
@@ -109,6 +150,9 @@ class ICMPPacketTests(unittest.TestCase):
         other.from_bytes(i.to_bytes())
         self.assertEqual(i, other)
 
+        with self.assertRaises(Exception):
+            other.from_bytes(i.to_bytes()[:3])
+
     def testSetSubtype(self):
         i = ICMP()
         self.assertIsInstance(i.icmpdata, ICMPEchoRequest)
@@ -121,6 +165,35 @@ class ICMPPacketTests(unittest.TestCase):
         i.from_bytes(b'\x04\x00\xfb\xff\x00\x00\x00\x00')
         self.assertEqual(i.icmptype, ICMPType.SourceQuench)
         self.assertIsInstance(i.icmpdata, ICMPSourceQuench)
+
+        with self.assertRaises(Exception):
+            i.from_bytes(b'\x04\x00\xfb\xff\x00\x00\x00')
+
+    def testStr(self):
+        i = ICMP(icmptype=ICMPType.DestinationUnreachable, 
+            icmpcode=ICMPTypeCodeMap[ICMPType.DestinationUnreachable].HostUnreachable)
+        p = IPv4() + UDP()
+        i.icmpdata.origdgramlen = len(p)
+        i.icmpdata.nexthopmtu = 1300
+        i.icmpdata.data = p.to_bytes()
+        self.assertIn('DestinationUnreachable:HostUnreachable', str(i))
+
+    def testDataprops(self):
+        i = ICMP()
+        with self.assertRaises(Exception):
+            i.icmpdata.data = IPv4()
+        self.assertIsInstance(i.icmpdata, ICMPData)
+        d = i.icmpdata
+        self.assertIsNone(d.next_header_class())
+        self.assertIsNone(d.pre_serialize(None, None, None))
+        self.assertEqual(d.size(), 4)
+
+        with self.assertRaises(Exception):
+            i.icmpdata = IPv4()
+
+        x = ICMPData()
+        self.assertIsNone(x.next_header_class())
+        self.assertIsNone(x.pre_serialize(None, None, None))
 
 
 if __name__ == '__main__':
