@@ -169,6 +169,13 @@ def main(obj):
     obj.send_packet('router-eth3', pkt)
 '''
 
+    USERCODE11 = '''
+from switchyard.lib.userlib import *
+def main(obj):
+    pkt = create_ip_arp_reply("40:00:00:00:00:AB", "30:00:00:00:00:CD", "10.1.1.2", "10.1.1.1")
+    obj.send_packet('router-eth3', pkt)
+'''
+
     def setUp(self):
         importlib.invalidate_caches()
 
@@ -190,6 +197,7 @@ def main(obj):
         writeFile('ucode8.py', TestFrameworkTests.USERCODE8)
         writeFile('ucode9.py', TestFrameworkTests.USERCODE9)
         writeFile('ucode10.py', TestFrameworkTests.USERCODE10)
+        writeFile('ucode11.py', TestFrameworkTests.USERCODE11)
 
         sys.path.append('.')
         sys.path.append(os.getcwd())
@@ -337,6 +345,13 @@ def main(obj):
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, 
             re.compile('an\s+exact\s+match\s+failed', re.M | re.I))
+
+    def testSendInsteadOfRecv(self):
+        with redirectio() as xio:
+            with self.assertLogs(level='DEBUG') as cm:
+                main_test('ucode11', ['stest'], TestFrameworkTests.opt_nocompile)
+        self.assertIn('send_packet was called, but I was expecting recv_packet', xio.contents)
+
 
 if __name__ == '__main__':
     setup_logging(False)

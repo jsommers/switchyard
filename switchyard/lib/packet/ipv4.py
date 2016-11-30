@@ -5,6 +5,7 @@ from collections import namedtuple
 
 from .packet import PacketHeaderBase,Packet
 from ..address import EthAddr,IPAddr,SpecialIPv4Addr,SpecialEthAddr
+from ..logging import log_warn
 from .common import IPProtocol,IPFragmentFlag,IPOptionNumber, checksum
 from .icmp import ICMP
 from .udp import UDP
@@ -46,6 +47,9 @@ class IPOption(object, metaclass=ABCMeta):
 
     def __eq__(self, other):
         return self._optnum == other._optnum
+
+    def __str__(self):
+        return "{}".format(self.__class__.__name__)
 
 
 class IPOptionNoOperation(IPOption):
@@ -113,13 +117,13 @@ class IPOptionXRouting(IPOption):
         return self._routedata[index]
 
     def __setitem__(self, index, addr):
-        if not isinstance(addr, IPv4Address):
-            raise ValueError("Value must be IPv4Address")
+        if not isinstance(addr, (str,IPv4Address)):
+            raise ValueError("Value must be IPv4Address or str")
         if index < 0:
             index = len(self._routedata) + index
         if not 0 <= index < len(self._routedata):
             raise IndexError("Index out of range")
-        self._routedata[index] = addr
+        self._routedata[index] = IPv4Address(addr)
 
     def __delitem__(self, index):
         if index < 0:
@@ -133,19 +137,24 @@ class IPOptionXRouting(IPOption):
             self._ptr == other._ptr and \
             self._routedata == other._routedata
 
+    def __str__(self):
+        return "{} ({})".format(self.__class__.__name__,
+            ', '.join([str(addr) for addr in self._routedata]))
+
+
 class IPOptionLooseSourceRouting(IPOptionXRouting):
-    def __init__(self):
-        super().__init__(IPOptionNumber.LooseSourceRouting)
+    def __init__(self, numaddrs=9):
+        super().__init__(IPOptionNumber.LooseSourceRouting, numaddrs)
 
 
 class IPOptionStrictSourceRouting(IPOptionXRouting):
-    def __init__(self):
-        super().__init__(IPOptionNumber.StrictSourceRouting)
+    def __init__(self, numaddrs=9):
+        super().__init__(IPOptionNumber.StrictSourceRouting, numaddrs)
 
 
 class IPOptionRecordRoute(IPOptionXRouting):
-    def __init__(self):
-        super().__init__(IPOptionNumber.RecordRoute)
+    def __init__(self, numaddrs=9):
+        super().__init__(IPOptionNumber.RecordRoute, numaddrs)
 
 
 TimestampEntry = namedtuple('TimestampEntry', ['ipv4addr','timestamp'])
@@ -153,7 +162,7 @@ TimestampEntry = namedtuple('TimestampEntry', ['ipv4addr','timestamp'])
 class IPOptionTimestamp(IPOption):
     __slots__ = ['_entries','_ptr','_flag']
 
-    def __init__(self, tslist=[]):
+    def __init__(self):
         super().__init__(IPOptionNumber.Timestamp)
         self._entries = [TimestampEntry(IPv4Address("0.0.0.0"), 0)] * 4
         self._ptr = 5
@@ -165,6 +174,14 @@ class IPOptionTimestamp(IPOption):
         entrysize = 8
         if self._flag == 0: entrysize = 4
         return 4 + len(self._entries)*entrysize
+
+    @property
+    def flag(self):
+        return self._flag
+
+    @flag.setter
+    def flag(self, value):
+        self._flag = int(value)
 
     def to_bytes(self):
         raw = struct.pack('!BBBB', 0x40 | self.optnum.value, self.length(),
@@ -201,6 +218,15 @@ class IPOptionTimestamp(IPOption):
         
     def timestamp_entry(self, index):
         return self._entries[index]
+
+    def __eq__(self, other):
+        return isinstance(other, IPOptionTimestamp) and \
+            self._entries == other._entries and \
+            self._flag == other._flag
+
+    def __str__(self):
+        return "{} ({})".format(self.__class__.__name__,
+            ", ".join([str(e) for e in self._entries]))
 
 
 class IPOption4Bytes(IPOption):
@@ -339,9 +365,15 @@ class IPOptionList(object):
         return len(self._options)
 
     def __eq__(self, other):
+        if not isinstance(other, IPOptionList):
+            return False
         if len(self._options) != len(other._options):
             return False
         return self._options == other._options
+
+    def __str__(self):
+        return "{} ({})".format(self.__class__.__name__,
+            ", ".join([str(opt) for opt in self._options]))
 
 
 class IPv4(PacketHeaderBase):
@@ -419,7 +451,7 @@ class IPv4(PacketHeaderBase):
     def next_header_class(self):
         cls = IPTypeClasses.get(self.protocol, None)
         if cls is None:
-            print ("Warning: no class exists to parse next protocol type: {}".format(self.protocol))
+            log_warn("No class exists to parse next protocol type: {}".format(self.protocol))
         return cls
 
     # accessors and mutators
@@ -449,7 +481,7 @@ class IPv4(PacketHeaderBase):
     @tos.setter
     def tos(self, value):
         if not (0 <= value < 256):
-            raise Exception("Invalid type of service value; must be 0-255")
+            raise ValueError("Invalid type of service value; must be 0-255")
         self._tos = value
 
     @property
@@ -463,13 +495,13 @@ class IPv4(PacketHeaderBase):
     @dscp.setter
     def dscp(self, value):
         if not (0 <= value < 64):
-            raise Exception("Invalid DSCP value; must be 0-63")
+            raise ValueError("Invalid DSCP value; must be 0-63")
         self._tos = (self._tos & 0x03) | value << 2
 
     @ecn.setter
     def ecn(self, value):
         if not (0 <= value < 4):
-            raise Exeption("Invalid ECN value; must be 0-3")
+            raise ValueError("Invalid ECN value; must be 0-3")
         self._tos = (self._tos & 0xfa) | value
 
     @property
@@ -479,7 +511,7 @@ class IPv4(PacketHeaderBase):
     @ipid.setter
     def ipid(self, value):
         if not (0 <= value < 65536):
-            raise Exception("Invalid IP ID value; must be 0-65535")
+            raise ValueError("Invalid IP ID value; must be 0-65535")
         self._ipid = value
 
     @property
@@ -541,7 +573,7 @@ class IPv4(PacketHeaderBase):
     @fragment_offset.setter
     def fragment_offset(self, value):
         if not (0 <= value < 2**13):
-            raise Exception("Invalid fragment offset value")
+            raise ValueError("Invalid fragment offset value")
         self._fragoffset = value
     
     @property

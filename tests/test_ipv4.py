@@ -1,5 +1,5 @@
 import unittest 
-from copy import deepcopy
+from copy import deepcopy, copy
 
 from switchyard.lib.packet import *
 from switchyard.lib.address import EthAddr, IPv4Address, SpecialIPv4Addr
@@ -17,6 +17,23 @@ class IPv4PacketTests(unittest.TestCase):
         pkt2 = Packet(raw=xbytes)
         self.assertEqual(self.pkt, pkt2)
 
+    def testNextHdr(self):
+        ip = IPv4(src="1.2.3.4", dst="4.5.6.7", ttl=64, ipid=99, protocol=IPProtocol.IGMP)
+        with self.assertLogs() as cm:
+            cls = ip.next_header_class()
+            self.assertIsNone(cls)
+        self.assertIn("No class exists", cm.output[0])
+        ip2 = IPv4()
+        with self.assertRaises(Exception):
+            ip2.from_bytes(ip.to_bytes()[:-1])
+        otherb = b'\x35' + ip.to_bytes()[1:]
+        with self.assertRaises(Exception):
+            ip2.from_bytes(otherb)
+        otherb = b'\x46' + ip.to_bytes()[1:]
+        with self.assertRaises(Exception):
+            ip2.from_bytes(otherb)
+        self.assertEqual(ip2.total_length, 20)
+
     def testBlankAddrs(self):
         self.assertEqual(self.ip.srcip, SpecialIPv4Addr.IP_ANY.value)
         self.assertEqual(self.ip.dstip, SpecialIPv4Addr.IP_ANY.value)
@@ -24,6 +41,22 @@ class IPv4PacketTests(unittest.TestCase):
     def testBadSet(self):
         with self.assertRaises(Exception):
             self.ip.ipdest = IPv4Address('0.0.0.0')
+        with self.assertRaises(ValueError): 
+            self.ip.ttl = 500        
+        with self.assertRaises(ValueError): 
+            self.ip.tos = 256        
+        with self.assertRaises(ValueError): 
+            self.ip.dscp = 65        
+        with self.assertRaises(ValueError): 
+            self.ip.ecn = -1
+        with self.assertRaises(ValueError): 
+            self.ip.ecn = 8
+        with self.assertRaises(ValueError): 
+            self.ip.ipid = 131072 
+        with self.assertRaises(ValueError): 
+            self.ip.fragment_offset = -1
+        with self.assertRaises(ValueError): 
+            self.ip.fragment_offset = 2**14
 
     def testBadProtocolType(self):
         # try to set an invalid protocol number
@@ -51,6 +84,17 @@ class IPv4PacketTests(unittest.TestCase):
     def testOptionContainer(self):
         opts = IPOptionList()
         self.assertEqual(opts.to_bytes(), b'')
+        with self.assertRaises(Exception):
+            opts.append(1)
+
+        self.assertEqual("IPOptionList ()", str(opts))
+        opts.append(IPOptionNoOperation())
+        self.assertEqual("IPOptionList (IPOptionNoOperation)", str(opts))
+        self.assertNotEqual(opts, [1,2,3])
+        opts2 = IPOptionList()
+        self.assertNotEqual(opts, opts2)
+        opts2.append(IPOptionNoOperation())
+        self.assertEqual(opts, opts2)
 
     def testNoOpt(self):
         iphdr = self.pkt[1] 
@@ -59,6 +103,13 @@ class IPv4PacketTests(unittest.TestCase):
         self.assertEqual(iphdr.size(), 24)
         raw = iphdr.to_bytes()
         self.assertEqual(raw[-4:], b'\x01\x00\x00\x00')
+        iphdr.options[-1] = IPOptionNoOperation()
+        self.assertEqual(iphdr.hl, 6)
+        self.assertEqual(iphdr.size(), 24)
+        self.assertEqual(raw[-4:], b'\x01\x00\x00\x00')
+        del iphdr.options[-1]
+        self.assertEqual(iphdr.options.size(), 0)
+        self.assertEqual(str(IPOptionNoOperation()), "IPOptionNoOperation")
 
     def testOptionIndexing(self):
         optlist = IPOptionList()
@@ -119,6 +170,37 @@ class IPv4PacketTests(unittest.TestCase):
         self.routeOptTestHelper(IPOptionLooseSourceRouting())
         self.routeOptTestHelper(IPOptionStrictSourceRouting())
 
+        with self.assertRaises(Exception):
+            IPOptionRecordRoute(10)
+        with self.assertRaises(Exception):
+            IPOptionRecordRoute(-1)
+
+        opt = IPOptionRecordRoute(2)
+        self.assertEqual(opt.pointer, 4)
+        self.assertIn("0.0.0.0, 0.0.0.0", str(opt))
+        opt.pointer = 8
+        self.assertEqual(opt.pointer, 8)
+        for i in range(4):
+            with self.assertRaises(ValueError):
+                opt.pointer = i
+        with self.assertRaises(ValueError):
+            opt.pointer = 12
+        self.assertEqual(opt.num_addrs(), 2)
+        del opt[-1]
+        self.assertEqual(opt.num_addrs(), 1)
+        with self.assertRaises(IndexError):
+            del opt[1]
+        with self.assertRaises(IndexError):
+            del opt[-2]
+        opt[0] = "149.43.80.25"
+        self.assertEqual(opt[0], IPv4Address("149.43.80.25"))
+        with self.assertRaises(IndexError):
+            opt[1] = "1.1.1.1"
+        opt[-1] = "1.2.3.4"
+        self.assertEqual(opt[0], IPv4Address("1.2.3.4"))
+        with self.assertRaises(ValueError):
+            opt[1] = 88
+
     def fourByteOptionTestHelper(self, opt, copyfl, value):
         compare = struct.pack('!BBH', copyfl | opt.optnum.value, 4, value)
         self.assertEqual(opt.to_bytes(), compare)
@@ -145,6 +227,21 @@ class IPv4PacketTests(unittest.TestCase):
         xtopt = IPOptionTimestamp()
         xtopt.from_bytes(compare)
         self.assertEqual(xtopt.to_bytes(), compare)
+
+        testbad = IPOptionTimestamp()    
+        with self.assertRaises(Exception):
+            testbad.from_bytes(compare[:-1])
+
+        self.assertNotEqual(topt, xtopt)
+        self.assertEqual(topt.flag, 1)
+        self.assertEqual(xtopt.flag, 0)
+        topt.flag = xtopt.flag = 0x0
+        topt._entries = copy(xtopt._entries)
+
+        raw = b'\x44\x08\x05\x00' + b'\x00\x00\x00\x00' * 1
+        xtopt.from_bytes(raw) 
+        self.assertIn("IPOptionTimestamp (TimestampEntry(ipv4addr=None, timestamp=0))", str(xtopt))
+
 
 if __name__ == '__main__':
     unittest.main()

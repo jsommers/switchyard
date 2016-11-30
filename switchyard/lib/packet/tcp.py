@@ -163,7 +163,8 @@ class TCP(PacketHeaderBase):
         self._dstport = value
 
     def __str__(self):
-        return '{} {}->{}'.format(self.__class__.__name__, self.srcport, self.dstport)
+        return '{} {}->{} ({} {}:{})'.format(self.__class__.__name__, 
+            self.srcport, self.dstport, self.flagstr, self.seq, self.ack)
 
     def next_header_class(self):
         return None
@@ -201,6 +202,14 @@ class TCP(PacketHeaderBase):
         return self._flags
 
     @property
+    def flagstr(self):
+        flist = []
+        for f in range(9):
+            if self._isset(f):
+                flist.append(TCPFlags(f).name[0])
+        return "".join(flist)
+
+    @property
     def urgent_pointer(self):
         return self._urg
 
@@ -213,6 +222,8 @@ class TCP(PacketHeaderBase):
         return self._options
 
     def _isset(self, flag):
+        if isinstance(flag, int):
+            flag = TCPFlags(flag)
         mask = 0x01 << flag.value 
         return (self._flags & mask) == mask
 
@@ -294,10 +305,3 @@ class TCP(PacketHeaderBase):
     @FIN.setter
     def FIN(self, value):
         self._setflag(TCPFlags.FIN, value)
-
-if __name__ == '__main__':
-    t = TCP()
-    b = t.to_bytes()
-    t2 = TCP()
-    t2.from_bytes(b)
-    assert(t == t2)

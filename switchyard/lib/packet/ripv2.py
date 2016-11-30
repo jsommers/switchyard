@@ -4,6 +4,7 @@ from ipaddress import IPv4Network
 
 from .packet import PacketHeaderBase,Packet,RawPacketContents
 from ..address import SpecialIPv4Addr, IPv4Address
+from ..logging import log_warn
 
 '''
 References:
@@ -72,6 +73,10 @@ class RIPRouteEntry(object):
     @property 
     def metric(self):
         return self._metric
+
+    def __eq__(self, other):
+        return isinstance(other, RIPRouteEntry) and \
+            self.to_bytes() == other.to_bytes()
 
 
 class RIPv2(PacketHeaderBase):
