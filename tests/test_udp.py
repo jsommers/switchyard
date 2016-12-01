@@ -35,7 +35,13 @@ class UDPPacketTests(unittest.TestCase):
         p[0].protocol = IPProtocol.UDP
         b = p.to_bytes()
         self.assertEqual(u.checksum, 65502)
+        u = UDP(srcport=1234,dstport=4567)
+        u.pre_serialize(b'', Packet(), 0)
+        self.assertEqual(u.checksum, 0)
 
+        x = b'\x00\x00\xfe\xff\x00\x00'
+        c = checksum(x, start=0, skip_word=1)
+        self.assertEqual(c, 65535)
 
 
 if __name__ == '__main__':

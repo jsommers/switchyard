@@ -242,6 +242,10 @@ class IPv4PacketTests(unittest.TestCase):
         xtopt.from_bytes(raw) 
         self.assertIn("IPOptionTimestamp (TimestampEntry(ipv4addr=None, timestamp=0))", str(xtopt))
 
+        raw = b'\x44\x0c\x05\x01' + b'\x7f\x00\x00\x01' + b'\x00\x00\x00\x00'
+        xtopt.from_bytes(raw) 
+        self.assertIn("TimestampEntry(ipv4addr=IPv4Address('127.0.0.1'), timestamp=0)", str(xtopt))
+
 
 if __name__ == '__main__':
     unittest.main()

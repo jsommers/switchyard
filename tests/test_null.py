@@ -17,6 +17,7 @@ class NullPacketTests(unittest.TestCase):
         self.assertEqual(n, n2)
 
         self.assertEqual(str(n), "Null: AF_INET")
+        self.assertIsNone(n2.pre_serialize(None, None, None))
 
     def testAf(self):
         n = Null()

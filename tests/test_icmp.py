@@ -1,6 +1,7 @@
 from switchyard.lib.packet import *
 from switchyard.lib.address import EthAddr, IPAddr
 from switchyard.lib.packet.common import ICMPType
+from switchyard.lib.packet.icmpv6 import construct_icmpv6_type_map
 import unittest 
 
 class ICMPPacketTests(unittest.TestCase):
@@ -113,8 +114,15 @@ class ICMPPacketTests(unittest.TestCase):
         self.assertEqual(i.icmptype, ICMPType.AddressMaskRequest)
         other.from_bytes(i.to_bytes())
         self.assertEqual(i, other)
+
+        mr = ICMPAddressMaskRequest()
+        addrmaskdata = i.icmpdata.to_bytes()
+        mr.from_bytes(addrmaskdata)
+        print(len(addrmaskdata))
         with self.assertRaises(Exception):
-            other.from_bytes(i.to_bytes()[:-1])
+            mr.from_bytes(addrmaskdata[:-3])
+        with self.assertRaises(Exception):
+            mr.from_bytes(addrmaskdata[:3])
         self.assertIsNone(i.icmpdata.next_header_class())
         self.assertIsNone(i.icmpdata.pre_serialize(None, None, None))
         self.assertEqual(i.icmpdata.size(), 4)
@@ -195,6 +203,11 @@ class ICMPPacketTests(unittest.TestCase):
         self.assertIsNone(x.next_header_class())
         self.assertIsNone(x.pre_serialize(None, None, None))
 
+    def testIcmp6(self):
+        x = construct_icmpv6_type_map()(ICMPv6EchoRequest)
+        self.assertEqual(x, ICMPv6Type.EchoRequest)
+        x = construct_icmpv6_type_map()(ICMPv6EchoReply)
+        self.assertEqual(x, ICMPv6Type.EchoReply)
 
 if __name__ == '__main__':
     unittest.main()

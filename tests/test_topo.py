@@ -50,6 +50,7 @@ class TopologyTests(unittest.TestCase):
         self.assertEqual(humanize_delay(0.0002), "200 \u00B5secs")
         self.assertEqual(humanize_delay(1), "1 sec")
         self.assertEqual(humanize_delay(1.5), "1500 msecs")
+        self.assertEqual(humanize_delay(0.00000001), "1e-08 sec")
 
     def testUnhumanizeDelay(self):
         self.assertEqual(unhumanize_delay("100 milliseconds"), 0.1)

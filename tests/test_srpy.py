@@ -237,7 +237,7 @@ def main(obj):
                 pass
 
         removeFile('stest')
-        for t in range(1, 11):
+        for t in range(1, 12):
             removeFile("ucode{}".format(t))
 
     def testDryRun(self):

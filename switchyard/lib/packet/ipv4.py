@@ -207,7 +207,7 @@ class IPOptionTimestamp(IPOption):
             unpackfmt = '!I' 
         for tstup in struct.iter_unpack(unpackfmt, raw):
             if haveipaddr:
-                ts = TimestampEntry(*tstup)
+                ts = TimestampEntry(IPv4Address(tstup[0]), tstup[1])
             else:
                 ts = TimestampEntry(None, tstup[0])
             self._entries.append(ts)
