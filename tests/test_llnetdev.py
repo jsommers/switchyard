@@ -99,6 +99,7 @@ class LLNetDevTests(unittest.TestCase):
         with self.assertRaises(SwitchyException):
             self.fake.intf_up(self.fake.interface_by_name('eth0'))
         self.assertEqual('test', self.fake.name)
+        self.fake.intf_up(Interface("testif", "00:00:00:11:11:11", "1.2.3.4"))
 
     def testFakeAddrLookups(self):
         with self.assertRaises(SwitchyException):
@@ -158,7 +159,15 @@ class LLNetDevTests(unittest.TestCase):
         mthreads = Mock()
         setattr(LLNetReal, "__spawn_threads", mthreads)
 
-        lr = LLNetReal(['en0'], "testy") # hangs
+        lr = LLNetReal(['en0'], "testy") 
+        self.assertEqual(lr.name, "testy")
+        with self.assertRaises(SwitchyException):
+            lr.send_packet("baddev", Packet())
+        with self.assertRaises(SwitchyException):
+            lr.send_packet("en0", b'\xde\xad')
+        with self.assertRaises(SwitchyException):
+            lr.send_packet("en0", None)
+
         lr._sig_handler(si, None)
         lr.shutdown()
         self.assertIn('en0', lr._pcaps)
@@ -167,6 +176,13 @@ class LLNetDevTests(unittest.TestCase):
         mthreads.assert_not_called()
         mock_pcap.assert_called_with('en0')
         self.assertFalse(lr._pktqueue.empty())
+        with self.assertRaises(Shutdown):
+            lr.recv_packet()
+
+        lr = LLNetReal(['en0'], "testy") 
+        lr.shutdown()
+        self.assertFalse(LLNetReal.running)
+
 
 if __name__ == '__main__':
     unittest.main()

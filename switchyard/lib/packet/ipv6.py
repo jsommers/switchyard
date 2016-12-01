@@ -59,7 +59,7 @@ class IPv6ExtensionHeader(PacketHeaderBase):
     def next_header_class(self):
         cls = IPTypeClasses.get(self.nextheader, None) 
         if cls is None and self.nextheader not in IPTypeClasses:
-            print ("Warning: no class exists to parse next protocol type: {}".format(self.protocol))
+            log_warn("Warning: no class exists to parse next protocol type: {}".format(self.protocol))
         return cls
 
     def to_bytes(self):
@@ -547,7 +547,7 @@ class IPv6(PacketHeaderBase):
     def next_header_class(self):
         cls = IPTypeClasses.get(self.nextheader, None)
         if cls is None and self.nextheader not in IPTypeClasses:
-            print ("Warning: no class exists to parse next header type: {}".format(self.nextheader))
+            log_warn("Warning: no class exists to parse next header type: {}".format(self.nextheader))
         return cls
 
     # accessors and mutators

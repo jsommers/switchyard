@@ -13,6 +13,29 @@ class IPv6PacketTests(unittest.TestCase):
         self.ip.nextheader = IPProtocol.ICMPv6
         self.pkt = self.e + self.ip + ICMPv6()
 
+    def testBasic(self):
+        i = IPv6()
+        self.assertEqual(i.size(), 40)
+        with self.assertRaises(Exception):
+            i.from_bytes(b'\x00\x01\x02')
+        b = i.to_bytes()
+        with self.assertRaises(Exception):
+            i.from_bytes(b[:-1])
+        b = b'\x70' + b[1:]
+        with self.assertRaises(Exception):
+            i.from_bytes(b)
+        i = IPv6(nextheader=IPProtocol.GRE)
+        with self.assertLogs() as cm:
+            self.assertIsNone(i.next_header_class())
+        self.assertIn('no class exists to parse next header type', cm.output[0])
+        self.assertEqual(i.hopcount, 128)
+        i.hopcount = 64
+        self.assertEqual(i.hopcount, 64)
+        i = IPv6(src=SpecialIPv6Addr.UNDEFINED.value, dst=SpecialIPv6Addr.ALL_NODES_LINK_LOCAL.value)
+        self.assertEqual(i.src, SpecialIPv6Addr.UNDEFINED.value)
+        self.assertEqual(i.dst, SpecialIPv6Addr.ALL_NODES_LINK_LOCAL.value)
+        self.assertIn("::->ff02::1", str(i))
+
     def testReconstruct(self):
         xbytes = self.pkt.to_bytes()
         pkt2 = Packet(raw=xbytes)
@@ -30,6 +53,21 @@ class IPv6PacketTests(unittest.TestCase):
         # try to set an invalid protocol number
         with self.assertRaises(ValueError):
             self.ip.nextheader = 0xff
+
+    def testExtHdr(self):
+        h = IPv6ExtensionHeader(1)
+        self.assertEqual(h.size(), 0)
+        self.assertIsNone(h.protocol)
+        h.protocol = IPProtocol.IPv6RouteOption
+        self.assertEqual(h.protocol, IPProtocol.IPv6RouteOption)
+        self.assertIs(h.next_header_class(), IPv6RouteOption)
+        h.protocol = IPProtocol.GRE
+        with self.assertLogs() as cm:
+           h.next_header_class()
+        self.assertIn("no class exists to parse next protocol type: 47", cm.output[0])
+
+        with self.assertRaises(Exception):
+            h.from_bytes(b'\x00')
 
     def testRouteOpt(self):
         pkt = deepcopy(self.pkt)

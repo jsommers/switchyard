@@ -75,6 +75,12 @@ class TopologyTests(unittest.TestCase):
         t.addLink('h1','s1','1 Mb/s','5 milliseconds')
         t.addLink('h2','r1','1 Mb/s','5 milliseconds')
         t.addLink('h2','s1','1 Mb/s','5 milliseconds')
+        self.assertTrue(t.auto_macs)
+        self.assertIn("h1", t)
+        with self.assertRaises(Exception):
+            t.addHost("h1")
+        self.assertTrue(t.hasEdge("h1", "r1"))
+        self.assertFalse(t.hasEdge("h1", "h2"))
         self.assertListEqual(sorted(t.nodes), sorted(['h1','h2','r1','s1']))
         self.assertListEqual(t.routers, ['r1'])
         self.assertListEqual(t.switches, ['s1'])
@@ -97,6 +103,7 @@ class TopologyTests(unittest.TestCase):
         self.assertEqual(len(nobj.interfaces), 2)
         self.assertEqual(str(nobj.interfaces['eth0'].ethaddr), '00:00:00:00:00:01')
         self.assertEqual(str(nobj.interfaces['eth1'].ethaddr), '00:00:00:00:00:03')
+        self.assertTrue(str(nobj).startswith("Host eth0 "))
 
         t.assignIPAddresses(prefix='192.168.1.0/24')
         self.assertEqual(str(nobj.interfaces['eth0'].ipaddr)[:-1], "192.168.1.")
@@ -110,6 +117,21 @@ class TopologyTests(unittest.TestCase):
         self.assertEqual(ethaddr,EthAddr("11:22:33:44:55:66"))
         self.assertEqual(ip,IPAddr("10.0.1.1"))
         self.assertEqual(mask,IPAddr("255.255.0.0"))
+
+        t.removeLink('h1', 'r1')
+        self.assertFalse(t.hasEdge('h1', 'r1'))
+        with self.assertRaises(Exception):
+            t.setLinkCharacteristics('h1', 'r1', capacity="10Mbps")
+
+        t.assignIPAddresses()
+        n = t.getNode('h2')
+        nobj = n['nodeobj']
+        self.assertRegex(str(nobj), "\s+ip:10\.0\.0\.\d\/8\s+")
+
+        with self.assertRaises(Exception):
+            t.setInterfaceAddresses('h42', 'eth0')
+        with self.assertRaises(Exception):
+            t.setInterfaceAddresses('h2', 'eth99')
 
     def testTopoCompose(self):
         t1 = Topology('A')
@@ -134,6 +156,9 @@ class TopologyTests(unittest.TestCase):
         self.assertListEqual(sorted([sorted(x) for x in t3.links]), sorted([sorted(x) for x in [('A_h1', 'A_s1'), ('B_h1', 'B_r1'), ('A_h2', 'A_s1'), ('B_r1', 'A_s1'), ('B_r1', 'B_h2')]]))
         t3.addRouter()
         self.assertListEqual(sorted(t3.nodes), sorted(['A_h1','A_h2','A_s1','B_h1','B_h2','B_r1','r0']))
+        self.assertEqual(t1.name, "A")
+        t1.name = "B"
+        self.assertEqual(t1.name, "B")
 
     def testTopoAddRemove(self):
         t1 = Topology('A')
