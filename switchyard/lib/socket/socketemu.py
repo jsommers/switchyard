@@ -213,7 +213,7 @@ class socket(object):
             PcapLiveDevice.set_bpf_filter_on_all_devices(
                 "{} dst port {} or icmp or icmp6".format(self._protoname,
                                                 self._local_addr[1]))
-        except:
+        except Exception as e:
             with yellow():
                 print ("Unable to complete socket emulation setup (failed on "
                        "firewall/bpf filter installation).  Did you start the "
@@ -222,7 +222,7 @@ class socket(object):
             print ("Here is the raw exception information:")
             with red():
                 print(indent(traceback.format_exc(), '    '))
-            sys.exit()
+            raise e
 
     @property
     def family(self):

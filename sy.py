@@ -8,8 +8,6 @@ import argparse
 from threading import Thread, Barrier
 from textwrap import indent
 
-import switchyard.versioncheck
-
 from switchyard.textcolor import *
 from switchyard.hostfirewall import Firewall
 from switchyard.llnettest import main_test
@@ -24,6 +22,13 @@ from switchyard.lib.interface import make_device_list
 
 setup_ok = False
 netobj = None
+
+def version_check():
+    required = (3,4)
+    this = (sys.version_info.major, sys.version_info.minor)
+    if this < required:
+        log_failure("Invalid Python version for using Switchyard: need at least 3.4")
+        sys.exit(-1)
 
 def start_app(appcode, firewall_setup):
     # don't start app-layer code until the lower layers are initialized
@@ -52,6 +57,8 @@ def start_app(appcode, firewall_setup):
         netobj.shutdown()
 
 if __name__ == '__main__':
+    version_check()
+
     progname = "Switchyard"
     parser = argparse.ArgumentParser(prog=progname)
     parser.add_argument("-i", "--include", metavar='INCLUDE_INTF', 
@@ -108,6 +115,7 @@ if __name__ == '__main__':
         PacketFormatter.full_display(True)
 
     setup_logging(args.debug)
+    version_check()
 
     if args.cli:
         t = Topology()

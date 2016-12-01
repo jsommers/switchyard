@@ -3,7 +3,7 @@ OF switch unit tests.
 '''
 
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
@@ -13,6 +13,7 @@ from switchyard.lib.exceptions import *
 from switchyard.llnettest import LLNetTest, _prepare_debugger
 from switchyard.llnetreal import LLNetReal
 from switchyard.llnetbase import LLNetBase
+import switchyard.llnetreal as llreal
 
 class WrapLLNet(LLNetReal):
     def __init__(self, devlist, name=None):
@@ -42,8 +43,8 @@ class LLNetDevTests(unittest.TestCase):
         self.devs = make_device_list([], [])
         self.real = WrapLLNet(self.devs)
         self.real._fix_devinfo(self.devs)
-        self.real.pcaps = Mock()
-        self.real.pcaps.get = Mock(return_value=Mock())
+        self.real._pcaps = Mock()
+        self.real._pcaps.get = Mock(return_value=Mock())
 
     def testFakeSendDevName(self):
         p = Packet()
@@ -69,19 +70,19 @@ class LLNetDevTests(unittest.TestCase):
         p = Packet()
         for d in self.devs:
             self.real.send_packet(d, p)
-            self.real.pcaps.get.assert_called_with(d, None)
+            self.real._pcaps.get.assert_called_with(d, None)
 
     def testRealSendDevNum(self):
         p = Packet()
         for d,intf in self.real.devinfo.items():
             self.real.send_packet(intf.ifnum, p)
-            self.real.pcaps.get.assert_called_with(intf.name, None)
+            self.real._pcaps.get.assert_called_with(intf.name, None)
 
     def testRealSendIntfObj(self):
         p = Packet()
         for d,intf in self.real.devinfo.items():
             self.real.send_packet(intf, p)
-            self.real.pcaps.get.assert_called_with(intf.name, None)
+            self.real._pcaps.get.assert_called_with(intf.name, None)
 
     def testFakeCallback(self):
         called = (None,None)
@@ -144,9 +145,28 @@ class LLNetDevTests(unittest.TestCase):
             import pdb
             self.assertIsInstance(p, pdb.Pdb)
 
-    def testRealX(self):
-        pass
+    def testReal(self):
+        import signal
+        si = signal.SIGINT
+        setattr(signal, "signal", Mock())
 
+        mdev = Mock(return_value=[])
+        setattr(LLNetReal, "__assemble_dev_info", mdev)
+
+        mock_pcap = MagicMock()
+        setattr(llreal, "PcapLiveDevice", mock_pcap)
+        mthreads = Mock()
+        setattr(LLNetReal, "__spawn_threads", mthreads)
+
+        lr = LLNetReal(['en0'], "testy") # hangs
+        lr._sig_handler(si, None)
+        lr.shutdown()
+        self.assertIn('en0', lr._pcaps)
+
+        mdev.assert_not_called()
+        mthreads.assert_not_called()
+        mock_pcap.assert_called_with('en0')
+        self.assertFalse(lr._pktqueue.empty())
 
 if __name__ == '__main__':
     unittest.main()

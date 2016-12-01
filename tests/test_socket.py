@@ -2,10 +2,35 @@ import unittest
 from unittest.mock import Mock
 from queue import Queue
 from ipaddress import IPv4Address, ip_address
+from contextlib import ContextDecorator
+from io import StringIO
+import sys
 
 import switchyard.lib.socket.socketemu as sock
 from switchyard.lib.packet import IPProtocol
 from switchyard.lib.exceptions import *
+
+
+class redirectio(ContextDecorator):
+    def __init__(self):
+        self.iobuf = StringIO()
+
+    def __enter__(self):
+        self.stdout = getattr(sys, 'stdout')
+        self.stderr = getattr(sys, 'stderr')
+        setattr(sys, 'stdout', self.iobuf)
+        setattr(sys, 'stderr', self.iobuf)
+        return self
+
+    def __exit__(self, *exc):
+        setattr(sys, 'stdout', self.stdout)
+        setattr(sys, 'stderr', self.stderr)
+        return False
+
+    @property
+    def contents(self):
+        return self.iobuf.getvalue()
+
 
 class SocketEmuTests(unittest.TestCase):
     def setUp(self):
@@ -264,6 +289,16 @@ class SocketEmuTests(unittest.TestCase):
             sock.ApplicationLayer.send_to_app(IPProtocol.UDP,
                 ('1.2.3.4', 5678), s2.getsockname(), "failure")
         self.assertIn("No socket queue found", cm.output[0])
+
+    def testFail(self):
+        pcapmock = Mock()
+        pcapmock.set_bpf_filter_on_all_devices = Mock(side_effect=Exception())
+        setattr(sock, "PcapLiveDevice", pcapmock)
+
+        with redirectio() as xio:
+            with self.assertRaises(Exception):
+                s = sock.socket(sock.AF_INET, sock.SOCK_DGRAM)
+        self.assertIn("Unable to complete socket emulation setup", xio.contents)
 
 
 if __name__ == '__main__':

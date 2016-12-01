@@ -30,7 +30,6 @@ class LLNetReal(LLNetBase):
     A class that represents a collection of network devices
     on which packets can be received and sent.
     '''
-
     def __init__(self, devlist, name=None):
         LLNetBase.__init__(self)
         signal.signal(signal.SIGINT, self._sig_handler)
@@ -39,12 +38,14 @@ class LLNetReal(LLNetBase):
         signal.signal(signal.SIGUSR1, self._sig_handler)
         signal.signal(signal.SIGUSR2, self._sig_handler)
 
-        self.devs = devlist 
-        self.devinfo = self.__assemble_devinfo()
-        self.pcaps = {}
+        self._devs = devlist 
+        self._devinfo = self.__assemble_devinfo()
+        self._pcaps = {}
+        self._pktqueue = None
+        self._threads = None
         self.__make_pcaps()
-        log_info("Using network devices: {}".format(' '.join(self.devs)))
-        for devname, intf in self.devinfo.items():
+        log_info("Using network devices: {}".format(' '.join(self._devs)))
+        for devname, intf in self._devinfo.items():
             log_debug("{}: {}".format(devname, str(intf)))
 
         LLNetReal.running = True
@@ -59,24 +60,6 @@ class LLNetReal(LLNetBase):
     def name(self):
         return self.__name
 
-    def __initialize_devices(self, includes, excludes):
-        devs = self.__get_net_devs()
-        if not devs:
-            raise SwitchyException("No suitable interfaces found.")
-
-        # remove devs from excludelist
-        devs.difference_update(set(excludes))
-
-        # if includelist is non-empty, perform
-        # intersection with devs found and includelist
-        if includes:
-            devs.intersection_update(set(includes))
-
-        if not devs:
-            raise SwitchyException("No interfaces enabled after handling include/exclude lists")
-
-        return devs
-
     def shutdown(self):
         '''
         Should be called by Switchyard user code when a network object is
@@ -88,10 +71,10 @@ class LLNetReal(LLNetBase):
 
         LLNetReal.running = False
         log_debug("Joining threads for shutdown")
-        for t in self.threads:
+        for t in self._threads:
             t.join()
         log_debug("Closing pcap devices")
-        for devname,pdev in self.pcaps.items():
+        for devname,pdev in self._pcaps.items():
             pdev.close()
         log_debug("Done cleaning up")
 
@@ -100,12 +83,12 @@ class LLNetReal(LLNetBase):
         Internal method.  Creates threads to handle low-level
         network receive.
         '''
-        self.threads = []
-        self.pktqueue = Queue()
-        for devname,pdev in self.pcaps.items():
-            t = threading.Thread(target=LLNetReal.__low_level_dispatch, args=(pdev, devname, self.pktqueue))
+        self._threads = []
+        self._pktqueue = Queue()
+        for devname,pdev in self._pcaps.items():
+            t = threading.Thread(target=LLNetReal.__low_level_dispatch, args=(pdev, devname, self._pktqueue))
             t.start()
-            self.threads.append(t)
+            self._threads.append(t)
 
     def __assemble_devinfo(self):
         '''
@@ -146,7 +129,7 @@ class LLNetReal(LLNetBase):
                 else:
                     devtype[p.name] = InterfaceType.Unknown
 
-        for devname in self.devs:
+        for devname in self._devs:
             macaddr = None
             ipaddr = None
             mask = None
@@ -201,11 +184,11 @@ class LLNetReal(LLNetBase):
         for every network interface we care about and
         set them in non-blocking mode.
         '''
-        self.pcaps = {}
-        for dev in self.devs:
-            thismac = self.devinfo[dev].ethaddr
+        self._pcaps = {}
+        for dev in self._devs:
+            thismac = self._devinfo[dev].ethaddr
             pdev = PcapLiveDevice(dev) # default snaplen is 64k
-            self.pcaps[dev] = pdev
+            self._pcaps[dev] = pdev
 
     def _sig_handler(self, signum, stack):
         '''
@@ -214,10 +197,10 @@ class LLNetReal(LLNetBase):
         log_debug("Got SIGINT.")
         if signum == signal.SIGINT:
             LLNetReal.running = False
-            if self.pktqueue.qsize() == 0:
+            if self._pktqueue.qsize() == 0:
                 # put dummy pkt in queue to unblock a 
                 # possibly stuck user thread
-                self.pktqueue.put( (None,None,None) )
+                self._pktqueue.put( (None,None,None) )
 
     @staticmethod
     def __low_level_dispatch(pcapdev, devname, pktqueue):
@@ -252,7 +235,7 @@ class LLNetReal(LLNetBase):
         '''
         while True:
             try:
-                dev,dlt,pktinfo = self.pktqueue.get(timeout=timeout)
+                dev,dlt,pktinfo = self._pktqueue.get(timeout=timeout)
                 if not LLNetReal.running:
                     break
 
@@ -284,7 +267,7 @@ class LLNetReal(LLNetBase):
         if isinstance(dev, Interface):
            dev = dev.name
 
-        pdev = self.pcaps.get(dev, None)
+        pdev = self._pcaps.get(dev, None)
         if not pdev:
             raise SwitchyException("Unrecognized device name for packet send: {}".format(dev))
         else:
