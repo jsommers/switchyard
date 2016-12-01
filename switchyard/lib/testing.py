@@ -357,7 +357,8 @@ class PacketInputTimeoutEvent(SwitchyTestEvent):
         self.__dict__.update(xdict)
 
     def __eq__(self, other):
-        return self.timeout == other.timeout
+        return isinstance(other, PacketInputTimeoutEvent) and \
+            self.timeout == other.timeout
 
     def __str__(self):
         return "timeout on recv_packet"
@@ -397,7 +398,9 @@ class PacketInputEvent(SwitchyTestEvent):
         self.packet = Packet(raw=self.packet)
 
     def __eq__(self, other):
-        return self.device == other.device and str(self.packet) == str(other.packet)
+        return isinstance(other, PacketInputEvent) and \
+            self.device == other.device and \
+            str(self.packet) == str(other.packet)
 
     def __str__(self):
         return "recv_packet {} on {}".format(self.format_pkt(self.packet), self.device)
@@ -434,6 +437,8 @@ class PacketOutputEvent(SwitchyTestEvent):
         wildcard = kwargs.get('wildcard', [])
         predicates = kwargs.get('predicates', [])
 
+        if len(args) == 0:
+            raise Exception("PacketOutputEvent expects a list of device1, pkt1, device2, pkt2, etc., but no arguments were given.")
         if len(args) % 2 != 0:
             raise Exception("Arg list length to PacketOutputEvent must be even (device1, pkt1, device2, pkt2, etc.)")
         for i in range(0, len(args), 2):
@@ -490,7 +495,8 @@ class PacketOutputEvent(SwitchyTestEvent):
             self.matches[dev] = pkt
 
     def __eq__(self, other):
-        return str(self) == str(other)
+        return isinstance(other, PacketOutputEvent) and \
+            str(self) == str(other)
 
 
 TestScenarioEvent = namedtuple('TestScenarioEvent', ['event','description','timestamp'])
@@ -733,16 +739,16 @@ class TestScenario(object):
         self.__dict__.update(xdict)
 
     def __eq__(self, other):
+        if not isinstance(other, TestScenario):
+            return False
         if self.next_timestamp != other.next_timestamp:
             return False
         selfev = self.pending_events + self.completed_events
         otherev = other.pending_events + other.completed_events
         if len(selfev) != len(otherev):
-            print ("ev len doesn't match")
             return False
         for i in range(len(selfev)):
             if selfev[i] != otherev[i]:
-                print ("specific ev don't match")
                 return False
         return True
 

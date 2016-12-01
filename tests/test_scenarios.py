@@ -104,6 +104,56 @@ scenario = s
         self.assertIn('router-eth2', p)
         self.assertIn('router-eth3', p)
 
+    def testMiscScenario(self):
+        setupok = teardownok = False
+        def xup():
+            nonlocal setupok
+            setupok = True
+        def xdown():
+            nonlocal teardownok
+            teardownok = True
+        s = TestScenario("random")
+        self.assertEqual(s.name, "random")
+        s.add_file("xfiletest.txt", '''this is a test''')
+        s.setup = xup
+        s.teardown = xdown
+        self.assertIs(s.setup, xup)
+        self.assertIs(s.teardown, xdown)
+        s.do_setup()
+        s.do_teardown()
+        self.assertTrue(setupok)
+        self.assertTrue(teardownok)
+        s.write_files()
+        rv = os.lstat("xfiletest.txt")
+        self.assertIsNotNone(rv)
+        with open("xfiletest.txt") as f:
+            contents = f.read()
+        self.assertEqual(contents, "this is a test")
+        os.unlink("xfiletest.txt")
+
+        with self.assertRaises(Exception):
+            PacketOutputEvent()
+
+        with self.assertRaises(Exception):
+            PacketOutputEvent("dev1")
+
+        s2 = TestScenario("random")
+        self.assertEqual(s, s2)
+        s.add_interface("eth0", "00:00:00:11:11:11")
+        s2.add_interface("eth1", "00:00:00:11:11:11")
+        self.assertEqual(s, s2)
+        p = Packet()
+        s.expect(PacketOutputEvent("eth0", p), "pktout")
+        s2.expect(PacketOutputEvent("eth0", p), "pktout")
+        self.assertEqual(s, s2)
+        s2.expect(PacketOutputEvent("eth0", p), "pktout2")
+        self.assertNotEqual(s, s2)
+        s.expect(PacketOutputEvent("eth0", p), "pktout2")
+        self.assertEqual(s, s2)
+        s.expect(PacketInputEvent("ethout", None), "pkt3")
+        s2.expect(PacketOutputEvent("eth0", p), "pkt3")
+        self.assertNotEqual(s, s2)
+        self.assertNotEqual(s, 42)
 
 if __name__ == '__main__':
     setup_logging(False)
