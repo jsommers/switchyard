@@ -118,7 +118,6 @@ class ICMPPacketTests(unittest.TestCase):
         mr = ICMPAddressMaskRequest()
         addrmaskdata = i.icmpdata.to_bytes()
         mr.from_bytes(addrmaskdata)
-        print(len(addrmaskdata))
         with self.assertRaises(Exception):
             mr.from_bytes(addrmaskdata[:-3])
         with self.assertRaises(Exception):
@@ -208,6 +207,39 @@ class ICMPPacketTests(unittest.TestCase):
         self.assertEqual(x, ICMPv6Type.EchoRequest)
         x = construct_icmpv6_type_map()(ICMPv6EchoReply)
         self.assertEqual(x, ICMPv6Type.EchoReply)
+
+    def testIcmpDataAttrs(self):
+        i = ICMP(icmptype=ICMPType.DestinationUnreachable, 
+            icmpcode=ICMPTypeCodeMap[ICMPType.DestinationUnreachable].HostUnreachable)
+        # getattr tests
+        self.assertEqual(i.origdgramlen, 0)
+        self.assertEqual(i.nexthopmtu, 0)
+        self.assertEqual(i.data, b'')
+        with self.assertRaises(AttributeError):
+            x = i.redirectto
+
+        i.icmptype = ICMPType.Redirect
+        self.assertEqual(i.redirectto, IPv4Address('0.0.0.0'))
+
+        self.assertTrue(hasattr(i, "redirectto"))
+
+        # setattr tests
+        i.redirectto = IPv4Address("10.0.1.1")
+        self.assertEqual(str(i.redirectto), "10.0.1.1")
+        self.assertEqual(str(i.icmpdata.redirectto), "10.0.1.1")
+
+        i.icmptype = ICMPType.DestinationUnreachable
+        i.icmpcode = ICMPTypeCodeMap[ICMPType.DestinationUnreachable].HostUnreachable
+        i.origdgramlen = 28
+        i.nexthopmtu = 1300
+        i.data = b'\xfe\xed'
+        self.assertEqual(i.origdgramlen, 28)
+        self.assertEqual(i.nexthopmtu, 1300)
+        self.assertEqual(i.data, b'\xfe\xed')
+        self.assertEqual(i.icmpdata.origdgramlen, 28)
+        self.assertEqual(i.icmpdata.nexthopmtu, 1300)
+        self.assertEqual(i.icmpdata.data, b'\xfe\xed')
+
 
 if __name__ == '__main__':
     unittest.main()

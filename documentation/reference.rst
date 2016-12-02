@@ -6,7 +6,7 @@ API Reference
 The "net" object
 ================
 
-.. autoclass:: switchyard.switchy_real.PyLLNet 
+.. autoclass:: switchyard.llnetbase.LLNetBase
    :members:
    :inherited-members:
    :exclude-members: set_devupdown_callback
@@ -15,6 +15,8 @@ The "net" object
    Switchyard program.  Using methods on this object, a user can send/receive
    packets and query the device for what interfaces are available and how
    they are configured.
+
+.. todo:: any thing to mention about real/test differences with llnet?
 
 .. _pktlib:
 
@@ -405,7 +407,7 @@ be inspected and/or modified on them.
    :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class
 
 
-.. FIXME: do something about this, later
+.. todo:: do something about this, later
 
 .. Test scenario creation
 .. ======================
@@ -417,9 +419,11 @@ be inspected and/or modified on them.
 Utility functions
 =================
 
-.. automodule:: switchyard.lib.common
+.. automodule:: switchyard.lib.userlib
    :members:
    :exclude-members: setup_logging, LLNetBase
 
-.. autofunction:: switchyard.lib.debug.debugger
+.. todo:: need to update 
+
+.. autofunction:: switchyard.lib.debugging.debugger
 

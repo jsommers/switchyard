@@ -137,6 +137,34 @@ class ICMP(PacketHeaderBase):
         self._icmpdata = dataobj
         self.icmptype = self._icmptype_from_classtype(dataobj.__class__)
 
+    def __getattr__(self, attr):
+        '''
+        Magic getattr implementation that handles getting attributes from
+        the icmpdata object if they aren't found in self.
+        '''
+        # behavior of __getattr__ is that it only gets called
+        # after "normal" attr lookup has been done, so this is
+        # just a fallback.  we check for attribute in icmpdata;
+        # if none exists, will raise AttributeError (as expected)
+        try:
+            return getattr(self.icmpdata, attr)
+        except AttributeError:
+            raise AttributeError("No attribute '{}'".format(attr))
+
+    def __setattr__(self, attr, value):
+        '''
+        Magic setattr implementation that handles setting attributes from
+        the icmpdata object if they aren't found in self.
+        '''
+        try:
+            return PacketHeaderBase.__setattr__(self, attr, value)
+        except AttributeError:
+            pass
+        try:
+            return self.icmpdata.__setattr__(attr, value)
+        except AttributeError:
+            raise AttributeError("No attribute '{}'".format(attr))
+
 
 class ICMPData(PacketHeaderBase):
     __slots__ = ('_rawpayload',)
