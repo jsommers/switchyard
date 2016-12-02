@@ -386,6 +386,7 @@ class PacketInputEvent(SwitchyTestEvent):
     def __init__(self, device, packet, display=None):
         self.device = device
         self.packet = packet
+        self.first_header = packet[0].__class__
         self.display = display
 
     def __getstate__(self):
@@ -419,7 +420,7 @@ class PacketInputEvent(SwitchyTestEvent):
         # ensure that the packet is fully parsed before
         # delivering it.  cost is immaterial since this
         # is just testing code!
-        self.packet = Packet(raw=self.packet.to_bytes())
+        self.packet = Packet(raw=self.packet.to_bytes(), first_header=self.first_header)
         return ReceivedPacket(timestamp=timestamp, ingress_dev=self.device, packet=self.packet)
 
 class PacketOutputEvent(SwitchyTestEvent):
