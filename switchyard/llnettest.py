@@ -36,7 +36,7 @@ class LLNetTest(LLNetBase):
 
     def __init__(self, scenario, name=None):
         LLNetBase.__init__(self)
-        self.devinfo = scenario.interfaces()
+        self._devinfo = scenario.interfaces()
         self.scenario = scenario
         self.timestamp = 0.0
         if name:

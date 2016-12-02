@@ -9,6 +9,7 @@ PORT = 10000
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.settimeout(2.0)
 
+print("Sending message to server")
 s.sendto(b'Hello, stack', (HOST,PORT))
 try:
     data,addr = s.recvfrom(1024)

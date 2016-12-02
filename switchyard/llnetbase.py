@@ -14,8 +14,8 @@ class LLNetBase(metaclass=ABCMeta):
     Base class for low-level networking library in Python.
     '''
     def __init__(self, name=None):
-        self.devupdown_callback = None
-        self.devinfo = {} # dict(str -> Interface)
+        self._devupdown_callback = None
+        self._devinfo = {} # dict(str -> Interface)
 
     def set_devupdown_callback(self, callback):
         '''
@@ -26,16 +26,16 @@ class LLNetBase(metaclass=ABCMeta):
 
         (function) -> None
         '''
-        self.devupdown_callback = callback
+        self._devupdown_callback = callback
 
     def intf_down(self, interface):
         '''
         Can be called when an interface goes down.
         FIXME: doesn't really do anything at this point.
         '''
-        intf = self.devinfo.get(interface, None)
-        if intf and self.devupdown_callback:
-            self.devupdown_callback(intf, 'down')
+        intf = self._devinfo.get(interface, None)
+        if intf and self._devupdown_callback:
+            self._devupdown_callback(intf, 'down')
 
     def intf_up(self, interface):
         '''
@@ -43,10 +43,10 @@ class LLNetBase(metaclass=ABCMeta):
         FIXME: not currently used; more needs to be done to
         correctly put a new intf into service.
         '''
-        if interface.name not in self.devinfo:
-            self.devinfo[interface.name] = interface
-            if self.devupdown_callback:
-                self.devupdown_callback(interface, 'up')
+        if interface.name not in self._devinfo:
+            self._devinfo[interface.name] = interface
+            if self._devupdown_callback:
+                self._devupdown_callback(interface, 'up')
         else:
             raise SwitchyException("Interface already registered")
 
@@ -56,20 +56,20 @@ class LLNetBase(metaclass=ABCMeta):
         Each item in the list is an Interface object, each of which includes
         name, ethaddr, ipaddr, and netmask attributes.
         '''
-        return list(self.devinfo.values())
+        return list(self._devinfo.values())
 
     def ports(self):
         '''
         Alias for interfaces() method.
         '''
-        return list(self.interfaces())
+        return self.interfaces()
 
     def interface_by_name(self, name):
         '''
         Given a device name, return the corresponding interface object
         '''
-        if name in self.devinfo:
-            return self.devinfo[name]
+        if name in self._devinfo:
+            return self._devinfo[name]
         raise SwitchyException("No device named {}".format(name))
 
     def port_by_name(self, name):
@@ -83,7 +83,7 @@ class LLNetBase(metaclass=ABCMeta):
         Given an IP address, return the interface that 'owns' this address
         '''
         ipaddr = IPAddr(ipaddr)
-        for devname,iface in self.devinfo.items():
+        for devname,iface in self._devinfo.items():
             if iface.ipaddr == ipaddr:
                 return iface
         raise SwitchyException("No device has IP address {}".format(ipaddr))
@@ -99,7 +99,7 @@ class LLNetBase(metaclass=ABCMeta):
         Given a MAC address, return the interface that 'owns' this address
         '''
         macaddr = EthAddr(macaddr)
-        for devname,iface in self.devinfo.items():
+        for devname,iface in self._devinfo.items():
             if iface.ethaddr == macaddr:
                 return iface
         raise SwitchyException("No device has MAC address {}".format(macaddr))
@@ -131,7 +131,7 @@ class LLNetBase(metaclass=ABCMeta):
         pass
 
     def _lookup_devname(self, ifnum):
-        for devname,iface in self.devinfo.items():
+        for devname,iface in self._devinfo.items():
             if iface.ifnum == ifnum:
                 return devname
         raise SwitchyException("No device has ifnum {}".format(ifnum)) 

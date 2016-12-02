@@ -167,7 +167,7 @@ if __name__ == '__main__':
         elif args.fwconfig is None:
             args.fwconfig = ('all',)
 
-        devlist = make_device_list(args.intf, args.exclude)
+        devlist = make_device_list(includes=args.intf, excludes=args.exclude)
         if not devlist:
             log_failure("There are no network interfaces I can use after "
                         "processing include/exclude lists")
