@@ -75,7 +75,7 @@ class LLNetDevTests(unittest.TestCase):
     def testRealSendDevNum(self):
         p = Packet()
         for d,intf in self.real.devinfo.items():
-            self.real.send_packet(intf.ifnum, p)
+            self.real.send_packet(intf.name, p)
             self.real._pcaps.get.assert_called_with(intf.name, None)
 
     def testRealSendIntfObj(self):

@@ -23,7 +23,7 @@ class Interface(object):
     as an ipaddress.IPv4/6Interface object, which includes
     the netmask/prefixlen.
     '''
-    def __init__(self, name, ethaddr, ipaddr, netmask=None, ifnum=None, iftype=InterfaceType.Unknown):
+    def __init__(self, name, ethaddr, ipaddr=None, netmask=None, ifnum=None, iftype=InterfaceType.Unknown):
         self.__name = name
         self.ethaddr = ethaddr
         if netmask:

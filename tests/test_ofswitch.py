@@ -45,7 +45,7 @@ class NetConnection(LLNetBase):
     '''
     def __init__(self):
         LLNetBase.__init__(self)
-        self.devinfo['eth0'] = Interface('eth0', '11:22:33:44:55:66', '192.168.1.1', '255.255.255.0', 0)
+        self._devinfo['eth0'] = Interface('eth0', '11:22:33:44:55:66', '192.168.1.1', '255.255.255.0', 0)
         self.lastsent = None
 
     def recv_packet(self, timeout=None):

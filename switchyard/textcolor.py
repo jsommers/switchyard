@@ -4,21 +4,21 @@ from contextlib import contextmanager
 from colorama import init, Fore, Back, Style
 
 class TextColor(object):
-    SETUP=False
+    _SETUP=False
 
     def __init__(self):
         raise Exception("Don't instantiate me.")
 
     @staticmethod
     def setup():
-        if TextColor.SETUP:
+        if TextColor._SETUP:
             return
         if sys.platform == 'win32':
             init(strip=True,convert=True,wrap=True)
         else:
             init()
         atexit.register(TextColor.reset)
-        TextColor.SETUP=True
+        TextColor._SETUP=True
 
     @staticmethod
     def reset():

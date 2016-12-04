@@ -41,6 +41,7 @@ class ICMPv6(ICMP):
         assert(ip6hdr is not None)
         self._compute_checksum(ip6hdr.srcip, ip6hdr.dstip, raw)
 
+
 class ICMPv6EchoRequest(ICMPEchoRequest):
     pass
 

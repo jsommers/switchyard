@@ -21,7 +21,11 @@ class ColorlibTests(unittest.TestCase):
         print ("This should not be colored")
 
     def testOther(self):
-        TextColor.init()
+        TextColor.setup()
+        self.assertTrue(TextColor._SETUP)
+        with self.assertRaises(Exception):
+            TextColor()
+
 
 
 if __name__ == '__main__':

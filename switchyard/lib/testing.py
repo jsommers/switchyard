@@ -386,7 +386,10 @@ class PacketInputEvent(SwitchyTestEvent):
     def __init__(self, device, packet, display=None):
         self.device = device
         self.packet = packet
-        self.first_header = packet[0].__class__
+        if packet.num_headers() > 0:
+            self.first_header = packet[0].__class__ 
+        else:
+            self.first_header = None
         self.display = display
 
     def __getstate__(self):
@@ -563,7 +566,7 @@ class TestScenario(object):
         if self._teardown:
             self._teardown()
 
-    def add_interface(self, interface_name, macaddr, ipaddr=None, **kwargs):
+    def add_interface(self, interface_name, macaddr, ipaddr=None, netmask=None, **kwargs):
         '''
         Add an interface to the test scenario.
 
@@ -573,6 +576,8 @@ class TestScenario(object):
             kwargs['ifnum'] = len(self.interface_map)
         if ipaddr is not None:
             kwargs['ipaddr'] = ipaddr
+        if netmask is not None:
+            kwargs['netmask'] = netmask
         intf = Interface(interface_name, macaddr, **kwargs)
         self.interface_map[interface_name] = intf
 
