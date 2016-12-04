@@ -372,6 +372,8 @@ s.close()
         cls.opt_compile.dryrun = False
         cls.opt_compile.nohandle = False
         cls.opt_compile.nopdb = True
+        cls.opt_compile.cli = False
+        cls.opt_compile.fwconfig = []
 
         cls.opt_nocompile = copy.copy(cls.opt_compile)
         cls.opt_nocompile.compile = False
@@ -532,9 +534,9 @@ s.close()
         with redirectio() as xio:
             with self.assertLogs(level='DEBUG') as cm:
                 start_framework(TestFrameworkTests.opt_app)
-        self.assertIn("Ports match", xio.contents)
-        self.assertIn("Test pass", cm.output[-1])
-
+        self.assertIn("All tests passed", xio.contents)
+        self.assertIn("Client socket application received message", xio.contents)
+        self.assertIn("Adding firewall/bpf rule udp dst port", cm.output[4])
 
 
 if __name__ == '__main__':
