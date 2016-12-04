@@ -87,7 +87,7 @@ scenario = s
     def testNoMorePending(self):
         self.scenario = get_test_scenario_from_file('stest.py')
         s = copy.deepcopy(self.scenario)
-        s.pending_events.pop()
+        s._pending_events.pop()
         s.next()
         s.testpass()
         self.assertRaises(TestScenarioFailure, s.next)

@@ -76,8 +76,8 @@ s.expect(PacketOutputEvent("lo0", p, exact=False, wildcard=['tp_src']), "Emit UD
 
 reply = deepcopy(p)
 reply[1].src,reply[1].dst = reply[1].dst,reply[1].src
-reply[2].srcport,reply[2].dstport = reply[2].dstport,s.lastout('lo0', UDP, 'srcport')
-s.expect(PacketInputEvent("lo0", reply), "Receive UDP packet")
+reply[2].srcport,reply[2].dstport = reply[2].dstport,reply[2].srcport
+s.expect(PacketInputEvent("lo0", reply, fillin=('lo0',UDP,'srcport',UDP,'dstport')), "Receive UDP packet")
 scenario = s
 '''
 
@@ -196,11 +196,10 @@ def main(obj):
 from switchyard.lib.userlib import *
 from random import randint
 from copy import copy
+
 def main(obj):
     xport = randint(1024,65535)
-    p = Null() + \
-    IPv4(srcip='127.0.0.1',dstip='127.0.0.1',protocol=IPProtocol.UDP) + \
-    UDP(srcport=xport, dstport=10000) + b'Test this!'
+    p = Null() + IPv4(srcip='127.0.0.1',dstip='127.0.0.1',protocol=IPProtocol.UDP) + UDP(srcport=xport, dstport=10000) + b'Test this!'
     obj.send_packet('lo0', p)
     print("After send")
     pkt2 = obj.recv_packet()
@@ -277,6 +276,7 @@ def main(obj):
                 pass
 
         removeFile('stest')
+        removeFile('stest2')
         for t in range(1, 13):
             removeFile("ucode{}".format(t))
 

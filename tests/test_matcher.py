@@ -142,6 +142,26 @@ class SrpyMatcherTest(unittest.TestCase):
         estr = str(exc.exception)        
         self.assertIn("UDP *->4444", estr)
 
+    def testConstructPaths(self):
+        p = Ethernet() + \
+            IPv4(protocol=IPProtocol.UDP,src="1.2.3.4",dst="5.6.7.8") + \
+            UDP(srcport=9999, dstport=4444)
+        xcopy = copy.copy(p)
+        with self.assertLogs() as cm:
+            outev = PacketOutputEvent("eth1", p, wildcard=('tp_src'), exact=True)
+        print (cm.output)
+
+        with self.assertLogs() as cm:
+            outev = PacketOutputEvent("eth1", p, wildcard=('tp_src'))
+        print (cm.output)
+
+        with self.assertLogs() as cm:
+            outev = PacketOutputEvent("eth1", p, blahblah=True)
+        print (cm.output)
+
+        with self.assertRaises(Exception):
+            outev = PacketOutputEvent("eth1", p, "print('hello,world')")
+
 
 if __name__ == '__main__':
     setup_logging(False)

@@ -16,7 +16,6 @@ import copy
 import textwrap
 from collections import namedtuple, defaultdict
 from abc import ABCMeta, abstractmethod
-from dis import Bytecode
 
 from .packet import *
 from .address import *
@@ -402,7 +401,7 @@ class PacketInputEvent(SwitchyTestEvent):
 
     def __setstate__(self, xdict):
         self.__dict__.update(xdict)
-        self._packet = Packet(raw=self.packet)
+        self._packet = Packet(raw=self._packet)
 
     def __eq__(self, other):
         return isinstance(other, PacketInputEvent) and \
@@ -485,7 +484,7 @@ class PacketOutputEvent(SwitchyTestEvent):
             raise TestScenarioFailure("test failed when you called send_packet: output on device {} unexpected (I expected this: {})".format(device, str(self)))
 
     @property
-    def last_output(self):
+    def matches(self):
         return self._matches
 
     def __str__(self):
@@ -610,7 +609,7 @@ class TestScenario(object):
         '''
         Alias for interfaces() method.
         '''
-        return self._interfaces()
+        return self.interfaces()
 
     def expect(self, event, description):
         '''
@@ -682,7 +681,7 @@ class TestScenario(object):
         self._completed_events.append(ev)
 
         if isinstance(ev.event, PacketOutputEvent):
-            self._lastout = ev.event.last_output
+            self._lastout = ev.event.matches
 
         if not len(self._pending_events):
             return
