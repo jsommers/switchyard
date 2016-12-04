@@ -131,6 +131,17 @@ class SrpyMatcherTest(unittest.TestCase):
             rv = outev.match(SwitchyTestEvent.EVENT_OUTPUT, device='eth1', packet=pktcopy)
         self.assertNotIn("IPv4", str(exc.exception))
 
+        p = Ethernet() + \
+            IPv4(protocol=IPProtocol.UDP,src="1.2.3.4",dst="5.6.7.8") + \
+            UDP(srcport=9999, dstport=4444)
+        xcopy = copy.copy(p)
+        outev = PacketOutputEvent("eth1", p, wildcard=('tp_src'), exact=False)
+        with self.assertRaises(TestScenarioFailure) as exc:
+            xcopy[2].dstport = 5555
+            rv = outev.match(SwitchyTestEvent.EVENT_OUTPUT, device='eth1', packet=xcopy)
+        estr = str(exc.exception)        
+        self.assertIn("UDP *->4444", estr)
+
 
 if __name__ == '__main__':
     setup_logging(False)

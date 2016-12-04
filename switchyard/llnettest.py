@@ -71,7 +71,7 @@ class LLNetTest(LLNetBase):
         ev = self.scenario.next()
         if ev.match(SwitchyTestEvent.EVENT_INPUT) == SwitchyTestEvent.MATCH_SUCCESS:
             self.scenario.testpass()
-            return ev.generate_packet(self.timestamp)
+            return ev.generate_packet(self.timestamp, self.scenario)
         else:
             self.scenario.testfail(
                 "recv_packet called, but I was expecting {}".format(str(ev)))

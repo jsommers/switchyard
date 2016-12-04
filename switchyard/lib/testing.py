@@ -64,7 +64,7 @@ class SwitchyTestEvent(object):
 
     __metaclass__ = ABCMeta
     def __init__(self):
-        self.display = None
+        self._display = None
 
     @abstractmethod
     def match(self, evtype, **kwargs):
@@ -80,7 +80,7 @@ class SwitchyTestEvent(object):
         header type, just show the string repr of that header.  Otherwise, dump
         the whole thing.
         '''
-        return PacketFormatter.format_pkt(pkt, self.display)
+        return PacketFormatter.format_pkt(pkt, self._display)
 
 
 class AbstractMatch(metaclass=ABCMeta):
@@ -143,16 +143,16 @@ class WildcardMatch(AbstractMatch):
             for xkey, xlist in WildcardMatch._LOOKUP.items():
                 for cls, headerfield, wildfmt in xlist:
                     WildcardMatch._BYHEADER[cls].append(xkey)
-        self.__wildcards = list(wildcard_fields)
-        self.__matchvals = self.__buildmvals(pkt)
+        self._wildcards = list(wildcard_fields)
+        self._matchvals = self._buildmvals(pkt)
 
-    def __buildmvals(self, pkt):
+    def _buildmvals(self, pkt):
         mvals = {}
         for key,llist in WildcardMatch._LOOKUP.items():
 
             # only build a comparison table of fields that aren't
             # listed in wildcards
-            if key in self.__wildcards:
+            if key in self._wildcards:
                 continue
 
             for cls,field,_ in llist:
@@ -163,11 +163,11 @@ class WildcardMatch(AbstractMatch):
         return mvals
 
     def match(self, pkt):
-        mvals = self.__buildmvals(pkt)
-        return mvals == self.__matchvals
+        mvals = self._buildmvals(pkt)
+        return mvals == self._matchvals
 
     def __str__(self):
-        return 'Wildcarded fields: {}'.format(' '.join(self.__wildcards))
+        return 'Wildcarded fields: {}'.format(' '.join(self._wildcards))
 
     def __getstate__(self):
         d = self.__dict__.copy()
@@ -177,16 +177,16 @@ class WildcardMatch(AbstractMatch):
         self.__dict__.update(xdict)
 
     def __getattr__(self, attr):
-        if attr in self.__matchvals:
-            return self.__matchvals[attr]
+        if attr in self._matchvals:
+            return self._matchvals[attr]
         raise AttributeError("No such attribute {}".format(attr))
 
     def show(self, comparepkt):
         def fill_field(field, header):
             for clsname,attr,wilddisplay in WildcardMatch._LOOKUP[field]:
                 if isinstance(header, clsname):
-                    # print (field, attr, self.__wildcards)
-                    if field in self.__wildcards:
+                    # print (field, attr, self._wildcards)
+                    if field in self._wildcards:
                         return wilddisplay
                     elif hasattr(header, attr):
                         a = getattr(header, attr)
@@ -239,10 +239,12 @@ class PacketMatcher(object):
         nw_src, nw_dst, nw_proto, nw_tos, tp_src, tp_dst,
         arp_tpa, arp_spa, arp_tha, arp_sha
         '''
-        self.exact = bool(kwargs.get('exact', True))
+        self._exact = bool(kwargs.get('exact', True))
         wildcard = kwargs.get('wildcard', [])
 
-        if self.exact and wildcard:
+        if wildcard and 'exact' not in kwargs:
+            exact = False
+        elif wildcard and self._exact:
             log_warn("Wildcards given but exact match specified.  Ignoring wildcards.")
         kws = set(kwargs.keys())
         kws.discard('exact')
@@ -250,14 +252,14 @@ class PacketMatcher(object):
         if len(kws):
             log_warn("Unrecognized keyword arguments given to PacketMatcher: {}".format(' '.join(kws)))
 
-        if self.exact:
-            self.__matchobj = ExactMatch(packet)
+        if self._exact:
+            self._matchobj = ExactMatch(packet)
         else:
-            self.__matchobj = WildcardMatch(packet, wildcard)
+            self._matchobj = WildcardMatch(packet, wildcard)
 
         self._packet = packet
 
-        self.predicates = []
+        self._predicates = []
         if len(predicates) > 0:
             boguslambda = lambda: 0
             for i in range(len(predicates)):
@@ -269,19 +271,19 @@ class PacketMatcher(object):
                     raise SyntaxError("Predicate strings passed to PacketMatcher must conform to Python lambda syntax")
                 if type(boguslambda) != type(fn):                    
                     raise Exception("Predicate was not a lambda expression: {}".format(predicate[i]))
-                self.predicates.append(predicates[i])
+                self._predicates.append(predicates[i])
 
     @property
     def packet(self):
         return self._packet
 
-    def __diagnose(self, packet, results):
+    def _diagnose(self, packet, results):
         '''
         Construct/return a string that describes why a packet doesn't
         match this matcher.
         '''
         firstmatch = results.pop(0)
-        xtype = "exact" if self.exact else "wildcard"
+        xtype = "exact" if self._exact else "wildcard"
         aan = 'an' if xtype == 'exact' else 'a'
         xresults = "passed" if firstmatch else "failed"
         conjunction = ', but' if firstmatch else '. '
@@ -297,7 +299,7 @@ class PacketMatcher(object):
 
             for pidx,preresult in enumerate(results):
                 xresults = "passed" if preresult else "failed"
-                xname = self.predicates[pidx]
+                xname = self._predicates[pidx]
                 conjunction = 'and' if pidx == len(results)-1 else ''
                 diagnosis += ["{} the predicate ({}) {}".format(conjunction, xname, xresults)]
                 if not conjunction:
@@ -306,15 +308,15 @@ class PacketMatcher(object):
 
         if firstmatch: 
             # headers match, but predicate(s) failed
-            diagnosis += ["\nThis part matched: {}.".format(self.__matchobj.show(packet))]
+            diagnosis += ["\nThis part matched: {}.".format(self._matchobj.show(packet))]
         else:
             # packet header match failed
             diagnosis += ["\nHere is the packet that failed the check: {}.".format(packet)]
 
-            if self.exact:
-                diagnosis += ["\nHere is exactly what I expected: {}.".format(self.__matchobj.show(packet))]
+            if self._exact:
+                diagnosis += ["\nHere is exactly what I expected: {}.".format(self._matchobj.show(packet))]
             else:
-                diagnosis += ["\nHere is what I expected to match: {}.".format(self.__matchobj.show(packet))]
+                diagnosis += ["\nHere is what I expected to match: {}.".format(self._matchobj.show(packet))]
         return ' '.join(diagnosis)
 
     def match(self, packet):
@@ -325,12 +327,12 @@ class PacketMatcher(object):
         If no match, then construct a "nice" description
             of what doesn't match, and throw an exception.
         '''
-        results = [ self.__matchobj.match(packet) ]
-        results += [ eval(fn)(packet) for fn in self.predicates ]
+        results = [ self._matchobj.match(packet) ]
+        results += [ eval(fn)(packet) for fn in self._predicates ]
         if all(results):
             return True
         else:
-            raise TestScenarioFailure(self.__diagnose(packet, results))
+            raise TestScenarioFailure(self._diagnose(packet, results))
 
     def __getstate__(self):
         rv = self.__dict__.copy()
@@ -348,7 +350,7 @@ class PacketInputTimeoutEvent(SwitchyTestEvent):
     handle a NoPackets exception and continue
     '''
     def __init__(self, timeout):
-        self.timeout = timeout
+        self._timeout = timeout
 
     def __getstate__(self):
         return self.__dict__.copy()
@@ -358,7 +360,7 @@ class PacketInputTimeoutEvent(SwitchyTestEvent):
 
     def __eq__(self, other):
         return isinstance(other, PacketInputTimeoutEvent) and \
-            self.timeout == other.timeout
+            self._timeout == other._timeout
 
     def __str__(self):
         return "timeout on recv_packet"
@@ -373,8 +375,8 @@ class PacketInputTimeoutEvent(SwitchyTestEvent):
         else:
             return SwitchyTestEvent.MATCH_FAIL
 
-    def generate_packet(self, timestamp):
-        time.sleep(self.timeout)
+    def generate_packet(self, timestamp, scenario):
+        time.sleep(self._timeout)
         raise NoPackets()
 
 
@@ -383,31 +385,32 @@ class PacketInputEvent(SwitchyTestEvent):
     Test event that models a packet arriving at a router/switch
     (e.g., a packet that we generate).
     '''
-    def __init__(self, device, packet, display=None):
-        self.device = device
-        self.packet = packet
+    def __init__(self, device, packet, display=None, fillin=None):
+        self._device = device
+        self._packet = packet
         if packet.num_headers() > 0:
-            self.first_header = packet[0].__class__ 
+            self._first_header = packet[0].__class__ 
         else:
-            self.first_header = None
-        self.display = display
+            self._first_header = None
+        self._display = display
+        self._fillin = fillin
 
     def __getstate__(self):
         rv = self.__dict__.copy()
-        rv['packet'] = self.packet.to_bytes()
+        rv['_packet'] = self._packet.to_bytes()
         return rv
 
     def __setstate__(self, xdict):
         self.__dict__.update(xdict)
-        self.packet = Packet(raw=self.packet)
+        self._packet = Packet(raw=self.packet)
 
     def __eq__(self, other):
         return isinstance(other, PacketInputEvent) and \
-            self.device == other.device and \
-            str(self.packet) == str(other.packet)
+            self._device == other._device and \
+            str(self._packet) == str(other._packet)
 
     def __str__(self):
-        return "recv_packet {} on {}".format(self.format_pkt(self.packet), self.device)
+        return "recv_packet {} on {}".format(self.format_pkt(self._packet), self._device)
 
     def match(self, evtype, **kwargs):
         '''
@@ -419,12 +422,18 @@ class PacketInputEvent(SwitchyTestEvent):
         else:
             return SwitchyTestEvent.MATCH_FAIL
 
-    def generate_packet(self, timestamp):
+    def generate_packet(self, timestamp, scenario):
         # ensure that the packet is fully parsed before
         # delivering it.  cost is immaterial since this
         # is just testing code!
-        self.packet = Packet(raw=self.packet.to_bytes(), first_header=self.first_header)
-        return ReceivedPacket(timestamp=timestamp, ingress_dev=self.device, packet=self.packet)
+        self._packet = Packet(raw=self._packet.to_bytes(), first_header=self._first_header)
+        if self._fillin:
+            intf,outcls,outprop,incls,inprop = self._fillin
+            hdrval = scenario.lastout(intf, outcls, outprop)
+            hdr = self._packet.get_header(incls)
+            setattr(hdr, inprop, hdrval)
+        return ReceivedPacket(timestamp=timestamp, ingress_dev=self._device, packet=self._packet)
+
 
 class PacketOutputEvent(SwitchyTestEvent):
     '''
@@ -432,11 +441,11 @@ class PacketOutputEvent(SwitchyTestEvent):
     a router/switch.
     '''
     def __init__(self, *args, **kwargs):
-        self.matches = {}
-        self.device_packet_map = {}
-        self.display = None
+        self._matches = {}
+        self._device_packet_map = {}
+        self._display = None
         if 'display' in kwargs:
-            self.display = kwargs['display']
+            self._display = kwargs['display']
         exact = kwargs.get('exact', True)
         wildcard = kwargs.get('wildcard', [])
         predicates = kwargs.get('predicates', [])
@@ -447,7 +456,7 @@ class PacketOutputEvent(SwitchyTestEvent):
             raise Exception("Arg list length to PacketOutputEvent must be even (device1, pkt1, device2, pkt2, etc.)")
         for i in range(0, len(args), 2):
             matcher = PacketMatcher(args[i+1], *predicates, exact=exact, wildcard=wildcard)
-            self.device_packet_map[args[i]] = matcher
+            self._device_packet_map[args[i]] = matcher
 
     def match(self, evtype, **kwargs):
         '''
@@ -461,42 +470,46 @@ class PacketOutputEvent(SwitchyTestEvent):
         device = kwargs['device']
         pkt = kwargs['packet']
 
-        if device in self.device_packet_map:
-            matcher = self.device_packet_map[device]
+        if device in self._device_packet_map:
+            matcher = self._device_packet_map[device]
             if matcher.match(pkt):
-                self.matches[device] = pkt
-                del self.device_packet_map[device]
-                if len(self.device_packet_map) == 0:
+                self._matches[device] = pkt
+                del self._device_packet_map[device]
+                if len(self._device_packet_map) == 0:
                     return SwitchyTestEvent.MATCH_SUCCESS
                 else:
                     return SwitchyTestEvent.MATCH_PARTIAL
             else:
-                raise TestScenarioFailure("test failed when you called send_packet: output device {} is ok, but\n\t{}\n\tdoesn't match what I expected\n\t{}".format(device, self.format_pkt(pkt, self.display), matcher.show(self.display)))
+                raise TestScenarioFailure("test failed when you called send_packet: output device {} is ok, but\n\t{}\n\tdoesn't match what I expected\n\t{}".format(device, self.format_pkt(pkt, self._display), matcher.show(self._display)))
         else:
             raise TestScenarioFailure("test failed when you called send_packet: output on device {} unexpected (I expected this: {})".format(device, str(self)))
+
+    @property
+    def last_output(self):
+        return self._matches
 
     def __str__(self):
         s = "send_packet(s) "
         # in device_packet_map, values are Match objects
-        devlist = ["{} out {}".format(self.format_pkt(v.packet),k) for k,v in self.device_packet_map.items() ]
+        devlist = ["{} out {}".format(self.format_pkt(v.packet),k) for k,v in self._device_packet_map.items() ]
         # in matches, values are packets
-        devlist += ["{} out {}".format(self.format_pkt(v),k) for k,v in self.matches.items() ]
+        devlist += ["{} out {}".format(self.format_pkt(v),k) for k,v in self._matches.items() ]
         s += ' and '.join(devlist)
         return s
 
     def __getstate__(self):
         rv = self.__dict__.copy()
-        for dev in rv['matches']:
-            pkt = rv['matches'][dev].to_bytes()
-            rv['matches'][dev] = pkt
+        for dev in rv['_matches']:
+            pkt = rv['_matches'][dev].to_bytes()
+            rv['_matches'][dev] = pkt
         return rv
 
     def __setstate__(self, xdict):
         self.__dict__.update(xdict)
-        for dev in self.matches:
-            raw = self.matches[dev]
+        for dev in self._matches:
+            raw = self._matches[dev]
             pkt = Packet(raw=raw)
-            self.matches[dev] = pkt
+            self._matches[dev] = pkt
 
     def __eq__(self, other):
         return isinstance(other, PacketOutputEvent) and \
@@ -511,16 +524,17 @@ class TestScenario(object):
     generates input events and tests/verifies output events.
     '''
     def __init__(self, name):
-        self.interface_map = {}
+        self._interface_map = {}
         self._name = name
-        self.pending_events = []
-        self.completed_events = []
-        self.timer = False
-        self.next_timestamp = 0.0
+        self._pending_events = []
+        self._completed_events = []
+        self._timer = False
+        self._next_timestamp = 0.0
         self._timeoutval = 60
-        self.support_files = {}
+        self._support_files = {}
         self._setup = None
         self._teardown = None
+        self._lastout = None
 
     @property  
     def name(self):
@@ -534,11 +548,19 @@ class TestScenario(object):
     def timeout(self, value):
         self._timeoutval = int(value)
 
+    def lastout(self, intf, header, property):
+        if self._lastout is not None:
+            pkt = self._lastout.get(intf, None)
+            if pkt is not None:
+                hdr = pkt.get_header(header)
+                return getattr(hdr, property)
+        return None
+
     def add_file(self, fname, text):
-        self.support_files[fname] = text
+        self._support_files[fname] = text
 
     def write_files(self):
-        for fname, text in self.support_files.items():
+        for fname, text in self._support_files.items():
             with open(fname, 'w') as outfile:
                 outfile.write(text)
 
@@ -573,22 +595,22 @@ class TestScenario(object):
         (str, str/EthAddr, str/IPAddr, str/IPAddr) -> None
         '''
         if 'ifnum' not in kwargs:
-            kwargs['ifnum'] = len(self.interface_map)
+            kwargs['ifnum'] = len(self._interface_map)
         if ipaddr is not None:
             kwargs['ipaddr'] = ipaddr
         if netmask is not None:
             kwargs['netmask'] = netmask
         intf = Interface(interface_name, macaddr, **kwargs)
-        self.interface_map[interface_name] = intf
+        self._interface_map[interface_name] = intf
 
     def interfaces(self):
-        return self.interface_map
+        return self._interface_map
 
     def ports(self):
         '''
         Alias for interfaces() method.
         '''
-        return self.interfaces()
+        return self._interfaces()
 
     def expect(self, event, description):
         '''
@@ -597,26 +619,26 @@ class TestScenario(object):
 
         (Event object, str) -> None
         '''
-        self.pending_events.append( TestScenarioEvent(event, description, self.next_timestamp) )
-        self.next_timestamp += 1.0
+        self._pending_events.append( TestScenarioEvent(event, description, self._next_timestamp) )
+        self._next_timestamp += 1.0
 
     def get_failed_test(self):
         '''
         Return the head of the pending_events queue.  In the case of failure,
         this is the expectation that wasn't met.
         '''
-        if self.pending_events:
-            return self.pending_events[0]
+        if self._pending_events:
+            return self._pending_events[0]
         return None
 
     def next(self):
         '''
         Return the next expected event to happen.
         '''
-        if not self.pending_events:
+        if not self._pending_events:
             raise TestScenarioFailure("next() called on scenario '{}', but not expecting anything else for this scenario".format(self.name))
         else:
-            return self.pending_events[0].event
+            return self._pending_events[0].event
 
     def testfail(self, message):
         '''
@@ -625,18 +647,18 @@ class TestScenario(object):
         '''
         raise TestScenarioFailure("{}".format(message))
 
-    def timer_expiry(self, signum, stackframe):
+    def _timer_expiry(self, signum, stackframe):
         '''
         Callback method for ensuring that send_packet gets called appropriately
         from user code (i.e., code getting tested).
         '''
         if sdebug.in_debugger:
-            self.timer = False
+            self._timer = False
             return
 
-        if self.timer:
+        if self._timer:
             log_debug("Timer expiration while expecting PacketOutputEvent")
-            raise TestScenarioFailure("Expected send_packet to be called to match {} in scenario {}, but it wasn't called, and after {} seconds I gave up.".format(str(self.pending_events[0]), self.name, self.timeout))
+            raise TestScenarioFailure("Expected send_packet to be called to match {} in scenario {}, but it wasn't called, and after {} seconds I gave up.".format(str(self._pending_events[0]), self.name, self.timeout))
         else:
             log_debug("Ignoring timer expiry with timer=False")
 
@@ -644,7 +666,7 @@ class TestScenario(object):
         '''
         Don't let any pending SIGALRM interrupt things.
         '''
-        self.timer=False
+        self._timer=False
 
     def testpass(self):
         '''
@@ -654,23 +676,26 @@ class TestScenario(object):
         Move current event (head of pending list) to completed list and disable
         any timers that may have been started.
         '''
-        self.timer = False
-        ev = self.pending_events.pop(0)
+        self._timer = False
+        ev = self._pending_events.pop(0)
         log_debug("Test pass: {} - {}".format(ev.description, str(ev.event)))
-        self.completed_events.append(ev)
+        self._completed_events.append(ev)
 
-        if not len(self.pending_events):
+        if isinstance(ev.event, PacketOutputEvent):
+            self._lastout = ev.event.last_output
+
+        if not len(self._pending_events):
             return
 
         # if head of expected is pktout, set alarm for 1 sec
         # or so to check that we actually receive a packet.
-        if isinstance(self.pending_events[0].event, PacketOutputEvent):
+        if isinstance(self._pending_events[0].event, PacketOutputEvent):
             log_debug("Setting timer for next PacketOutputEvent")
             signal.alarm(self.timeout)
-            signal.signal(signal.SIGALRM, self.timer_expiry)
-            self.timer = True
+            signal.signal(signal.SIGALRM, self._timer_expiry)
+            self._timer = True
 
-        log_debug("Next event expected: "+str(self.pending_events[0].event))
+        log_debug("Next event expected: "+str(self._pending_events[0].event))
 
     @staticmethod
     def wrapevent(description, expected_event):
@@ -693,24 +718,24 @@ class TestScenario(object):
         '''
         with blue():
             print ("\nResults for test scenario {}:".format(self.name), end='')
-            print ("{} passed, {} failed, {} pending".format(len(self.completed_events), min(1,len(self.pending_events)), max(0,len(self.pending_events)-1)))
+            print ("{} passed, {} failed, {} pending".format(len(self._completed_events), min(1,len(self._pending_events)), max(0,len(self._pending_events)-1)))
 
-        if len(self.completed_events):
+        if len(self._completed_events):
             with green():
                 print ("\nPassed:")
-                for idx,ev in enumerate(self.completed_events):
+                for idx,ev in enumerate(self._completed_events):
                     idxstr = str(idx+1)
                     print ("{}{}".format(idxstr, self.wrapevent(ev.description, str(ev.event))[len(idxstr):]))
 
-        if len(self.pending_events):
+        if len(self._pending_events):
             with red():
                 print ("\nFailed:")
-                failed_event = self.pending_events[0]
+                failed_event = self._pending_events[0]
                 print ("{}".format(self.wrapevent(failed_event.description, str(failed_event.event))))
-            if len(self.pending_events) > 1:
+            if len(self._pending_events) > 1:
                 with yellow():
                     print ("\nPending (couldn't test because of prior failure):")
-                    for idx,ev in enumerate(self.pending_events[1:]):
+                    for idx,ev in enumerate(self._pending_events[1:]):
                         idxstr = str(idx+1)
                         print ("{}{}".format(idxstr, self.wrapevent(ev.description, str(ev.event))[len(idxstr):]))
         print()
@@ -720,28 +745,26 @@ class TestScenario(object):
         Boolean method that tests whether the test scenario
         is done or not.
         '''
-        return len(self.pending_events) == 0
+        return len(self._pending_events) == 0
 
     def __str__(self):
         return "scenario {}".format(self.name)
 
     def __getstate__(self):
         odict = self.__dict__.copy()
-        del odict['timer']
-        odict['events'] = odict['pending_events'] + odict['completed_events']
-        del odict['pending_events']
-        del odict['completed_events']
+        del odict['_timer']
+        odict['_events'] = odict['_pending_events'] + odict['_completed_events']
+        del odict['_pending_events']
+        del odict['_completed_events']
         del odict['_setup']
         del odict['_teardown']
-        # del odict['next_timestamp']
         return odict
 
     def __setstate__(self, xdict):
-        xdict['pending_events'] = xdict['events']
-        del xdict['events']
-        # xdict['next_timestamp'] = 0.0
-        xdict['timer'] = None
-        xdict['completed_events'] = []
+        xdict['_pending_events'] = xdict['_events']
+        del xdict['_events']
+        xdict['_timer'] = None
+        xdict['_completed_events'] = []
         xdict['_setup'] = None
         xdict['_teardown'] = None
         self.__dict__.update(xdict)
@@ -749,10 +772,10 @@ class TestScenario(object):
     def __eq__(self, other):
         if not isinstance(other, TestScenario):
             return False
-        if self.next_timestamp != other.next_timestamp:
+        if self._next_timestamp != other._next_timestamp:
             return False
-        selfev = self.pending_events + self.completed_events
-        otherev = other.pending_events + other.completed_events
+        selfev = self._pending_events + self._completed_events
+        otherev = other._pending_events + other._completed_events
         if len(selfev) != len(otherev):
             return False
         for i in range(len(selfev)):
@@ -772,22 +795,22 @@ class TestScenario(object):
         Returns nothing.
         '''
         log_debug("Doing sanity check on test scenario {}".format(self.name))
-        for ev in self.pending_events:
+        for ev in self._pending_events:
             if isinstance(ev.event, PacketInputEvent):
-                if ev.event.device not in self.interface_map:
+                if ev.event._device not in self._interface_map:
                     log_warn("PacketInputEvent ({}) refers to a device not part of scenario interface map".format(str(ev.event)))
-                if not isinstance(ev.event.packet, Packet):
-                    log_warn("PacketInputEvent ({}) refers to a non-packet object ({})".format(str(ev.event), type(ev.event.packet)))
+                if not isinstance(ev.event._packet, Packet):
+                    log_warn("PacketInputEvent ({}) refers to a non-packet object ({})".format(str(ev.event), type(ev.event._packet)))
             elif isinstance(ev.event, PacketOutputEvent):
-                if not len(ev.event.device_packet_map):
+                if not len(ev.event._device_packet_map):
                     log_warn("PacketOutputEvent ({}) doesn't have any output devices included".format(ev.event))
-                for dev,pkt in ev.event.device_packet_map.items():
-                    if dev not in self.interface_map:
+                for dev,pkt in ev.event._device_packet_map.items():
+                    if dev not in self._interface_map:
                         log_warn("PacketOutputEvent () refers to a device not part of scenario interface map".format(str(ev.event)))
                     if not isinstance(pkt, PacketMatcher):
                         log_warn("PacketOutputEvent ({}) refers to a non-PacketMatcher object ({})".format(str(ev.event), type(pkt)))
-                    if pkt.predicates:
-                        for pred in pkt.predicates:
+                    if pkt._predicates:
+                        for pred in pkt._predicates:
                             try:
                                 xfn = eval(pred)
                             except Exception as e:

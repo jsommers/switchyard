@@ -65,6 +65,22 @@ s.expect(PacketOutputEvent("router-eth3", arprep), "Outgoing ARP reply (2)")
 scenario = s
 '''
 
+    CONTENTS2 = '''
+from switchyard.lib.userlib import *
+
+s = TestScenario("Ref to prev pkt")
+s.timeout = 1.0
+s.add_interface('lo0', '00:00:00:00:00:00', '127.0.0.1', iftype=InterfaceType.Loopback)
+p = Null() + IPv4(srcip='127.0.0.1',dstip='127.0.0.1',protocol=IPProtocol.UDP) + UDP(srcport=65535, dstport=10000) + b'Hello stack'
+s.expect(PacketOutputEvent("lo0", p, exact=False, wildcard=['tp_src']), "Emit UDP packet")
+
+reply = deepcopy(p)
+reply[1].src,reply[1].dst = reply[1].dst,reply[1].src
+reply[2].srcport,reply[2].dstport = reply[2].dstport,s.lastout('lo0', UDP, 'srcport')
+s.expect(PacketInputEvent("lo0", reply), "Receive UDP packet")
+scenario = s
+'''
+
     USERCODE1 = '''
 def main(obj):
     pass
@@ -176,6 +192,28 @@ def main(obj):
     obj.send_packet('router-eth3', pkt)
 '''
 
+    USERCODE12 = '''
+from switchyard.lib.userlib import *
+from random import randint
+from copy import copy
+def main(obj):
+    xport = randint(1024,65535)
+    p = Null() + \
+    IPv4(srcip='127.0.0.1',dstip='127.0.0.1',protocol=IPProtocol.UDP) + \
+    UDP(srcport=xport, dstport=10000) + b'Test this!'
+    obj.send_packet('lo0', p)
+    print("After send")
+    pkt2 = obj.recv_packet()
+    print("Checking header")
+    udphdr = pkt2.get_header(UDP)
+    print("UDP header received: ".format(udphdr))
+    if udphdr.dstport == xport:
+        print("Ports match!")
+    else:
+        print("Ports don't match")
+    obj.shutdown()
+'''
+
     def setUp(self):
         importlib.invalidate_caches()
 
@@ -187,6 +225,7 @@ def main(obj):
             outfile.close()
             
         writeFile('stest.py', TestFrameworkTests.CONTENTS1)
+        writeFile('stest2.py', TestFrameworkTests.CONTENTS2)
         writeFile('ucode1.py', TestFrameworkTests.USERCODE1)
         writeFile('ucode2.py', TestFrameworkTests.USERCODE2)
         writeFile('ucode3.py', TestFrameworkTests.USERCODE3)
@@ -198,6 +237,7 @@ def main(obj):
         writeFile('ucode9.py', TestFrameworkTests.USERCODE9)
         writeFile('ucode10.py', TestFrameworkTests.USERCODE10)
         writeFile('ucode11.py', TestFrameworkTests.USERCODE11)
+        writeFile('ucode12.py', TestFrameworkTests.USERCODE12)
 
         sys.path.append('.')
         sys.path.append(os.getcwd())
@@ -237,7 +277,7 @@ def main(obj):
                 pass
 
         removeFile('stest')
-        for t in range(1, 12):
+        for t in range(1, 13):
             removeFile("ucode{}".format(t))
 
     def testDryRun(self):
@@ -269,8 +309,8 @@ def main(obj):
     def testCleanScenario(self):
         scen = get_test_scenario_from_file('stest')
         self.assertFalse(scen.done())
-        self.assertEqual(len(scen.pending_events), 4)
-        self.assertListEqual(scen.completed_events, [])
+        self.assertEqual(len(scen._pending_events), 4)
+        self.assertListEqual(scen._completed_events, [])
 
     def testOneRecvCall(self):
         with redirectio() as xio:
@@ -351,6 +391,13 @@ def main(obj):
             with self.assertLogs(level='DEBUG') as cm:
                 main_test('ucode11', ['stest'], TestFrameworkTests.opt_nocompile)
         self.assertIn('send_packet was called, but I was expecting recv_packet', xio.contents)
+
+    def testRefToPrevInTest(self):
+        with redirectio() as xio:
+            with self.assertLogs(level='DEBUG') as cm:
+                main_test('ucode12', ['stest2'], TestFrameworkTests.opt_nocompile)
+        print(xio.contents)
+        print(cm.output)
 
 
 if __name__ == '__main__':
