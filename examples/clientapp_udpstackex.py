@@ -9,11 +9,11 @@ PORT = 10000
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.settimeout(2.0)
 
-print("Sending message to server")
+print("Sending message to server at {},{}".format(HOST,PORT))
 s.sendto(b'Hello, stack', (HOST,PORT))
 try:
     data,addr = s.recvfrom(1024)
-    print('Received', repr(addr),repr(data))
+    print('Client socket application received message from {}: {}'.format(repr(addr),data.decode('utf8')))
 except:
     print("Timeout")
 

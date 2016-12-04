@@ -345,21 +345,17 @@ class socket(object):
 
     def setblocking(self, flags):
         self._block = bool(flags)
-        if self._block:
-            self._timeout = None
-        else:
-            self._timeout = 0.0
 
     def setsockopt(self, *args):
         raise NotImplementedError("set/get sockopt calls aren't implemented")
 
     def settimeout(self, timeout):
         if timeout is None:
-            self._timeout = None
             self._block = True
+        elif float(timeout) == 0.0:
+            self._block = False
         else:
             self._timeout = float(timeout)
-            self._block = self._timeout == 0
 
     def shutdown(self, flag):
         try:

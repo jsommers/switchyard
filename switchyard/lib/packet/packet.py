@@ -349,6 +349,10 @@ class RawPacketContents(PacketHeaderBase):
     def to_bytes(self):
         return self._raw    
 
+    @property
+    def data(self):
+        return self._raw
+
     def from_bytes(self, raw):
         if isinstance(raw, bytes):
             self._raw = bytes(raw)
