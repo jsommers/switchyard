@@ -15,6 +15,7 @@ from switchyard.lib.logging import setup_logging
 from switchyard.lib.testing import *
 from switchyard.lib.packet import *
 from switchyard.lib.address import *
+from switchyard.syinit import start_framework
 
 from contextlib import ContextDecorator
 
@@ -77,8 +78,35 @@ s.expect(PacketOutputEvent("lo0", p, exact=False, wildcard=['tp_src']), "Emit UD
 reply = deepcopy(p)
 reply[1].src,reply[1].dst = reply[1].dst,reply[1].src
 reply[2].srcport,reply[2].dstport = reply[2].dstport,reply[2].srcport
-s.expect(PacketInputEvent("lo0", reply, fillin=('lo0',UDP,'srcport',UDP,'dstport')), "Receive UDP packet")
+s.expect(PacketInputEvent("lo0", reply, copyfromlastout=('lo0',UDP,'srcport',UDP,'dstport')), "Receive UDP packet")
 scenario = s
+'''
+
+    CONTENTS3 = '''
+from copy import deepcopy
+from switchyard.lib.userlib import *
+
+def udp_stack_tests():
+    s = TestScenario("UDP stack test (with pretend localhost)")
+    s.add_interface('lo0', '00:00:00:00:00:00', '127.0.0.1', iftype=InterfaceType.Loopback)
+
+    p = Null() + \
+        IPv4(srcip='127.0.0.1',dstip='127.0.0.1',protocol=IPProtocol.UDP) + \
+        UDP(srcport=65535, dstport=10000) + b'Hello stack'
+
+    s.expect(PacketOutputEvent("lo0", p, exact=False, wildcard=['tp_src']), "Emit UDP packet")
+
+    reply = deepcopy(p)
+    reply[1].src,reply[1].dst = reply[1].dst,reply[1].src
+    reply[2].srcport,reply[2].dstport = reply[2].dstport,reply[2].srcport
+
+    s.expect(PacketInputEvent('lo0', reply, 
+        copyfromlastout=('lo0',UDP,'srcport',UDP,'dstport')),
+        "Receive UDP packet")
+
+    return s
+
+scenario = udp_stack_tests()    
 '''
 
     USERCODE1 = '''
@@ -204,13 +232,103 @@ def main(obj):
     print("After send")
     pkt2 = obj.recv_packet()
     print("Checking header")
-    udphdr = pkt2.get_header(UDP)
+    udphdr = pkt2.packet.get_header(UDP)
     print("UDP header received: ".format(udphdr))
     if udphdr.dstport == xport:
         print("Ports match!")
     else:
         print("Ports don't match")
     obj.shutdown()
+'''
+
+    USERCODE13 = '''
+import sys
+from switchyard.lib.userlib import *
+from switchyard.llnetreal import LLNetReal
+
+def main(net):
+    # beware of limitations using loopback interface w/libpcap on
+    # non-macos (e.g., linux) platforms.  haven't yet tested it on
+    # platforms besides macos.
+    if isinstance(net, LLNetReal) and sys.platform != 'darwin': 
+        raise Exception("This example only works on macos at present")
+
+    # find the loopback interface
+    intf = None
+    for i in net.interfaces():
+        if i.iftype == InterfaceType.Loopback:
+            intf = i
+            break
+    if intf is None:
+        raise Exception("This example is designed to use the loopback interface but I didn't find one")
+
+    while True:
+        appdata = None
+        try:
+            appdata = ApplicationLayer.recv_from_app(timeout=0.1)
+        except NoPackets:
+            pass
+        except Shutdown:
+            break
+        if appdata is not None:
+            handle_app_data(net, intf, appdata)
+
+        netdata = None
+        try:
+            netdata = net.recv_packet(timeout=0.1)
+        except NoPackets:
+            pass
+        except Shutdown:
+            break
+        if netdata is not None:
+            handle_network_data(netdata)
+
+    net.shutdown()
+
+def handle_app_data(net, intf, appdata):
+    flowaddr,message = appdata
+    log_debug("Received data from app layer: <{}>".format(message))
+    log_debug("flowaddr: {}".format(flowaddr))
+
+    proto,srcip,srcport,dstip,dstport = flowaddr
+    p = Null() + IPv4(protocol=proto, srcip=srcip, dstip=dstip, ipid=0xabcd, ttl=64, flags=IPFragmentFlag.DontFragment) + UDP(srcport=srcport,dstport=dstport) + message
+
+    log_debug("Sending {} to {}".format(p, intf.name))
+    net.send_packet(intf, p)
+
+def handle_network_data(netdata):
+    timestamp, ingress, pkt = netdata
+    log_debug("On {} received {}".format(ingress, pkt))
+    if pkt.has_header(IPv4):
+        ipidx = pkt.get_header_index(IPv4)
+        ip = pkt[ipidx]
+        if pkt[ipidx].protocol == IPProtocol.UDP:
+            udp = pkt.get_header(UDP)
+            ApplicationLayer.send_to_app(IPProtocol.UDP, (ip.dst, udp.dstport),
+            (ip.src, udp.srcport), pkt[-1].data)
+        elif pkt[ipidx].protocol == IPProtocol.ICMP:
+            log_info("Received ICMP message: {}".format(pkt[ipidx+1]))
+        else:
+            log_info("Received an unexpected packet: {}".format(pkt[1:]))
+'''
+    APPCODE13 = '''
+import switchyard.lib.socket.socketemu as socket
+import time
+
+HOST = '127.0.0.1'
+PORT = 10000
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.settimeout(2.0)
+
+print("Sending message to server at {},{}".format(HOST,PORT))
+s.sendto(b'Hello, stack', (HOST,PORT))
+try:
+    data,addr = s.recvfrom(1024)
+    print('Client socket application received message from {}: {}'.format(repr(addr),data.decode('utf8')))
+except:
+    print("Timeout")
+
+s.close()
 '''
 
     def setUp(self):
@@ -225,6 +343,7 @@ def main(obj):
             
         writeFile('stest.py', TestFrameworkTests.CONTENTS1)
         writeFile('stest2.py', TestFrameworkTests.CONTENTS2)
+        writeFile('stest3.py', TestFrameworkTests.CONTENTS3)
         writeFile('ucode1.py', TestFrameworkTests.USERCODE1)
         writeFile('ucode2.py', TestFrameworkTests.USERCODE2)
         writeFile('ucode3.py', TestFrameworkTests.USERCODE3)
@@ -237,6 +356,8 @@ def main(obj):
         writeFile('ucode10.py', TestFrameworkTests.USERCODE10)
         writeFile('ucode11.py', TestFrameworkTests.USERCODE11)
         writeFile('ucode12.py', TestFrameworkTests.USERCODE12)
+        writeFile('ucode13.py', TestFrameworkTests.USERCODE13)
+        writeFile('appcode13.py', TestFrameworkTests.APPCODE13)
 
         sys.path.append('.')
         sys.path.append(os.getcwd())
@@ -254,6 +375,8 @@ def main(obj):
 
         cls.opt_nocompile = copy.copy(cls.opt_compile)
         cls.opt_nocompile.compile = False
+
+        cls.opt_app = copy.copy(cls.opt_nocompile)
 
         cls.opt_dryrun = copy.copy(cls.opt_compile)
         cls.opt_dryrun.compile = False
@@ -277,7 +400,9 @@ def main(obj):
 
         removeFile('stest')
         removeFile('stest2')
-        for t in range(1, 13):
+        removeFile('stest3')
+        removeFile('appcode13')
+        for t in range(1, 14):
             removeFile("ucode{}".format(t))
 
     def testDryRun(self):
@@ -396,8 +521,20 @@ def main(obj):
         with redirectio() as xio:
             with self.assertLogs(level='DEBUG') as cm:
                 main_test('ucode12', ['stest2'], TestFrameworkTests.opt_nocompile)
-        print(xio.contents)
-        print(cm.output)
+        self.assertIn("Ports match", xio.contents)
+        self.assertIn("Test pass", cm.output[-1])
+
+    def testSockemu(self):
+        TestFrameworkTests.opt_app.app = "appcode13"
+        TestFrameworkTests.opt_app.tests = ['stest3']
+        TestFrameworkTests.opt_app.usercode = 'ucode13'
+
+        with redirectio() as xio:
+            with self.assertLogs(level='DEBUG') as cm:
+                start_framework(TestFrameworkTests.opt_app)
+        self.assertIn("Ports match", xio.contents)
+        self.assertIn("Test pass", cm.output[-1])
+
 
 
 if __name__ == '__main__':

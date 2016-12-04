@@ -384,7 +384,7 @@ class PacketInputEvent(SwitchyTestEvent):
     Test event that models a packet arriving at a router/switch
     (e.g., a packet that we generate).
     '''
-    def __init__(self, device, packet, display=None, fillin=None):
+    def __init__(self, device, packet, display=None, copyfromlastout=None):
         self._device = device
         self._packet = packet
         if packet.num_headers() > 0:
@@ -392,7 +392,7 @@ class PacketInputEvent(SwitchyTestEvent):
         else:
             self._first_header = None
         self._display = display
-        self._fillin = fillin
+        self._copyfromlastout = copyfromlastout
 
     def __getstate__(self):
         rv = self.__dict__.copy()
@@ -426,8 +426,8 @@ class PacketInputEvent(SwitchyTestEvent):
         # delivering it.  cost is immaterial since this
         # is just testing code!
         self._packet = Packet(raw=self._packet.to_bytes(), first_header=self._first_header)
-        if self._fillin:
-            intf,outcls,outprop,incls,inprop = self._fillin
+        if self._copyfromlastout:
+            intf,outcls,outprop,incls,inprop = self._copyfromlastout
             hdrval = scenario.lastout(intf, outcls, outprop)
             hdr = self._packet.get_header(incls)
             setattr(hdr, inprop, hdrval)

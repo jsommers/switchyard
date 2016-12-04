@@ -18,7 +18,7 @@ def udp_stack_tests():
     reply[2].srcport,reply[2].dstport = reply[2].dstport,reply[2].srcport
 
     s.expect(PacketInputEvent('lo0', reply, 
-        fillin=('lo0',UDP,'srcport',UDP,'dstport')),
+        copyfromlastout=('lo0',UDP,'srcport',UDP,'dstport')),
         "Receive UDP packet")
 
     return s
