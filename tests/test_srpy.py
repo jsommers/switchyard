@@ -3,6 +3,7 @@ import os
 import os.path
 import importlib
 import unittest
+from unittest.mock import Mock
 import copy
 import time
 from io import StringIO
@@ -15,7 +16,7 @@ from switchyard.lib.logging import setup_logging
 from switchyard.lib.testing import *
 from switchyard.lib.packet import *
 from switchyard.lib.address import *
-from switchyard.syinit import start_framework
+from switchyard.hostfirewall import Firewall
 
 from contextlib import ContextDecorator
 
@@ -333,6 +334,7 @@ s.close()
 
     def setUp(self):
         importlib.invalidate_caches()
+        Firewall._instance = None
 
     @classmethod
     def setUpClass(cls):
@@ -374,6 +376,8 @@ s.close()
         cls.opt_compile.nopdb = True
         cls.opt_compile.cli = False
         cls.opt_compile.fwconfig = []
+        cls.opt_compile.tests = []
+        cls.opt_compile.usercode = None
 
         cls.opt_nocompile = copy.copy(cls.opt_compile)
         cls.opt_nocompile.compile = False
@@ -383,6 +387,10 @@ s.close()
         cls.opt_dryrun = copy.copy(cls.opt_compile)
         cls.opt_dryrun.compile = False
         cls.opt_dryrun.dryrun = True
+
+    @classmethod
+    def copyOptions(cls):
+        return copy.copy(cls.opt_nocompile)
     
     @classmethod
     def tearDownClass(cls):
@@ -527,6 +535,7 @@ s.close()
         self.assertIn("Test pass", cm.output[-1])
 
     def testSockemu(self):
+        from switchyard.syinit import start_framework
         TestFrameworkTests.opt_app.app = "appcode13"
         TestFrameworkTests.opt_app.tests = ['stest3']
         TestFrameworkTests.opt_app.usercode = 'ucode13'
@@ -537,7 +546,103 @@ s.close()
         self.assertIn("All tests passed", xio.contents)
         self.assertIn("Client socket application received message", xio.contents)
         self.assertIn("Adding firewall/bpf rule udp dst port", cm.output[4])
+        del(start_framework)
 
+    def testNoCode(self):
+        from switchyard.syinit import start_framework
+        opt = TestFrameworkTests.copyOptions()
+        opt.usercode = None
+        opt.compile = False
+        opt.tests = ['stest3']
+        opt.verbose = True
+        with self.assertLogs(level='DEBUG') as cm:
+            start_framework(opt)
+        self.assertIn("need to specify the name of your module to run", cm.output[-1])
+        del(start_framework)
+
+    def testCompileWithCode(self):
+        from switchyard.syinit import start_framework
+        opt = TestFrameworkTests.copyOptions()
+        opt.compile = True
+        opt.usercode = 'ucode13'
+        opt.tests = ['stest3']
+        opt.app = None #"appcode13"
+        with redirectio() as xio:
+            with self.assertLogs(level='DEBUG') as cm:
+                start_framework(opt)
+        self.assertIn("specified user code to run with compile flag", cm.output[0])
+        self.assertIn("Doing sanity check", cm.output[-1])
+        del(start_framework)
+
+    def testFailUserCode(self):
+        from switchyard.syinit import start_framework
+        opt = TestFrameworkTests.copyOptions()
+        opt.usercode = 'doesntexist'
+        opt.tests = ['stest3']
+        opt.app = "appcode13"
+        with redirectio() as xio:
+            with self.assertLogs(level='DEBUG') as cm:
+                with self.assertRaises(ImportError):
+                    start_framework(opt)
+        del(start_framework)
+
+    def testFailAppCode(self):
+        from switchyard.syinit import start_framework
+        opt = TestFrameworkTests.copyOptions()
+        opt.usercode = 'ucode13'
+        opt.app = "doesntexist"
+        opt.tests = ['stest3']
+        with redirectio() as xio:
+            with self.assertLogs(level='DEBUG') as cm:
+                start_framework(opt)
+        self.assertIn("No module named 'doesntexist'", xio.contents)
+        del(start_framework)
+
+    def testReal(self):
+        from switchyard.syinit import start_framework
+        opt = TestFrameworkTests.copyOptions()
+        opt.usercode = 'ucode13'
+        opt.app = "appcode13"
+        opt.tests = None
+        opt.exclude = None
+        opt.intf = None
+        mrmock = Mock(return_value=True)
+        mdlmock = Mock(return_value=['fakedev'])
+        netmock = Mock(return_value=Mock())
+        import switchyard.syinit
+        setattr(switchyard.syinit, "main_real", mrmock)
+        setattr(switchyard.syinit, "make_device_list", mrmock)
+        setattr(switchyard.syinit, "LLNetReal", netmock)
+
+        with redirectio() as xio:
+            with self.assertLogs(level='DEBUG') as cm:
+                start_framework(opt)
+
+        self.assertIn("WARNING:root:You're running in real mode, but not as root", cm.output[-1])
+        del(start_framework)
+
+    def testReal2(self):
+        from switchyard.syinit import start_framework
+        opt = TestFrameworkTests.copyOptions()
+        opt.usercode = 'ucode13'
+        opt.app = None
+        opt.tests = None
+        opt.exclude = None
+        opt.intf = None
+        mrmock = Mock(return_value=True)
+        mdlmock = Mock(side_effect=[[],['fakedev']])
+        netmock = Mock(return_value=Mock())
+        import switchyard.syinit
+        setattr(switchyard.syinit, "main_real", mrmock)
+        setattr(switchyard.syinit, "make_device_list", mdlmock)
+        setattr(switchyard.syinit, "LLNetReal", netmock)
+
+        with redirectio() as xio:
+            with self.assertLogs(level='DEBUG') as cm:
+                start_framework(opt)
+
+        self.assertIn("CRITICAL:root:Here are all the interfaces I see on your system: fakedev", cm.output[-1])
+        del(start_framework)
 
 if __name__ == '__main__':
     setup_logging(False)

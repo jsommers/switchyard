@@ -1,3 +1,5 @@
+import sys
+import os
 from threading import Thread, Barrier
 from textwrap import indent
 
@@ -34,14 +36,14 @@ def start_framework(args):
                 t = load_from_file(args.topology)
             except FileNotFoundError:
                 print ("No such file {} exists to load topology.".format(args.topology))
-                sys.exit()
+                return
         run_simulation(t)
-        sys.exit()
+        return
 
     if args.usercode is None and not args.compile:
         log_failure("You need to specify the name of your module to run "
                     "as the last argument")
-        sys.exit()
+        return
 
     waiters = 1 
     if args.app:
@@ -85,7 +87,7 @@ def start_framework(args):
             log_failure("Here are all the interfaces I see on your system: "
                         "{}".format(', '.join(list(alldevs))))
             barrier.wait()
-            sys.exit()
+            return
 
         with Firewall(devlist, args.fwconfig):
             _setup_ok = True
