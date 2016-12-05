@@ -629,6 +629,7 @@ s.close()
         opt.tests = None
         opt.exclude = None
         opt.intf = None
+        opt.fwconfig = []
         mrmock = Mock(return_value=True)
         mdlmock = Mock(side_effect=[[],['fakedev']])
         netmock = Mock(return_value=Mock())

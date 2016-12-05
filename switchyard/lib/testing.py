@@ -118,8 +118,7 @@ class WildcardMatch(AbstractMatch):
     _SHOWORDER = [(Ethernet, _ETHFMT), (Arp, _ARPFMT),
                   (IPv4, _IPFMT), (IPv6, _IPFMT),
                   (TCP, _TPORTFMT), (UDP, _TPORTFMT), (ICMP, _TPORTFMT)]
-    # FIXME: modify field names to more closely align with
-    # openflow 1.4 spec, e.g., p147 in v1.4.0 spec: oxm_ofb_match_fields
+    # FIXME: modify syntax to allow arbitrary field wildcarding;
     _LOOKUP = {
         'dl_src': [(Ethernet, 'src', ETHWILD)],
         'dl_dst': [(Ethernet, 'dst', ETHWILD)],
@@ -184,7 +183,6 @@ class WildcardMatch(AbstractMatch):
         def fill_field(field, header):
             for clsname,attr,wilddisplay in WildcardMatch._LOOKUP[field]:
                 if isinstance(header, clsname):
-                    # print (field, attr, self._wildcards)
                     if field in self._wildcards:
                         return wilddisplay
                     elif hasattr(header, attr):
@@ -238,18 +236,23 @@ class PacketMatcher(object):
         nw_src, nw_dst, nw_proto, nw_tos, tp_src, tp_dst,
         arp_tpa, arp_spa, arp_tha, arp_sha
         '''
-        self._exact = bool(kwargs.get('exact', True))
-        wildcard = kwargs.get('wildcard', [])
+        wildcard = []
+        if 'wildcard' in kwargs:
+            wildcard = kwargs.pop('wildcard')
 
-        if wildcard and 'exact' not in kwargs:
-            exact = False
-        elif wildcard and self._exact:
-            log_warn("Wildcards given but exact match specified.  Ignoring wildcards.")
-        kws = set(kwargs.keys())
-        kws.discard('exact')
-        kws.discard('wildcard')
-        if len(kws):
-            log_warn("Unrecognized keyword arguments given to PacketMatcher: {}".format(' '.join(kws)))
+        self._exact = False
+        if 'exact' in kwargs:
+            self._exact = bool(kwargs.pop('exact'))
+            if self._exact and wildcard:
+                log_warn("Wildcards given but exact match specified. "
+                         "Ignoring exact match.")
+                self._exact = False
+        elif not wildcard:
+            # if no wildcards given, default to exact match
+            self._exact = True
+
+        if len(kwargs):
+            log_warn("Ignoring unrecognized keyword arguments for building output packet matcher: {}".format(kwargs))
 
         if self._exact:
             self._matchobj = ExactMatch(packet)
@@ -362,7 +365,7 @@ class PacketInputTimeoutEvent(SwitchyTestEvent):
             self._timeout == other._timeout
 
     def __str__(self):
-        return "timeout on recv_packet"
+        return "Timeout {}s on recv_packet".format(self._timeout)
 
     def match(self, evtype, **kwargs):
         '''
@@ -444,17 +447,17 @@ class PacketOutputEvent(SwitchyTestEvent):
         self._device_packet_map = {}
         self._display = None
         if 'display' in kwargs:
-            self._display = kwargs['display']
-        exact = kwargs.get('exact', True)
-        wildcard = kwargs.get('wildcard', [])
-        predicates = kwargs.get('predicates', [])
+            self._display = kwargs.pop('display')
+        predicates = []
+        if 'predicates' in kwargs:
+            predicates = kwargs.pop('predicates')
 
         if len(args) == 0:
             raise Exception("PacketOutputEvent expects a list of device1, pkt1, device2, pkt2, etc., but no arguments were given.")
         if len(args) % 2 != 0:
             raise Exception("Arg list length to PacketOutputEvent must be even (device1, pkt1, device2, pkt2, etc.)")
         for i in range(0, len(args), 2):
-            matcher = PacketMatcher(args[i+1], *predicates, exact=exact, wildcard=wildcard)
+            matcher = PacketMatcher(args[i+1], *predicates, **kwargs)
             self._device_packet_map[args[i]] = matcher
 
     def match(self, evtype, **kwargs):
@@ -553,7 +556,6 @@ class TestScenario(object):
             if pkt is not None:
                 hdr = pkt.get_header(header)
                 return getattr(hdr, property)
-        return None
 
     def add_file(self, fname, text):
         self._support_files[fname] = text

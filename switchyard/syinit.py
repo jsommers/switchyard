@@ -76,7 +76,7 @@ def start_framework(args):
 
         if args.app:
             args.fwconfig = []
-        elif args.fwconfig is None:
+        elif len(args.fwconfig) == 0:
             args.fwconfig = ('all',)
 
         devlist = make_device_list(includes=args.intf, excludes=args.exclude)
