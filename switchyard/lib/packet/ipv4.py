@@ -380,7 +380,7 @@ class IPv4(PacketHeaderBase):
     __slots__ = ['_tos','_totallen','_ttl',
                  '_ipid','_flags','_fragoffset',
                  '_protocol','_csum',
-                 '_srcip','_dstip','_options']
+                 '_src','_dst','_options']
     _PACKFMT = '!BBHHHBBH4s4s'
     _MINLEN = struct.calcsize(_PACKFMT)
 
@@ -524,39 +524,39 @@ class IPv4(PacketHeaderBase):
 
     @property
     def src(self):
-        return self._srcip
+        return self._src
 
     @src.setter
     def src(self, value):
-        self._srcip = IPAddr(value)
+        self._src = IPAddr(value)
 
     @property
     def srcip(self):
         '''Deprecated property.  Use src instead.'''
-        return self._srcip
+        return self._src
 
     @srcip.setter
     def srcip(self, value):
         '''Deprecated property.  Use src instead.'''
-        self._srcip = IPAddr(value)
+        self._src = IPAddr(value)
 
     @property
     def dst(self):
-        return self._dstip
+        return self._dst
 
     @dst.setter
     def dst(self, value):
-        self._dstip = IPAddr(value)
+        self._dst = IPAddr(value)
 
     @property
     def dstip(self):
         '''Deprecated property.  Use dst instead.'''
-        return self._dstip
+        return self._dst
 
     @dstip.setter
     def dstip(self, value):
         '''Deprecated property.  Use dst instead.'''
-        self._dstip = IPAddr(value)
+        self._dst = IPAddr(value)
 
     @property
     def flags(self):

@@ -42,10 +42,9 @@ class SrpyMatcherTest(unittest.TestCase):
         matcher = WildcardMatch(pkt, ['dl_src'])
         self.assertTrue(matcher.match(pkt))
         self.assertTrue('dl_src' in str(matcher))
-        with self.assertRaises(AttributeError):
-            matcher.dl_src            
-        self.assertEqual(matcher.nw_src, IPv4Address("0.0.0.0"))
-        self.assertEqual(matcher.dl_type, EtherType.IP)
+
+        with self.assertRaises(ValueError):
+            m = WildcardMatch(pkt, (1,2,3))
         
     def testWildcardMatch1(self):
         pkt = Ethernet() + IPv4()
@@ -148,10 +147,7 @@ class SrpyMatcherTest(unittest.TestCase):
              UDP(srcport=9999, dstport=4444)
         xcopy = copy.copy(p)
         xcopy[2].srcport = 2345
-        # outev = PacketOutputEvent("eth1", p, wildcard=('tp_src'), exact=False)
-        # with self.assertRaises(TestScenarioFailure) as exc:
-        #     xcopy[2].dstport = 5555
-        #     rv = outev.match(SwitchyTestEvent.EVENT_OUTPUT, device='eth1', packet=xcopy)
+
         wm = WildcardMatch(p, ('tp_src','dl_src','nw_dst'))
         self.assertTrue(wm.match(xcopy))
         x = wm.show(xcopy)
@@ -167,6 +163,10 @@ class SrpyMatcherTest(unittest.TestCase):
         x = wm.show(xcopy)
         self.assertEqual("Ethernet 00:00:00:00:00:00->00:00:00:00:00:00 IP | IPv4 1.2.3.4->5.6.7.8 UDP | UDP *->4444", x)
 
+        with self.assertRaises(ValueError):
+            # subtle: missing comma to make tuple
+            wm = WildcardMatch(p, ('tp_src'))
+
     def testInputTimeoutEv(self):
         x = PacketInputTimeoutEvent(0.1)
         self.assertNotEqual(x, 5)
@@ -181,15 +181,15 @@ class SrpyMatcherTest(unittest.TestCase):
             UDP(srcport=9999, dstport=4444)
         xcopy = copy.copy(p)
         with self.assertLogs() as cm:
-            outev = PacketOutputEvent("eth1", p, wildcard=('tp_src'), exact=True)
+            outev = PacketOutputEvent("eth1", p, wildcard=('tp_src',), exact=True)
         self.assertIn("Wildcards given but exact match specified. Ignoring exact match.", cm.output[-1])
 
-        outev = PacketOutputEvent("eth1", p, wildcard=('tp_src'))
+        outev = PacketOutputEvent("eth1", p, wildcard=('tp_src',))
         for dev,mobj in outev._device_packet_map.items():
             self.assertFalse(mobj._exact)
 
         with self.assertLogs() as cm:
-            outev = PacketOutputEvent("eth1", p, wildcard=('tp_src'), blahblah=True)
+            outev = PacketOutputEvent("eth1", p, wildcard=('tp_src',), blahblah=True)
         self.assertIn("unrecognized keyword arg", cm.output[-1])
 
         with self.assertRaises(Exception):
@@ -198,7 +198,28 @@ class SrpyMatcherTest(unittest.TestCase):
         with self.assertRaises(Exception):
             outev = PacketOutputEvent("eth1", p, predicates="def x(): return -1")
 
+    def testMatcherSyntax(self):
+        p = Ethernet() + \
+             IPv4(protocol=IPProtocol.UDP,src="1.2.3.4",dst="5.6.7.8") + \
+             UDP(srcport=9999, dstport=4444)
+        xcopy = copy.copy(p)
+        xcopy[2].srcport = 2345
 
+        wm = WildcardMatch(p, ((UDP,'srcport'),(IPv4,'dst'),(Ethernet,'src')))
+        self.assertTrue(wm.match(xcopy))
+        x = wm.show(xcopy)
+        self.assertEqual("Ethernet **:**:**:**:**:**->00:00:00:00:00:00 IP | IPv4 1.2.3.4->*.*.*.* UDP | UDP *->4444", x)
+        xcopy[1].dst = "1.2.3.4"
+        self.assertTrue(wm.match(xcopy))
+        xcopy[1].src = "2.2.2.2"
+        self.assertFalse(wm.match(xcopy))
+        xcopy[1].src = "1.2.3.4"
+        xcopy[0].src = "00:11:22:33:44:55"
+        self.assertTrue(wm.match(xcopy))
+        xcopy[0].dst = "00:11:22:33:44:55"
+        self.assertFalse(wm.match(xcopy))
+
+        
 if __name__ == '__main__':
     setup_logging(False)
     unittest.main()

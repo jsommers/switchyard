@@ -106,7 +106,7 @@ class ExactMatch(AbstractMatch):
         return str(self)
 
 
-class WildcardMatch(AbstractMatch):
+class WildcardMatchOpenflow(AbstractMatch):
     ETHWILD = '**:**:**:**:**:**'
     SINGLE = '*'
     IP4WILD = '*.*.*.*'
@@ -118,7 +118,7 @@ class WildcardMatch(AbstractMatch):
     _SHOWORDER = [(Ethernet, _ETHFMT), (Arp, _ARPFMT),
                   (IPv4, _IPFMT), (IPv6, _IPFMT),
                   (TCP, _TPORTFMT), (UDP, _TPORTFMT), (ICMP, _TPORTFMT)]
-    # FIXME: modify syntax to allow arbitrary field wildcarding;
+
     _LOOKUP = {
         'dl_src': [(Ethernet, 'src', ETHWILD)],
         'dl_dst': [(Ethernet, 'dst', ETHWILD)],
@@ -136,17 +136,20 @@ class WildcardMatch(AbstractMatch):
     _BYHEADER = None
 
     def __init__(self, pkt, wildcard_fields):
-        if WildcardMatch._BYHEADER is None:
-            WildcardMatch._BYHEADER = defaultdict(list)
-            for xkey, xlist in WildcardMatch._LOOKUP.items():
+        if WildcardMatchOpenflow._BYHEADER is None:
+            WildcardMatchOpenflow._BYHEADER = defaultdict(list)
+            for xkey, xlist in WildcardMatchOpenflow._LOOKUP.items():
                 for cls, headerfield, wildfmt in xlist:
-                    WildcardMatch._BYHEADER[cls].append(xkey)
-        self._wildcards = list(wildcard_fields)
+                    WildcardMatchOpenflow._BYHEADER[cls].append(xkey)
+        if not isinstance(wildcard_fields, (tuple,list)):
+            raise ValueError("Wildcard fields should be given as a list or tuple,"
+                " but you gave a {}".format(type(wildcard_fields)))
+        self._wildcards = tuple(wildcard_fields)
         self._matchvals = self._buildmvals(pkt)
 
     def _buildmvals(self, pkt):
         mvals = {}
-        for key,llist in WildcardMatch._LOOKUP.items():
+        for key,llist in WildcardMatchOpenflow._LOOKUP.items():
 
             # only build a comparison table of fields that aren't
             # listed in wildcards
@@ -181,7 +184,7 @@ class WildcardMatch(AbstractMatch):
 
     def show(self, comparepkt):
         def fill_field(field, header):
-            for clsname,attr,wilddisplay in WildcardMatch._LOOKUP[field]:
+            for clsname,attr,wilddisplay in WildcardMatchOpenflow._LOOKUP[field]:
                 if isinstance(header, clsname):
                     if field in self._wildcards:
                         return wilddisplay
@@ -199,10 +202,72 @@ class WildcardMatch(AbstractMatch):
             return fmt[0].format(*args)
 
         headers = []
-        for clsname, fmt in WildcardMatch._SHOWORDER:
+        for clsname, fmt in WildcardMatchOpenflow._SHOWORDER:
             if comparepkt.has_header(clsname):
                 headers.append(with_wildcards(comparepkt.get_header(clsname), fmt))
         return ' | '.join(headers)
+
+
+class WildcardMatchClassAttr(AbstractMatch):
+    def __init__(self, pkt, wildcard_fields):
+        self._pkt = self._rewrite_fields(pkt, wildcard_fields)
+        self._wildcards = wildcard_fields
+
+    @staticmethod
+    def _rewrite_fields(pkt, fields):
+        def star_out_attr(hdr, attr):
+            attrpriv = "_" + attr
+            if not hasattr(hdr, attr):
+                return
+            oldattr = getattr(hdr, attr)
+            newattr = '*'
+            if isinstance(oldattr, IPv4Address):
+                newattr = '*.*.*.*'
+            elif isinstance(oldattr, IPv6Address):
+                newattr = '*::*'
+            elif isinstance(oldattr, EthAddr):
+                newattr = '**:**:**:**:**:**'
+            setattr(hdr, attrpriv, newattr)
+
+        pktcopy = copy.deepcopy(pkt)
+        for klass,attr in fields:
+            header = pktcopy.get_header(klass)
+            if header is not None:
+                star_out_attr(header, attr)
+        return pktcopy
+
+    def match(self, comparepkt):
+        cpkt = self._rewrite_fields(comparepkt, self._wildcards)
+        return self._pkt == cpkt    
+
+    def show(self, comparepkt):
+        cpkt = self._rewrite_fields(comparepkt, self._wildcards)
+        return str(cpkt)
+
+
+class WildcardMatch(AbstractMatch):
+    def __init__(self, pkt, wildcard_fields):
+        if not isinstance(wildcard_fields, (tuple,list)):
+            raise ValueError("Wildcard fields should be given as a list or tuple,"
+                " but you gave a {}".format(type(wildcard_fields)))
+        self._delegate = None
+        if not len(wildcard_fields) or isinstance(wildcard_fields[0], str):
+            self._delegate = WildcardMatchOpenflow(pkt, wildcard_fields)
+        elif isinstance(wildcard_fields[0], (tuple,list)):
+            self._delegate = WildcardMatchClassAttr(pkt, wildcard_fields)
+        else:
+            raise ValueError("Wildcard fields can either be strings naming "
+                "fields in the style of Openflow 1.0, or as (class,attr) "
+                "elements.  You didn't appear to give me either.")
+
+    def match(self, comparepkt):
+        return self._delegate.match(comparepkt)
+
+    def __str__(self):
+        return str(self._delegate)
+
+    def show(self, comparepkt):
+        return self._delegate.show(comparepkt)
 
 
 class PacketMatcher(object):
@@ -243,7 +308,7 @@ class PacketMatcher(object):
         self._exact = False
         if 'exact' in kwargs:
             self._exact = bool(kwargs.pop('exact'))
-            if self._exact and wildcard:
+            if self._exact and len(wildcard):
                 log_warn("Wildcards given but exact match specified. "
                          "Ignoring exact match.")
                 self._exact = False
