@@ -356,6 +356,7 @@ class socket(object):
             self._block = False
         else:
             self._timeout = float(timeout)
+            self._block = True
 
     def shutdown(self, flag):
         try:

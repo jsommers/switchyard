@@ -254,16 +254,22 @@ class SocketEmuTests(unittest.TestCase):
 
     def testBlocking(self):
         s = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, 55)
+        x = s.timeout
         s.settimeout(None)
-        self.assertIsNone(s._timeout)
+        self.assertEqual(x, s.timeout)
         self.assertTrue(s._block)
         s.settimeout(1.0)
-        self.assertFalse(s._block)
+        self.assertTrue(s._block)
         s.setblocking(False)
-        self.assertEqual(s.timeout, 0.0)
+        self.assertEqual(s.timeout, x)
         s.setblocking(True)
-        self.assertIsNone(s.timeout)
+        self.assertTrue(s._block)
+        self.assertEqual(s.timeout, x)
         s.setblocking(False)
+        with self.assertRaises(sock.timeout):
+            s.recv(1500)
+        s.settimeout(0.0)
+        self.assertFalse(s._block)
         with self.assertRaises(sock.timeout):
             s.recv(1500)
 
