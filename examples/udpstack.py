@@ -2,13 +2,12 @@
 
 import sys
 from switchyard.lib.userlib import *
-from switchyard.llnetreal import LLNetReal
 
 def main(net):
     # beware of limitations using loopback interface w/libpcap on
     # non-macos (e.g., linux) platforms.  haven't yet tested it on
     # platforms besides macos.
-    if isinstance(net, LLNetReal) and sys.platform != 'darwin': 
+    if not net.testmode and sys.platform != 'darwin': 
         raise Exception("This example only works on macos at present")
 
     # find the loopback interface

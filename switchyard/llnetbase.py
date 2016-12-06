@@ -110,6 +110,10 @@ class LLNetBase(metaclass=ABCMeta):
         '''
         return self.interface_by_macaddr(macaddr)
 
+    @property
+    def testmode(self):
+        raise NotImplementedError("This property must be overridden by derived classes")
+
     @abstractmethod
     def recv_packet(self, timeout=None, timestamp=False):
         '''

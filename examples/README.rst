@@ -1,8 +1,7 @@
 Examples
 ********
 
-This folder contains a few different examples of Switchyard user code, as described below.  Sample exercises intended for classroom use can be found in the ``exercises`` folder.  For additional instructor materials (including exercises, full tests, etc.), please email jsommers@colgate.edu.
-
+This folder contains a few different examples of Switchyard user code, as described below.  Sample exercises intended for classroom use can be found in the ``exercises`` folder.  For further details and explanation of various API calls in the examples below, please refer to the documentation. For additional instructor materials (including exercises, full tests, etc.), please email jsommers@colgate.edu.
 
 Basic send/receive examples
 ---------------------------
@@ -28,20 +27,32 @@ There are a few simple examples to illustrate sending and receiving packets usin
 Network hub example
 -------------------
 
-There are two files
-discussed quite extensively in the documentation
-hubtests.py
-myhub.py
+The network hub example is discussed quite extensively in the documentation.  There are two files here related to that example: ``hubtests.py`` and ``myhub.py``.  It can be executed as ``swyard.py -t hubtests.py myhub.py``
 
 Application layer code + stack example
 --------------------------------------
-clientapp_udpstackex.py
-server_udpstackex.py
-udpstack_tests.py
-udpstack.py
-only can be used on macos.  fun to run w/o starting server; you'll see the ICMP destination unreachable (port unreachable) come back.
 
-Topology construction example
------------------------------
-for use with cli, under construction
-star_topology.py
+Switchyard contains a *socket emulation capability* which can be used to run a (mostly) standard UDP-based Python socket program and have that program use a Switchyard-based networking stack.  There are four example files related to this capability:
+
+``clientapp_udpstackex.py``
+    A client socket-based program that sends a UDP message to 127.0.0.1:10000 and waits for one response back from a server.
+
+``server_udpstackex.py``
+    A server socket-based program that binds to UDP port 10000 and echos back whatever gets sent to it.
+
+``udpstack_tests.py``
+    A test file that waits for a message emitted from a client program and mimics a server's response back to the client.
+
+``udpstack.py``
+    A Switchyard program that implements the very basics of a UDP networking stack.  It presently assumes that only the localhost interface is used (thus ARP and a forwarding decision are not required).  To run this program in *real* mode currently requires use of macos (Linux and other OSes are not yet supported).
+
+To run this example in test mode, you can use the following command line:
+``swyard.py -t udpstack_tests.py -a clientapp_udpstackex.py udpstack.py``
+
+To run this example in real mode, you might want to start the server first, but you don't actually need to::
+
+    ``python3 server_udpstackex.py``
+
+The Switchyard component(s) then can be executed as:``swyard.py -i lo0 -a clientapp_udpstackex.py udpstack.py``.  Note that if the server isn't started, you should see an ICMP destination unreachable (port unreachable) error message returned to the stack.  
+
+Finally, note that to execute the client and server *without* any Switchyard involvement requires a single line edit in the client file to import the Python socket library instead of Switchyard's socket emulation library. 

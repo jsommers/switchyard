@@ -58,6 +58,10 @@ class LLNetDevTests(unittest.TestCase):
         self.fake.send_packet(3, p)
         self.ev.match.assert_called_with(SwitchyTestEvent.EVENT_OUTPUT, device='eth7', packet=p)
 
+    def testModeResult(self):
+        self.assertTrue(self.fake.testmode)
+        self.assertFalse(self.real.testmode)
+
     def testFakeSendIntfObj(self):
         p = Packet()
         ifmap = self.scenario.interfaces()

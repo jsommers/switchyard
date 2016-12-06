@@ -5,7 +5,7 @@ Ethernet hub in Switchyard.
 '''
 from switchyard.lib.userlib import *
 
-def switchy_main(net):
+def main(net):
     my_interfaces = net.interfaces() 
     mymacs = [intf.ethaddr for intf in my_interfaces]
 
@@ -18,11 +18,16 @@ def switchy_main(net):
             return
 
         log_debug ("In {} received packet {} on {}".format(net.name, packet, dev))
-        if packet[0].dst in mymacs:
-            log_debug ("Packet intended for me")
+        eth = packet.get_header(Ethernet)
+        if eth is None:
+            log_info("Received a non-Ethernet packet?!")
+            continue
+
+        if eth.dst in mymacs:
+            log_info ("Received a packet intended for me")
         else:
             for intf in my_interfaces:
                 if dev != intf.name:
-                    log_debug ("Flooding packet {} to {}".format(packet, intf.name))
-                    net.send_packet(intf.name, packet)
+                    log_info ("Flooding packet {} to {}".format(packet, intf.name))
+                    net.send_packet(intf, packet)
     net.shutdown()

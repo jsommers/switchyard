@@ -48,6 +48,10 @@ class LLNetTest(LLNetBase):
     def name(self):
         return self.__name
 
+    @property
+    def testmode(self):
+        return True
+
     def shutdown(self):
         '''
         For LLNetTest, do nothing.

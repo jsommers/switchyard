@@ -60,6 +60,10 @@ class LLNetReal(LLNetBase):
     def name(self):
         return self.__name
 
+    @property
+    def testmode(self):
+        return False
+
     def shutdown(self):
         '''
         Should be called by Switchyard user code when a network object is
