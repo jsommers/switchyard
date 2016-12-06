@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Switchyard'
-copyright = '2014, Joel Sommers'
+copyright = '2016, Joel Sommers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

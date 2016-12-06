@@ -35,4 +35,8 @@ Any opinions, findings, and conclusions or recommendations expressed in this mat
 
 Thanks to Colgate COSC465 students from Spring 2014 and Spring 2015 for being guinea pigs and giving feedback.  Special thanks to Saul Shanabrook '18 for specific suggestions that have improved Switchyard.
 
+.. todo:: need to add some acks from Wisconsin 
+
+.. todo:: add something like a FAQ
+
 .. todolist::

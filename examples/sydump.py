@@ -1,14 +1,20 @@
+#!/usr/bin/env python3
 '''
 Simple tcpdump-like program that use Switchyard libraries for
 reading packets from a local device and dumping them to a file.
 '''
 
+import sys
 from switchyard.pcapffi import *
 from switchyard.lib.packet import *
 
-reader = PcapLiveDevice('en0')
-writer = PcapDumper("tcpdump.pcap")
-print (reader)
+interface = 'en0'
+if len(sys.argv) > 1:
+    interface = sys.argv[1]
+
+reader = PcapLiveDevice(interface)
+writer = PcapDumper("sydump.pcap")
+print("Reading from {}".format(interface))
 count = 0
 while True:
     pkt = reader.recv_packet(10.0)
