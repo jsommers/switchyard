@@ -1,6 +1,7 @@
 from setuptools import setup, find_packages
 
-thisversion = "2016.12.dev0"
+with open('version.txt') as vfile:
+    thisversion = vfile.read().strip()
 
 setup(name="switchyard", 
       version=thisversion,
@@ -15,8 +16,8 @@ setup(name="switchyard",
       python_requires='>=3.4', 
       package_data={ '': ['*.txt', '*.rst'], },
       exclude_package_data={'': ['README.rst','README.md']},
-      install_requires=["cffi >=1.6.0","colorama >=0.3.3","networkx >=1.8.1", "matplotlib >=1.5.3"],
-      tests_require=['coverage >=3.7.1','Sphinx >=1.5', 'Pygments >=2.1.3'],
+      install_requires=["cffi >=1.6.0","colorama >=0.3.3","networkx >=1.8.1"],
+      tests_require=['coverage >=3.7.1'],
       entry_points= {
         'console_scripts': [ 'swyard = swyard:main' ],
       },
