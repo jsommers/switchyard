@@ -11,9 +11,11 @@ from switchyard.lib.interface import Interface, make_device_list
 from switchyard.lib.testing import TestScenario, SwitchyTestEvent
 from switchyard.lib.exceptions import *
 from switchyard.llnettest import LLNetTest, _prepare_debugger
-from switchyard.llnetreal import LLNetReal
+from switchyard.llnetreal import LLNetReal, _RawSocket
 from switchyard.llnetbase import LLNetBase
 import switchyard.llnetreal as llreal
+from switchyard.pcapffi import Dlt, PcapStats, PcapException
+from socket import error as sockerr
 
 class WrapLLNet(LLNetReal):
     def __init__(self, devlist, name=None):
@@ -187,6 +189,59 @@ class LLNetDevTests(unittest.TestCase):
         lr.shutdown()
         self.assertFalse(LLNetReal.running)
 
+    def testRawSock(self):
+        with self.assertRaises(socket.error):
+            r = _RawSocket('loop')
+
+        msock = Mock()
+        sobj = Mock()
+        sobj.setsockopt = Mock()
+        sobj.setblocking = Mock()
+        sobj.settimeout = Mock()
+        msock.socket = Mock(return_value=sobj)
+        setattr(llreal, "socket", msock)
+        r = _RawSocket('loop')
+        sobj.setblocking.assert_called_with(True)
+        self.assertEqual(len(sobj.setsockopt.mock_calls), 1)
+
+        self.assertEqual(r.dlt, Dlt.DLT_NULL)
+        self.assertEqual(r._name, "loop")
+        self.assertIsNone(r.set_bpf_filter_on_all_devices('any'))
+        self.assertIsNone(r.set_filter('any'))
+        self.assertIsNone(r.close())
+        self.assertEqual(r.stats(), PcapStats(0,0,0))
+
+        sobj.recvfrom = Mock(return_value=(b'\x01\x02\x03', ('127.0.0.1', 4444)) )
+        rv = r.recv_packet(0)
+        self.assertIsNotNone(rv)
+
+
+        sobj.recvfrom = Mock(return_value=None, side_effect=sockerr)
+        with self.assertLogs() as cm:
+            rv = r.recv_packet(None)
+        self.assertIsNone(rv)
+        self.assertIn("error receiving", cm.output[0])
+
+        with self.assertRaises(PcapException):
+            r.send_packet(Packet())
+
+        with self.assertRaises(PcapException):
+            p = Packet()
+            p += Null()
+            r.send_packet(p)
+
+        with self.assertRaises(PcapException):
+            r.send_packet(Null() + UDP())
+
+        p = Null() + IPv4(protocol=IPProtocol.UDP) + UDP()
+        x = len(p.to_bytes()) - 4 # null is 4 bytes
+        sobj.send = Mock(return_value=x)
+        rv = r.send_packet(p)
+        self.assertTrue(rv)
+
+        sobj.send = Mock(return_value=(x-1))
+        with self.assertRaises(PcapException):
+            rv = r.send_packet(p)
 
 if __name__ == '__main__':
     unittest.main()

@@ -4,11 +4,11 @@ import os
 import signal
 import re
 import subprocess
-import time
+from time import time as now
 import threading
 import textwrap
 from queue import Queue,Empty
-from socket import gethostname, if_nametoindex
+import socket
 
 from .lib.address import *
 from .lib.packet import *
@@ -54,7 +54,7 @@ class LLNetReal(LLNetBase):
         if name:
             self.__name = name
         else:
-            self.__name = gethostname()
+            self.__name = socket.gethostname()
 
     @property
     def name(self):
@@ -178,7 +178,7 @@ class LLNetReal(LLNetBase):
                         ip6mask = gd['masklen']
                         ip6scope = gd['scope']
                         continue
-            ifnum = if_nametoindex(devname)
+            ifnum = socket.if_nametoindex(devname)
             devinfo[devname] = Interface(devname, macaddr, ipaddr, netmask=mask, ifnum=ifnum, iftype=devtype[devname])
         return devinfo
 
@@ -189,10 +189,12 @@ class LLNetReal(LLNetBase):
         set them in non-blocking mode.
         '''
         self._pcaps = {}
-        for dev in self._devs:
-            thismac = self._devinfo[dev].ethaddr
-            pdev = PcapLiveDevice(dev) # default snaplen is 64k
-            self._pcaps[dev] = pdev
+        for devname,intf in self._devinfo.items():
+            if intf.iftype == InterfaceType.Loopback:
+                pdev = _RawSocket(devname)
+            else:
+                pdev = PcapLiveDevice(devname) 
+            self._pcaps[devname] = pdev
 
     def _sig_handler(self, signum, stack):
         '''
@@ -323,3 +325,72 @@ If you don't want pdb, use the --nopdb flag to avoid this fate.
             pdb.post_mortem()
     else:
         netobj.shutdown()
+
+
+class _RawSocket(object):
+    '''
+    Class to encapsulate a raw socket for use with the localhost interface.
+    libpcap doesn't work for sending packets on localhost for some platforms
+    (notably, Linux), so we use a raw socket instead for consistency.
+    We implement the same set of methods as PcapLiveDevice (in .pcapffi)
+    to make it quack like all other interfaces.
+    '''
+    def __init__(self, name):
+        # restrict to UDP?
+        self._name = name
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, 0)
+        self._sock.setsockopt(socket.SOL_IP, socket.IP_HDRINCL, 1)
+        self._sock.setblocking(True)
+        self._sent = self._recv = 0
+
+    @staticmethod
+    def set_bpf_filter_on_all_devices(filterstr):
+        pass
+
+    @property
+    def dlt(self):
+        return Dlt.DLT_NULL
+
+    def recv_packet(self, timeout):
+        if timeout is None or timeout < 0:
+            timeout = None
+
+        self._sock.settimeout(timeout)
+        try:
+            raw,addrinfo = self._sock.recvfrom(1500)
+            xlen = len(raw)
+            log_debug("{}: received {} bytes from {} on raw".format(self._name, xlen, addrinfo))
+            return PcapPacket(now(), xlen, xlen, raw)
+        except Exception as e:
+            log_warn("{}: error receiving {}".format(self._name, str(e)))
+            return None
+
+    def send_packet(self, packet):
+        n = packet.num_headers()
+        if n == 0:
+            raise PcapException("{}: packet doesn't have any headers".format(self._name))
+        first = packet[0]
+        if isinstance(first, Null):
+            del packet[0]
+            n -= 1
+            if n == 0:
+                raise PcapException("{}: packet doesn't have any headers besides Null".format(self._name))
+        first = packet[0]
+        if not isinstance(first, (IPv4,IPv6)):
+            raise PcapException("{}: first header must be IPv4 or IPv6".format(self._name))
+
+        raw = packet.to_bytes()
+        sent = self._sock.send(raw)
+        if len(raw) != sent:
+            raise PcapException("{}: only sent {} of {} bytes".format(self._name, sent, len(raw)))
+        return True
+
+    def close(self):
+        self._sock.close()
+
+    def stats(self):
+        return PcapStats(self._recv, 0, 0)
+
+    def set_filter(self, filterstr):
+        pass
+
