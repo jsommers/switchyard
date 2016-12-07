@@ -235,11 +235,11 @@ class LLNetDevTests(unittest.TestCase):
 
         p = IPv4(protocol=IPProtocol.UDP) + UDP()
         x = len(p.to_bytes())
-        sobj.send = Mock(return_value=x)
+        sobj.sendto = Mock(return_value=x)
         rv = r.send_packet(p)
         self.assertTrue(rv)
 
-        sobj.send = Mock(return_value=(x-1))
+        sobj.sendto = Mock(return_value=(x-1))
         with self.assertRaises(PcapException):
             rv = r.send_packet(p)
 
