@@ -41,6 +41,7 @@ class LLNetReal(LLNetBase):
         self._devs = devlist 
         self._devinfo = self.__assemble_devinfo()
         self._pcaps = {}
+        self._localsend = {}
         self._pktqueue = None
         self._threads = None
         self.__make_pcaps()
@@ -191,9 +192,9 @@ class LLNetReal(LLNetBase):
         self._pcaps = {}
         for devname,intf in self._devinfo.items():
             if intf.iftype == InterfaceType.Loopback:
-                pdev = _RawSocket(devname)
-            else:
-                pdev = PcapLiveDevice(devname) 
+                senddev = _RawSocket(devname)
+                self._localsend[devname] = senddev
+            pdev = PcapLiveDevice(devname) 
             self._pcaps[devname] = pdev
 
     def _sig_handler(self, signum, stack):
@@ -267,16 +268,24 @@ class LLNetReal(LLNetBase):
         Raises SwitchyException if packet object isn't valid, or device
         name isn't recognized.
         '''
+        intf = None
+
         if isinstance(dev, int):
            dev = self._lookup_devname(dev)
 
         if isinstance(dev, Interface):
-           dev = dev.name
+            intf = dev
+            dev = dev.name
+        else:
+            intf = self.interface_by_name(dev)
 
         pdev = self._pcaps.get(dev, None)
+        if intf.iftype == InterfaceType.Loopback:
+            pdev = self._localsend.get(dev, None)
         if not pdev:
             raise SwitchyException("Unrecognized device name for packet send: {}".format(dev))
         else:
+
             if packet is None:
                 raise SwitchyException("No packet object given to send_packet")
             if not isinstance(packet, Packet):
