@@ -81,6 +81,8 @@ class LLNetReal(LLNetBase):
         log_debug("Closing pcap devices")
         for devname,pdev in self._pcaps.items():
             pdev.close()
+        for rdev in self._localsend.values():
+            rdev.close()
         log_debug("Done cleaning up")
 
     def __spawn_threads(self):
@@ -268,29 +270,28 @@ class LLNetReal(LLNetBase):
         Raises SwitchyException if packet object isn't valid, or device
         name isn't recognized.
         '''
+        if packet is None:
+            raise SwitchyException("No packet object given to send_packet")
+        if not isinstance(packet, Packet):
+            raise SwitchyException("Object given to send_packet is not a Packet (it is: {})".format(type(packet)))
+ 
         intf = None
-
         if isinstance(dev, int):
            dev = self._lookup_devname(dev)
 
         if isinstance(dev, Interface):
             intf = dev
             dev = dev.name
-        else:
+        elif dev in self._devinfo:
             intf = self.interface_by_name(dev)
+        else:
+            raise SwitchyException("Unrecognized device name for packet send: {}".format(dev))
 
-        pdev = self._pcaps.get(dev, None)
         if intf.iftype == InterfaceType.Loopback:
             pdev = self._localsend.get(dev, None)
-        if not pdev:
-            raise SwitchyException("Unrecognized device name for packet send: {}".format(dev))
+            pdev.send_packet(packet)
         else:
-
-            if packet is None:
-                raise SwitchyException("No packet object given to send_packet")
-            if not isinstance(packet, Packet):
-                raise SwitchyException("Object given to send_packet is not a Packet (it is: {})".format(type(packet)))
-            # convert packet to bytes and send it
+            pdev = self._pcaps.get(dev, None)
             rawpkt = packet.to_bytes()
             log_debug("Sending packet on device {}: {}".format(dev, str(packet)))
             pdev.send_packet(rawpkt)
@@ -347,7 +348,7 @@ class _RawSocket(object):
     def __init__(self, name):
         # restrict to UDP?
         self._name = name
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, 0)
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, IPProtocol.UDP)
         self._sock.setsockopt(socket.SOL_IP, socket.IP_HDRINCL, 1)
         self._sock.setblocking(True)
         self._sent = self._recv = 0
@@ -389,7 +390,21 @@ class _RawSocket(object):
             raise PcapException("{}: first header must be IPv4 or IPv6".format(self._name))
 
         raw = packet.to_bytes()
-        sent = self._sock.send(raw)
+        addr = (str(packet[0].dst), packet.get_header(UDP).dstport)
+
+        # everything in raw is in *network* byte order, but raw socket
+        # expects offset and length in *host* byte order.  yup, it's
+        # byte-swapping time.  length is located at index 2 (length 2).
+        # offset is located at index.  
+        version = raw[0] >> 4
+        if version == 4:
+            tlen = raw[2:4][::-1]
+            offset = raw[6:8][::-1]
+            raw = raw[:2] + tlen + raw[4:6] + offset + raw[8:]
+        else:
+            raise NotImplementedError("Can't handle IPv6 with localhost send yet.")
+
+        sent = self._sock.sendto(raw, addr) # may raise exception
         if len(raw) != sent:
             raise PcapException("{}: only sent {} of {} bytes".format(self._name, sent, len(raw)))
         return True
@@ -402,4 +417,3 @@ class _RawSocket(object):
 
     def set_filter(self, filterstr):
         pass
-

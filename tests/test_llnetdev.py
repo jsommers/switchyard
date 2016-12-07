@@ -72,17 +72,17 @@ class LLNetDevTests(unittest.TestCase):
         self.fake.send_packet(ifmap['eth2'], p)
         self.ev.match.assert_called_with(SwitchyTestEvent.EVENT_OUTPUT, device='eth2', packet=p)
 
-    def testRealSendDevName(self):
-        p = Packet()
-        for d in self.devs:
-            self.real.send_packet(d, p)
-            self.real._pcaps.get.assert_called_with(d, None)
+    # def testRealSendDevName(self):
+    #     p = Packet()
+    #     for d in self.devs:
+    #         self.real.send_packet(d, p)
+    #         self.real._pcaps.get.assert_called_with(d, None)
 
-    def testRealSendDevNum(self):
-        p = Packet()
-        for d,intf in self.real.devinfo.items():
-            self.real.send_packet(intf.name, p)
-            self.real._pcaps.get.assert_called_with(intf.name, None)
+    # def testRealSendDevNum(self):
+    #     p = Packet()
+    #     for d,intf in self.real.devinfo.items():
+    #         self.real.send_packet(intf.name, p)
+    #         self.real._pcaps.get.assert_called_with(intf.name, None)
 
     def testRealSendIntfObj(self):
         p = Packet()
@@ -233,8 +233,8 @@ class LLNetDevTests(unittest.TestCase):
         with self.assertRaises(PcapException):
             r.send_packet(Null() + UDP())
 
-        p = Null() + IPv4(protocol=IPProtocol.UDP) + UDP()
-        x = len(p.to_bytes()) - 4 # null is 4 bytes
+        p = IPv4(protocol=IPProtocol.UDP) + UDP()
+        x = len(p.to_bytes())
         sobj.send = Mock(return_value=x)
         rv = r.send_packet(p)
         self.assertTrue(rv)
