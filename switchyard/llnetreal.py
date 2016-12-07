@@ -346,12 +346,13 @@ class _RawSocket(object):
     to make it quack like all other interfaces.
     '''
     def __init__(self, name):
-        # restrict to UDP?
         self._name = name
+        # restrict to UDP?
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, IPProtocol.UDP)
         self._sock.setsockopt(socket.SOL_IP, socket.IP_HDRINCL, 1)
         self._sock.setblocking(True)
         self._sent = self._recv = 0
+        self._doswap = sys.platform == 'darwin'
 
     @staticmethod
     def set_bpf_filter_on_all_devices(filterstr):
@@ -392,15 +393,17 @@ class _RawSocket(object):
         raw = packet.to_bytes()
         addr = (str(packet[0].dst), packet.get_header(UDP).dstport)
 
-        # everything in raw is in *network* byte order, but raw socket
-        # expects offset and length in *host* byte order.  yup, it's
+        # everything in raw is in *network* byte order, but raw socket on
+        # macos expects offset and length in *host* byte order.  yup, it's
         # byte-swapping time.  length is located at index 2 (length 2).
         # offset is located at index.  
+        # for linux, offset should be in network byte order.  thanks a bunch.
         version = raw[0] >> 4
         if version == 4:
-            tlen = raw[2:4][::-1]
-            offset = raw[6:8][::-1]
-            raw = raw[:2] + tlen + raw[4:6] + offset + raw[8:]
+            if self._doswap:
+                tlen = raw[2:4][::-1]
+                offset = raw[6:8][::-1]
+                raw = raw[:2] + tlen + raw[4:6] + offset + raw[8:]
         else:
             raise NotImplementedError("Can't handle IPv6 with localhost send yet.")
 

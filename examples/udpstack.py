@@ -1,16 +1,8 @@
 #!/usr/bin/env python3
 
-import sys
 from switchyard.lib.userlib import *
 
 def main(net):
-    # beware of limitations using loopback interface w/libpcap on
-    # non-macos (e.g., linux) platforms.  haven't yet tested it on
-    # platforms besides macos.
-    if not net.testmode and sys.platform != 'darwin': 
-        raise Exception("This example only works on macos at present")
-
-    # find the loopback interface
     intf = None
     for i in net.interfaces():
         if i.iftype == InterfaceType.Loopback:
