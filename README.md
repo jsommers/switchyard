@@ -1,29 +1,38 @@
 Switchyard
 ==========
 
-Switchyard (or "switchy") is a low-level networking library for software switches/routers in Python.  Intended for use in layer2-/layer3-oriented labs and projects in computer networking courses.
+Switchyard is a library and framework for creating networked systems in Python.  It is primarily intended for educational use and supports creating devices from layer 2 (Ethernet) all the way through the application layer.
 
 Documentation is available at http://cs.colgate.edu/~jsommers/switchyard
 Documentation is written using the Python Sphinx package; doc sources are
-available in the documentation directory.  
+available in the documentation directory.
 
-Switchyard can run in a standalone test mode, in a simulation environment with a nice little command-line interface, or also within a Linux host and or in Mininet.  This version of Switchyard is a complete overhaul of the original framework written in late 2013, and many parts of the code are under active development.  For the older version of Switchyard, see the v1 branch.  Importantly, this version of Switchyard requires Python 3.4.
+Switchyard can run in a standalone test harness mode, or can also use "live" network interfaces on a Linux or macos host.  It works nicely within Mininet and other virtual host environments.  The version of Switchyard on the master branch is a major revision of the code as of the end of 2016.  This is the second major overhaul.  The earliest working version of Switchyard (from late 2013) can be found on the v1 branch, and the subsequent rewrite (through the end of 2016) can be found on the v2016 branch.  Many parts of the code are under active development.  As with the last major version of Switchyard, this one requires Python 3.4, at minimum.
 
 Installation
 ------------
 
-Switchyard requires a few additional Python libraries, all identified in requirements.txt.  You can either install directly to your system Python directories, or use a virtualenv (see https://docs.python.org/3/library/venv.html).  
-
-To install into your system Python directories, the easiest method is to use pip (or pip3 --- make sure you're using the Python 3-version of pip):
-
-    $ pip install -r requirements.txt
-
-On Ubuntu and Fedora systems, you'll also likely need to install additional packages (do this before using pip to install the Python libraries).  The list of libraries below is for recent versions of Ubuntu (14.04 and later) and Fedora (20 and later):
+Prequisites: on Ubuntu and Fedora systems, you'll also likely need to install additional packages (do this before using pip to install the Python libraries).  The list of libraries below is for recent versions of Ubuntu (14.04 and later) and Fedora (20 and later):
 
  * Ubuntu: `sudo apt-get install libffi-dev libpcap-dev python3-dev`
  * Fedora: `sudo yum install libffi-devel libpcap-devel python3-devel`
 
-If pip3 is not installed, you'll also need to install that (on Ubuntu: `sudo apt-get install python3-pip`.)
+You can either install Switchyard and the related necessary libraries in the system Python directories (ok, but often less desirable) or in a venv (Python virtual installation environment).  The venv route is highly suggested, since it makes all installation "local" and easily destroyed, cleaned up, and recreated.
+
+To create a new virtual environment, you could do something like the following:
+
+    $ python3 -m venv syenv
+
+You can change the name "syenv" to whatever you'd like to name your virtual environment.  Next, you need to activate the environment.  The instructions vary depending on the shell you're using.  On bash, the command is:
+
+    $ source ./syenv/bin/activate
+
+You'll need to replace syenv with whatever you named the virtual environment.  If you're using a different shell than bash, refer to Python documentation on the venv module.
+
+Finally, install Switchyard.  All the required additional libraries should be automatically installed, too.
+
+    $ pip3 install switchyard
+
 
 Documentation and Exercises
 ---------------------------

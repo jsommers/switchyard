@@ -15,7 +15,7 @@ def version_check():
         log_failure("Invalid Python version for using Switchyard: need at least 3.4")
         sys.exit(-1)
 
-if __name__ == '__main__':
+def main():
     version_check()
 
     progname = "Switchyard"
@@ -67,3 +67,6 @@ if __name__ == '__main__':
 
     setup_logging(args.debug)
     start_framework(args)
+
+if __name__ == '__main__':
+    main()
