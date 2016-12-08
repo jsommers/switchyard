@@ -59,12 +59,18 @@ class TestImporter(unittest.TestCase):
         os.unlink(xfile)
 
     def testImporter5(self):
-        with self.assertRaises(ImportError):
-            imp.import_or_die("/tmp/notafile.py", None)
-        with self.assertRaises(ImportError):
-            imp.import_or_die("nothinghere.py", None)
-        with self.assertRaises(ImportError):
-            imp.import_or_die("nothinghere", None)
+        with self.assertLogs() as cm:
+            with self.assertRaises(ImportError):
+                imp.import_or_die("/tmp/notafile.py", None)
+        self.assertIn("couldn't import module", cm.output[0])
+        with self.assertLogs() as cm:
+            with self.assertRaises(ImportError):
+                imp.import_or_die("nothinghere.py", None)
+        self.assertIn("couldn't import module", cm.output[0])
+        with self.assertLogs() as cm:
+            with self.assertRaises(ImportError):
+                imp.import_or_die("nothinghere", None)
+        self.assertIn("couldn't import module", cm.output[0])
 
 
 if __name__ == '__main__':
