@@ -6,3 +6,6 @@ __pycache__
 htmlcov
 sandbox
 updatepypi.sh
+switchyard.egg-info
+build
+dist
