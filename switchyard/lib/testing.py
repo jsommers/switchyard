@@ -325,6 +325,9 @@ class PacketMatcher(object):
             self._matchobj = WildcardMatch(packet, wildcard)
 
         self._packet = packet
+        self._first_header = None
+        if len(self._packet):
+            self._first_header = packet[0].__class__
 
         self._predicates = []
         if len(predicates) > 0:
@@ -408,7 +411,7 @@ class PacketMatcher(object):
 
     def __setstate__(self, xdict):
         self.__dict__.update(xdict)
-        self._packet = Packet(raw=self._packet)
+        self._packet = Packet(raw=self._packet, first_header=self._first_header)
 
 class PacketInputTimeoutEvent(SwitchyTestEvent):
     '''
@@ -469,7 +472,7 @@ class PacketInputEvent(SwitchyTestEvent):
 
     def __setstate__(self, xdict):
         self.__dict__.update(xdict)
-        self._packet = Packet(raw=self._packet)
+        self._packet = Packet(raw=self._packet, first_header=self._first_header)
 
     def __eq__(self, other):
         return isinstance(other, PacketInputEvent) and \
