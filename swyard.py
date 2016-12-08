@@ -5,7 +5,6 @@ import os
 sys.path.append(os.getcwd())
 import argparse
 
-from switchyard.lib.logging import *
 from switchyard.syinit import start_framework
 
 def version_check():
@@ -18,7 +17,7 @@ def version_check():
 def main():
     version_check()
 
-    progname = "Switchyard"
+    progname = "swyard"
     parser = argparse.ArgumentParser(prog=progname)
     parser.add_argument("-i", "--include", metavar='INCLUDE_INTF', 
         help="Specify interface names to include/use for data plane traffic "
@@ -64,8 +63,9 @@ def main():
         " (only used if --cli is specified)",
         dest="topology", type=str, default=None)
     args = parser.parse_args()
-
-    setup_logging(args.debug)
+    if args.usercode is None and not args.compile:
+        parser.print_usage()
+        return -1
     start_framework(args)
 
 if __name__ == '__main__':

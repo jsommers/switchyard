@@ -203,16 +203,18 @@ class socket(object):
             ApplicationLayer._register_socket(self)
 
     def __set_fw_rules(self):
-        log_debug("Adding firewall/bpf rule {} dst port {}".format(
-            self._protoname, self._local_addr[1]))
+        hostrule = "{}:{}".format(self._protoname, self._local_addr[1])
+        pcaprule = "{} dst port {} or icmp or icmp6".format(self._protoname,
+                    self._local_addr[1])
+        log_debug("Preventing host from receiving traffic on {}".format(hostrule))
+        log_debug("Selecting only '{}' for receiving on pcap devices".format(pcaprule))
         try:
-            Firewall.add_rule("{}:{}".format(self._protoname,
-                self._local_addr[1]))
-            # only get packets with destination port of local port, or any
-            # icmp packets
-            PcapLiveDevice.set_bpf_filter_on_all_devices(
-                "{} dst port {} or icmp or icmp6".format(self._protoname,
-                                                self._local_addr[1]))
+            # prevent host networking stack from receiving traffic on port
+            # that we're using.
+            Firewall.add_rule(hostrule)
+            # only receive packets with destination port of local port, 
+            # or any icmp packets
+            PcapLiveDevice.set_bpf_filter_on_all_devices(pcaprule)
         except Exception as e:
             with yellow():
                 print ("Unable to complete socket emulation setup (failed on "

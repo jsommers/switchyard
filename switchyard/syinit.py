@@ -10,7 +10,7 @@ from switchyard.llnetreal import main_real, LLNetReal
 from switchyard.importcode import import_or_die
 from switchyard.lib.socket.socketemu import ApplicationLayer
 from switchyard.lib.logging import *
-from switchyard.lib.testing import PacketFormatter
+from switchyard.lib.testing import PacketFormatter, compile_scenario
 from switchyard.lib.topo import Topology
 from switchyard.sim.cli import run_simulation
 from switchyard.lib.interface import make_device_list
@@ -20,11 +20,12 @@ _netobj = None
 
 def start_framework(args):
     global _netobj, _setup_ok
+    setup_logging(args.debug)
 
     # assume testmode if compile flag is set
-    args.testmode = False
+    testmode = False
     if args.compile or args.tests:
-        args.testmode = True
+        testmode = True
 
     if args.verbose:
         PacketFormatter.full_display(True)
@@ -40,11 +41,6 @@ def start_framework(args):
         run_simulation(t)
         return
 
-    if args.usercode is None and not args.compile:
-        log_failure("You need to specify the name of your module to run "
-                    "as the last argument")
-        return
-
     waiters = 1 
     if args.app:
         waiters += 1 
@@ -55,15 +51,23 @@ def start_framework(args):
         _appt = Thread(target=_start_app, args=(args.app,barrier))
         _appt.start()
 
-    if args.testmode:
-        if args.usercode and args.compile:
-            log_info("You specified user code to run with compile flag, "
-                     "but I'm just doing compile.")
-        setattr(sys, "platform", "test")
-        with Firewall([], args.fwconfig):
-            _setup_ok = True
-            barrier.wait() 
-            main_test(args.usercode, args.tests, args)
+    if testmode:
+        if args.compile:
+            if args.usercode:
+                log_info("You specified user code to run with compile flag, "
+                         "but I'm just doing compile.")
+            for scenario in args.compile:
+                log_info("Compiling scenario {}".format(scenario))
+                compile_scenario(scenario)
+        else:
+            if not args.usercode:
+                log_failure("In test mode, but not user code supplied.")
+                return
+            setattr(sys, "platform", "test")
+            with Firewall([], args.fwconfig):
+                _setup_ok = True
+                barrier.wait() 
+                main_test(args)
     else:
         if sys.platform != 'win32' and os.geteuid() != 0:
             log_warn("You're running in real mode, but not as root.  "

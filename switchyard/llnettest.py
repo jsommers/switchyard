@@ -244,22 +244,15 @@ If you don't want pdb, use the --nopdb flag to avoid this fate.
                 print('{}'.format(message), file=sys.stderr)
 
 
-def main_test(usercode, scenarios, options):
+def main_test(options):
     '''
     Entrypoint function for either compiling or running test scenarios.
     '''
-    if not scenarios or not len(scenarios):
-        log_failure("In test mode, but no scenarios specified.")
+    usercode = options.usercode
+    tests = options.tests
+    usercode_entry_point = import_or_die(
+        usercode, ('main', 'srpy_main', 'switchy_main'))
+    if options.dryrun:
+        log_info("Imported your code successfully.  Exiting dry run.")
         return
-
-    if options.compile:
-        for scenario in scenarios:
-            log_info("Compiling scenario {}".format(scenario))
-            compile_scenario(scenario)
-    else:
-        usercode_entry_point = import_or_die(
-            usercode, ('main', 'srpy_main', 'switchy_main'))
-        if options.dryrun:
-            log_info("Imported your code successfully.  Exiting dry run.")
-            return
-        run_tests(scenarios, usercode_entry_point, options)
+    run_tests(tests, usercode_entry_point, options)

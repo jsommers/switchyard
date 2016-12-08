@@ -366,32 +366,24 @@ s.close()
         sys.path.append(os.path.join(os.getcwd(),'tests'))
         sys.path.append(os.path.join(os.getcwd(),'..'))
 
-        cls.opt_compile = Opt()
-        cls.opt_compile.verbose = False
-        cls.opt_compile.testmode = True
-        cls.opt_compile.compile = True
-        cls.opt_compile.debug = False
-        cls.opt_compile.dryrun = False
-        cls.opt_compile.nohandle = False
-        cls.opt_compile.nopdb = True
-        cls.opt_compile.cli = False
-        cls.opt_compile.fwconfig = []
-        cls.opt_compile.tests = []
-        cls.opt_compile.usercode = None
+    def _makeOptions(self, **kwargs):
+        o = Opt()
+        o.app = kwargs.get('app', None)
+        o.verbose = kwargs.get('verbose', False)
+        o.compile = kwargs.get('compile', []) 
+        o.debug = kwargs.get('debug', False)
+        o.dryrun = kwargs.get('dryrun', False)
+        o.nohandle = kwargs.get('nohandle', False)
+        o.nopdb = kwargs.get('nopdb', True)
+        o.cli = kwargs.get('cli', False)
+        o.fwconfig = kwargs.get('fwconfig', [])
+        o.tests = kwargs.get('tests', [])
+        o.usercode = kwargs.get('usercode', None)
+        o.exclude = kwargs.get('exclude', [])
+        o.intf = kwargs.get('intf', [])
+        o.topology = kwargs.get('topology', None)
+        return o
 
-        cls.opt_nocompile = copy.copy(cls.opt_compile)
-        cls.opt_nocompile.compile = False
-
-        cls.opt_app = copy.copy(cls.opt_nocompile)
-
-        cls.opt_dryrun = copy.copy(cls.opt_compile)
-        cls.opt_dryrun.compile = False
-        cls.opt_dryrun.dryrun = True
-
-    @classmethod
-    def copyOptions(cls):
-        return copy.copy(cls.opt_nocompile)
-    
     @classmethod
     def tearDownClass(cls):
         def removeFile(name):
@@ -416,28 +408,26 @@ s.close()
             removeFile("ucode{}".format(t))
 
     def testDryRun(self):
+        o = self._makeOptions(dryrun=True, compile=['stest'], usercode='ucode1.py')
         with self.assertLogs(level='INFO') as cm:
-            main_test('ucode1.py', ['stest'], TestFrameworkTests.opt_dryrun)
-        self.assertIn('Imported your code successfully', cm.output[0])
-        with self.assertLogs(level='INFO') as cm:
-            main_test('ucode1', ['stest'], TestFrameworkTests.opt_dryrun)
+            main_test(o)
         self.assertIn('Imported your code successfully', cm.output[0])
 
-    def testNoScenario(self):
-        with self.assertLogs(level='ERROR') as cm:
-            main_test('ucode1', [], TestFrameworkTests.opt_compile)
-        self.assertIn('no scenarios', cm.output[0])
-
-    def testCompileOutput(self):
+        o = self._makeOptions(dryrun=True, compile=['stest'], usercode='ucode1')
         with self.assertLogs(level='INFO') as cm:
-            main_test('ucode1', ['stest'], TestFrameworkTests.opt_compile)
-        self.assertIn('Compiling', cm.output[0])
-        self.assertIsNotNone(os.stat('stest.srpy'))
+            main_test(o)
+        self.assertIn('Imported your code successfully', cm.output[0])
+
+    def testBadScenario(self):
+        o = self._makeOptions(debug=False, tests=['ucode1'], usercode='ucode1')
+        with self.assertRaises(ImportError):
+            main_test(o)
 
     def testEmptyUserProgram(self):
+        o = self._makeOptions(tests=['stest'], usercode='ucode1')
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode1', ['stest'], TestFrameworkTests.opt_nocompile)
+                main_test(o)
         self.assertIn('0 passed, 1 failed, 3 pending', xio.contents)
         self.assertNotIn('All tests passed', xio.contents)
 
@@ -448,164 +438,155 @@ s.close()
         self.assertListEqual(scen._completed_events, [])
 
     def testOneRecvCall(self):
+        o = self._makeOptions(tests=['stest'], usercode='ucode2')
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode2', ['stest'], TestFrameworkTests.opt_nocompile)
+                main_test(o)
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, re.compile('Passed:\s*1\s*Incoming ARP request', re.M))
         self.assertRegex(xio.contents, re.compile('Failed:\s*Outgoing ARP reply',re.M))
 
     def testTwoRecvCalls(self):
+        o = self._makeOptions(tests=['stest'], usercode='ucode3')
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode3', ['stest'], TestFrameworkTests.opt_nocompile)
+                main_test(o)
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, re.compile('Passed:\s*1\s*Incoming ARP request', re.M))
         self.assertRegex(xio.contents, re.compile('Failed:\s*Outgoing ARP reply',re.M))
         self.assertRegex(xio.contents, re.compile('recv_packet\s+called,\s+but\s+I\s+was\s+expecting\s+send_packet', re.M))
 
     def testDelayedSent(self):
+        o = self._makeOptions(tests=['stest'], usercode='ucode4')
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode4', ['stest'], TestFrameworkTests.opt_nocompile)
+                main_test(o)
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, re.compile('Passed:\s*1\s*Incoming ARP request', re.M))
         self.assertRegex(xio.contents, re.compile('Failed:\s*Outgoing ARP reply',re.M))
         self.assertRegex(xio.contents, re.compile('1\s+Timeout on recv', re.M))
 
     def testScenarioTimeoutHandledCorrectly(self):
+        o = self._makeOptions(tests=['stest'], usercode='ucode5')
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode5', ['stest'], TestFrameworkTests.opt_nocompile)
+                main_test(o)
         self.assertIn('4 passed, 0 failed, 0 pending', xio.contents)
         self.assertIn('All tests passed', xio.contents)
 
     def testShutdownSignal(self):
+        o = self._makeOptions(tests=['stest'], usercode='ucode6')
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode6', ['stest'], TestFrameworkTests.opt_nocompile)
+                main_test(o)
         self.assertIn('4 passed, 0 failed, 0 pending', xio.contents)
         self.assertIn('All tests passed', xio.contents)
 
     def testTooManySends(self):
+        o = self._makeOptions(tests=['stest'], usercode='ucode7')
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode7', ['stest'], TestFrameworkTests.opt_nocompile)
+                main_test(o)
         self.assertIn('4 passed, 0 failed, 0 pending', xio.contents)
         self.assertRegex(xio.contents, 
             re.compile('Your\s+code\s+didn\'t\s+crash,\s+but\s+something\s+unexpected\s+happened.', re.M))
         self.assertNotIn('All tests passed', xio.contents)
 
     def testEpicFail(self):
+        o = self._makeOptions(tests=['stest'], usercode='ucode8')
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode8', ['stest'], TestFrameworkTests.opt_nocompile)
+                main_test(o)
         self.assertNotIn('All tests passed', xio.contents)
         self.assertIn('0 passed, 1 failed, 3 pending', xio.contents)
         self.assertRegex(xio.contents, 
             re.compile('Your\s+code\s+crashed', re.M))
 
     def testDeviceMatchFail(self):
+        o = self._makeOptions(tests=['stest'], usercode='ucode9')
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode9', ['stest'], TestFrameworkTests.opt_nocompile)
+                main_test(o)
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, 
             re.compile('output\s+on\s+device\s+router-eth2\s+unexpected', re.M))
 
     def testPacketMatchFail(self):
+        o = self._makeOptions(tests=['stest'], usercode='ucode10')
         with redirectio() as xio:
             with self.assertLogs(level='INFO') as cm:
-                main_test('ucode10', ['stest'], TestFrameworkTests.opt_nocompile)
+                main_test(o)
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, 
             re.compile('an\s+exact\s+match\s+failed', re.M | re.I))
 
     def testSendInsteadOfRecv(self):
+        o = self._makeOptions(tests=['stest'], usercode='ucode11')
         with redirectio() as xio:
             with self.assertLogs(level='DEBUG') as cm:
-                main_test('ucode11', ['stest'], TestFrameworkTests.opt_nocompile)
+                main_test(o)
         self.assertIn('send_packet was called, but I was expecting recv_packet', xio.contents)
 
     def testRefToPrevInTest(self):
+        o = self._makeOptions(tests=['stest2'], usercode='ucode12')
         with redirectio() as xio:
             with self.assertLogs(level='DEBUG') as cm:
-                main_test('ucode12', ['stest2'], TestFrameworkTests.opt_nocompile)
+                main_test(o)
         self.assertIn("Ports match", xio.contents)
         self.assertIn("Test pass", cm.output[-1])
 
     def testSockemu(self):
         from switchyard.syinit import start_framework
-        TestFrameworkTests.opt_app.app = "appcode13"
-        TestFrameworkTests.opt_app.tests = ['stest3']
-        TestFrameworkTests.opt_app.usercode = 'ucode13'
+        o = self._makeOptions(app='appcode13', tests=['stest3'], usercode='ucode13')
 
         with redirectio() as xio:
             with self.assertLogs(level='DEBUG') as cm:
-                start_framework(TestFrameworkTests.opt_app)
+                start_framework(o)
         self.assertIn("All tests passed", xio.contents)
         self.assertIn("Client socket application received message", xio.contents)
-        self.assertIn("Adding firewall/bpf rule udp dst port", cm.output[4])
+        self.assertIn("Preventing host from receiving traffic on", cm.output[4])
+        self.assertIn("Selecting only", cm.output[5])
         del(start_framework)
 
     def testNoCode(self):
         from switchyard.syinit import start_framework
-        opt = TestFrameworkTests.copyOptions()
-        opt.usercode = None
-        opt.compile = False
-        opt.tests = ['stest3']
-        opt.verbose = True
+        o = self._makeOptions(verbose=True, tests=['stest3'], usercode=None)
         with self.assertLogs(level='DEBUG') as cm:
-            start_framework(opt)
-        self.assertIn("need to specify the name of your module to run", cm.output[-1])
+            start_framework(o)
+        self.assertIn("In test mode, but not user code supplied", cm.output[-1])
         del(start_framework)
 
     def testCompileWithCode(self):
         from switchyard.syinit import start_framework
-        opt = TestFrameworkTests.copyOptions()
-        opt.compile = True
-        opt.usercode = 'ucode13'
-        opt.tests = ['stest3']
-        opt.app = None #"appcode13"
+        o = self._makeOptions(debug=True, app=None,compile=['stest3'], usercode='ucode13')
         with redirectio() as xio:
             with self.assertLogs(level='DEBUG') as cm:
-                start_framework(opt)
+                start_framework(o)
         self.assertIn("specified user code to run with compile flag", cm.output[0])
         self.assertIn("Doing sanity check", cm.output[-1])
         del(start_framework)
 
     def testFailUserCode(self):
         from switchyard.syinit import start_framework
-        opt = TestFrameworkTests.copyOptions()
-        opt.usercode = 'doesntexist'
-        opt.tests = ['stest3']
-        opt.app = "appcode13"
+        o = self._makeOptions(app='appcode13',tests=['stest3'], usercode='doesntexist')
         with redirectio() as xio:
             with self.assertLogs(level='DEBUG') as cm:
                 with self.assertRaises(ImportError):
-                    start_framework(opt)
+                    start_framework(o)
         del(start_framework)
 
     def testFailAppCode(self):
         from switchyard.syinit import start_framework
-        opt = TestFrameworkTests.copyOptions()
-        opt.usercode = 'ucode13'
-        opt.app = "doesntexist"
-        opt.tests = ['stest3']
+        o = self._makeOptions(app='doesntexist',tests=['stest3'], usercode='ucode13')
         with redirectio() as xio:
             with self.assertLogs(level='DEBUG') as cm:
-                start_framework(opt)
+                start_framework(o)
         self.assertIn("No module named 'doesntexist'", xio.contents)
         del(start_framework)
 
     def testReal(self):
         from switchyard.syinit import start_framework
-        opt = TestFrameworkTests.copyOptions()
-        opt.usercode = 'ucode13'
-        opt.app = "appcode13"
-        opt.tests = None
-        opt.exclude = None
-        opt.intf = None
+        o = self._makeOptions(app='appcode13', tests=[], usercode='ucode13')
         mrmock = Mock(return_value=True)
         mdlmock = Mock(return_value=['fakedev'])
         netmock = Mock(return_value=Mock())
@@ -616,20 +597,14 @@ s.close()
 
         with redirectio() as xio:
             with self.assertLogs(level='DEBUG') as cm:
-                start_framework(opt)
+                start_framework(o)
 
         self.assertIn("WARNING:root:You're running in real mode, but not as root", cm.output[-1])
         del(start_framework)
 
     def testReal2(self):
         from switchyard.syinit import start_framework
-        opt = TestFrameworkTests.copyOptions()
-        opt.usercode = 'ucode13'
-        opt.app = None
-        opt.tests = None
-        opt.exclude = None
-        opt.intf = None
-        opt.fwconfig = []
+        o = self._makeOptions(app=None, tests=[], usercode='ucode13')
         mrmock = Mock(return_value=True)
         mdlmock = Mock(side_effect=[[],['fakedev']])
         netmock = Mock(return_value=Mock())
@@ -640,7 +615,7 @@ s.close()
 
         with redirectio() as xio:
             with self.assertLogs(level='DEBUG') as cm:
-                start_framework(opt)
+                start_framework(o)
 
         self.assertIn("CRITICAL:root:Here are all the interfaces I see on your system: fakedev", cm.output[-1])
         del(start_framework)
