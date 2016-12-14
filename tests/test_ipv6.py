@@ -27,7 +27,7 @@ class IPv6PacketTests(unittest.TestCase):
         i = IPv6(nextheader=IPProtocol.GRE)
         with self.assertLogs() as cm:
             self.assertIsNone(i.next_header_class())
-        self.assertIn('no class exists to parse next header type', cm.output[0])
+        self.assertIn('No class exists', cm.output[0])
         self.assertEqual(i.hopcount, 128)
         i.hopcount = 64
         self.assertEqual(i.hopcount, 64)
@@ -42,8 +42,8 @@ class IPv6PacketTests(unittest.TestCase):
         self.assertEqual(self.pkt, pkt2)
 
     def testBlankAddrs(self):
-        self.assertEqual(self.ip.srcip, SpecialIPv6Addr.UNDEFINED.value)
-        self.assertEqual(self.ip.dstip, SpecialIPv6Addr.UNDEFINED.value)
+        self.assertEqual(self.ip.src, SpecialIPv6Addr.UNDEFINED.value)
+        self.assertEqual(self.ip.dst, SpecialIPv6Addr.UNDEFINED.value)
 
     def testBadSet(self):
         with self.assertRaises(Exception):
@@ -181,8 +181,8 @@ class IPv6PacketTests(unittest.TestCase):
         pkt = deepcopy(self.pkt)
         idx = pkt.get_header_index(IPv6)
         pkt[idx].nextheader = IPProtocol.IPv6NoNext
-        pkt[idx].srcip = IPv6Address("fc00::a")
-        pkt[idx].dstip = IPv6Address("fc00::b")
+        pkt[idx].src = IPv6Address("fc00::a")
+        pkt[idx].dst = IPv6Address("fc00::b")
         del pkt[idx+1] 
         self.assertEqual(pkt.num_headers(), 2)
         xraw = pkt.to_bytes()
@@ -197,8 +197,8 @@ class IPv6PacketTests(unittest.TestCase):
         pkt.insert_header(idx+1, mob)
         mob.nextheader = pkt[idx].nextheader
         pkt[idx].nextheader = IPProtocol.IPv6Mobility
-        pkt[idx].srcip = IPv6Address("fc00::a")
-        pkt[idx].dstip = IPv6Address("fc00::b")
+        pkt[idx].src = IPv6Address("fc00::a")
+        pkt[idx].dst = IPv6Address("fc00::b")
         self.assertEqual(pkt.num_headers(), 4)
         print (pkt)
         xraw = pkt.to_bytes()

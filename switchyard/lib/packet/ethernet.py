@@ -9,8 +9,8 @@ from .common import EtherType
 
 class Vlan(PacketHeaderBase):
     '''
-    Strictly speaking this header doesn't fully represent the 802.1Q header, but
-    rather the 2nd half of that header and the "displaced" ethertype
+    Strictly speaking this header doesn't fully represent the 802.1Q header, 
+    but rather the 2nd half of that header and the "displaced" ethertype
     field from the Ethernet header.  The first two bytes of the 802.1Q header
     basically get treated as the ethertype field in the Ethernet header,
     and that ethertype "points to" this Vlan header for parsing/understanding
@@ -36,6 +36,8 @@ class Vlan(PacketHeaderBase):
         self._pcp = 0
         self._ethertype = EtherType.IP
         super().__init__(**kwargs)
+        self.set_next_header_map(EtherTypeClasses)
+        self.set_next_header_class_key("_ethertype")
 
     @property
     def vlan(self):
@@ -63,7 +65,8 @@ class Vlan(PacketHeaderBase):
 
     def from_bytes(self, raw):
         if len(raw) < Vlan._MINLEN:
-            raise Exception("Not enough bytes to unpack Vlan header; need {}, only have {}".format(Vlan._MINLEN, len(raw)))
+            raise Exception("Not enough bytes to unpack Vlan header; need {}, "
+                "only have {}".format(Vlan._MINLEN, len(raw)))
         fields = struct.unpack(Vlan._PACKFMT, raw[:Vlan._MINLEN])
         self.vlan = fields[0]
         self.pcp = ((fields[0] & 0xf000) >> 12)
@@ -71,22 +74,19 @@ class Vlan(PacketHeaderBase):
         return raw[Vlan._MINLEN:]
 
     def to_bytes(self):
-        return struct.pack(Vlan._PACKFMT, ((self._pcp << 12) | self._vlanid), self._ethertype.value)
+        return struct.pack(Vlan._PACKFMT, ((self._pcp << 12) | self._vlanid), 
+            self._ethertype.value)
 
     def __eq__(self, other):
-        return self.vlan == other.vlan and self.ethertype == other.ethertype
+        return isinstance(other, Vlan) and \
+            self.vlan == other.vlan and self.ethertype == other.ethertype
 
     def size(self):
         return Vlan._MINLEN
 
-    def pre_serialize(self, raw, pkt, i):
-        pass
+    def __str__(self): return '{} {} {}'.format(self.__class__.__name__,
+    self.vlan,  self.ethertype.name)
 
-    def next_header_class(self):
-        return EtherTypeClasses[self.ethertype]
-
-    def __str__(self):
-        return '{} {} {}'.format(self.__class__.__name__, self.vlan, self.ethertype.name)
 
 EtherTypeClasses = {
     EtherType.IP: IPv4,
@@ -106,6 +106,8 @@ class Ethernet(PacketHeaderBase):
         self._src = self._dst = EthAddr()
         self._ethertype = EtherType.IP
         super().__init__(**kwargs)
+        self.set_next_header_map(EtherTypeClasses)
+        self.set_next_header_class_key("_ethertype")
 
     def size(self):
         return struct.calcsize(Ethernet._PACKFMT)
@@ -138,35 +140,30 @@ class Ethernet(PacketHeaderBase):
         '''
         Return packed byte representation of the Ethernet header.
         '''
-        return struct.pack(Ethernet._PACKFMT, self._dst.packed, self._src.packed, self._ethertype.value)
+        return struct.pack(Ethernet._PACKFMT, self._dst.packed, 
+            self._src.packed, self._ethertype.value)
 
     def from_bytes(self, raw):
         '''Return an Ethernet object reconstructed from raw bytes, or an
         Exception if we can't resurrect the packet.'''
         if len(raw) < Ethernet._MINLEN:
-            raise Exception("Not enough bytes ({}) to reconstruct an Ethernet object".format(len(raw)))
-        dst,src,ethertype = struct.unpack(Ethernet._PACKFMT, raw[:Ethernet._MINLEN])
+            raise Exception("Not enough bytes ({}) to reconstruct an "
+                "Ethernet object".format(len(raw)))
+        dst,src,ethertype = struct.unpack(Ethernet._PACKFMT, 
+            raw[:Ethernet._MINLEN])
         self.src = src
         self.dst = dst
         if ethertype <= 1500:
             self.ethertype = EtherType.NoType
         else:
             self.ethertype = ethertype
-
         return raw[Ethernet._MINLEN:]
 
-    def next_header_class(self):
-        cls = EtherTypeClasses.get(self.ethertype, None)
-        if cls is None:
-            raise Exception("No mapping from ethertype {} to a packet header class".format(self.ethertype))
-        return cls
-
-    def pre_serialize(self, raw, pkt, i):
-        pass
-
     def __eq__(self, other):
-        return self.src == other.src and self.dst == other.dst and self.ethertype == other.ethertype
+        return isinstance(other, Ethernet) and \
+            self.src == other.src and self.dst == other.dst and \
+            self.ethertype == other.ethertype
 
     def __str__(self):
-        return '{} {}->{} {}'.format(self.__class__.__name__, self.src, self.dst, self.ethertype.name)
-
+        return '{} {}->{} {}'.format(self.__class__.__name__, 
+            self.src, self.dst, self.ethertype.name)

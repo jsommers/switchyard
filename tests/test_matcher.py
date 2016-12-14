@@ -90,13 +90,13 @@ class SrpyMatcherTest(unittest.TestCase):
 
     def testWildcarding(self):
         pkt = Ethernet() + IPv4()
-        pkt[1].srcip = IPAddr("192.168.1.1")
-        pkt[1].dstip = IPAddr("192.168.1.2")
+        pkt[1].src = IPAddr("192.168.1.1")
+        pkt[1].dst = IPAddr("192.168.1.2")
         pkt[1].ttl = 64
         
         matcher = PacketMatcher(pkt, wildcard=['dl_dst', 'nw_dst'], exact=False)
         pkt[0].dst = "11:11:11:11:11:11"
-        pkt[1].dstip = "192.168.1.3"
+        pkt[1].dst = "192.168.1.3"
         self.assertTrue(matcher.match(copy.deepcopy(pkt)))
 
     def testWildcarding2(self):

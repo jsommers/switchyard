@@ -10,8 +10,8 @@ class RIPv2PacketTests(unittest.TestCase):
         p[0].src = '00:11:22:33:44:55'
         p[0].dst = '55:44:33:22:11:00'
         p[1].protocol = IPProtocol.UDP
-        p[1].srcip = '192.168.100.42'
-        p[1].dstip = '192.168.100.255'
+        p[1].src = '192.168.100.42'
+        p[1].dst = '192.168.100.255'
         p[2].srcport = 5000
         p[2].dstport = 520
         xraw = p.to_bytes()
@@ -27,8 +27,8 @@ class RIPv2PacketTests(unittest.TestCase):
         p[0].src = '00:11:22:33:44:55'
         p[0].dst = '55:44:33:22:11:00'
         p[1].protocol = IPProtocol.UDP
-        p[1].srcip = '192.168.100.42'
-        p[1].dstip = '192.168.100.255'
+        p[1].src = '192.168.100.42'
+        p[1].dst = '192.168.100.255'
         p[2].srcport = 5000
         p[2].dstport = 520
         p[3].command = RIPCommand.Reply

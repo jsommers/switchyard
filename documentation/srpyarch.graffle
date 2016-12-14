@@ -6,26 +6,21 @@
 	<integer>0</integer>
 	<key>ApplicationVersion</key>
 	<array>
-		<string>com.omnigroup.OmniGraffle</string>
-		<string>139.18.0.187838</string>
+		<string>com.omnigroup.OmniGraffle6</string>
+		<string>169.20.0.267128</string>
 	</array>
 	<key>AutoAdjust</key>
 	<true/>
 	<key>BackgroundGraphic</key>
 	<dict>
 		<key>Bounds</key>
-		<string>{{0, 0}, {575.99997901916504, 733}}</string>
+		<string>{{0, 0}, {576, 733}}</string>
 		<key>Class</key>
 		<string>SolidGraphic</string>
 		<key>ID</key>
 		<integer>2</integer>
 		<key>Style</key>
 		<dict>
-			<key>shadow</key>
-			<dict>
-				<key>Draws</key>
-				<string>NO</string>
-			</dict>
 			<key>stroke</key>
 			<dict>
 				<key>Draws</key>
@@ -46,9 +41,9 @@
 	<key>Creator</key>
 	<string>Joel Sommers</string>
 	<key>DisplayScale</key>
-	<string>1 0/72 in = 1.0000 in</string>
+	<string>1 in = 1.00000 in</string>
 	<key>GraphDocumentVersion</key>
-	<integer>8</integer>
+	<integer>12</integer>
 	<key>GraphicsList</key>
 	<array>
 		<dict>
@@ -65,11 +60,16 @@
 			<integer>50</integer>
 			<key>Points</key>
 			<array>
-				<string>{153.32451336387996, 185.72744968049324}</string>
+				<string>{153.32451335836953, 185.72744967943376}</string>
 				<string>{216.75005340576172, 197.92219543457031}</string>
 			</array>
 			<key>Style</key>
 			<dict>
+				<key>shadow</key>
+				<dict>
+					<key>Draws</key>
+					<string>NO</string>
+				</dict>
 				<key>stroke</key>
 				<dict>
 					<key>HeadArrow</key>
@@ -100,11 +100,16 @@
 			<integer>49</integer>
 			<key>Points</key>
 			<array>
-				<string>{429.18870901478977, 184.72379373505558}</string>
+				<string>{429.188709010862, 184.72379373626521}</string>
 				<string>{386.33333333333331, 197.92219034830728}</string>
 			</array>
 			<key>Style</key>
 			<dict>
+				<key>shadow</key>
+				<dict>
+					<key>Draws</key>
+					<string>NO</string>
+				</dict>
 				<key>stroke</key>
 				<dict>
 					<key>HeadArrow</key>
@@ -160,8 +165,6 @@
 				<string>{-0.25, -0.49999999999999822}</string>
 				<string>{0.25, -0.49999999999999911}</string>
 			</array>
-			<key>Shape</key>
-			<string>Rectangle</string>
 			<key>Style</key>
 			<dict>
 				<key>fill</key>
@@ -183,21 +186,22 @@
 			<key>Text</key>
 			<dict>
 				<key>Text</key>
-				<string>{\rtf1\ansi\ansicpg1252\cocoartf1265\cocoasubrtf210
-\cocoascreenfonts1{\fonttbl\f0\fnil\fcharset0 Consolas;}
+				<string>{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf600
+{\fonttbl\f0\fnil\fcharset0 Consolas;}
 {\colortbl;\red255\green255\blue255;\red0\green0\blue255;}
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc
+{\*\expandedcolortbl;\csgray\c100000;\csgenericrgb\c0\c0\c100000;}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc\partightenfactor0
 
 \f0\fs22 \cf2 Basic API calls:}</string>
 				<key>VerticalPad</key>
-				<integer>0</integer>
+				<real>0.0</real>
 			</dict>
 			<key>Wrap</key>
 			<string>NO</string>
 		</dict>
 		<dict>
 			<key>Bounds</key>
-			<string>{{172.50007120768237, 97.000002861022949}, {237.49992370605469, 64}}</string>
+			<string>{{202.48244334508973, 74.879580397233156}, {181.03507897754514, 96}}</string>
 			<key>Class</key>
 			<string>ShapedGraphic</string>
 			<key>FitText</key>
@@ -222,23 +226,20 @@
 			</dict>
 			<key>ID</key>
 			<integer>25</integer>
-			<key>Shape</key>
-			<string>Rectangle</string>
-			<key>Style</key>
-			<dict/>
 			<key>Text</key>
 			<dict>
 				<key>Text</key>
-				<string>{\rtf1\ansi\ansicpg1252\cocoartf1265\cocoasubrtf210
-\cocoascreenfonts1{\fonttbl\f0\fnil\fcharset0 GillSans;}
+				<string>{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf600
+{\fonttbl\f0\fnil\fcharset0 GillSans;}
 {\colortbl;\red255\green255\blue255;\red0\green0\blue255;}
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc
+{\*\expandedcolortbl;\csgray\c100000;\csgenericrgb\c0\c0\c100000;}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc\partightenfactor0
 
-\f0\fs28 \cf2 Switchyard application models\
+\f0\fs28 \cf2 A conventional Switchyard application implements\
 the core logic components of the network device (e.g., a\
 hub, bridge, switch, router, firewall, etc.)}</string>
 				<key>VerticalPad</key>
-				<integer>0</integer>
+				<real>0.0</real>
 			</dict>
 		</dict>
 		<dict>
@@ -256,21 +257,20 @@ hub, bridge, switch, router, firewall, etc.)}</string>
 			<integer>47</integer>
 			<key>Shape</key>
 			<string>NoteShape</string>
-			<key>Style</key>
-			<dict/>
 			<key>Text</key>
 			<dict>
 				<key>Pad</key>
-				<integer>0</integer>
+				<real>0.0</real>
 				<key>Text</key>
-				<string>{\rtf1\ansi\ansicpg1252\cocoartf1265\cocoasubrtf210
-\cocoascreenfonts1{\fonttbl\f0\fnil\fcharset0 GillSans;}
+				<string>{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf600
+{\fonttbl\f0\fnil\fcharset0 GillSans;}
 {\colortbl;\red255\green255\blue255;}
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\qc
+{\*\expandedcolortbl;\csgray\c100000;}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\qc\partightenfactor0
 
 \f0\fs22 \cf0 Send or receive a packet to/from a specific port on the system.}</string>
 				<key>VerticalPad</key>
-				<integer>0</integer>
+				<real>0.0</real>
 			</dict>
 			<key>TextPlacement</key>
 			<integer>0</integer>
@@ -292,21 +292,20 @@ hub, bridge, switch, router, firewall, etc.)}</string>
 			<integer>46</integer>
 			<key>Shape</key>
 			<string>NoteShape</string>
-			<key>Style</key>
-			<dict/>
 			<key>Text</key>
 			<dict>
 				<key>Pad</key>
-				<integer>0</integer>
+				<real>0.0</real>
 				<key>Text</key>
-				<string>{\rtf1\ansi\ansicpg1252\cocoartf1265\cocoasubrtf210
-\cocoascreenfonts1{\fonttbl\f0\fnil\fcharset0 GillSans;}
+				<string>{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf600
+{\fonttbl\f0\fnil\fcharset0 GillSans;}
 {\colortbl;\red255\green255\blue255;}
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\qc
+{\*\expandedcolortbl;\csgray\c100000;}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\qc\partightenfactor0
 
 \f0\fs22 \cf0 Retrieve info about ports on device (i.e., names and addresses assigned to each).}</string>
 				<key>VerticalPad</key>
-				<integer>0</integer>
+				<real>0.0</real>
 			</dict>
 			<key>TextPlacement</key>
 			<integer>0</integer>
@@ -350,8 +349,6 @@ hub, bridge, switch, router, firewall, etc.)}</string>
 				<string>{-0.25, -0.49999999999999822}</string>
 				<string>{0.25, -0.49999999999999911}</string>
 			</array>
-			<key>Shape</key>
-			<string>Rectangle</string>
 			<key>Style</key>
 			<dict>
 				<key>fill</key>
@@ -373,10 +370,11 @@ hub, bridge, switch, router, firewall, etc.)}</string>
 			<key>Text</key>
 			<dict>
 				<key>Text</key>
-				<string>{\rtf1\ansi\ansicpg1252\cocoartf1265\cocoasubrtf210
-\cocoascreenfonts1{\fonttbl\f0\fnil\fcharset0 GillSans;}
+				<string>{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf600
+{\fonttbl\f0\fnil\fcharset0 GillSans;}
 {\colortbl;\red255\green255\blue255;}
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc
+{\*\expandedcolortbl;\csgray\c100000;}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc\partightenfactor0
 
 \f0\fs22 \cf0 The modeled network\
 device, with 
@@ -384,7 +382,7 @@ device, with
 \i0  ports\
 (8 in this figure)}</string>
 				<key>VerticalPad</key>
-				<integer>0</integer>
+				<real>0.0</real>
 			</dict>
 		</dict>
 		<dict>
@@ -424,8 +422,6 @@ device, with
 				<string>{-0.25, -0.49999999999999822}</string>
 				<string>{0.25, -0.49999999999999911}</string>
 			</array>
-			<key>Shape</key>
-			<string>Rectangle</string>
 			<key>Style</key>
 			<dict>
 				<key>fill</key>
@@ -447,14 +443,15 @@ device, with
 			<key>Text</key>
 			<dict>
 				<key>Text</key>
-				<string>{\rtf1\ansi\ansicpg1252\cocoartf1265\cocoasubrtf210
-\cocoascreenfonts1{\fonttbl\f0\fnil\fcharset0 Consolas;}
+				<string>{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf600
+{\fonttbl\f0\fnil\fcharset0 Consolas;}
 {\colortbl;\red255\green255\blue255;\red0\green0\blue255;}
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc
+{\*\expandedcolortbl;\csgray\c100000;\csgenericrgb\c0\c0\c100000;}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc\partightenfactor0
 
 \f0\fs22 \cf2 ports()}</string>
 				<key>VerticalPad</key>
-				<integer>0</integer>
+				<real>0.0</real>
 			</dict>
 			<key>Wrap</key>
 			<string>NO</string>
@@ -496,8 +493,6 @@ device, with
 				<string>{-0.25, -0.49999999999999822}</string>
 				<string>{0.25, -0.49999999999999911}</string>
 			</array>
-			<key>Shape</key>
-			<string>Rectangle</string>
 			<key>Style</key>
 			<dict>
 				<key>fill</key>
@@ -519,14 +514,15 @@ device, with
 			<key>Text</key>
 			<dict>
 				<key>Text</key>
-				<string>{\rtf1\ansi\ansicpg1252\cocoartf1265\cocoasubrtf210
-\cocoascreenfonts1{\fonttbl\f0\fnil\fcharset0 Consolas;}
+				<string>{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf600
+{\fonttbl\f0\fnil\fcharset0 Consolas;}
 {\colortbl;\red255\green255\blue255;\red0\green0\blue255;}
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc
+{\*\expandedcolortbl;\csgray\c100000;\csgenericrgb\c0\c0\c100000;}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc\partightenfactor0
 
 \f0\fs22 \cf2 send_packet()}</string>
 				<key>VerticalPad</key>
-				<integer>0</integer>
+				<real>0.0</real>
 			</dict>
 			<key>Wrap</key>
 			<string>NO</string>
@@ -568,8 +564,6 @@ device, with
 				<string>{-0.25, -0.49999999999999822}</string>
 				<string>{0.25, -0.49999999999999911}</string>
 			</array>
-			<key>Shape</key>
-			<string>Rectangle</string>
 			<key>Style</key>
 			<dict>
 				<key>fill</key>
@@ -591,14 +585,15 @@ device, with
 			<key>Text</key>
 			<dict>
 				<key>Text</key>
-				<string>{\rtf1\ansi\ansicpg1252\cocoartf1265\cocoasubrtf210
-\cocoascreenfonts1{\fonttbl\f0\fnil\fcharset0 Consolas;}
+				<string>{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf600
+{\fonttbl\f0\fnil\fcharset0 Consolas;}
 {\colortbl;\red255\green255\blue255;\red0\green0\blue255;}
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc
+{\*\expandedcolortbl;\csgray\c100000;\csgenericrgb\c0\c0\c100000;}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc\partightenfactor0
 
 \f0\fs22 \cf2 recv_packet()}</string>
 				<key>VerticalPad</key>
-				<integer>0</integer>
+				<real>0.0</real>
 			</dict>
 			<key>Wrap</key>
 			<string>NO</string>
@@ -617,23 +612,28 @@ device, with
 			<integer>40</integer>
 			<key>Points</key>
 			<array>
-				<string>{447.09072947728856, 301.03575992073604}</string>
+				<string>{447.09072947484322, 301.03575991806457}</string>
 				<string>{429.66656049092614, 282}</string>
 				<string>{305.75006357828778, 271.33333333333331}</string>
 				<string>{293.50002288818359, 215}</string>
 			</array>
 			<key>Style</key>
 			<dict>
+				<key>shadow</key>
+				<dict>
+					<key>Draws</key>
+					<string>NO</string>
+				</dict>
 				<key>stroke</key>
 				<dict>
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>1</string>
+						<real>1</real>
 						<key>g</key>
-						<string>0</string>
+						<real>0.0</real>
 						<key>r</key>
-						<string>0</string>
+						<real>0.0</real>
 					</dict>
 					<key>HeadArrow</key>
 					<string>FilledArrow</string>
@@ -665,23 +665,28 @@ device, with
 			<integer>39</integer>
 			<key>Points</key>
 			<array>
-				<string>{403.73548239231718, 301.8311203661421}</string>
+				<string>{403.7354823838495, 301.8311203531506}</string>
 				<string>{393.41698106129968, 286}</string>
 				<string>{305.75006357828778, 271.33333333333331}</string>
 				<string>{293.50002288818359, 218}</string>
 			</array>
 			<key>Style</key>
 			<dict>
+				<key>shadow</key>
+				<dict>
+					<key>Draws</key>
+					<string>NO</string>
+				</dict>
 				<key>stroke</key>
 				<dict>
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>1</string>
+						<real>1</real>
 						<key>g</key>
-						<string>0</string>
+						<real>0.0</real>
 						<key>r</key>
-						<string>0</string>
+						<real>0.0</real>
 					</dict>
 					<key>HeadArrow</key>
 					<string>FilledArrow</string>
@@ -713,23 +718,28 @@ device, with
 			<integer>38</integer>
 			<key>Points</key>
 			<array>
-				<string>{354.13522807168198, 301.05753887067266}</string>
+				<string>{354.13522806985998, 301.05753886870758}</string>
 				<string>{337.08354155222571, 282.66666666666669}</string>
 				<string>{300.58353010813391, 267.33333333333331}</string>
 				<string>{293.50002288818359, 215}</string>
 			</array>
 			<key>Style</key>
 			<dict>
+				<key>shadow</key>
+				<dict>
+					<key>Draws</key>
+					<string>NO</string>
+				</dict>
 				<key>stroke</key>
 				<dict>
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>1</string>
+						<real>1</real>
 						<key>g</key>
-						<string>0</string>
+						<real>0.0</real>
 						<key>r</key>
-						<string>0</string>
+						<real>0.0</real>
 					</dict>
 					<key>HeadArrow</key>
 					<string>FilledArrow</string>
@@ -761,22 +771,27 @@ device, with
 			<integer>37</integer>
 			<key>Points</key>
 			<array>
-				<string>{313.95710538972355, 300.83112835116356}</string>
+				<string>{313.9571053822562, 300.83112833245946}</string>
 				<string>{300.58353010813391, 267.33333333333331}</string>
 				<string>{293.50002288818359, 215}</string>
 			</array>
 			<key>Style</key>
 			<dict>
+				<key>shadow</key>
+				<dict>
+					<key>Draws</key>
+					<string>NO</string>
+				</dict>
 				<key>stroke</key>
 				<dict>
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>1</string>
+						<real>1</real>
 						<key>g</key>
-						<string>0</string>
+						<real>0.0</real>
 						<key>r</key>
-						<string>0</string>
+						<real>0.0</real>
 					</dict>
 					<key>HeadArrow</key>
 					<string>FilledArrow</string>
@@ -808,22 +823,27 @@ device, with
 			<integer>36</integer>
 			<key>Points</key>
 			<array>
-				<string>{276.30514514699394, 301.77351567086805}</string>
+				<string>{276.30514515409669, 301.77351564853421}</string>
 				<string>{288.000075340271, 265}</string>
 				<string>{293.50002288818359, 215}</string>
 			</array>
 			<key>Style</key>
 			<dict>
+				<key>shadow</key>
+				<dict>
+					<key>Draws</key>
+					<string>NO</string>
+				</dict>
 				<key>stroke</key>
 				<dict>
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>1</string>
+						<real>1</real>
 						<key>g</key>
-						<string>0</string>
+						<real>0.0</real>
 						<key>r</key>
-						<string>0</string>
+						<real>0.0</real>
 					</dict>
 					<key>HeadArrow</key>
 					<string>FilledArrow</string>
@@ -848,23 +868,28 @@ device, with
 			<integer>35</integer>
 			<key>Points</key>
 			<array>
-				<string>{234.61196958632414, 301.84198734552768}</string>
+				<string>{234.61196959511699, 301.84198733311422}</string>
 				<string>{248.66666666666666, 282}</string>
 				<string>{288.000075340271, 267}</string>
 				<string>{293.50002288818359, 215}</string>
 			</array>
 			<key>Style</key>
 			<dict>
+				<key>shadow</key>
+				<dict>
+					<key>Draws</key>
+					<string>NO</string>
+				</dict>
 				<key>stroke</key>
 				<dict>
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>1</string>
+						<real>1</real>
 						<key>g</key>
-						<string>0</string>
+						<real>0.0</real>
 						<key>r</key>
-						<string>0</string>
+						<real>0.0</real>
 					</dict>
 					<key>HeadArrow</key>
 					<string>FilledArrow</string>
@@ -889,23 +914,28 @@ device, with
 			<integer>34</integer>
 			<key>Points</key>
 			<array>
-				<string>{186.81923674061628, 301.82013621415706}</string>
+				<string>{186.81923673780557, 301.82013621888819}</string>
 				<string>{198.00003337860107, 283}</string>
 				<string>{279.50007152557373, 273}</string>
 				<string>{293.50002288818359, 218}</string>
 			</array>
 			<key>Style</key>
 			<dict>
+				<key>shadow</key>
+				<dict>
+					<key>Draws</key>
+					<string>NO</string>
+				</dict>
 				<key>stroke</key>
 				<dict>
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>1</string>
+						<real>1</real>
 						<key>g</key>
-						<string>0</string>
+						<real>0.0</real>
 						<key>r</key>
-						<string>0</string>
+						<real>0.0</real>
 					</dict>
 					<key>HeadArrow</key>
 					<string>FilledArrow</string>
@@ -932,23 +962,28 @@ device, with
 			<integer>32</integer>
 			<key>Points</key>
 			<array>
-				<string>{146.10769989283583, 302.92832831011532}</string>
+				<string>{146.10769988341517, 302.92832831845089}</string>
 				<string>{167.50003051757812, 284}</string>
 				<string>{279.50007152557373, 274}</string>
 				<string>{293.50002288818359, 216}</string>
 			</array>
 			<key>Style</key>
 			<dict>
+				<key>shadow</key>
+				<dict>
+					<key>Draws</key>
+					<string>NO</string>
+				</dict>
 				<key>stroke</key>
 				<dict>
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>1</string>
+						<real>1</real>
 						<key>g</key>
-						<string>0</string>
+						<real>0.0</real>
 						<key>r</key>
-						<string>0</string>
+						<real>0.0</real>
 					</dict>
 					<key>HeadArrow</key>
 					<string>FilledArrow</string>
@@ -993,8 +1028,6 @@ device, with
 			</dict>
 			<key>ID</key>
 			<integer>24</integer>
-			<key>Shape</key>
-			<string>Rectangle</string>
 			<key>Style</key>
 			<dict>
 				<key>fill</key>
@@ -1016,14 +1049,15 @@ device, with
 			<key>Text</key>
 			<dict>
 				<key>Text</key>
-				<string>{\rtf1\ansi\ansicpg1252\cocoartf1265\cocoasubrtf210
-\cocoascreenfonts1{\fonttbl\f0\fnil\fcharset0 GillSans;}
+				<string>{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf600
+{\fonttbl\f0\fnil\fcharset0 GillSans;}
 {\colortbl;\red255\green255\blue255;}
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc
+{\*\expandedcolortbl;\csgray\c100000;}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc\partightenfactor0
 
 \f0\fs26 \cf0 Switchyard framework}</string>
 				<key>VerticalPad</key>
-				<integer>0</integer>
+				<real>0.0</real>
 			</dict>
 			<key>Wrap</key>
 			<string>NO</string>
@@ -1032,7 +1066,7 @@ device, with
 			<key>AllowConnections</key>
 			<string>NO</string>
 			<key>Bounds</key>
-			<string>{{99.467243118938654, 242.78708352057487}, {384.50372450264513, 48}}</string>
+			<string>{{99.467242963681144, 242.78708426872828}, {384.50372450264513, 48}}</string>
 			<key>Class</key>
 			<string>ShapedGraphic</string>
 			<key>ID</key>
@@ -1048,8 +1082,6 @@ device, with
 				<key>RotationType</key>
 				<integer>0</integer>
 			</dict>
-			<key>Shape</key>
-			<string>Rectangle</string>
 		</dict>
 		<dict>
 			<key>AllowConnections</key>
@@ -1096,8 +1128,6 @@ device, with
 			<string>ShapedGraphic</string>
 			<key>ID</key>
 			<integer>11</integer>
-			<key>Shape</key>
-			<string>Rectangle</string>
 			<key>Style</key>
 			<dict>
 				<key>fill</key>
@@ -1105,11 +1135,11 @@ device, with
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 						<key>g</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 						<key>r</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 					</dict>
 				</dict>
 				<key>shadow</key>
@@ -1117,11 +1147,11 @@ device, with
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>1</string>
+						<real>1</real>
 						<key>g</key>
-						<string>0</string>
+						<real>0.0</real>
 						<key>r</key>
-						<string>0</string>
+						<real>0.0</real>
 					</dict>
 				</dict>
 				<key>stroke</key>
@@ -1138,8 +1168,6 @@ device, with
 			<string>ShapedGraphic</string>
 			<key>ID</key>
 			<integer>10</integer>
-			<key>Shape</key>
-			<string>Rectangle</string>
 			<key>Style</key>
 			<dict>
 				<key>fill</key>
@@ -1147,11 +1175,11 @@ device, with
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 						<key>g</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 						<key>r</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 					</dict>
 				</dict>
 				<key>shadow</key>
@@ -1159,11 +1187,11 @@ device, with
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>1</string>
+						<real>1</real>
 						<key>g</key>
-						<string>0</string>
+						<real>0.0</real>
 						<key>r</key>
-						<string>0</string>
+						<real>0.0</real>
 					</dict>
 				</dict>
 				<key>stroke</key>
@@ -1180,8 +1208,6 @@ device, with
 			<string>ShapedGraphic</string>
 			<key>ID</key>
 			<integer>9</integer>
-			<key>Shape</key>
-			<string>Rectangle</string>
 			<key>Style</key>
 			<dict>
 				<key>fill</key>
@@ -1189,11 +1215,11 @@ device, with
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 						<key>g</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 						<key>r</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 					</dict>
 				</dict>
 				<key>shadow</key>
@@ -1201,11 +1227,11 @@ device, with
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>1</string>
+						<real>1</real>
 						<key>g</key>
-						<string>0</string>
+						<real>0.0</real>
 						<key>r</key>
-						<string>0</string>
+						<real>0.0</real>
 					</dict>
 				</dict>
 				<key>stroke</key>
@@ -1222,8 +1248,6 @@ device, with
 			<string>ShapedGraphic</string>
 			<key>ID</key>
 			<integer>8</integer>
-			<key>Shape</key>
-			<string>Rectangle</string>
 			<key>Style</key>
 			<dict>
 				<key>fill</key>
@@ -1231,11 +1255,11 @@ device, with
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 						<key>g</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 						<key>r</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 					</dict>
 				</dict>
 				<key>shadow</key>
@@ -1243,11 +1267,11 @@ device, with
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>1</string>
+						<real>1</real>
 						<key>g</key>
-						<string>0</string>
+						<real>0.0</real>
 						<key>r</key>
-						<string>0</string>
+						<real>0.0</real>
 					</dict>
 				</dict>
 				<key>stroke</key>
@@ -1264,8 +1288,6 @@ device, with
 			<string>ShapedGraphic</string>
 			<key>ID</key>
 			<integer>7</integer>
-			<key>Shape</key>
-			<string>Rectangle</string>
 			<key>Style</key>
 			<dict>
 				<key>fill</key>
@@ -1273,11 +1295,11 @@ device, with
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 						<key>g</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 						<key>r</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 					</dict>
 				</dict>
 				<key>shadow</key>
@@ -1285,11 +1307,11 @@ device, with
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>1</string>
+						<real>1</real>
 						<key>g</key>
-						<string>0</string>
+						<real>0.0</real>
 						<key>r</key>
-						<string>0</string>
+						<real>0.0</real>
 					</dict>
 				</dict>
 				<key>stroke</key>
@@ -1306,8 +1328,6 @@ device, with
 			<string>ShapedGraphic</string>
 			<key>ID</key>
 			<integer>6</integer>
-			<key>Shape</key>
-			<string>Rectangle</string>
 			<key>Style</key>
 			<dict>
 				<key>fill</key>
@@ -1315,11 +1335,11 @@ device, with
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 						<key>g</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 						<key>r</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 					</dict>
 				</dict>
 				<key>shadow</key>
@@ -1327,11 +1347,11 @@ device, with
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>1</string>
+						<real>1</real>
 						<key>g</key>
-						<string>0</string>
+						<real>0.0</real>
 						<key>r</key>
-						<string>0</string>
+						<real>0.0</real>
 					</dict>
 				</dict>
 				<key>stroke</key>
@@ -1348,8 +1368,6 @@ device, with
 			<string>ShapedGraphic</string>
 			<key>ID</key>
 			<integer>5</integer>
-			<key>Shape</key>
-			<string>Rectangle</string>
 			<key>Style</key>
 			<dict>
 				<key>fill</key>
@@ -1357,11 +1375,11 @@ device, with
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 						<key>g</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 						<key>r</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 					</dict>
 				</dict>
 				<key>shadow</key>
@@ -1369,11 +1387,11 @@ device, with
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>1</string>
+						<real>1</real>
 						<key>g</key>
-						<string>0</string>
+						<real>0.0</real>
 						<key>r</key>
-						<string>0</string>
+						<real>0.0</real>
 					</dict>
 				</dict>
 				<key>stroke</key>
@@ -1390,8 +1408,6 @@ device, with
 			<string>ShapedGraphic</string>
 			<key>ID</key>
 			<integer>4</integer>
-			<key>Shape</key>
-			<string>Rectangle</string>
 			<key>Style</key>
 			<dict>
 				<key>fill</key>
@@ -1399,11 +1415,11 @@ device, with
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 						<key>g</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 						<key>r</key>
-						<string>0.4</string>
+						<real>0.40000000000000002</real>
 					</dict>
 				</dict>
 				<key>shadow</key>
@@ -1411,11 +1427,11 @@ device, with
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>1</string>
+						<real>1</real>
 						<key>g</key>
-						<string>0</string>
+						<real>0.0</real>
 						<key>r</key>
-						<string>0</string>
+						<real>0.0</real>
 					</dict>
 				</dict>
 				<key>stroke</key>
@@ -1434,8 +1450,6 @@ device, with
 			<string>ShapedGraphic</string>
 			<key>ID</key>
 			<integer>1</integer>
-			<key>Shape</key>
-			<string>Rectangle</string>
 			<key>Style</key>
 			<dict>
 				<key>fill</key>
@@ -1443,11 +1457,11 @@ device, with
 					<key>Color</key>
 					<dict>
 						<key>b</key>
-						<string>0.8</string>
+						<real>0.80000000000000004</real>
 						<key>g</key>
-						<string>0.8</string>
+						<real>0.80000000000000004</real>
 						<key>r</key>
-						<string>0.8</string>
+						<real>0.80000000000000004</real>
 					</dict>
 				</dict>
 			</dict>
@@ -1474,6 +1488,8 @@ device, with
 			<string>Layer 1</string>
 			<key>Print</key>
 			<string>YES</string>
+			<key>Slices</key>
+			<string>NO</string>
 			<key>View</key>
 			<string>YES</string>
 		</dict>
@@ -1488,6 +1504,8 @@ device, with
 		<real>0.0</real>
 		<key>layoutEngine</key>
 		<string>dot</string>
+		<key>neatoLineLength</key>
+		<real>0.20000000298023224</real>
 		<key>neatoSeparation</key>
 		<real>0.0</real>
 		<key>twopiSeparation</key>
@@ -1500,7 +1518,7 @@ device, with
 	<key>MasterSheets</key>
 	<array/>
 	<key>ModificationDate</key>
-	<string>2014-07-13 18:12:21 +0000</string>
+	<string>2016-12-14 04:01:36 +0000</string>
 	<key>Modifier</key>
 	<string>Joel Sommers</string>
 	<key>NotesVisible</key>
@@ -1531,12 +1549,12 @@ device, with
 		<key>NSPaperSize</key>
 		<array>
 			<string>size</string>
-			<string>{611.99997901916504, 792}</string>
+			<string>{612, 792}</string>
 		</array>
 		<key>NSPrintReverseOrientation</key>
 		<array>
-			<string>int</string>
-			<string>0</string>
+			<string>coded</string>
+			<string>BAtzdHJlYW10eXBlZIHoA4QBQISEhAhOU051bWJlcgCEhAdOU1ZhbHVlAISECE5TT2JqZWN0AIWEASqEhAFxlwCG</string>
 		</array>
 		<key>NSRightMargin</key>
 		<array>
@@ -1573,29 +1591,22 @@ device, with
 	<dict>
 		<key>CurrentSheet</key>
 		<integer>0</integer>
-		<key>ExpandedCanvases</key>
-		<array>
-			<dict>
-				<key>name</key>
-				<string>Canvas 1</string>
-			</dict>
-		</array>
+		<key>Expanded_Canvases</key>
+		<array/>
 		<key>Frame</key>
-		<string>{{128, 14}, {1052, 835}}</string>
-		<key>ListView</key>
+		<string>{{31, 0}, {1249, 777}}</string>
+		<key>ShowInfo</key>
 		<true/>
-		<key>OutlineWidth</key>
-		<integer>142</integer>
-		<key>RightSidebar</key>
-		<false/>
 		<key>ShowRuler</key>
 		<true/>
 		<key>Sidebar</key>
 		<true/>
 		<key>SidebarWidth</key>
-		<integer>120</integer>
+		<integer>200</integer>
+		<key>TopSlabHeight</key>
+		<real>33</real>
 		<key>VisibleRegion</key>
-		<string>{{-18, 17.333333333333332}, {611.33333333333337, 464}}</string>
+		<string>{{4.666666666666667, 20}, {490, 412.66666666666669}}</string>
 		<key>Zoom</key>
 		<real>1.5</real>
 		<key>ZoomValues</key>

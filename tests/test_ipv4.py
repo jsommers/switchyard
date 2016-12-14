@@ -35,8 +35,8 @@ class IPv4PacketTests(unittest.TestCase):
         self.assertEqual(ip2.total_length, 20)
 
     def testBlankAddrs(self):
-        self.assertEqual(self.ip.srcip, SpecialIPv4Addr.IP_ANY.value)
-        self.assertEqual(self.ip.dstip, SpecialIPv4Addr.IP_ANY.value)
+        self.assertEqual(self.ip.src, SpecialIPv4Addr.IP_ANY.value)
+        self.assertEqual(self.ip.dst, SpecialIPv4Addr.IP_ANY.value)
 
     def testBadSet(self):
         with self.assertRaises(Exception):
@@ -147,8 +147,8 @@ class IPv4PacketTests(unittest.TestCase):
         self.pkt[1] = IPv4()
         iphdr = self.pkt[1]
         iphdr.options.append(ropt)
-        iphdr.srcip = "1.2.3.4"
-        iphdr.dstip = "4.5.6.7"
+        iphdr.src = "1.2.3.4"
+        iphdr.dst = "4.5.6.7"
         iphdr.tos = 0x11
         self.assertEqual(iphdr.hl, 15)
         raw = iphdr.options.to_bytes()

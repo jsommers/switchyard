@@ -76,7 +76,7 @@ class UDP(PacketHeaderBase):
     def _compute_checksum_ipv4(self, ip4, xdata):
         if ip4 is None:
             return 0
-        xhdr = struct.pack('!IIxBHHHHH', int(ip4.srcip), int(ip4.dstip), 
+        xhdr = struct.pack('!IIxBHHHHH', int(ip4.src), int(ip4.dst), 
             ip4.protocol.value, self._len, 
             self.srcport, self.dstport, self._len, 0)
         return checksum(xhdr + xdata)

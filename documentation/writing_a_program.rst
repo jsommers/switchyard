@@ -1,17 +1,17 @@
 .. _coding:
 
-Writing a Switchyard Program
+Writing a Switchyard program
 ****************************
 
-.. index:: switchy_main, srpy_main, main
+.. index:: switchy_main, main
 
-A Switchyard program is simply a Python program that includes an explicit "startup" function.  The startup function can either be named ``switchy_main``, ``srpy_main``, or simply ``main``.   This function must accept a single parameter, which is a reference to the Switchyard "network object" (described below).  The network object is used to send and receive packets to and from network interfaces.  
+A Switchyard program is simply a Python program that includes a particular entrypoint function that accepts a single parameter.  The startup function can simply be named ``main``, but can also be named ``switchy_main`` if you like.  The function must accept a single parameter, which is a reference to the Switchyard *network object* (described below).  Method calls on the network object are used to send and receive packets to and from network ports.
 
-.. index:: srpy.py
+.. index:: swyard
 
-A Switchyard program isn't executed *directly* with the Python interpreter.  You will instead use the Switchyard program ``srpy.py`` to start up the Switchyard framework and tell ``srpy.py`` to load your code.  Details on how to do this are given in the chapters on running a Switchyard in the "test" environment (:ref:`runtest`) and running Switchyard in a "live" environment (:ref:`runlive`).
+A Switchyard program isn't executed *directly* with the Python interpreter.  Instead, the program ``swyard`` is used to start up the Switchyard framework and to load your code.  Details on how to do this are given in the chapters on running a Switchyard in the "test" environment (:ref:`runtest`) and running Switchyard in a "live" environment (:ref:`runlive`).
 
-A Switchyard program will typically also import other Switchyard modules such as  modules for parsing and constructing packets, dealing with network addresses, and other functions.  These modules are introduced below and described in detail in the API reference chapter (:ref:`apiref`).
+A Switchyard program will typically also import other Switchyard modules such as modules for parsing and constructing packets, dealing with network addresses, and other functions.  These modules are introduced below and described in detail in the API reference chapter (:ref:`apiref`).
 
 Introducing the "network object"
 ================================
@@ -26,12 +26,10 @@ Here is a program that receives one packet, prints it out, sends it *back out th
 
 .. code-block:: python
     
-    from switchyard.lib.packet import *
-    from switchyard.lib.address import *
-    from switchyard.lib.common import *
+    from switchyard.lib.userlib import *
 
     def main(net):
-        input_port,packet = net.recv_packet()
+        timestamp,input_port,packet = net.recv_packet()
         print ("Received {} on {}".format(packet, input_port))
         net.send_packet(input_port, packet)
 

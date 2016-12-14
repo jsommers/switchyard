@@ -1,6 +1,8 @@
 from abc import ABCMeta, abstractmethod
 from copy import deepcopy
 
+from ..logging import log_warn
+
 class Packet(object):
     '''
     Base class for packet headers.
@@ -237,6 +239,8 @@ class PacketHeaderBase(metaclass=ABCMeta):
     __slots__ = []
 
     def __init__(self, **kwargs):
+        PacketHeaderBase._next_header_map = {}
+        PacketHeaderBase._next_header_class_key = ''
         for attrname, value in kwargs.items():
             setattr(self, attrname, value)
 
@@ -246,17 +250,37 @@ class PacketHeaderBase(metaclass=ABCMeta):
         derived classes.'''
         return self.size()
 
-    @abstractmethod
     def size(self):
         '''Return the packed length of this header'''
-        return 0
+        return len(self.to_bytes())
 
-    @abstractmethod
+    @classmethod
+    def set_next_header_class_key(cls, attr):
+        '''Indicate which attribute is used to decide the type of packet
+           header that comes after this one.  For example, the IPv4
+           protocol attribute.'''
+        cls._next_header_class_key = attr
+
+    @classmethod
+    def add_next_header_class(cls, attr, hdrcls):
+        '''Add a new mapping between a next header type value and a Python
+        class that implements that header type.'''
+        cls._next_header_map[attr] = hdrcls
+
+    @classmethod
+    def set_next_header_map(cls, mapdict):
+        '''(Re)initialize a dictionary that maps a "next header type" attribute
+        to a Python class that implements that header type.'''
+        cls._next_header_map = mapdict
+
     def next_header_class(self):
         '''Return class of next header, if known.'''
-        pass
+        key = getattr(self, self._next_header_class_key)
+        rv = self._next_header_map.get(key, None)
+        if rv is None:
+            log_warn("No class exists to handle next header value {}".format(key))
+        return rv
 
-    @abstractmethod
     def pre_serialize(self, raw, packet, i):
         '''
         This method is called by the Switchyard framework just before any
@@ -299,6 +323,7 @@ class PacketHeaderBase(metaclass=ABCMeta):
     def __str__(self):
         return self.__class__.__name__
 
+
 class NullPacketHeader(PacketHeaderBase):
     def __init__(self):
         PacketHeaderBase.__init__(self)
@@ -308,15 +333,6 @@ class NullPacketHeader(PacketHeaderBase):
 
     def from_bytes(self, raw):
         return raw
-
-    def next_header_class(self):
-        return None
-
-    def pre_serialize(self, raw, pkt, i):
-        return None
-
-    def size(self):
-        return 0
 
     def __getattr__(self, attr):
         return self
@@ -360,12 +376,6 @@ class RawPacketContents(PacketHeaderBase):
             self._raw = bytes(raw, 'utf8')
         else:
             raise TypeError("RawPacketContents must be initialized with either str or bytes.  You gave me {}".format(raw.__class__.__name__))
-
-    def next_header_class(self):
-        return None
-
-    def pre_serialize(self, raw, pkt, i):
-        return
 
     def size(self):
         return len(self._raw)

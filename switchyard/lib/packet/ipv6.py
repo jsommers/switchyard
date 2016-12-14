@@ -414,7 +414,7 @@ class IPv6Mobility(IPv6ExtensionHeader):
     enumeration, above).  
     '''
 
-    __slots__ = ('_mhtype','_checksum','_data','_srcip','_dstip')
+    __slots__ = ('_mhtype','_checksum','_data','_src','_dst')
     _PACKFMT = '!BBH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
@@ -423,13 +423,13 @@ class IPv6Mobility(IPv6ExtensionHeader):
         self._optdatalen = 0 #FIXME
         self._mhtype = IPv6MobilityHeaderType(0)
         self._data = (0,)
-        self._srcip = self._dstip = SpecialIPv6Addr.UNDEFINED.value
+        self._src = self._dst = SpecialIPv6Addr.UNDEFINED.value
         super().__init__(8, **kwargs)
 
     def pre_serialize(self, raw, pkt, i):
         ipv6hdr = pkt.get_header(IPv6)
-        self._srcip = ipv6hdr.srcip
-        self._dstip = ipv6hdr.dstip
+        self._src = ipv6hdr.src
+        self._dst = ipv6hdr.dst
 
     def __str__(self):
         return "IPv6Mobility ({})".format(self._mhtype.name)
@@ -440,8 +440,8 @@ class IPv6Mobility(IPv6ExtensionHeader):
         self._checksum = 0
         exthdr = self.to_bytes(computecsum=False)
         self._checksum = checksum(struct.pack('16s16sIxxxB',
-                                  self._srcip.packed,
-                                  self._dstip.packed,
+                                  self._src.packed,
+                                  self._dst.packed,
                                   len(exthdr), IPProtocol.IPv6Mobility.value) +
             exthdr)
         return self._checksum
@@ -471,6 +471,7 @@ class IPv6Mobility(IPv6ExtensionHeader):
         self._data = struct.unpack(mobheaderstruct, remain[IPv6Mobility._MINLEN:(IPv6Mobility._MINLEN+structsize)])
         return raw[(IPv6Mobility._MINLEN + structsize):]
 
+
 IPTypeClasses = {
     IPProtocol.TCP: TCP,
     IPProtocol.UDP: UDP,
@@ -489,7 +490,7 @@ IPTypeClasses = {
 class IPv6(PacketHeaderBase):
     __slots__ = ['_trafficclass','_flowlabel','_ttl',
                  '_nextheader','_payloadlen',
-                 '_srcip','_dstip','_extheaders']
+                 '_src','_dst','_extheaders']
     _PACKFMT = '!BBHHBB16s16s'
     _MINLEN = struct.calcsize(_PACKFMT)
 
@@ -499,10 +500,12 @@ class IPv6(PacketHeaderBase):
         self.ttl = 128
         self.nextheader = IPProtocol.ICMP
         self._payloadlen = 0
-        self.srcip = SpecialIPv6Addr.UNDEFINED.value
-        self.dstip = SpecialIPv6Addr.UNDEFINED.value
+        self.src = SpecialIPv6Addr.UNDEFINED.value
+        self.dst = SpecialIPv6Addr.UNDEFINED.value
         self._extheaders = []
         super().__init__(**kwargs)
+        self.set_next_header_map(IPTypeClasses)
+        self.set_next_header_class_key("_nextheader")
         
     def size(self):
         return IPv6._MINLEN + 0 # FIXME extension headers
@@ -516,7 +519,7 @@ class IPv6(PacketHeaderBase):
             (self.trafficclass & 0x0f) << 4 | (self.flowlabel & 0xf0000) >> 16,
             self.flowlabel & 0x0ffff,
             self._payloadlen, self.nextheader.value,
-            self.ttl, self.srcip.packed, self.dstip.packed)
+            self.ttl, self.src.packed, self.dst.packed)
 
     def from_bytes(self, raw):
         if len(raw) < IPv6._MINLEN:
@@ -530,9 +533,9 @@ class IPv6(PacketHeaderBase):
         self._payloadlen = fields[3]
         self.nextheader = IPProtocol(fields[4])
         self.ttl = fields[5]
-        self.srcip = IPv6Address(fields[6])
-        self.dstip = IPv6Address(fields[7])
-        # FIXME
+        self.src = IPv6Address(fields[6])
+        self.dst = IPv6Address(fields[7])
+        # FIXME: extension headers
         return raw[IPv6._MINLEN:]
 
     def __eq__(self, other):
@@ -540,15 +543,15 @@ class IPv6(PacketHeaderBase):
             self._flowlabel == other._flowlabel and \
             self._ttl == other._ttl and \
             self._nextheader == other._nextheader and \
-            self._srcip == other._srcip and \
-            self._dstip == other._dstip and \
+            self._src == other._src and \
+            self._dst == other._dst and \
             self._extheaders == other._extheaders
 
-    def next_header_class(self):
-        cls = IPTypeClasses.get(self.nextheader, None)
-        if cls is None and self.nextheader not in IPTypeClasses:
-            log_warn("Warning: no class exists to parse next header type: {}".format(self.nextheader))
-        return cls
+    # def next_header_class(self):
+    #     cls = IPTypeClasses.get(self.nextheader, None)
+    #     if cls is None and self.nextheader not in IPTypeClasses:
+    #         log_warn("Warning: no class exists to parse next header type: {}".format(self.nextheader))
+    #     return cls
 
     # accessors and mutators
     @property
@@ -591,37 +594,21 @@ class IPv6(PacketHeaderBase):
     def hopcount(self, value):
         self.ttl = value
 
-    @property 
-    def srcip(self):
-        return self._srcip
-
-    @srcip.setter
-    def srcip(self, value):
-        self._srcip = IPv6Address(value)
-
     @property
     def src(self):
-        return self.srcip 
+        return self._src 
 
     @src.setter
     def src(self, value):
-        self.srcip = value
-
-    @property
-    def dstip(self):
-        return self._dstip
-
-    @dstip.setter
-    def dstip(self, value):
-        self._dstip = IPv6Address(value)
+        self._src = value
 
     @property
     def dst(self):
-        return self.dstip
+        return self._dst
 
     @dst.setter
     def dst(self, value):
-        self.dstip = value
+        self._dst = value
 
     def __str__(self):
-        return '{} {}->{} {}'.format(self.__class__.__name__, self.srcip, self.dstip, self.nextheader.name) 
+        return '{} {}->{} {}'.format(self.__class__.__name__, self.src, self.dst, self.nextheader.name) 

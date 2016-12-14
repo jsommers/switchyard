@@ -73,7 +73,7 @@ from switchyard.lib.userlib import *
 s = TestScenario("Ref to prev pkt")
 s.timeout = 1.0
 s.add_interface('lo0', '00:00:00:00:00:00', '127.0.0.1', iftype=InterfaceType.Loopback)
-p = Null() + IPv4(srcip='127.0.0.1',dstip='127.0.0.1',protocol=IPProtocol.UDP) + UDP(srcport=65535, dstport=10000) + b'Hello stack'
+p = Null() + IPv4(src='127.0.0.1',dst='127.0.0.1',protocol=IPProtocol.UDP) + UDP(srcport=65535, dstport=10000) + b'Hello stack'
 s.expect(PacketOutputEvent("lo0", p, exact=False, wildcard=['tp_src']), "Emit UDP packet")
 
 reply = deepcopy(p)
@@ -92,7 +92,7 @@ def udp_stack_tests():
     s.add_interface('lo0', '00:00:00:00:00:00', '127.0.0.1', iftype=InterfaceType.Loopback)
 
     p = Null() + \
-        IPv4(srcip='127.0.0.1',dstip='127.0.0.1',protocol=IPProtocol.UDP) + \
+        IPv4(src='127.0.0.1',dst='127.0.0.1',protocol=IPProtocol.UDP) + \
         UDP(srcport=65535, dstport=10000) + b'Hello stack'
 
     s.expect(PacketOutputEvent("lo0", p, exact=False, wildcard=['tp_src']), "Emit UDP packet")
@@ -228,7 +228,7 @@ from copy import copy
 
 def main(obj):
     xport = randint(1024,65535)
-    p = Null() + IPv4(srcip='127.0.0.1',dstip='127.0.0.1',protocol=IPProtocol.UDP) + UDP(srcport=xport, dstport=10000) + b'Test this!'
+    p = Null() + IPv4(src='127.0.0.1',dst='127.0.0.1',protocol=IPProtocol.UDP) + UDP(srcport=xport, dstport=10000) + b'Test this!'
     obj.send_packet('lo0', p)
     print("After send")
     pkt2 = obj.recv_packet()
@@ -291,8 +291,8 @@ def handle_app_data(net, intf, appdata):
     log_debug("Received data from app layer: <{}>".format(message))
     log_debug("flowaddr: {}".format(flowaddr))
 
-    proto,srcip,srcport,dstip,dstport = flowaddr
-    p = Null() + IPv4(protocol=proto, srcip=srcip, dstip=dstip, ipid=0xabcd, ttl=64, flags=IPFragmentFlag.DontFragment) + UDP(srcport=srcport,dstport=dstport) + message
+    proto,src,srcport,dst,dstport = flowaddr
+    p = Null() + IPv4(protocol=proto, src=src, dst=dst, ipid=0xabcd, ttl=64, flags=IPFragmentFlag.DontFragment) + UDP(srcport=srcport,dstport=dstport) + message
 
     log_debug("Sending {} to {}".format(p, intf.name))
     net.send_packet(intf, p)

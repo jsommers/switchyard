@@ -9,8 +9,8 @@ class UDPPacketTests(unittest.TestCase):
         ether.dst = '11:22:33:00:00:00'
         ether.ethertype = EtherType.IP
         ippkt = IPv4()
-        ippkt.srcip = '1.2.3.4'
-        ippkt.dstip = '4.5.6.7'
+        ippkt.src = '1.2.3.4'
+        ippkt.dst = '4.5.6.7'
         ippkt.protocol = IPProtocol.UDP
         ippkt.ttl = 37
         ippkt.ipid = 0

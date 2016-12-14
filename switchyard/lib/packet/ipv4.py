@@ -19,11 +19,6 @@ References:
     RFC 2113, Router alert option.
 '''
 
-IPTypeClasses = {
-    IPProtocol.ICMP: ICMP,
-    IPProtocol.TCP: TCP,
-    IPProtocol.UDP: UDP,
-}
 
 
 class IPOption(object, metaclass=ABCMeta):
@@ -376,6 +371,12 @@ class IPOptionList(object):
             ", ".join([str(opt) for opt in self._options]))
 
 
+IPTypeClasses = {
+    IPProtocol.ICMP: ICMP,
+    IPProtocol.TCP: TCP,
+    IPProtocol.UDP: UDP,
+}
+
 class IPv4(PacketHeaderBase):
     __slots__ = ['_tos','_totallen','_ttl',
                  '_ipid','_flags','_fragoffset',
@@ -398,6 +399,8 @@ class IPv4(PacketHeaderBase):
         self.dst = SpecialIPv4Addr.IP_ANY.value
         self._options = IPOptionList()
         super().__init__(**kwargs)
+        self.set_next_header_map(IPTypeClasses)
+        self.set_next_header_class_key("_protocol")
         
     def size(self):
         return struct.calcsize(IPv4._PACKFMT) + self._options.raw_length()
@@ -446,13 +449,6 @@ class IPv4(PacketHeaderBase):
                 self.protocol == other.protocol and \
                 self.src == other.src and \
                 self.dst == other.dst
-                # self.checksum == other.checksum and \
-
-    def next_header_class(self):
-        cls = IPTypeClasses.get(self.protocol, None)
-        if cls is None:
-            log_warn("No class exists to parse next protocol type: {}".format(self.protocol))
-        return cls
 
     # accessors and mutators
     @property
@@ -531,31 +527,11 @@ class IPv4(PacketHeaderBase):
         self._src = IPAddr(value)
 
     @property
-    def srcip(self):
-        '''Deprecated property.  Use src instead.'''
-        return self._src
-
-    @srcip.setter
-    def srcip(self, value):
-        '''Deprecated property.  Use src instead.'''
-        self._src = IPAddr(value)
-
-    @property
     def dst(self):
         return self._dst
 
     @dst.setter
     def dst(self, value):
-        self._dst = IPAddr(value)
-
-    @property
-    def dstip(self):
-        '''Deprecated property.  Use dst instead.'''
-        return self._dst
-
-    @dstip.setter
-    def dstip(self, value):
-        '''Deprecated property.  Use dst instead.'''
         self._dst = IPAddr(value)
 
     @property

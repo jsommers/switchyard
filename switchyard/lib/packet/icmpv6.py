@@ -27,11 +27,11 @@ class ICMPv6(ICMP):
     def checksum(self):
         return self._checksum
 
-    def _compute_checksum(self, srcip, dstip, raw):
+    def _compute_checksum(self, src, dst, raw):
         sep = b''
         databytes = self._icmpdata.to_bytes()
         icmpsize = ICMP._MINLEN+len(databytes)
-        self._checksum = csum(sep.join( (srcip.packed, dstip.packed,
+        self._checksum = csum(sep.join( (src.packed, dst.packed,
             struct.pack('!I3xBBB', 
                 ICMP._MINLEN+len(databytes), 58, self._type.value, self._code.value), 
             databytes) ))
@@ -39,7 +39,7 @@ class ICMPv6(ICMP):
     def pre_serialize(self, raw, pkt, i):
         ip6hdr = pkt.get_header('IPv6')
         assert(ip6hdr is not None)
-        self._compute_checksum(ip6hdr.srcip, ip6hdr.dstip, raw)
+        self._compute_checksum(ip6hdr.src, ip6hdr.dst, raw)
 
 
 class ICMPv6EchoRequest(ICMPEchoRequest):

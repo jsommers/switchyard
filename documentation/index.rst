@@ -6,17 +6,19 @@
 Switchyard documentation
 ========================
 
-Contents:
+.. Contents:
 
 .. toctree::
    :maxdepth: 2
 
    intro
    writing_a_program
+   advanced_api
    test_execution
    test_scenario_creation
    live_execution
    installation
+   problems_solutions
    reference
    thanks
 

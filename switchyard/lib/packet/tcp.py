@@ -86,7 +86,7 @@ class TCP(PacketHeaderBase):
     def _compute_checksum_ipv4(self, ip4, xdata):
         if ip4 is None:
             return 0
-        phdr = struct.pack('!IIxBH', int(ip4.srcip), int(ip4.dstip), 
+        phdr = struct.pack('!IIxBH', int(ip4.src), int(ip4.dst), 
             ip4.protocol.value, self._len)
         tcphdr = self._make_header(0)
         return checksum(phdr + tcphdr + xdata)
