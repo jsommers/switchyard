@@ -114,7 +114,8 @@ def _prepare_debugger(tb):
     part of switchyard code (i.e., first frame in which we see user code).
     '''
     p = pdb.Pdb(
-        skip=['switchyard.lib.testing', 'switchyard.switchy_test'])
+        skip=['switchyard.lib.testing', 'switchyard.llnettest', 
+              'switchayrd.lib.debugging', 'switchyard.llnetbase', ])
     p.reset()
 
     usercode = height = 0
@@ -124,7 +125,7 @@ def _prepare_debugger(tb):
         xtb = xtb.tb_next
         height += 1
         syscode = (
-            'switchyard/switchy_test.py' in codestr or 'switchyard/lib/testing.py' in codestr)
+            'switchyard/llnettest.py' in codestr or 'switchyard/lib/testing.py' in codestr)
         if not syscode:
             usercode = height
 
