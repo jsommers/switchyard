@@ -1,7 +1,6 @@
 from setuptools import setup, find_packages
 
-with open('version.txt') as vfile:
-    thisversion = vfile.read().strip()
+thisversion = '2016.12.dev1'
 
 setup(name="switchyard", 
       version=thisversion,
@@ -19,7 +18,7 @@ setup(name="switchyard",
       install_requires=["cffi >=1.6.0","colorama >=0.3.3","networkx >=1.8.1"],
       tests_require=['coverage >=3.7.1'],
       entry_points= {
-        'console_scripts': [ 'swyard = swyard:main' ],
+        'console_scripts': [ 'swyard = switchyard.swyard:main' ],
       },
       license="This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.  http://creativecommons.org/licenses/by-nc-sa/4.0/",
       classifiers=[
