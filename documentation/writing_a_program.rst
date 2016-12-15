@@ -23,15 +23,10 @@ Sending and receiving packets
 
 As a way to describe two of the most important methods on the network object, here is a program that receives one packet, prints it out, sends it *back out the same interface*, then quits.
 
-.. code-block:: python
+.. literalinclude:: code/inout1.py
+   :language: python
+   :linenos:
     
-    from switchyard.lib.userlib import *
-
-    def main(net):
-        timestamp,input_port,packet = net.recv_packet()
-        print ("Received {} on {}".format(packet, input_port))
-        net.send_packet(input_port, packet)
-
 This program isn't likely to be very useful --- it is just meant as an illustration of two of the key methods on the network object:
 
 .. py:method:: recv_packet(timeout=None)
@@ -50,15 +45,9 @@ This program isn't likely to be very useful --- it is just meant as an illustrat
 
 Note that in the above call to ``recv_packet``, no arguments are given so the call will block until a packet is received. Also, notice that the return type of ``recv_packet`` is a *namedtuple* (see :py:class:collections.namedtuple) of three elements so in addition to automatically unpacking the tuple as in the above example, you can use indexing or attribute-like syntax on the return value from ``recv_packet``.  For example (using attribute-syntax):
 
-.. code-block:: python
-    
-    from switchyard.lib.userlib import *
-
-    def main(net):
-        recvdata = net.recv_packet()
-        print ("Received at {} {} on {}".format(
-          recvdata.timestamp, recvdata.packet, recvdata.input_port))
-        net.send_packet(recvdata.input_port, recvdata.packet)
+.. literalinclude:: code/inout2.py
+   :language: python
+   :linenos:
 
 The ``send_packet`` method call is pretty straightforward:
 
@@ -76,24 +65,9 @@ Importantly, note that in the above examples we are not handling any potential e
 
 Let's rewrite the code above, and now put everything in a ``while`` loop so that we keep reading and sending packets as long as we're running.  We will eventually turn this code into a working network *hub* implementation [#f1]_, but it's currently broken because it still just sends a packet out the *same port* on which it arrived:
 
-.. code-block:: python
-    
-    from switchyard.lib.userlib import *
-
-    def main(net):
-        while True:
-            try:
-                timestamp,input_port,packet = net.recv_packet()
-            except Shutdown:
-                print ("Got shutdown signal; exiting")
-                break
-            except NoPackets:
-                print ("No packets were available.")
-                continue
-
-            # if we get here, we must have received a packet
-            print ("Received {} on {}".format(packet, input_port))
-            net.send_packet(input_port, packet)
+.. literalinclude:: code/inoutloop.py
+   :language: python
+   :linenos:
 
 
 Getting information about ports (interfaces) on the device
