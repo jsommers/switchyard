@@ -144,9 +144,9 @@ class SrpyMatcherTest(unittest.TestCase):
     def testWildcardOutput2(self):
         p = Ethernet() + \
              IPv4(protocol=IPProtocol.UDP,src="1.2.3.4",dst="5.6.7.8") + \
-             UDP(srcport=9999, dstport=4444)
+             UDP(src=9999, dst=4444)
         xcopy = copy.copy(p)
-        xcopy[2].srcport = 2345
+        xcopy[2].src = 2345
 
         wm = WildcardMatch(p, ('tp_src','dl_src','nw_dst'))
         self.assertTrue(wm.match(xcopy))
@@ -178,7 +178,7 @@ class SrpyMatcherTest(unittest.TestCase):
     def testConstructPaths(self):
         p = Ethernet() + \
             IPv4(protocol=IPProtocol.UDP,src="1.2.3.4",dst="5.6.7.8") + \
-            UDP(srcport=9999, dstport=4444)
+            UDP(src=9999, dst=4444)
         xcopy = copy.copy(p)
         with self.assertLogs() as cm:
             outev = PacketOutputEvent("eth1", p, wildcard=('tp_src',), exact=True)
@@ -201,11 +201,11 @@ class SrpyMatcherTest(unittest.TestCase):
     def testMatcherSyntax(self):
         p = Ethernet() + \
              IPv4(protocol=IPProtocol.UDP,src="1.2.3.4",dst="5.6.7.8") + \
-             UDP(srcport=9999, dstport=4444)
+             UDP(src=9999, dst=4444)
         xcopy = copy.copy(p)
-        xcopy[2].srcport = 2345
+        xcopy[2].src = 2345
 
-        wm = WildcardMatch(p, ((UDP,'srcport'),(IPv4,'dst'),(Ethernet,'src')))
+        wm = WildcardMatch(p, ((UDP,'src'),(IPv4,'dst'),(Ethernet,'src')))
         self.assertTrue(wm.match(xcopy))
         x = wm.show(xcopy)
         self.assertEqual("Ethernet **:**:**:**:**:**->00:00:00:00:00:00 IP | IPv4 1.2.3.4->*.*.*.* UDP | UDP *->4444", x)

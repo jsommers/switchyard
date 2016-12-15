@@ -65,7 +65,7 @@ class Vlan(PacketHeaderBase):
 
     def from_bytes(self, raw):
         if len(raw) < Vlan._MINLEN:
-            raise Exception("Not enough bytes to unpack Vlan header; need {}, "
+            raise NotEnoughDataError("Not enough bytes to unpack Vlan header; need {}, "
                 "only have {}".format(Vlan._MINLEN, len(raw)))
         fields = struct.unpack(Vlan._PACKFMT, raw[:Vlan._MINLEN])
         self.vlan = fields[0]
@@ -147,7 +147,7 @@ class Ethernet(PacketHeaderBase):
         '''Return an Ethernet object reconstructed from raw bytes, or an
         Exception if we can't resurrect the packet.'''
         if len(raw) < Ethernet._MINLEN:
-            raise Exception("Not enough bytes ({}) to reconstruct an "
+            raise NotEnoughDataError("Not enough bytes ({}) to reconstruct an "
                 "Ethernet object".format(len(raw)))
         dst,src,ethertype = struct.unpack(Ethernet._PACKFMT, 
             raw[:Ethernet._MINLEN])

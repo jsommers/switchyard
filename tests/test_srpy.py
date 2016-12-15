@@ -73,13 +73,13 @@ from switchyard.lib.userlib import *
 s = TestScenario("Ref to prev pkt")
 s.timeout = 1.0
 s.add_interface('lo0', '00:00:00:00:00:00', '127.0.0.1', iftype=InterfaceType.Loopback)
-p = Null() + IPv4(src='127.0.0.1',dst='127.0.0.1',protocol=IPProtocol.UDP) + UDP(srcport=65535, dstport=10000) + b'Hello stack'
+p = Null() + IPv4(src='127.0.0.1',dst='127.0.0.1',protocol=IPProtocol.UDP) + UDP(src=65535, dst=10000) + b'Hello stack'
 s.expect(PacketOutputEvent("lo0", p, exact=False, wildcard=['tp_src']), "Emit UDP packet")
 
 reply = deepcopy(p)
 reply[1].src,reply[1].dst = reply[1].dst,reply[1].src
-reply[2].srcport,reply[2].dstport = reply[2].dstport,reply[2].srcport
-s.expect(PacketInputEvent("lo0", reply, copyfromlastout=('lo0',UDP,'srcport',UDP,'dstport')), "Receive UDP packet")
+reply[2].src,reply[2].dst= reply[2].dst,reply[2].src
+s.expect(PacketInputEvent("lo0", reply, copyfromlastout=('lo0',UDP,'src',UDP,'dst')), "Receive UDP packet")
 scenario = s
 '''
 
@@ -93,16 +93,16 @@ def udp_stack_tests():
 
     p = Null() + \
         IPv4(src='127.0.0.1',dst='127.0.0.1',protocol=IPProtocol.UDP) + \
-        UDP(srcport=65535, dstport=10000) + b'Hello stack'
+        UDP(src=65535, dst=10000) + b'Hello stack'
 
     s.expect(PacketOutputEvent("lo0", p, exact=False, wildcard=['tp_src']), "Emit UDP packet")
 
     reply = deepcopy(p)
     reply[1].src,reply[1].dst = reply[1].dst,reply[1].src
-    reply[2].srcport,reply[2].dstport = reply[2].dstport,reply[2].srcport
+    reply[2].src,reply[2].dst= reply[2].dst,reply[2].src
 
     s.expect(PacketInputEvent('lo0', reply, 
-        copyfromlastout=('lo0',UDP,'srcport',UDP,'dstport')),
+        copyfromlastout=('lo0',UDP,'src',UDP,'dst')),
         "Receive UDP packet")
 
     return s
@@ -228,14 +228,14 @@ from copy import copy
 
 def main(obj):
     xport = randint(1024,65535)
-    p = Null() + IPv4(src='127.0.0.1',dst='127.0.0.1',protocol=IPProtocol.UDP) + UDP(srcport=xport, dstport=10000) + b'Test this!'
+    p = Null() + IPv4(src='127.0.0.1',dst='127.0.0.1',protocol=IPProtocol.UDP) + UDP(src=xport, dst=10000) + b'Test this!'
     obj.send_packet('lo0', p)
     print("After send")
     pkt2 = obj.recv_packet()
     print("Checking header")
     udphdr = pkt2.packet.get_header(UDP)
     print("UDP header received: ".format(udphdr))
-    if udphdr.dstport == xport:
+    if udphdr.dst == xport:
         print("Ports match!")
     else:
         print("Ports don't match")
@@ -291,8 +291,8 @@ def handle_app_data(net, intf, appdata):
     log_debug("Received data from app layer: <{}>".format(message))
     log_debug("flowaddr: {}".format(flowaddr))
 
-    proto,src,srcport,dst,dstport = flowaddr
-    p = Null() + IPv4(protocol=proto, src=src, dst=dst, ipid=0xabcd, ttl=64, flags=IPFragmentFlag.DontFragment) + UDP(srcport=srcport,dstport=dstport) + message
+    proto,srcip,srcport,dstip,dstport = flowaddr
+    p = Null() + IPv4(protocol=proto, src=srcip, dst=dstip, ipid=0xabcd, ttl=64, flags=IPFragmentFlag.DontFragment) + UDP(src=srcport,dst=dstport) + message
 
     log_debug("Sending {} to {}".format(p, intf.name))
     net.send_packet(intf, p)
@@ -305,8 +305,8 @@ def handle_network_data(netdata):
         ip = pkt[ipidx]
         if pkt[ipidx].protocol == IPProtocol.UDP:
             udp = pkt.get_header(UDP)
-            ApplicationLayer.send_to_app(IPProtocol.UDP, (ip.dst, udp.dstport),
-            (ip.src, udp.srcport), pkt[-1].data)
+            ApplicationLayer.send_to_app(IPProtocol.UDP, (ip.dst, udp.dst),
+            (ip.src, udp.src), pkt[-1].data)
         elif pkt[ipidx].protocol == IPProtocol.ICMP:
             log_info("Received ICMP message: {}".format(pkt[ipidx+1]))
         else:
@@ -525,6 +525,8 @@ s.close()
         with redirectio() as xio:
             with self.assertLogs(level='DEBUG') as cm:
                 main_test(o)
+        #print(xio.contents)
+        #print(cm.output)
         self.assertIn('send_packet was called, but I was expecting recv_packet', xio.contents)
 
     def testRefToPrevInTest(self):

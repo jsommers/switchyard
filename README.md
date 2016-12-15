@@ -7,7 +7,7 @@ Documentation is available at http://cs.colgate.edu/~jsommers/switchyard
 Documentation is written using the Python Sphinx package; doc sources are
 available in the documentation directory.
 
-Switchyard can run in a standalone test harness mode, or can also use "live" network interfaces on a Linux or macos host.  It works nicely within Mininet and other virtual host environments.  The version of Switchyard on the master branch is a major revision of the code as of the end of 2016.  This is the second major overhaul.  The earliest working version of Switchyard (from late 2013) can be found on the v1 branch, and the subsequent rewrite (through the end of 2016) can be found on the v2016 branch.  Many parts of the code are under active development.  As with the last major version of Switchyard, this one requires Python 3.4, at minimum.
+Switchyard can run in a standalone test harness mode, or can also use "live" network interfaces on a Linux or macos host.  It works nicely within Mininet and other virtual host environments.  The version of Switchyard on the master branch is a major revision of the code as of the end of 2016.  This is the second major overhaul.  The earliest working version of Switchyard (from late 2013) can be found on the v1 branch, and the subsequent rewrite (through the end of 2016) can be found on the v2 branch.  Many parts of the code are under active development.  As with the last major version of Switchyard, this one requires Python 3.4, at minimum.
 
 Installation
 ------------

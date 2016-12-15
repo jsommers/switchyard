@@ -48,7 +48,7 @@ class LLNetBase(metaclass=ABCMeta):
             if self._devupdown_callback:
                 self._devupdown_callback(interface, 'up')
         else:
-            raise SwitchyException("Interface already registered")
+            raise ValueError("Interface already registered")
 
     def interfaces(self):
         '''
@@ -70,7 +70,7 @@ class LLNetBase(metaclass=ABCMeta):
         '''
         if name in self._devinfo:
             return self._devinfo[name]
-        raise SwitchyException("No device named {}".format(name))
+        raise KeyError("No device named {}".format(name))
 
     def port_by_name(self, name):
         '''
@@ -86,7 +86,7 @@ class LLNetBase(metaclass=ABCMeta):
         for devname,iface in self._devinfo.items():
             if iface.ipaddr == ipaddr:
                 return iface
-        raise SwitchyException("No device has IP address {}".format(ipaddr))
+        raise KeyError("No device has IP address {}".format(ipaddr))
 
     def port_by_ipaddr(self, ipaddr):
         '''
@@ -102,7 +102,7 @@ class LLNetBase(metaclass=ABCMeta):
         for devname,iface in self._devinfo.items():
             if iface.ethaddr == macaddr:
                 return iface
-        raise SwitchyException("No device has MAC address {}".format(macaddr))
+        raise KeyError("No device has MAC address {}".format(macaddr))
 
     def port_by_macaddr(self, macaddr):
         '''
@@ -138,5 +138,5 @@ class LLNetBase(metaclass=ABCMeta):
         for devname,iface in self._devinfo.items():
             if iface.ifnum == ifnum:
                 return devname
-        raise SwitchyException("No device has ifnum {}".format(ifnum)) 
+        raise KeyError("No device has ifnum {}".format(ifnum)) 
 

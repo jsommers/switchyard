@@ -194,7 +194,7 @@ class IPOptionTimestamp(IPOption):
         self._entries = []
         xlen = fields[1]
         if xlen > len(raw):
-            raise Exception("Not enough data to unpack raw {}: need {} but only have {}".format(self.__class__.__name__, xlen, len(raw)))
+            raise NotEnoughDataError("Not enough data to unpack raw {}: need {} but only have {}".format(self.__class__.__name__, xlen, len(raw)))
         raw = raw[4:xlen]
         haveipaddr = self._flag != 0
         unpackfmt = '!II'
@@ -418,14 +418,14 @@ class IPv4(PacketHeaderBase):
 
     def from_bytes(self, raw):
         if len(raw) < 20:
-            raise Exception("Not enough data to unpack IPv4 header (only {} bytes)".format(len(raw)))
+            raise NotEnoughDataError("Not enough data to unpack IPv4 header (only {} bytes)".format(len(raw)))
         headerfields = struct.unpack(IPv4._PACKFMT, raw[:20])
         v = headerfields[0] >> 4
         if v != 4:
-            raise Exception("Version in raw bytes for IPv4 isn't 4!")
+            raise ValueError("Version in raw bytes for IPv4 isn't 4!")
         hl = (headerfields[0] & 0x0f) * 4
         if len(raw) < hl:
-            raise Exception("Not enough data to unpack IPv4 header (only {} bytes, but header length field claims {})".format(len(raw), hl))
+            raise NotEnoughDataError("Not enough data to unpack IPv4 header (only {} bytes, but header length field claims {})".format(len(raw), hl))
         optionbytes = raw[20:hl]
         self.tos = headerfields[1]        
         self._totallen = headerfields[2]

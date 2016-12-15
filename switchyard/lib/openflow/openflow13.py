@@ -387,8 +387,8 @@ class OpenflowMatch(OpenflowStruct):
         'nw_tos': ((IPv4, 'tos'), (IPv6, 'trafficclass')),
         'nw_src': ((IPv4, 'src'), (IPv6, 'src'), (Arp, 'senderprotoaddr')),
         'nw_dst': ((IPv4, 'dst'), (IPv6, 'dst'), (Arp, 'targetprotoaddr')),
-        'tp_src': ((TCP, 'srcport'), (UDP, 'srcport'), (ICMP, 'icmptype'), (ICMPv6, 'icmptype')),
-        'tp_dst': ((TCP, 'dstport'), (TCP, 'dstport'), (ICMP, 'icmpcode'), (ICMPv6, 'icmpcode')),
+        'tp_src': ((TCP, 'src'), (UDP, 'src'), (ICMP, 'icmptype'), (ICMPv6, 'icmptype')),
+        'tp_dst': ((TCP, 'dst'), (TCP, 'dst'), (ICMP, 'icmpcode'), (ICMPv6, 'icmpcode')),
     }
 
     def __init__(self, **kwargs):

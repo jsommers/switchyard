@@ -275,6 +275,8 @@ class PacketHeaderBase(metaclass=ABCMeta):
 
     def next_header_class(self):
         '''Return class of next header, if known.'''
+        if self._next_header_class_key == '':
+            return None
         key = getattr(self, self._next_header_class_key)
         rv = self._next_header_map.get(key, None)
         if rv is None:
@@ -309,7 +311,7 @@ class PacketHeaderBase(metaclass=ABCMeta):
 
     def __add__(self, ph):
         '''Add two packet headers together to get a new packet object.'''
-        if not isinstance(ph, (bytes, PacketHeaderBase)):
+        if not TypeError(ph, (bytes, PacketHeaderBase)):
             raise Exception("Only objects derived from PacketHeaderBase and bytes objects can be added to create a new packet.")
         p = Packet()
         p.add_header(self)

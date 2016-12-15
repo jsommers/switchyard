@@ -12,7 +12,7 @@ import socket
 
 from .lib.address import *
 from .lib.packet import *
-from .lib.exceptions import SwitchyException, Shutdown, NoPackets
+from .lib.exceptions import Shutdown, NoPackets
 from .lib.interface import Interface, InterfaceType
 from .lib.logging import setup_logging, log_info, log_debug, log_warn, log_failure
 from .importcode import import_or_die
@@ -267,13 +267,13 @@ class LLNetReal(LLNetBase):
         Send a Switchyard Packet object on the given device 
         (string name of device).
 
-        Raises SwitchyException if packet object isn't valid, or device
+        Raises ValueError if packet object isn't valid, or device
         name isn't recognized.
         '''
         if packet is None:
-            raise SwitchyException("No packet object given to send_packet")
+            raise ValueError("No packet object given to send_packet")
         if not isinstance(packet, Packet):
-            raise SwitchyException("Object given to send_packet is not a Packet (it is: {})".format(type(packet)))
+            raise ValueError("Object given to send_packet is not a Packet (it is: {})".format(type(packet)))
  
         intf = None
         if isinstance(dev, int):
@@ -285,7 +285,7 @@ class LLNetReal(LLNetBase):
         elif dev in self._devinfo:
             intf = self.interface_by_name(dev)
         else:
-            raise SwitchyException("Unrecognized device name for packet send: {}".format(dev))
+            raise ValueError("Unrecognized device name for packet send: {}".format(dev))
 
         if intf.iftype == InterfaceType.Loopback:
             pdev = self._localsend.get(dev, None)
@@ -391,7 +391,7 @@ class _RawSocket(object):
             raise PcapException("{}: first header must be IPv4 or IPv6".format(self._name))
 
         raw = packet.to_bytes()
-        addr = (str(packet[0].dst), packet.get_header(UDP).dstport)
+        addr = (str(packet[0].dst), packet.get_header(UDP).dst)
 
         # everything in raw is in *network* byte order, but raw socket on
         # macos expects offset and length in *host* byte order.  yup, it's

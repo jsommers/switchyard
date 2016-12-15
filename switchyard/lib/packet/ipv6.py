@@ -68,7 +68,7 @@ class IPv6ExtensionHeader(PacketHeaderBase):
 
     def from_bytes(self, raw):
         if len(raw) < IPv6ExtensionHeader._MINLEN:
-            raise Exception("Not enough data to unpack IPv6ExtensionHeader")
+            raise NotEnoughDataError("Not enough data to unpack IPv6ExtensionHeader")
 
         self.nextheader = IPProtocol(raw[0])
         self._optdatalen = int(raw[1])
@@ -118,7 +118,7 @@ class IPv6RouteOption(IPv6ExtensionHeader):
             remain = remain[22:]
             self._address = IPv6Address(rawaddr)
         else:
-            raise Exception("IPv6 routing option only supports type 2 (but I got type {})".format(self._routingtype))
+            raise ValueError("IPv6 routing option only supports type 2 (but I got type {})".format(self._routingtype))
         return remain
 
 class IPv6Fragment(IPv6ExtensionHeader):
@@ -168,7 +168,7 @@ class IPv6Fragment(IPv6ExtensionHeader):
     def from_bytes(self, raw):
         remain = super().from_bytes(raw)
         if len(remain) < IPv6Fragment._MINLEN:
-            raise Exception("Not enough data to unpack IPv6Fragment extension header")
+            raise NotEnoughDataError("Not enough data to unpack IPv6Fragment extension header")
         offsetfield, xid = struct.unpack(IPv6Fragment._PACKFMT, remain[:IPv6Fragment._MINLEN])
         self._id = xid
         self._offset = offsetfield >> 3
@@ -371,7 +371,7 @@ class IPv6HopOption(IPv6ExtensionHeader):
                 raw = raw[(2+xlen):]
                 cls = IPv6HopOption._option_type_dict.get(xtype, None)
                 if cls is None:
-                    raise Exception("Bad IPv6 option type {}".format(xtype))
+                    raise ValueError("Bad IPv6 option type {}".format(xtype))
                 self._options.append(cls.from_bytes(raw=data))
 
 class IPv6DestinationOption(IPv6HopOption):
@@ -461,7 +461,7 @@ class IPv6Mobility(IPv6ExtensionHeader):
         super().from_bytes(raw)
         remain = raw[2:]
         if len(remain) < IPv6Mobility._MINLEN:
-            raise Exception("Not enough data to unpack IPv6Mobility header")
+            raise NotEnoughDataError("Not enough data to unpack IPv6Mobility header")
         mhtype,reserved,checksum = struct.unpack(IPv6Mobility._PACKFMT, 
                                                  remain[:IPv6Mobility._MINLEN])
         self._mhtype = IPv6MobilityHeaderType(mhtype)
@@ -523,11 +523,11 @@ class IPv6(PacketHeaderBase):
 
     def from_bytes(self, raw):
         if len(raw) < IPv6._MINLEN:
-            raise Exception("Not enough data to unpack IPv6 header (only {} bytes)".format(len(raw)))
+            raise NotEnoughDataError("Not enough data to unpack IPv6 header (only {} bytes)".format(len(raw)))
         fields = struct.unpack(IPv6._PACKFMT, raw[:IPv6._MINLEN])
         ipversion = fields[0] >> 4
         if ipversion != 6:
-            raise Exception("Trying to parse IPv6 header, but IP version is not 6! ({})".format(ipversion))
+            raise ValueError("Trying to parse IPv6 header, but IP version is not 6! ({})".format(ipversion))
         self.trafficclass = (fields[0] & 0x0f) << 4 | (fields[1] >> 4)
         self.flowlabel = (fields[1] & 0x0f) << 16 | fields[2]
         self._payloadlen = fields[3]

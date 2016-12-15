@@ -126,8 +126,8 @@ class WildcardMatchOpenflow(AbstractMatch):
         'nw_src': [(IPv4, 'src', IP4WILD), (IPv6, 'src', IP6WILD)],
         'nw_dst': [(IPv4, 'dst', IP4WILD), (IPv6, 'dst', IP6WILD)],
         'nw_proto': [(IPv4, 'protocol', SINGLE), (IPv6, 'protocol', SINGLE)],
-        'tp_src': [(TCP, 'srcport', SINGLE), (UDP, 'srcport', SINGLE), (ICMP, 'icmptype', SINGLE)],
-        'tp_dst': [(TCP, 'dstport', SINGLE), (UDP, 'dstport', SINGLE), (ICMP, 'icmpcode', SINGLE)],
+        'tp_src': [(TCP, 'src', SINGLE), (UDP, 'src', SINGLE), (ICMP, 'icmptype', SINGLE)],
+        'tp_dst': [(TCP, 'dst', SINGLE), (UDP, 'dst', SINGLE), (ICMP, 'icmpcode', SINGLE)],
         'arp_tpa': [(Arp, 'targetprotoaddr', IP4WILD)],
         'arp_spa': [(Arp, 'senderprotoaddr', IP4WILD)],
         'arp_tha': [(Arp, 'targethwaddr', ETHWILD)],
@@ -929,7 +929,7 @@ def uncompile_scenario(scenario_file):
     objrepr = indata[dig.digest_size:]
     dig.update(objrepr)
     if dig.digest() != digest:
-        raise SwitchyException("Couldn't load scenario file (hash digest doesn't match)")
+        raise ValueError("Couldn't load scenario file (hash digest doesn't match)")
     sobj = pickle.loads(objrepr)
     return sobj
 

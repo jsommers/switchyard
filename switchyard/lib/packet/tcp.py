@@ -64,13 +64,13 @@ class TCPFlags(IntEnum):
     NS =  8 # ECN-nonce concealment protection RFC 3540
 
 class TCP(PacketHeaderBase):
-    __slots__ = ['_srcport','_dstport','_seq','_ack',
+    __slots__ = ['_src','_dst','_seq','_ack',
         '_flags','_window','_urg','_options','_len', '_checksum']
     _PACKFMT = '!HHIIHHHH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self, **kwargs):
-        self.srcport = self.dstport = 0
+        self.src = self.dst = 0
         self.seq = self.ack = 0
         self._flags = 0x000
         self.window = 0
@@ -79,6 +79,7 @@ class TCP(PacketHeaderBase):
         self._checksum = 0
         self._len = 0
         super().__init__(**kwargs)
+        self.set_next_header_class_key("_dst")
 
     def size(self):
         return struct.calcsize(TCP._PACKFMT)
@@ -99,7 +100,7 @@ class TCP(PacketHeaderBase):
 
     def _make_header(self, csum):
         offset_flags = self.offset << 12 | self._flags
-        header = struct.pack(TCP._PACKFMT, self.srcport, self.dstport,
+        header = struct.pack(TCP._PACKFMT, self.src, self.dst,
             self.seq, self.ack, offset_flags, self.window,
             csum, self.urgent_pointer)
         return header
@@ -115,10 +116,10 @@ class TCP(PacketHeaderBase):
         '''Return an Ethernet object reconstructed from raw bytes, or an
            Exception if we can't resurrect the packet.'''
         if len(raw) < TCP._MINLEN:
-            raise Exception("Not enough bytes ({}) to reconstruct an TCP object".format(len(raw)))
+            raise NotEnoughDataError("Not enough bytes ({}) to reconstruct an TCP object".format(len(raw)))
         fields = struct.unpack(TCP._PACKFMT, raw[:TCP._MINLEN])
-        self._srcport = fields[0]
-        self._dstport = fields[1]
+        self._src = fields[0]
+        self._dst = fields[1]
         self._seq = fields[2]        
         self._ack = fields[3]
         offset = fields[4] >> 12
@@ -132,8 +133,8 @@ class TCP(PacketHeaderBase):
         return raw[headerlen:]
 
     def __eq__(self, other):
-        return self.srcport == other.srcport and \
-            self.dstport == other.dstport and \
+        return self.src == other.src and \
+            self.dst == other.dst and \
             self.seq == other.seq and \
             self.ack == other.ack and \
             self.offset == other.offset and \
@@ -147,24 +148,24 @@ class TCP(PacketHeaderBase):
         return TCP._MINLEN // 4 + len(self._options.to_bytes()) // 4
 
     @property
-    def srcport(self):
-        return self._srcport
+    def src(self):
+        return self._src
 
     @property
-    def dstport(self):
-        return self._dstport
+    def dst(self):
+        return self._dst
 
-    @srcport.setter
-    def srcport(self,value):
-        self._srcport = value
+    @src.setter
+    def src(self,value):
+        self._src = value
 
-    @dstport.setter
-    def dstport(self,value):
-        self._dstport = value
+    @dst.setter
+    def dst(self,value):
+        self._dst = value
 
     def __str__(self):
         return '{} {}->{} ({} {}:{})'.format(self.__class__.__name__, 
-            self.srcport, self.dstport, self.flagstr, self.seq, self.ack)
+            self.src, self.dst, self.flagstr, self.seq, self.ack)
 
     def next_header_class(self):
         return None

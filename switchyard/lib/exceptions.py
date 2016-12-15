@@ -1,4 +1,4 @@
-class SwitchyException(Exception):
+class SwitchyardException(Exception):
     def __init__(self, message):
         self.message = message
 
@@ -8,17 +8,27 @@ class SwitchyException(Exception):
     def __repr__(self):
         return self.message
 
-class TestScenarioFailure(SwitchyException):
+class TestScenarioFailure(SwitchyardException):
+    '''An exception that is raised when a TestScenario expectation
+    is not met.'''
     pass
 
-class Shutdown(Exception):
+class Shutdown(SwitchyardException):
     '''Exception that is raised in user Switchyard program when the
     framework is being shut down.'''
-    pass
+    def __init__(self, *args):
+        SwitchyardException.__init__(self, "Framework shutdown")
+    
 
-class NoPackets(Exception):
+class NoPackets(SwitchyardException):
     '''Exception that is raised in user Switchyard program when
     the recv_packet() method is called on the net object and there
     are no packets available.'''
-    pass
+    def __init__(self, *args):
+        SwitchyardException.__init__(self, "No packets available")
 
+class NotEnoughDataError(SwitchyardException):
+    '''Exception that is raised when attempting to build a packet
+    header object from a bytes object, but there aren't enough bytes
+    to perform the reconstruction.'''
+    pass

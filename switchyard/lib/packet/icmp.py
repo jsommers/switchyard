@@ -68,7 +68,7 @@ class ICMP(PacketHeaderBase):
 
     def from_bytes(self, raw):
         if len(raw) < ICMP._MINLEN:
-            raise Exception("Not enough bytes ({}) to reconstruct an ICMP object".format(len(raw)))
+            raise NotEnoughDataError("Not enough bytes ({}) to reconstruct an ICMP object".format(len(raw)))
         fields = struct.unpack(ICMP._PACKFMT, raw[:ICMP._MINLEN])
         self._type = self._valid_types(fields[0])
         self._code = self._valid_codes_map[self.icmptype](fields[1])
@@ -192,7 +192,7 @@ class ICMPSourceQuench(ICMPData):
 
     def from_bytes(self, raw):
         if len(raw) < ICMPSourceQuench._MINLEN:
-            raise Exception("Not enough bytes ({}) to reconstruct ICMPSourceQuench data object".format(len(raw)))
+            raise NotEnoughDataError("Not enough bytes ({}) to reconstruct ICMPSourceQuench data object".format(len(raw)))
         super().from_bytes(raw[4:])       
 
 class ICMPRedirect(ICMPData):
@@ -206,7 +206,7 @@ class ICMPRedirect(ICMPData):
 
     def from_bytes(self, raw):
         if len(raw) < 4:
-            raise Exception("Not enough bytes ({}) to reconstruct ICMPRedirect data object".format(len(raw)))
+            raise NotEnoughDataError("Not enough bytes ({}) to reconstruct ICMPRedirect data object".format(len(raw)))
         fields = struct.unpack('!I', raw[:4])
         self._redirectto = IPv4Address(fields[0])
         super().from_bytes(raw[4:])
@@ -235,7 +235,7 @@ class ICMPDestinationUnreachable(ICMPData):
 
     def from_bytes(self, raw):
         if len(raw) < 4:
-            raise Exception("Not enough bytes ({}) to reconstruct ICMPDestinationUnreachable data object".format(len(raw)))
+            raise NotEnoughDataError("Not enough bytes ({}) to reconstruct ICMPDestinationUnreachable data object".format(len(raw)))
         fields = struct.unpack('!xBH', raw[:4])
         self._origdgramlen = fields[0]
         self._nexthopmtu = fields[1]
@@ -282,7 +282,7 @@ class ICMPEchoRequest(ICMPData):
 
     def from_bytes(self, raw):
         if len(raw) < 4:
-            raise Exception("Not enough bytes ({}) to reconstruct {} data object".format(len(raw)))
+            raise NotEnoughDataError("Not enough bytes ({}) to reconstruct {} data object".format(len(raw)))
         fields = struct.unpack(ICMPEchoRequest._PACKFMT, 
             raw[:ICMPEchoRequest._MINLEN])
         self._identifier = fields[0]
@@ -333,7 +333,7 @@ class ICMPTimeExceeded(ICMPData):
 
     def from_bytes(self, raw):
         if len(raw) < 4:
-            raise Exception("Not enough bytes ({}) to reconstruct ICMPTimeExceeded data object".format(len(raw)))
+            raise NotEnoughDataError("Not enough bytes ({}) to reconstruct ICMPTimeExceeded data object".format(len(raw)))
         fields = struct.unpack('!xBH', raw[:4])
         self._origdgramlen = fields[0]
         self._nexthopmtu = fields[1]
@@ -376,7 +376,7 @@ class ICMPAddressMaskRequest(ICMPData):
 
     def from_bytes(self, raw):
         if len(raw) < ICMPAddressMaskRequest._MINLEN:
-            raise Exception("Not enough bytes to unpack ICMPAddressMaskRequest object")
+            raise NotEnoughDataError("Not enough bytes to unpack ICMPAddressMaskRequest object")
         fields = struct.unpack(ICMPAddressMaskRequest._PACKFMT, raw[:4])
         self._identifier = fields[0]
         self._sequence = fields[1]

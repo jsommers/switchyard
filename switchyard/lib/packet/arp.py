@@ -47,7 +47,7 @@ class Arp(PacketHeaderBase):
         '''Return an Ethernet object reconstructed from raw bytes, or an
            Exception if we can't resurrect the packet.'''
         if len(raw) < Arp._MINLEN:
-            raise Exception("Not enough bytes ({}) to reconstruct an Arp object".format(len(raw)))
+            raise NotEnoughDataError("Not enough bytes ({}) to reconstruct an Arp object".format(len(raw)))
         fields = struct.unpack(Arp._PACKFMT, raw[:Arp._MINLEN])
         try:
             self._hwtype = ArpHwType(fields[0])

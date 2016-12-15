@@ -43,7 +43,7 @@ class Null(PacketHeaderBase):
         '''Return a Null header object reconstructed from raw bytes, or an
         Exception if we can't resurrect the packet.'''
         if len(raw) < 4:
-            raise Exception("Not enough bytes ({}) to reconstruct a Null object".format(len(raw)))
+            raise NotEnoughDataError("Not enough bytes ({}) to reconstruct a Null object".format(len(raw)))
         fields = struct.unpack('=I', raw[:4])
         self._af = fields[0]
         return raw[4:]

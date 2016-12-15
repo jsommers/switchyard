@@ -12,8 +12,8 @@ class RIPv2PacketTests(unittest.TestCase):
         p[1].protocol = IPProtocol.UDP
         p[1].src = '192.168.100.42'
         p[1].dst = '192.168.100.255'
-        p[2].srcport = 5000
-        p[2].dstport = 520
+        p[2].src = 5000
+        p[2].dst = 520
         xraw = p.to_bytes()
         pkt = Packet(raw=xraw)
         pkt[-1] = RIPv2(pkt[-1])
@@ -29,8 +29,8 @@ class RIPv2PacketTests(unittest.TestCase):
         p[1].protocol = IPProtocol.UDP
         p[1].src = '192.168.100.42'
         p[1].dst = '192.168.100.255'
-        p[2].srcport = 5000
-        p[2].dstport = 520
+        p[2].src = 5000
+        p[2].dst = 520
         p[3].command = RIPCommand.Reply
         p[3].append(RIPRouteEntry('192.168.200.0','255.255.255.0','192.168.200.254',4))
         p[3].append(RIPRouteEntry('192.168.100.0','255.255.252.0','192.168.100.254',3))

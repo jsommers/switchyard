@@ -102,13 +102,13 @@ class LLNetDevTests(unittest.TestCase):
         self.assertEqual(called[1], 'down')
         self.assertEqual(called[0].name, 'eth7')
 
-        with self.assertRaises(SwitchyException):
+        with self.assertRaises(ValueError):
             self.fake.intf_up(self.fake.interface_by_name('eth0'))
         self.assertEqual('test', self.fake.name)
         self.fake.intf_up(Interface("testif", "00:00:00:11:11:11", "1.2.3.4"))
 
     def testFakeAddrLookups(self):
-        with self.assertRaises(SwitchyException):
+        with self.assertRaises(KeyError):
             self.fake.interface_by_name('eth9')
 
         intf = self.fake.interface_by_macaddr('11:11:11:11:11:11')
@@ -116,10 +116,10 @@ class LLNetDevTests(unittest.TestCase):
         intf = self.fake.port_by_macaddr('11:11:11:11:11:11')
         self.assertEqual(intf.name, 'eth1')
 
-        with self.assertRaises(SwitchyException):
+        with self.assertRaises(KeyError):
             intf = self.fake.interface_by_macaddr('11:11:11:11:11:99')
 
-        with self.assertRaises(SwitchyException):
+        with self.assertRaises(KeyError):
             intf = self.fake.port_by_macaddr('11:11:11:11:11:99')
 
         intf = self.fake.interface_by_ipaddr('192.168.1.1')
@@ -128,13 +128,13 @@ class LLNetDevTests(unittest.TestCase):
         intf = self.fake.port_by_ipaddr('192.168.1.1')
         self.assertEqual(intf.name, 'eth7')
 
-        with self.assertRaises(SwitchyException):
+        with self.assertRaises(KeyError):
             intf = self.fake.interface_by_ipaddr('192.168.0.1')
 
-        with self.assertRaises(SwitchyException):
+        with self.assertRaises(KeyError):
             intf = self.fake.port_by_ipaddr('192.168.0.1')
 
-        with self.assertRaises(SwitchyException):
+        with self.assertRaises(KeyError):
             self.fake._lookup_devname(99)
 
         intf = self.fake._lookup_devname(0)
@@ -167,11 +167,11 @@ class LLNetDevTests(unittest.TestCase):
 
         lr = LLNetReal(['en0'], "testy") 
         self.assertEqual(lr.name, "testy")
-        with self.assertRaises(SwitchyException):
+        with self.assertRaises(ValueError):
             lr.send_packet("baddev", Packet())
-        with self.assertRaises(SwitchyException):
+        with self.assertRaises(ValueError):
             lr.send_packet("en0", b'\xde\xad')
-        with self.assertRaises(SwitchyException):
+        with self.assertRaises(ValueError):
             lr.send_packet("en0", None)
 
         lr._sig_handler(si, None)

@@ -24,7 +24,7 @@ class TCPPacketTests(unittest.TestCase):
         self.assertTrue(self.t.SYN)
         self.assertTrue(self.t.FIN)
 
-        t2 = TCP(srcport=40, dstport=80, seq=19, ack=47, SYN=1, ACK=1)
+        t2 = TCP(src=40, dst=80, seq=19, ack=47, SYN=1, ACK=1)
         self.assertIn("SA", str(t2))
         t2.ACK = 0
         self.assertNotIn("SA", str(t2))
@@ -43,11 +43,11 @@ class TCPPacketTests(unittest.TestCase):
 
     def testBadSet(self):
         with self.assertRaises(Exception):
-            self.t.sourceport = 55
+            self.t.srcport = 55
 
     def testChecksum(self):
         ip = IPv4(protocol=IPProtocol.TCP)
-        t = TCP(srcport=40, dstport=80, seq=19, ack=47, SYN=1)
+        t = TCP(src=40, dst=80, seq=19, ack=47, SYN=1)
         self.assertEqual(t.checksum, 0)
         p = Ethernet() + ip + t
         b = p.to_bytes()

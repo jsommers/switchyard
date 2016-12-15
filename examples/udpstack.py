@@ -40,7 +40,7 @@ def handle_app_data(net, intf, appdata):
     log_debug("flowaddr: {}".format(flowaddr))
 
     proto,srcip,srcport,dstip,dstport = flowaddr
-    p = Null() + IPv4(protocol=proto, srcip=srcip, dstip=dstip, ipid=0xabcd, ttl=64, flags=IPFragmentFlag.DontFragment) + UDP(srcport=srcport,dstport=dstport) + message
+    p = Null() + IPv4(protocol=proto, src=srcip, dst=dstip, ipid=0xabcd, ttl=64, flags=IPFragmentFlag.DontFragment) + UDP(src=srcport,dst=dstport) + message
 
     log_debug("Sending {} to {}".format(p, intf.name))
     net.send_packet(intf, p)
@@ -53,8 +53,8 @@ def handle_network_data(netdata):
         ip = pkt[ipidx]
         if pkt[ipidx].protocol == IPProtocol.UDP:
             udp = pkt.get_header(UDP)
-            ApplicationLayer.send_to_app(IPProtocol.UDP, (ip.dst, udp.dstport),
-            (ip.src, udp.srcport), pkt[-1].data)
+            ApplicationLayer.send_to_app(IPProtocol.UDP, (ip.dst, udp.dst),
+            (ip.src, udp.src), pkt[-1].data)
         elif pkt[ipidx].protocol == IPProtocol.ICMP:
             log_info("Received ICMP message: {}".format(pkt[ipidx+1]))
         else:

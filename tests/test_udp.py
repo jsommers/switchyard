@@ -15,8 +15,8 @@ class UDPPacketTests(unittest.TestCase):
         ippkt.ttl = 37
         ippkt.ipid = 0
         udppkt = UDP()
-        udppkt.srcport = 10000
-        udppkt.dstport = 9999
+        udppkt.src = 10000
+        udppkt.dst = 9999
         pkt =  ether + ippkt + udppkt + RawPacketContents('hello, world') 
         b = pkt.to_bytes()
 
@@ -35,7 +35,7 @@ class UDPPacketTests(unittest.TestCase):
         p[0].protocol = IPProtocol.UDP
         b = p.to_bytes()
         self.assertEqual(u.checksum, 65502)
-        u = UDP(srcport=1234,dstport=4567)
+        u = UDP(src=1234,dst=4567)
         u.pre_serialize(b'', Packet(), 0)
         self.assertEqual(u.checksum, 0)
 
