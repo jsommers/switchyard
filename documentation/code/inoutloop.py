@@ -5,12 +5,12 @@ def main(net):
         try:
             timestamp,input_port,packet = net.recv_packet()
         except Shutdown:
-            print ("Got shutdown signal; exiting")
+            log_info ("Got shutdown signal; exiting")
             break
         except NoPackets:
-            print ("No packets were available.")
+            log_info ("No packets were available.")
             continue
 
         # if we get here, we must have received a packet
-        print ("Received {} on {}".format(packet, input_port))
+        log_info ("Received {} on {}".format(packet, input_port))
         net.send_packet(input_port, packet)

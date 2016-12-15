@@ -61,13 +61,15 @@ The ``send_packet`` method call is pretty straightforward:
    :raises ValueError: if the ``output_port`` is invalid
 
 
-Importantly, note that in the above examples we are not handling any potential exceptions that could occur.  In particular, we really should be handling *at least* the situation in which the framework is shut down (and we receive a ``Shutdown`` exception).  Just for completeness, we should also handle the ``NoPackets`` exception, although if the code is designed to block indefinitely we shouldn't receive that particular exception. (Note: these exceptions are defined in ``switchyard.lib.exceptions``.)
+Importantly, note that in the above examples we are not handling any potential exceptions that could occur.  In particular, we really should be handling *at least* the situation in which the framework is shut down (and we receive a ``Shutdown`` exception).  Just for completeness, we should also handle the ``NoPackets`` exception, although if the code is designed to block indefinitely we shouldn't receive that particular exception.
 
 Let's rewrite the code above, and now put everything in a ``while`` loop so that we keep reading and sending packets as long as we're running.  We will eventually turn this code into a working network *hub* implementation [#f1]_, but it's currently broken because it still just sends a packet out the *same port* on which it arrived:
 
 .. literalinclude:: code/inoutloop.py
    :language: python
    :linenos:
+
+.. todo:: Say something about ``log_info`` here and other logging functions as preferred way to make output instead of ``print``
 
 
 Getting information about ports (interfaces) on the device
