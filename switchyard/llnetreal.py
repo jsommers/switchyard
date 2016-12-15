@@ -240,7 +240,7 @@ class LLNetReal(LLNetBase):
         down (i.e., on a SIGINT to the process).  Raises NoPackets when 
         there are no packets that can be read.
 
-        Returns a ReceivedPacket named tuple (timestamp, ingress_dev, packet)
+        Returns a ReceivedPacket named tuple (timestamp, input_port, packet)
         '''
         while True:
             try:
@@ -255,7 +255,7 @@ class LLNetReal(LLNetBase):
 
                 pkt = decoder(pktinfo.raw) 
                 return ReceivedPacket(timestamp=pktinfo.timestamp, 
-                    ingress_dev=dev, packet=pkt)
+                    input_port=dev, packet=pkt)
             except Empty:
                 if not LLNetReal.running:
                     raise Shutdown()

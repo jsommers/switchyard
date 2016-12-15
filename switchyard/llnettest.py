@@ -66,7 +66,7 @@ class LLNetTest(LLNetBase):
         down (i.e., on a SIGINT to the process) and raises NoPackets
         if there are no packets that could be read before a timeout occurred.
 
-        Returns a ReceivedPacket namedtuple: timestamp, ingress_dev, packet.
+        Returns a ReceivedPacket namedtuple: timestamp, input_port, packet.
         '''
         # check if we're done with test scenario
         if self.scenario.done():

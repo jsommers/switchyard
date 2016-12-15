@@ -57,8 +57,7 @@ copyright = '2016, Joel Sommers'
 #
 # The short X.Y version.
 
-with open("../version.txt") as vfile:
-    thisversion = vfile.read().strip()
+thisversion = '2016.12.dev2'
 
 version = thisversion
 # The full version, including alpha/beta/rc tags.

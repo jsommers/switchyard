@@ -7,7 +7,7 @@ from .lib.exceptions import *
 from .lib.address import *
 
 ReceivedPacket = namedtuple('ReceivedPacket', 
-    ['timestamp', 'ingress_dev', 'packet'])
+    ['timestamp', 'input_port', 'packet'])
 
 class LLNetBase(metaclass=ABCMeta):
     '''
@@ -118,7 +118,7 @@ class LLNetBase(metaclass=ABCMeta):
     def recv_packet(self, timeout=None, timestamp=False):
         '''
         ordinarily will return the ReceivedPacket named tuple
-        (timestamp, ingress_dev, packet)
+        (timestamp, input_port, packet)
         '''
         raise NoPackets()
 

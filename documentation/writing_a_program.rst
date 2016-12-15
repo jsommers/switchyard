@@ -21,8 +21,7 @@ As mentioned above, a Switchyard program can simply have a ``main`` function tha
 Sending and receiving packets
 -----------------------------
 
-Here is a program that receives one packet, prints it out, sends it *back out the same interface*, then quits.
-
+As a way to describe two of the most important methods on the network object, here is a program that receives one packet, prints it out, sends it *back out the same interface*, then quits.
 
 .. code-block:: python
     
@@ -35,58 +34,62 @@ Here is a program that receives one packet, prints it out, sends it *back out th
 
 This program isn't likely to be very useful --- it is just meant as an illustration of two of the key methods on the network object:
 
-.. py:method:: recv_packet(timeout=None, timestamp=False)
+.. py:method:: recv_packet(timeout=None)
 
-   Receive packets from any device on which one is available.
-   Blocks until a packet is received, unless a timeout value >= 0
-   is supplied.  
+   Receive packets from any device on which one is available. Blocks until a packet is received, unless a timeout value >= 0 is supplied.
 
-   :param float timeout: The amount of time to wait to receive a packet, or ``None`` if the call should block until a packet is received (this is the default behavior)
-   :param bool timestamp: Indicate whether a timestamp associated with packet arrival is desired or not (default behavior is not to return a timestamp)
-   :return: A tuple of length 2 or 3, depending whether the timestamp is desired.  If no timestamp returns the device name (str) and the packet.  If a timestamp, returns device name, timestamp, and the packet.
-   :raises Shutdown: if the network device is shut down (i.e., by stopping the Switchyard program)
+   :param float timeout: The amount of time to wait to receive a packet, or ``None`` if the call should block until a packet is received (this is the default behavior).
+
+   :return: A (named) tuple of length 3 which includes a timestamp for when the packet was received, the input port on which the packet was received (as a str) and the packet.
+
+   :raises Shutdown: if the network device is shut down (i.e., by stopping the Switchyard program).
    :raises NoPackets: if no packets are received before the timeout expires.
-   
-.. py:method:: send_packet(output_port, packet)
 
-   Send the Switchyard ``Packet`` object ``packet`` out the port
-   named ``output_port``.  
-   
-   :param str output_port: The name of the port on which to send the packet
-   :param Packet packet: A Switchyard packet object to send out the given interface
-   :return: None
-   :raises SwitchyException: if the ``output_port`` is invalid
 
-Note that in the above call to ``recv_packet``, no arguments are given
-so the call will block until a packet is received, and no timestamp will be
-returned (just the input port and the packet object).  Importantly, note also
-that we aren't handling any potential exceptions that could occur.  In
-particular, we really should be handling *at least* the situation in which
-the framework is shut down (and we receive a ``Shutdown`` exception).  Just
-for completeness, we should also handle the ``NoPackets`` exception, although
-if the code is designed to block indefinitely we shouldn't receive that
-particular exception.  
-(Note: these exceptions are defined in ``switchyard.lib.common``.) 
+.. index:: named tuple, ``recv_packet``
 
-Let's rewrite the code above, and now put everything in a ``while`` loop
-so that we keep reading and sending packets as long as we're running.  
-We will eventually turn this code into a working network *hub* implementation [#f1]_,
-but it's currently broken because it still just sends a packet out the *same port* on which it arrived:
+Note that in the above call to ``recv_packet``, no arguments are given so the call will block until a packet is received. Also, notice that the return type of ``recv_packet`` is a *namedtuple* (see :py:class:collections.namedtuple) of three elements so in addition to automatically unpacking the tuple as in the above example, you can use indexing or attribute-like syntax on the return value from ``recv_packet``.  For example (using attribute-syntax):
 
 .. code-block:: python
     
-    from switchyard.lib.packet import *
-    from switchyard.lib.address import *
-    from switchyard.lib.common import *
+    from switchyard.lib.userlib import *
+
+    def main(net):
+        recvdata = net.recv_packet()
+        print ("Received at {} {} on {}".format(
+          recvdata.timestamp, recvdata.packet, recvdata.input_port))
+        net.send_packet(recvdata.input_port, recvdata.packet)
+
+The ``send_packet`` method call is pretty straightforward:
+
+.. py:method:: send_packet(output_port, packet)
+
+   Send the Switchyard ``Packet`` object ``packet`` out the port named ``output_port``.
+   
+   :param str output_port: The name of the port on which to send the packet.  An ``Interface`` object may also be passed as the first argument to ``send_packet``.
+   :param Packet packet: A Switchyard packet object to send out the given interface
+   :return: None
+   :raises ValueError: if the ``output_port`` is invalid
+
+
+Importantly, note that in the above examples we are not handling any potential exceptions that could occur.  In particular, we really should be handling *at least* the situation in which the framework is shut down (and we receive a ``Shutdown`` exception).  Just for completeness, we should also handle the ``NoPackets`` exception, although if the code is designed to block indefinitely we shouldn't receive that particular exception. (Note: these exceptions are defined in ``switchyard.lib.exceptions``.)
+
+Let's rewrite the code above, and now put everything in a ``while`` loop so that we keep reading and sending packets as long as we're running.  We will eventually turn this code into a working network *hub* implementation [#f1]_, but it's currently broken because it still just sends a packet out the *same port* on which it arrived:
+
+.. code-block:: python
+    
+    from switchyard.lib.userlib import *
 
     def main(net):
         while True:
             try:
-                input_port,packet = net.recv_packet()
+                timestamp,input_port,packet = net.recv_packet()
             except Shutdown:
                 print ("Got shutdown signal; exiting")
+                break
             except NoPackets:
                 print ("No packets were available.")
+                continue
 
             # if we get here, we must have received a packet
             print ("Received {} on {}".format(packet, input_port))

@@ -3,23 +3,13 @@
 from switchyard.lib.userlib import *
 
 def mk_pkt(hwsrc, hwdst, ipsrc, ipdst, reply=False):
-    ether = Ethernet()
-    ether.src = EthAddr(hwsrc)
-    ether.dst = EthAddr(hwdst)
-    ether.ethertype = EtherType.IP
-
-    ippkt = IPv4()
-    ippkt.srcip = IPAddr(ipsrc)
-    ippkt.dstip = IPAddr(ipdst)
-    ippkt.protocol = IPProtocol.ICMP
-    ippkt.ttl = 32
-
+    ether = Ethernet(src=hwsrc, dst=hwdst, ethertype=EtherType.IP)
+    ippkt = IPv4(src=ipsrc, dst=ipdst, protocol=IPProtocol.ICMP, ttl=32)
     icmppkt = ICMP()
     if reply:
         icmppkt.icmptype = ICMPType.EchoReply
     else:
         icmppkt.icmptype = ICMPType.EchoRequest
-
     return ether + ippkt + icmppkt
 
 def hub_tests():

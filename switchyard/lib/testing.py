@@ -502,7 +502,7 @@ class PacketInputEvent(SwitchyTestEvent):
             hdrval = scenario.lastout(intf, outcls, outprop)
             hdr = self._packet.get_header(incls)
             setattr(hdr, inprop, hdrval)
-        return ReceivedPacket(timestamp=timestamp, ingress_dev=self._device, packet=self._packet)
+        return ReceivedPacket(timestamp=timestamp, input_port=self._device, packet=self._packet)
 
 
 class PacketOutputEvent(SwitchyTestEvent):
