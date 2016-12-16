@@ -23,44 +23,34 @@ Sending and receiving packets
 
 As a way to describe two of the most important methods on the network object, here is a program that receives one packet, prints it out, sends it *back out the same interface*, then quits.
 
-Notice in the code below that we only import :py:mod:`switchyard.lib.userlib` to get access to various Switchyard classes and functions.  You can import individual Switchyard modules separately, but you will probably find that importing ``userlib`` is quite convenient.
+Notice in the code below that we only need to import :py:mod:`switchyard.lib.userlib` to get access to various Switchyard classes and functions.  Although you can import individual Switchyard modules separately (for the specific module to import, see :ref:`apiref`), but you will probably find that importing ``userlib`` is quite convenient.
 
 .. literalinclude:: code/inout1.py
    :language: python
    :linenos:
     
-This program isn't likely to be very useful --- it is just meant as an illustration of two of the key methods on the network object:
+This program isn't likely to be very useful --- it is just meant as an illustration of the most important two methods on the network object:
 
-.. py:method:: recv_packet(timeout=None)
+  * ``recv_packet(timeout=None)``
 
-   Receive packets from any device on which one is available. Blocks until a packet is received, unless a timeout value >= 0 is supplied.
+    Not surprisingly, this method is used to receive at most one packet from any port.  The method will *block* until a packet is received, unless a timeout value >=0 is given.  The default is to block indefinitely.  The method returns a *namedtuple* (another example is given below, plus see :py:class:`collections.namedtuple` in the Python library reference) of length 3, which includes a timestamp for when the packet was received, the name of the input port on which the packet was received, and the packet itself.  
 
-   :param float timeout: The amount of time to wait to receive a packet, or ``None`` if the call should block until a packet is received (this is the default behavior).
+    The method raises a ``Shutdown`` exception if the Switchyard framework has been shut down.  It can also raise a ``NoPackets`` exception if no packets are received before the timeout value given to the method expires.
 
-   :return: A (named) tuple of length 3 which includes a timestamp for when the packet was received, the input port on which the packet was received (as a str) and the packet.
+  * ``send_packet(output_port, packet)``
 
-   :raises Shutdown: if the network device is shut down (i.e., by stopping the Switchyard program).
-   :raises NoPackets: if no packets are received before the timeout expires.
+    Again, the meaning of this method call is probably not especially surprising: when called, the given packet will be sent out the given output port.  For the ``output_port`` parameter, the string name of the port can be given, or an ``Interface`` object may also be supplied (see :ref:`intf-overview` as well as :ref:`intf-detail`).
+
+    This method returns ``None``.  If the ``output_port`` or some detail about the given packet is invalid (e.g., something other than a packet is passed as the second parameter), this method raises a ``ValueError``.
 
 
 .. index:: named tuple, ``recv_packet``
 
-Note that in the above call to ``recv_packet``, no arguments are given so the call will block until a packet is received. Also, notice that the return type of ``recv_packet`` is a *namedtuple* (see :py:class:`collections.namedtuple` in the Python library reference) of three elements so in addition to automatically unpacking the tuple as in the above example, you can use indexing or attribute-like syntax on the return value from ``recv_packet``.  For example (using attribute-syntax):
+Returning briefly to the ``recv_packet`` method, observe that in the above example no arguments are given so the call will block until a packet is received.  Also, it is important to recognize that the return type of ``recv_packet`` is a *namedtuple* of exactly three elements so in addition to automatically unpacking the tuple as in the above example, you can use indexing or attribute-like syntax on the return value from ``recv_packet``.  For example (using attribute-syntax):
 
 .. literalinclude:: code/inout2.py
    :language: python
    :linenos:
-
-The ``send_packet`` method call is pretty straightforward:
-
-.. py:method:: send_packet(output_port, packet)
-
-   Send the Switchyard ``Packet`` object ``packet`` out the port named ``output_port``.
-   
-   :param str output_port: The name of the port on which to send the packet.  An ``Interface`` object may also be passed as the first argument to ``send_packet``.
-   :param Packet packet: A Switchyard packet object to send out the given interface
-   :return: None
-   :raises ValueError: if the ``output_port`` is invalid
 
 Importantly, note that in the above examples we are not handling any potential exceptions that could occur.  In particular, we really should be handling *at least* the situation in which the framework is shut down (and we receive a ``Shutdown`` exception).  Just for completeness, we should also handle the ``NoPackets`` exception, although if the code is designed to block indefinitely we shouldn't receive that particular exception.
 
@@ -74,64 +64,45 @@ Let's rewrite the code above, and now put everything in a ``while`` loop so that
 
 In the example above, notice that we also changed the ``print`` function calls to ``log_info``.  Switchyard uses built-in Python logging capabilities (see :py:mod:`logging` in the Python library reference) for printing various notices to the console.  The logging functions, described in :ref:`logging-label`, each just accept one string parameter which is just the text to be printed on the console.
 
+For full details of the ``send_packet`` and ``recv_packet`` method calls, refer to :ref:`netobj` in the :ref:`apiref` section at the end of this documentation.
+
+.. _intf-overview:
+
 Getting information about ports (interfaces) on the device
 ----------------------------------------------------------
 
-The only other methods available the network object relate to getting information about the ports/interfaces attached to the device on which the Switchyard code is running.  The two basic methods are ``interfaces`` and ``ports``.  These methods are aliases and do exactly the same thing:
+Other methods available the network object relate to getting information about the ports/interfaces attached to the device on which the Switchyard code is running.  The two basic methods are ``interfaces`` and ``ports``.  These methods are aliases and do exactly the same thing.  In particular:
 
-.. py:method:: interfaces()
+ * ``interfaces()``
+
+   This method returns a list of interfaces that are configured on the network device, as a list of ``Interface`` objects.  The alias method ``ports()`` does exactly the same thing.  There is no inherent ordering to the list of ``Interface`` objects returned.
+
+Each ``Interface`` object has a set of properties that can be used to access various configured attributes for the interface:
+
+ * ``name``: returns the name of the interface (e.g., ``en0``) as a string.
  
-   Get a list of interfaces that are configured on the current network device.
-   An alias method ``ports`` does exactly the same thing.
+ * ``ethaddr``: returns the Ethernet address associated with the interface, as a :py:class:`switchyard.lib.address.EthAddr` instance.
 
-   :return: list of ``Interface`` objects
+ * ``ipaddr``: returns the IPv4 address associated with the interface, if any.  This property returns an object of type :py:class:`IPv4Address`.  If there is no address assigned to the interface, the address is 0.0.0.0.  A current limitation with the ``Interface`` implementation in Switchyard is that only one address can be associated with an interface, and it must be an IPv4 address.  Eventually, Switchyard will fully support IPv6 addresses, and multiple IP addresses per interface.
 
-Each object returned from the ``interfaces`` or ``ports`` method is an instance of the class ``Interface`` and describes one interface/port on the device.  The ``Interface`` class is defined in the module ``switchyard.lib.interface``:
+ * ``netmask``: returns the network mask associated with the IPv4 address assigned to the interface.  The netmask defaults to 255.255.255.255 (/32) if none is specified.
 
+ * ``ifnum``: returns an integer index associated with the interface.
 
-.. py:class:: switchyard.lib.interface.Interface
-   
-   .. py:attribute:: name 
- 
-      The name of the interface (e.g., eth0) as a string
-      
-   .. py:attribute:: ethaddr 
-
-      The Ethernet address associated with the interface, as a
-      :py:class:`switchyard.lib.address.EthAddr` instance.
-
-   .. py:attribute:: ipaddr
-
-      The IPv4 address associated with the interface, if any.  Returns
-      an object of type :py:class:`IPv4Address`.  If there is no address assigned
-      to the interface, the address is 0.0.0.0.
-      A limitation with the Interface implementation in Switchyard at present
-      is that only one address can be associated with an interface, and
-      it must be an IPv4 address.
-
-   .. py:attribute:: netmask
-
-      The network mask associated with the IPv4 address assigned to the
-      interface.  The netmask defaults to 255.255.255.255 (/32) if none
-      is specified.
-
-   .. py:attribute:: ifnum
-
-      Each interface has an integer associated with it.  This property returns that value.  
-
-   .. py:attribute:: iftype
-
-      This property holds a value from the :py:class:`switchyard.lib.interface.InterfaceType` enumerated type.  The type can either be ``Unknown``, ``Loopback``, ``Wired``, or ``Wireless``.  The type is automatically set when an interface is initialized.  Note that in some cases the type can be inferred, but in others it cannot (thus the potential for an ``Unknown`` value).
+ * ``iftype``: returns the type of the interface, if it can be inferred by Switchyard.  The return type is a value from the :py:class:`switchyard.lib.interface.InterfaceType` enumerated type.  The type can either be ``Unknown``, ``Loopback``, ``Wired``, or ``Wireless``.  The type is automatically set when an interface is initialized.  Note that in some cases the type can be inferred, but in others it cannot (thus the potential for an ``Unknown`` value).
 
 All the above properties except ``ifnum`` and ``iftype`` are modifiable.  Changing them can be accomplished just by assigning a new value to the property.  Beware, though, that changing address values has no effect on the underlying host operating system if Switchyard is run in a live environment, so you would generally be wise to leave the addresses alone.
 
-For example, to simply print out information regarding each interface defined on the current network device, you could use the following program:
+For full interface details, see :ref:`intf-detail`.
+
+As an example, to simply print out information regarding each interface defined on the current network device, you could use the following program:
 
 .. code-block:: python
 
     def main(net):
         for intf in net.interfaces():
-            print (intf.name, intf.ethaddr, intf.ipaddr, intf.netmask)
+            log_info("{} has ethaddr {} and ipaddr {}/{} and is of type {}".format(
+                intf.name, intf.ethaddr, intf.ipaddr, intf.netmask, intf.iftype.name))
 
         # could also be:
         # for intf in net.ports():
@@ -141,60 +112,38 @@ For example, to simply print out information regarding each interface defined on
 Entirely depending on how the network device is configured, output from 
 the above program might look like the following::
 
-    eth2 10:00:00:00:00:03 172.16.42.1 255.255.255.252
-    eth1 10:00:00:00:00:02 10.10.0.1 255.255.0.0
-    eth0 10:00:00:00:00:01 192.168.1.1 255.255.255.0
+    09:10:08 2016/12/17     INFO eth0 has ethaddr 10:00:00:00:00:01 and ipaddr 172.16.42.1/255.255.255.252 and is of type Unknown
+    09:10:08 2016/12/17     INFO eth1 has ethaddr 10:00:00:00:00:02 and ipaddr 10.10.0.1/255.255.0.0 and is of type Unknown
+    09:10:08 2016/12/17     INFO eth2 has ethaddr 10:00:00:00:00:03 and ipaddr 192.168.1.1/255.255.255.0 and is of type Unknown
 
-Note that there is *no ordering* to the list of interfaces returned.
+The above example code was run in the Switchyard *test* environment (see :ref:`runtest`); when a Switchyard program is run in test mode, all interfaces will show type ``Unknown``.  Note also that there is *no inherent ordering* to the list of interfaces returned.
 
 There are a few convenience methods related to ``ports`` and ``interfaces``, 
 which can be used to look up a particular interface given a name, IPv4 address,
 or Ethernet (MAC) address:
 
-.. py:method:: interface_by_name(name)
-
-   This method returns an ``Interface`` object given a string name
+ * ``interface_by_name(name)``: This method returns an ``Interface`` object given a string name
    of a interface.  An alias method ``port_by_name(name)`` also exists.
 
-   :param str name: The name of the device, e.g., "eth0"
-   :return: An ``Interface`` object or None if the name is invalid
+ * ``interface_by_ipaddr(ipaddr)``: This method returns an ``Interface`` object given an IP address configured on one of the interfaces.  The IP address may be given as a string or as an IPv4Address object.  An alias method ``port_by_ipaddr(ipaddr)`` also exists.
 
-.. py:method:: interface_by_ipaddr(ipaddr)
+ * ``interface_by_macaddr(ethaddr)``: This method returns an ``Interface`` object given an Ethernet (MAC) address configured on one of the interfaces.  An alias method ``port_by_macaddr(ethaddr)`` also exists.
 
-   This method returns an ``Interface`` object given an IP address configured
-   on one of the interfaces.  The IP address may be given as a string or as 
-   an IPv4Address object.  An alias method ``port_by_ipaddr(devicename)`` 
-   also exists.
-
-   :param ipaddr:
-   :type ipaddr: IP address as a string or as an IPv4Address object
-   :return: An ``Interface`` object or None if the IP address isn't configured on one of the ports
-
-.. py:method:: interface_by_macaddr(ethaddr)
-
-   This method returns an ``Interface`` object given an Ethernet (MAC) address
-   configured on one of the interfaces.  An alias method 
-   ``port_by_macaddr(devicename)`` also exists.
-
-   :param ethaddr:
-   :type ethaddr: Ethernet address as a string (e.g. "11:22:33:44:55:66") or as an instance of EthAddr class
-   :return: An ``Interface`` object or None if the MAC address isn't configured on one of the ports
+Note that the above lookup methods raise a ``KeyError`` exception if the lookup name is invalid.
 
 
 Other methods on the network object
 -----------------------------------
 
-The only other method available on the network object is ``shutdown``:
+Lastly, there is a ``shutdown`` method available on the network object.  This method should be used by a Switchyard program prior to exiting, in order to clean up and shut down various resources.
 
- * ``shutdown()`` this signals to the Switchyard framework that your program is done and exiting.  It should be the last action a Switchyard program takes, prior to exiting.
-
-An almost complete implementation of our hub is now:
+Now, adding a bit to the previous example program, we have an almost-complete implementation of a network hub device:
 
 .. literalinclude:: code/fullhub.py
    :language: python
    :linenos:
 
-The one thing missing from the above code is for the hub to ignore any frames that are destined to the hub itself.  That is, if an Ethernet destination address in a received frame refers to one of the interfaces on the hub, the frame should *not* be forwarded (it can simply be ignored).  It is left as an exercise to finish this part.
+The one thing missing from the above code is for the hub to ignore any frames that are destined to the hub itself.  That is, if an Ethernet destination address in a received frame refers to one of the interfaces on the hub, the frame should *not* be forwarded (it can simply be ignored).  Finishing off the hub by doing this is left as an exercise.
 
 
 Introduction to packet parsing and construction
@@ -208,7 +157,7 @@ There are a few key ideas to understand when using the packet library:
 
  * The ``Packet`` class acts as a container of headers (rather, header objects).
  * Headers within a packet can be accessed through methods on the Packet container object, and also by indexing.  Headers are ordered starting with lowest layer protocols.  For example, if a ``Packet`` has an ``Ethernet`` header (which is likely to be the lowest layer protocol), this header can be accessed with index 0 as in ``pktobj[0]``.  Indexes can be integers, and they can also be packet header class names (e.g., ``Ethernet``, ``IPv4``, etc.).  For example, to access the ``Ethernet`` header of a packet, you can write ``pktobj[Ethernet]``.
- * Fields in header objects are accessed through standard Python *properties*.  (The code to manipulate header fields thus looks like it is just accessing instance variables.)
+ * Fields in header objects are accessed through standard Python *properties*.  The code to manipulate header fields thus looks like it is just accessing instance variables, but "getter" and "setter" method calls actually take place, depending on whether a property is being retrieved or assigned to.
  * A packet object can be constructed by either expliciting instantiating and object and adding headers, or it can be formed by "adding" (using the ``+`` operator) headers together, or by adding headers onto a packet (using ``+`` or ``+=``).
  * The Switchyard framework generally *automatically* handles serializing and deserializing Packet objects to and from byte sequences (i.e., wire format packets), but you can also explicitly invoke those methods if you need to.
 
@@ -319,7 +268,10 @@ b'\x00\x11"3DU\x00\x00\x00\x00\x00\x00\x08\x00E\x00\x00(\x00\x00\x00\x00\x00\x01
 
 Lastly, Python keyword argument syntax can be used to assign values to header fields when a header object is constructed.  This kind of syntax can make packet construction a bit more compact and streamlined.  For example, if we wanted to make a UDP packet with some payload, we could do something like the following:
 
->>> p = Ethernet(src="11:22:33:44:55:66", dst="66:55:44:33:22:11", ethertype=EtherType.IP) + IPv4(src="1.2.3.4", dst="4.3.2.1", protocol=IPProtocol.UDP, ttl=32) + UDP(src=1234, dst=4321) + b"this is some application payload!"
+>>> e = Ethernet(src="11:22:33:44:55:66", dst="66:55:44:33:22:11", ethertype=EtherType.IP)
+>>> ip = IPv4(src="1.2.3.4", dst="4.3.2.1", protocol=IPProtocol.UDP, ttl=32)
+>>> udp = UDP(src=1234, dst=4321)
+>>> p = e + ip + udp + b"this is some application payload!"
 >>> print(p)
 Ethernet 11:22:33:44:55:66->66:55:44:33:22:11 IP | IPv4 1.2.3.4->4.3.2.1 UDP | UDP 1234->4321 | RawPacketContents (33 bytes) b'this is so'...
 >>> 

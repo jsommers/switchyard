@@ -14,9 +14,9 @@ def mk_pkt(hwsrc, hwdst, ipsrc, ipdst, reply=False):
 
 def inouttests():
     s = TestScenario("in/out basic tests")
-    s.add_interface('eth0', '10:00:00:00:00:01')
-    s.add_interface('eth1', '10:00:00:00:00:02')
-    s.add_interface('eth2', '10:00:00:00:00:03')
+    s.add_interface('eth0', '10:00:00:00:00:01', '172.16.42.1', '255.255.255.252')
+    s.add_interface('eth1', '10:00:00:00:00:02', '10.10.0.1', '255.255.0.0')
+    s.add_interface('eth2', '10:00:00:00:00:03', '192.168.1.1', '255.255.255.0')
 
     # test case 1: a frame with broadcast destination should get sent out
     # all ports except ingress

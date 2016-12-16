@@ -3,8 +3,10 @@
 API Reference
 *************
 
-The "net" object
-================
+.. _netobj:
+
+Net object reference
+====================
 
 .. autoclass:: switchyard.llnetbase.LLNetBase
    :members:
@@ -18,10 +20,18 @@ The "net" object
 
 .. todo:: any thing to mention about real/test differences with llnet?
 
+.. _intf-detail:
+
+Interface and InterfaceType reference
+=====================================
+
+.. todo:: add class documentation for Interface and InterfaceType
+
+
 .. _pktlib:
 
-Packet parsing and construction
-===============================
+Packet parsing and construction reference
+=========================================
 
 .. autoclass:: switchyard.lib.packet.Packet
    :members:
