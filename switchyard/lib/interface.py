@@ -19,9 +19,9 @@ class Interface(object):
     '''
     Class that models a single logical interface on a network
     device.  An interface has a name, 48-bit Ethernet MAC address,
-    and (optionally) an IP address.  The IP address is stored
-    as an ipaddress.IPv4/6Interface object, which includes
-    the netmask/prefixlen.
+    and (optionally) an IP address and network mask.  An interface
+    also has a number associated with it and a type, which is one
+    of the values of the enumerated type ``InterfaceType``.
     '''
     def __init__(self, name, ethaddr, ipaddr=None, netmask=None, ifnum=None, iftype=InterfaceType.Unknown):
         self.__name = name
