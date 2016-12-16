@@ -3,16 +3,16 @@ Test scenario creation
 
 In some situations, you may be given a set of tests to run in order to have some confidence that your program works correctly.  What if nobody has written a set of tests for poor you?  Never fear: creating a test scenario is pretty straightforward.
 
-A test scenario is simply a Python program that exports one symbol (variable name) called ``scenario``, which refers to an instance of the class ``Scenario``.  A ``Scenario`` object contains a series of *test expectations*.  These expectations may be one of three types:
+A test scenario is simply a Python program that exports one symbol (variable name) called ``scenario``, which refers to an instance of the class ``TestScenario``.  A ``TestScenario`` object contains a series of *test expectations*.  These expectations may be one of three types:
 
  * A particular packet should arrive on a particular interface/port
  * A particular packet should be emitted out one or more ports
  * The user code should *time out* when calling ``recv_packet`` because no packets are available
 
-The class ``Scenario`` is defined in the module ``switchyard.lib.testing``.  A scenario describes some imaginary network device (i.e., a switch or router) and some series of expectations of how a user program should behave if packets arrive on particular ports, etc.  The methods available on the 
+The class ``TestScenario`` is defined in the module ``switchyard.lib.testing``.  A scenario describes some imaginary network device (i.e., a switch or router) and some series of expectations of how a user program should behave if packets arrive on particular ports, etc.  The methods available on the 
 Scenario class reflect these basic requirements:
 
-.. py:class:: switchyard.lib.testing.Scenario(name)
+.. py:class:: switchyard.lib.testing.TestScenario(name)
 
    Initialize a new test scenario.  The name can be any meaningful
    description of the given test sequence.
@@ -87,6 +87,11 @@ The three "event" classes set up the specific expectations for each test, as des
       parameter given to the ``lambda``, which is the packet to be evaluated.
 
 
+.. todo:: new, more general wildcarding example
+
+.. todo:: may need to modify wildcard stuff to only have limited fields compared, by default, much like OF, and allow wildcarding along those lines
+
+
 Test scenario example
 =====================
 
@@ -94,11 +99,10 @@ Below is an example of a creating two test expectations for a network hub device
 
 .. code-block:: python
 
-    from switchyard.lib.testing import Scenario, PacketInputEvent, PacketOutputEvent
-    from switchyard.lib.packet import *
+    from switchyard.lib.userlib import *
 
     def create_scenario():
-        s = Scenario("hub tests")
+        s = TestScenario("hub tests")
         s.add_interface('eth0', '10:00:00:00:00:01')
         s.add_interface('eth1', '10:00:00:00:00:02')
         s.add_interface('eth2', '10:00:00:00:00:03')
@@ -126,8 +130,8 @@ Below is an example of a creating two test expectations for a network hub device
 Compiling a test scenario
 =========================
 
-A test scenario can be run *directly* with ``srpy``, or it can be *compiled* into a form that can be distributed without giving away the code that was used to construct the reference packets.  To compile a test scenario, you can simply invoke ``srpy`` with the ``-c`` flag, as follows::
+A test scenario can be run *directly* with ``swyard``, or it can be *compiled* into a form that can be distributed without giving away the code that was used to construct the reference packets.  To compile a test scenario, you can simply invoke ``swyard`` with the ``-c`` flag, as follows::
 
-    ./srpy.py -c examples/hubtests.py
+    swyard -c examples/hubtests.py
 
 The output from this command should be a new file named ``hubtests.srpy`` containing the obfuscated test scenario.  This file can be used as the argument to the ``-c`` option.

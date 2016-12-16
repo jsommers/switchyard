@@ -16,9 +16,9 @@ The Switchyard runtime environment (depicted below) provides a given networked s
 The goal of a Switchyard-based program is typically to receive a packet on one port, possibly modify it, then either forward it out one or more ports or to drop the packet.  The rest of this documentation is organized around how to perform these tasks in various settings.  In particular: 
 
  * The next section (see :ref:`coding`) describes how to develop a basic Switchyard program, including what APIs are available for parsing and constructing packets and sending/receiving packets on network interfaces.  
- * Additional Switchyard program development topics are addressed next (see :ref:`advanced`), such as creating new packet header types, and implementing network protocol stacks that can interoperate with a Python socket-based program.  
  * Following that, the next section provides details on running a Switchyard program in the test environment (see :ref:`runtest`).  Details for how to create a test scenario can also be found in this chapter.  
  * The next section describes how to run a Switchyard program in a live environment (see :ref:`runlive`), such as a standard Linux host, or within the Mininet emulation environment or some other kind of virtual environment.  
+ * Additional Switchyard program development topics are addressed next (see :ref:`advanced`), such as creating new packet header types, and implementing network protocol stacks that can interoperate with a Python socket-based program.  
  * Commonly experienced problems and the solutions to those problems are addressed in the next chapter (see :ref:`faq`).  
  * At the end of this documentation you can find an API reference (see :ref:`apiref`) and an index.
 

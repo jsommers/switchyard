@@ -291,7 +291,7 @@ There are a few additional utility functions that are useful when developing a S
 Logging functions
 -----------------
 
-Switchyard uses the standard Python logging facilities, but provides four convenience functions.  Each of these functions takes a string as a parameter and prints it to the console as a logging message.  The only difference with the functions relates to the logging *level* (see :py:mod:logging in the Python library reference), and whether the output is colored to visually highlight a problem.  The default logging level is INFO  within Switchyard.  If you wish to include debugging messages, you can use the ``-d`` flag for the various invocation programs (e.g., srpy), as described in :ref:`runtest` and :ref:`runlive`.
+Switchyard uses the standard Python logging facilities, but provides four convenience functions.  Each of these functions takes a string as a parameter and prints it to the console as a logging message.  The only difference with the functions relates to the logging *level* (see :py:mod:logging in the Python library reference), and whether the output is colored to visually highlight a problem.  The default logging level is INFO  within Switchyard.  If you wish to include debugging messages, you can use the ``-d`` flag for the various invocation programs (e.g., ``swyard``), as described in :ref:`runtest` and :ref:`runlive`.
 
 
 .. py:function:: log_debug(str)

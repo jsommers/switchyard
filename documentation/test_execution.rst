@@ -5,21 +5,17 @@ Running in the test environment
 
 To run Switchyard in test mode, you should have a "scenario" file that includes specific test cases to run.  These files may have an extension .srpy if they're been "compiled", but they may also just be plain Python (.py) files.
 
-Let's say your program is named ``myhub.py``.  To invoke Switchyard in test mode and subject your program to a set of tests, at minimum you would invoke ``srpy.py`` as follows::
+Let's say your program is named ``myhub.py``.  To invoke Switchyard in test mode and subject your program to a set of tests, at minimum you would invoke ``swyard`` as follows::
 
-    $ srpy.py -t hubtests.srpy myhub
+    $ swyard -t hubtests.srpy myhub
 
-Note that the ``-t`` option puts ``srpy`` in test mode.  The argument to
-the ``-t`` option should be the name of the 
-test scenario to be executed, and the final argument is the
-name of your code.  It doesn't matter whether you include the ``.py`` 
-extension on the end of your program name, so::
+Note that the ``-t`` option puts ``swyard`` in test mode.  The argument to the ``-t`` option should be the name of the test scenario to be executed, and the final argument is the name of your code.  It doesn't matter whether you include the ``.py`` extension on the end of your program name, so::
 
-    $ srpy.py -t hubtests.srpy myhub.py
+    $ swyard -t hubtests.srpy myhub.py
 
 would work the same as above.
 
-When you run ``srpy`` in test mode and all tests pass, you'll see something
+When you run ``swyard`` in test mode and all tests pass, you'll see something
 similar to the following::
 
     Results for test scenario hub tests:8 passed, 0 failed, 0 pending
@@ -52,7 +48,7 @@ Say that we've done something wrong in our code, which causes a test expectation
 
 ::
 
-    $ ./srpy.py -t examples/hubtests.py xhub.py  
+    $ swyard -t examples/hubtests.py xhub.py  
     19:15:56 2015/01/10     INFO Starting test scenario examples/hubtests.py
 
     Results for test scenario hub tests:1 passed, 1 failed, 6 pending
@@ -86,7 +82,7 @@ Say that we've done something wrong in our code, which causes a test expectation
     ... (output continues)
 
 Notice in the first line of output that Switchyard shows how many tests pass, how many have
-failed, and how many are *pending*.  The pending category simply means that tests cannot be run because some earlier test failed.   In the example above, the output from ``srpy`` clearly shows which test fails (test expectation 2).  When that happens, some additional explanatory text is shown, and the user is "dumped" into a pdb prompt at the point of failure.  The text output can be *a lot* to read, but the most important text concerning the failed test is reproduced just before the pdb session is started, as shown in this example:
+failed, and how many are *pending*.  The pending category simply means that tests cannot be run because some earlier test failed.   In the example above, the output from ``swyard`` clearly shows which test fails (test expectation 2).  When that happens, some additional explanatory text is shown, and the user is "dumped" into a pdb prompt at the point of failure.  The text output can be *a lot* to read, but the most important text concerning the failed test is reproduced just before the pdb session is started, as shown in this example:
 
 
 ::
@@ -133,32 +129,31 @@ Notice that the final output shows the context of the error.  An Ethernet frame 
 Even more verbose output
 ------------------------
 
-If you'd like even more verbose output, you can add the ``-v`` (verbose) and/or ``-d`` (debug) flags to ``srpy``.  The ``-d`` flag may be more trouble than it's worth since it enables all DEBUG-level log messages to be printed to the console.  If you're really stuck trying to figure out what's going on, however, this may be useful.
+If you'd like even more verbose output, you can add the ``-v`` (verbose) and/or ``-d`` (debug) flags to ``swyard``.  The ``-d`` flag may be more trouble than it's worth since it enables all DEBUG-level log messages to be printed to the console.  If you're really stuck trying to figure out what's going on, however, this may be useful.
 
 If you don't like pdb
 ---------------------
 
-If you don't appreciate being dumped into the ``pdb`` debugger when something fails (maybe you're a cretin who really just likes ``printf``-style debugging?), you can add the ``--nopdb`` flag to ``srpy``.  With the ``--nopdb`` option, Switchyard will print out information about test failure, but you'll go straight back to a command-line prompt.
+If you don't appreciate being dumped into the ``pdb`` debugger when something fails (maybe you're a cretin who really just likes ``printf``-style debugging?), you can add the ``--nopdb`` flag to ``swyard``.  With the ``--nopdb`` option, Switchyard will print out information about test failure, but you'll go straight back to a command-line prompt.
 
-If you'd like to use a debugger, but just not ``pdb``, you can use the ``--nohandle`` (or ``-e``) option to tell Switchyard not to trap any exceptions, but to let them be raised normally.  You can then catch any exceptions using an alterative debugger.  For example, if you'd like to use the ``PuDB`` debugger, you could invoke ``srpy.py`` as follows::
+If you'd like to use a debugger, but just not ``pdb``, you can use the ``--nohandle`` (or ``-e``) option to tell Switchyard not to trap any exceptions, but to let them be raised normally.  You can then catch any exceptions using an alterative debugger.  For example, if you'd like to use the ``PuDB`` debugger, you could invoke ``swyard`` as follows::
 
-    $ python3 -m pudb.run srpy.py --nohandle ... 
+    $ python3 -m pudb.run swyard --nohandle ... 
 
-Where the ellipsis is replaced with other command-line arguments to ``srpy.py``.  
+Where the ellipsis is replaced with other command-line arguments to ``swyard``.  
+
 .. _debugging:
 
 Debugging Switchyard code
 =========================
 
-When running Switchyard, especially in test mode, it is often very helpful to use the interactive Python debugger as you work out problems and figure things out.  With the ``import`` of ``switchyard.lib.common`` you get a function named ``debugger``.  You can insert calls to the ``debugger`` function where ever you want to have an interactive debugger session start up.   For example, we could modify the above template program to invoke a debugger session when ever we receive a packet.  
+When running Switchyard, especially in test mode, it is often very helpful to use the interactive Python debugger as you work out problems and figure things out.  With the ``import`` of ``switchyard.lib.userlib`` you get a function named ``debugger``.  You can insert calls to the ``debugger`` function where ever you want to have an interactive debugger session start up.   For example, we could modify the above template program to invoke a debugger session when ever we receive a packet.  
 
 .. code-block:: python
 
     #!/usr/bin/env python
 
-    from switchyard.lib.packet import *
-    from switchyard.lib.address import *
-    from switchyard.lib.common import *
+    from switchyard.lib.userlib import *
 
     def main(net):
         while True:
@@ -180,3 +175,4 @@ When running Switchyard, especially in test mode, it is often very helpful to us
         net.shutdown()
 
 As noted above, if there is a runtime error in your code, Switchyard will automatically dump you into the Python debugger (pdb) to see exactly where the program crashed and what may have caused it.  You can use any Python commands to inspect variables, and try to understand the state of the program at the time of the crash.
+

@@ -13,10 +13,10 @@ Switchyard documentation
 
    intro
    writing_a_program
-   advanced_api
    test_execution
    test_scenario_creation
    live_execution
+   advanced_api
    installation
    problems_solutions
    reference
