@@ -26,35 +26,7 @@ from . import debugging as sdebug
 from ..textcolor import *
 from ..importcode import import_or_die
 from ..llnetbase import ReceivedPacket
-
-class PacketFormatter(object):
-    _fulldisp = False
-
-    @staticmethod
-    def full_display(value=True):
-        PacketFormatter._fulldisp = value
-
-    @staticmethod
-    def is_full_display():
-        return PacketFormatter._fulldisp
-
-    @staticmethod
-    def format_pkt(pkt, cls=None):
-        '''
-        Return a string representation of a packet.  If display_class is a known
-        header type, just show the string repr of that header.  Otherwise, dump
-        the whole thing.
-        '''
-        if PacketFormatter._fulldisp:
-            cls = None
-
-        if cls is None:
-            return str(pkt)
-        idx = pkt.get_header_index(cls)
-        if idx == -1:
-            log_warn("PacketFormatter tried to find non-existent header {} (test scenario probably needs fixing)".format(str(cls)))
-            return str(pkt)
-        return ' | '.join([str(pkt[i]) for i in range(idx, pkt.num_headers())])
+from ..outputfmt import VerboseOutput
 
 
 class SwitchyardTestEvent(object):
@@ -83,7 +55,18 @@ class SwitchyardTestEvent(object):
         header type, just show the string repr of that header.  Otherwise, dump
         the whole thing.
         '''
-        return PacketFormatter.format_pkt(pkt, self._display)
+        cls = self._display
+        if VerboseOutput.enabled():
+            cls = None
+
+        if cls is None:
+            return str(pkt)
+        idx = pkt.get_header_index(cls)
+        if idx == -1:
+            log_warn("Tried to find non-existent header for output formatting {}"
+                " (test scenario probably needs fixing)".format(str(cls)))
+            return str(pkt)
+        return ' | '.join([str(pkt[i]) for i in range(idx, pkt.num_headers())])
 
 
 class AbstractMatch(metaclass=ABCMeta):
@@ -440,7 +423,7 @@ class PacketMatcher(object):
             differences = self._diagnose_packet_fields(packet)
             diagnosis.extend(differences)
 
-            if PacketFormatter.is_full_display():
+            if VerboseOutput.enabled():
                 # packet header match failed
                 #diagnosis += ["{}".format(TextColor.magenta())]
                 diagnosis += ["\nDetails: here is the packet that failed the check: {},".format(packet)]
@@ -860,7 +843,7 @@ class TestScenario(object):
                 print ("\nPassed:")
                 for idx,ev in enumerate(self._completed_events):
                     idxstr = str(idx+1)
-                    print ("{}{}".format(idxstr, self.wrapevent(ev.description, str(ev.event), PacketFormatter.is_full_display())[len(idxstr):]))
+                    print ("{}{}".format(idxstr, self.wrapevent(ev.description, str(ev.event), VerboseOutput.enabled())[len(idxstr):]))
 
         if len(self._pending_events):
             with red():

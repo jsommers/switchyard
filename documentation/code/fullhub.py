@@ -4,7 +4,7 @@ def main(net):
     # add some informational text about ports on this device
     log_info ("Hub is starting up with these ports:")
     for port in net.ports():
-        log_info ("{}: ethernet address {}".format(port.name, port.ethaddr)) 
+        log_info ("{}: ethernet address {}".format(port.name, port.ethaddr))
 
     while True:
         try:

@@ -10,10 +10,11 @@ from switchyard.llnetreal import main_real, LLNetReal
 from switchyard.importcode import import_or_die
 from switchyard.lib.socket.socketemu import ApplicationLayer
 from switchyard.lib.logging import *
-from switchyard.lib.testing import PacketFormatter, compile_scenario
+from switchyard.lib.testing import compile_scenario
 from switchyard.lib.topo import Topology
 from switchyard.sim.cli import run_simulation
 from switchyard.lib.interface import make_device_list
+from switchyard.outputfmt import VerboseOutput
 
 _setup_ok = False
 _netobj = None
@@ -28,7 +29,7 @@ def start_framework(args):
         testmode = True
 
     if args.verbose:
-        PacketFormatter.full_display(True)
+        VerboseOutput.enable()
 
     if args.cli:
         t = Topology()
