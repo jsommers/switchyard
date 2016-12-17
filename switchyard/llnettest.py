@@ -73,7 +73,7 @@ class LLNetTest(LLNetBase):
             raise Shutdown()
 
         ev = self.scenario.next()
-        if ev.match(SwitchyTestEvent.EVENT_INPUT) == SwitchyTestEvent.MATCH_SUCCESS:
+        if ev.match(SwitchyardTestEvent.EVENT_INPUT) == SwitchyardTestEvent.MATCH_SUCCESS:
             self.scenario.testpass()
             return ev.generate_packet(self.timestamp, self.scenario)
         else:
@@ -93,10 +93,10 @@ class LLNetTest(LLNetBase):
 
         ev = self.scenario.next()
         match_results = ev.match(
-            SwitchyTestEvent.EVENT_OUTPUT, device=devname, packet=pkt)
-        if match_results == SwitchyTestEvent.MATCH_SUCCESS:
+            SwitchyardTestEvent.EVENT_OUTPUT, device=devname, packet=pkt)
+        if match_results == SwitchyardTestEvent.MATCH_SUCCESS:
             self.scenario.testpass()
-        elif match_results == SwitchyTestEvent.MATCH_FAIL:
+        elif match_results == SwitchyardTestEvent.MATCH_FAIL:
             self.scenario.testfail(
                 "send_packet was called, but I was expecting {}".format(str(ev)))
         else:

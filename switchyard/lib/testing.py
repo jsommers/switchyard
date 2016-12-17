@@ -831,7 +831,7 @@ class TestScenario(object):
         log_debug("Next event expected: "+str(self._pending_events[0].event))
 
     @staticmethod
-    def wrapevent(description, expected_event):
+    def wrapevent(description, expected_event, show_details=True):
         '''
         Create a "pretty" version of an event description and expectation for output.
         '''
@@ -839,8 +839,10 @@ class TestScenario(object):
         wraplen = 60
         expected_event = "Expected event: {}".format(expected_event)
 
-        outstr = '\n'.join([' ' * baseindent + s for s in textwrap.wrap(description, wraplen)]) + '\n'
-        outstr += '\n'.join([' ' * (baseindent*2) + s for s in textwrap.wrap(expected_event, wraplen)])
+        outstr = '\n'.join([' ' * baseindent + s for s in textwrap.wrap(description, wraplen)])
+        if show_details:
+            outstr += '\n'
+            outstr += '\n'.join([' ' * (baseindent*2) + s for s in textwrap.wrap(expected_event, wraplen)])
         return outstr
 
     def print_summary(self):
@@ -858,7 +860,7 @@ class TestScenario(object):
                 print ("\nPassed:")
                 for idx,ev in enumerate(self._completed_events):
                     idxstr = str(idx+1)
-                    print ("{}{}".format(idxstr, self.wrapevent(ev.description, str(ev.event))[len(idxstr):]))
+                    print ("{}{}".format(idxstr, self.wrapevent(ev.description, str(ev.event), PacketFormatter.is_full_display())[len(idxstr):]))
 
         if len(self._pending_events):
             with red():
