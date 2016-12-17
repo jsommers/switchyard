@@ -2,6 +2,7 @@ from abc import ABCMeta, abstractmethod
 from copy import deepcopy
 
 from ..logging import log_warn
+from ..exceptions import *
 
 class Packet(object):
     '''

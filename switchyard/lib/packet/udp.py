@@ -2,6 +2,7 @@ import struct
 
 from .packet import PacketHeaderBase
 from .common import checksum
+from ..exceptions import *
 
 '''
 References:

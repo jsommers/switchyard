@@ -5,6 +5,7 @@ from ipaddress import IPv4Network
 from .packet import PacketHeaderBase,Packet,RawPacketContents
 from ..address import SpecialIPv4Addr, IPv4Address
 from ..logging import log_warn
+from ..exceptions import *
 
 '''
 References:

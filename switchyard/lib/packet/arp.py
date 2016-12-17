@@ -2,6 +2,7 @@ from .packet import PacketHeaderBase,Packet
 from ..address import EthAddr,IPAddr,SpecialIPv4Addr,SpecialEthAddr
 import struct
 from .common import EtherType, ArpHwType, ArpOperation
+from ..exceptions import *
 
 '''
 References:

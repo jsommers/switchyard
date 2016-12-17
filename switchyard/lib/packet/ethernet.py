@@ -5,7 +5,7 @@ from .arp import Arp
 from .ipv4 import IPv4
 from .ipv6 import IPv6
 from .common import EtherType
-
+from ..exceptions import *
 
 class Vlan(PacketHeaderBase):
     '''

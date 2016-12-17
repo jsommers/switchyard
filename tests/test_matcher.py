@@ -29,7 +29,8 @@ class SrpyMatcherTest(unittest.TestCase):
         pkt = Ethernet() + IPv4() + ICMP()
         matcher = PacketMatcher(pkt, exact=True)
         pkt[0].ethertype = EtherType.ARP
-        self.assertRaises(TestScenarioFailure, matcher.match, pkt)
+        with self.assertRaises(TestScenarioFailure) as err:
+            matcher.match(pkt)
 
     def testWildcardMatch0(self):
         pkt = Ethernet() + IPv4()
@@ -115,31 +116,78 @@ class SrpyMatcherTest(unittest.TestCase):
         pkt = create_ip_arp_request('11:22:33:44:55:66', '192.168.1.1', '192.168.10.10')
         outev = PacketOutputEvent("eth1", pkt, wildcard=('arp_tha',), exact=False)
         self.assertNotIn("IPv4", str(outev))
-        rv = outev.match(SwitchyTestEvent.EVENT_OUTPUT, device='eth1', packet=pkt)
-        self.assertEqual(rv, SwitchyTestEvent.MATCH_SUCCESS)
+        rv = outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device='eth1', packet=pkt)
+        self.assertEqual(rv, SwitchyardTestEvent.MATCH_SUCCESS)
 
         outev = PacketOutputEvent("eth1", pkt, wildcard=('arp_tha',), exact=False)
         pktcopy = copy.deepcopy(pkt)
         pktcopy[1].targethwaddr = '00:ff:00:ff:00:ff'
-        rv = outev.match(SwitchyTestEvent.EVENT_OUTPUT, device='eth1', packet=pktcopy)
-        self.assertEqual(rv, SwitchyTestEvent.MATCH_SUCCESS)
+        rv = outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device='eth1', packet=pktcopy)
+        self.assertEqual(rv, SwitchyardTestEvent.MATCH_SUCCESS)
 
         outev = PacketOutputEvent("eth1", pkt, wildcard=('arp_tha','dl_src'), exact=False)
         with self.assertRaises(TestScenarioFailure) as exc:
             pktcopy[1].senderhwaddr = '00:ff:00:ff:00:ff'
-            rv = outev.match(SwitchyTestEvent.EVENT_OUTPUT, device='eth1', packet=pktcopy)
+            rv = outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device='eth1', packet=pktcopy)
         self.assertNotIn("IPv4", str(exc.exception))
 
-        # p = Ethernet() + \
-        #     IPv4(protocol=IPProtocol.UDP,src="1.2.3.4",dst="5.6.7.8") + \
-        #     UDP(srcport=9999, dstport=4444)
-        # xcopy = copy.copy(p)
-        # outev = PacketOutputEvent("eth1", p, wildcard=('tp_src'), exact=False)
-        # with self.assertRaises(TestScenarioFailure) as exc:
-        #     xcopy[2].dstport = 5555
-        #     rv = outev.match(SwitchyTestEvent.EVENT_OUTPUT, device='eth1', packet=xcopy)
-        # estr = str(exc.exception)        
-        # self.assertIn("UDP *->4444", estr)
+    def testWildCard2(self):
+        p = Ethernet() + \
+            IPv4(protocol=IPProtocol.UDP,src="1.2.3.4",dst="5.6.7.8") + \
+            UDP(src=9999, dst=4444)
+        xcopy = copy.copy(p)
+        outev = PacketOutputEvent("eth1", p, wildcard=((UDP,'src'),), exact=False)
+        rv = outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device='eth1', packet=xcopy)
+        self.assertTrue(rv)
+
+        outev = PacketOutputEvent("eth1", p, wildcard=((UDP,'src'),), exact=False)
+        with self.assertRaises(TestScenarioFailure) as exc:
+            xcopy[2].dst = 5555
+            rv = outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device='eth1', packet=xcopy)
+        estr = str(exc.exception)        
+        self.assertIn("In the UDP header, dst is wrong", estr)
+
+    def testMatcherOutputDiagnosis(self):
+        p = Packet()
+        outev = PacketOutputEvent("en0", p, exact=True)
+        newp = Ethernet() + IPv4() + ICMP()
+        with self.assertRaises(TestScenarioFailure) as exc:
+            outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device="en0", packet=newp)
+        self.assertIn("Unnecessary headers", str(exc.exception))
+
+        p = Ethernet() + IPv4() + ICMP()
+        newp = Packet() 
+        outev = PacketOutputEvent("en0", p, exact=True)
+        with self.assertRaises(TestScenarioFailure) as exc:
+            outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device="en0", packet=newp)
+        self.assertIn("Missing headers", str(exc.exception))
+
+        PacketFormatter.full_display(True)
+        p = Ethernet() + IPv4() + ICMP()
+        newp = Packet() 
+        outev = PacketOutputEvent("en0", p, exact=True)
+        with self.assertRaises(TestScenarioFailure) as exc:
+            outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device="en0", packet=newp)
+        self.assertIn("Missing headers", str(exc.exception))
+
+        PacketFormatter.full_display(True)
+        p = Ethernet() + IPv4() + ICMP()
+        newp = Ethernet() + IPv4(protocol=IPProtocol.UDP) + UDP()
+        outev = PacketOutputEvent("en0", p, exact=True)
+        with self.assertRaises(TestScenarioFailure) as exc:
+            outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device="en0", packet=newp)
+        self.assertIn("Header types differ at index 2", str(exc.exception))
+
+        PacketFormatter.full_display(False)
+        p = Ethernet() + IPv4(src="1.2.3.4", dst="4.5.6.7", protocol=IPProtocol.UDP, ttl=78) + UDP(src=10, dst=42)
+        newp = copy.deepcopy(p)
+        newp[UDP].src = 11
+        newp[IPv4].dst = "5.5.5.5"
+        outev = PacketOutputEvent("en0", p, exact=True)
+        with self.assertRaises(TestScenarioFailure) as exc:
+            outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device="en0", packet=newp)
+        self.assertIn("In the IPv4 header, dst is wrong", str(exc.exception))
+        self.assertIn("In the UDP header, src is wrong", str(exc.exception))
 
     def testWildcardOutput2(self):
         p = Ethernet() + \
@@ -170,8 +218,8 @@ class SrpyMatcherTest(unittest.TestCase):
     def testInputTimeoutEv(self):
         x = PacketInputTimeoutEvent(0.1)
         self.assertNotEqual(x, 5)
-        self.assertEqual(x.match(SwitchyTestEvent.EVENT_OUTPUT), SwitchyTestEvent.MATCH_FAIL)
-        self.assertEqual(x.match(SwitchyTestEvent.EVENT_INPUT), SwitchyTestEvent.MATCH_SUCCESS)
+        self.assertEqual(x.match(SwitchyardTestEvent.EVENT_OUTPUT), SwitchyardTestEvent.MATCH_FAIL)
+        self.assertEqual(x.match(SwitchyardTestEvent.EVENT_INPUT), SwitchyardTestEvent.MATCH_SUCCESS)
         with self.assertRaises(NoPackets):
             x.generate_packet(1.0, self)
 

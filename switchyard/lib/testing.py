@@ -35,6 +35,10 @@ class PacketFormatter(object):
         PacketFormatter._fulldisp = value
 
     @staticmethod
+    def is_full_display():
+        return PacketFormatter._fulldisp
+
+    @staticmethod
     def format_pkt(pkt, cls=None):
         '''
         Return a string representation of a packet.  If display_class is a known
@@ -53,7 +57,7 @@ class PacketFormatter(object):
         return ' | '.join([str(pkt[i]) for i in range(idx, pkt.num_headers())])
 
 
-class SwitchyTestEvent(object):
+class SwitchyardTestEvent(object):
     MATCH_FAIL = 0x00
     MATCH_SUCCESS = 0x01
     MATCH_PARTIAL = 0x02
@@ -71,7 +75,7 @@ class SwitchyTestEvent(object):
         Abstract method that must be overridden in input/output
         events.  Default for base class is to return failed match.
         '''
-        return SwitchyTestEvent.MATCH_FAIL
+        return SwitchyardTestEvent.MATCH_FAIL
 
     def format_pkt(self, pkt):
         '''
@@ -318,16 +322,15 @@ class PacketMatcher(object):
 
         if len(kwargs):
             log_warn("Ignoring unrecognized keyword arguments for building output packet matcher: {}".format(kwargs))
-
+        self._packet = copy.deepcopy(packet)
         if self._exact:
-            self._matchobj = ExactMatch(packet)
+            self._matchobj = ExactMatch(self._packet)
         else:
-            self._matchobj = WildcardMatch(packet, wildcard)
+            self._matchobj = WildcardMatch(self._packet, wildcard)
 
-        self._packet = packet
         self._first_header = None
         if len(self._packet):
-            self._first_header = packet[0].__class__
+            self._first_header = self._packet[0].__class__
 
         self._predicates = []
         if len(predicates) > 0:
@@ -347,6 +350,60 @@ class PacketMatcher(object):
     def packet(self):
         return self._packet
 
+    def _diagnose_packet_fields(self, comparepkt):
+        reference = self._packet
+        compare_results = []
+
+        def compare_header_types(ref, current):
+            i = 0
+            while i < ref.num_headers() and i < current.num_headers():
+                if ref[i].__class__ != current[i].__class__:
+                    return ("Header types differ at index {}: "
+                        "expecting {} but found {}. ".format(
+                        i, ref[i].__class__.__name__, 
+                        current[i].__class__.__name__), i)
+                i += 1
+            if i < ref.num_headers():
+                missing = [ref[x].__class__.__name__ for x in range(i, ref.num_headers())]
+                return ("Missing headers in your packet: {}. ".format(', '.join(missing)), i)
+            if i < current.num_headers():
+                toomuch = [current[x].__class__.__name__ for x in range(i, current.num_headers())]
+                return ("Unnecessary headers were found in your packet: {}. ".format(', '.join(toomuch)),i)
+
+            return (None, i)
+
+        def compare_header_fields(ref, current, results):
+            hdrname = ref.__class__.__name__
+            diffs = []
+            for field in dir(ref):
+                if field.startswith('_') or field == 'checksum':
+                    continue
+
+                if not hasattr(ref, field) or not hasattr(current, field):
+                    continue
+
+                refattr = getattr(ref, field)
+                curattr = getattr(current, field)
+                if callable(refattr):
+                    continue
+                    
+                if refattr != curattr:
+                    diffs.append("{} is wrong (is {} but should be {})".format(field, curattr, refattr))
+
+            if diffs:
+                diffstr = '; '.join(diffs)
+                results.append("In the {} header, {}.".format(hdrname, diffstr))
+
+        headerdiff,maxidx = compare_header_types(reference, comparepkt)
+        if headerdiff is not None:
+            compare_results.append(headerdiff)
+            return compare_results
+
+        # only check field by field in headers if the header types match 
+        for i in range(maxidx):
+            compare_header_fields(reference[i], comparepkt[i], compare_results)
+        return compare_results
+
     def _diagnose(self, packet, results):
         '''
         Construct/return a string that describes why a packet doesn't
@@ -359,7 +416,7 @@ class PacketMatcher(object):
         conjunction = ', but' if firstmatch else '. '
         diagnosis = ["{} {} match {}{}".format(aan.capitalize(), xtype, xresults, conjunction)]
 
-        # are there predicates that were tested?
+        # are there predicates that were tested?  
         if len(results):
             diagnosis += ["when comparing the packet you sent versus what I expected,"]
             # if previous statement ended with sentence, cap the last
@@ -380,13 +437,19 @@ class PacketMatcher(object):
             # headers match, but predicate(s) failed
             diagnosis += ["\nThis part matched: {}.".format(self._matchobj.show(packet))]
         else:
-            # packet header match failed
-            diagnosis += ["\nHere is the packet that failed the check: {}.".format(packet)]
+            differences = self._diagnose_packet_fields(packet)
+            diagnosis.extend(differences)
 
-            if self._exact:
-                diagnosis += ["\nHere is exactly what I expected: {}.".format(self._matchobj.show(packet))]
-            else:
-                diagnosis += ["\nHere is what I expected to match: {}.".format(self._matchobj.show(packet))]
+            if PacketFormatter.is_full_display():
+                # packet header match failed
+                #diagnosis += ["{}".format(TextColor.magenta())]
+                diagnosis += ["\nDetails: here is the packet that failed the check: {},".format(packet)]
+
+                if self._exact:
+                    diagnosis += ["\nand here is exactly what I expected: {}.".format(self._matchobj.show(packet))]
+                else:
+                    diagnosis += ["\nand here is what I expected to match: {}.".format(self._matchobj.show(packet))]
+                #diagnosis += ["{}".format(TextColor.reset())]
         return ' '.join(diagnosis)
 
     def match(self, packet):
@@ -413,7 +476,8 @@ class PacketMatcher(object):
         self.__dict__.update(xdict)
         self._packet = Packet(raw=self._packet, first_header=self._first_header)
 
-class PacketInputTimeoutEvent(SwitchyTestEvent):
+
+class PacketInputTimeoutEvent(SwitchyardTestEvent):
     '''
     Test event that models a timeout when trying to receive
     a packet.  No packet arrives, so the switchy app should
@@ -440,17 +504,17 @@ class PacketInputTimeoutEvent(SwitchyTestEvent):
         Does event type match me?  PacketInputEvent currently ignores
         any additional arguments.
         '''
-        if evtype == SwitchyTestEvent.EVENT_INPUT:
-            return SwitchyTestEvent.MATCH_SUCCESS
+        if evtype == SwitchyardTestEvent.EVENT_INPUT:
+            return SwitchyardTestEvent.MATCH_SUCCESS
         else:
-            return SwitchyTestEvent.MATCH_FAIL
+            return SwitchyardTestEvent.MATCH_FAIL
 
     def generate_packet(self, timestamp, scenario):
         time.sleep(self._timeout)
         raise NoPackets()
 
 
-class PacketInputEvent(SwitchyTestEvent):
+class PacketInputEvent(SwitchyardTestEvent):
     '''
     Test event that models a packet arriving at a router/switch
     (e.g., a packet that we generate).
@@ -487,10 +551,10 @@ class PacketInputEvent(SwitchyTestEvent):
         Does event type match me?  PacketInputEvent currently ignores
         any additional arguments.
         '''
-        if evtype == SwitchyTestEvent.EVENT_INPUT:
-            return SwitchyTestEvent.MATCH_SUCCESS
+        if evtype == SwitchyardTestEvent.EVENT_INPUT:
+            return SwitchyardTestEvent.MATCH_SUCCESS
         else:
-            return SwitchyTestEvent.MATCH_FAIL
+            return SwitchyardTestEvent.MATCH_FAIL
 
     def generate_packet(self, timestamp, scenario):
         # ensure that the packet is fully parsed before
@@ -505,7 +569,7 @@ class PacketInputEvent(SwitchyTestEvent):
         return ReceivedPacket(timestamp=timestamp, input_port=self._device, packet=self._packet)
 
 
-class PacketOutputEvent(SwitchyTestEvent):
+class PacketOutputEvent(SwitchyardTestEvent):
     '''
     Test event that models a packet that should be emitted by
     a router/switch.
@@ -533,10 +597,10 @@ class PacketOutputEvent(SwitchyTestEvent):
         Does event type match me?  PacketOutputEvent requires
         two additional keyword args: device (str) and packet (packet object).
         '''
-        if evtype != SwitchyTestEvent.EVENT_OUTPUT:
-            return SwitchyTestEvent.MATCH_FAIL
+        if evtype != SwitchyardTestEvent.EVENT_OUTPUT:
+            return SwitchyardTestEvent.MATCH_FAIL
         if 'device' not in kwargs or 'packet' not in kwargs:
-            return SwitchyTestEvent.MATCH_FAIL
+            return SwitchyardTestEvent.MATCH_FAIL
         device = kwargs['device']
         pkt = kwargs['packet']
 
@@ -546,9 +610,9 @@ class PacketOutputEvent(SwitchyTestEvent):
                 self._matches[device] = pkt
                 del self._device_packet_map[device]
                 if len(self._device_packet_map) == 0:
-                    return SwitchyTestEvent.MATCH_SUCCESS
+                    return SwitchyardTestEvent.MATCH_SUCCESS
                 else:
-                    return SwitchyTestEvent.MATCH_PARTIAL
+                    return SwitchyardTestEvent.MATCH_PARTIAL
             else:
                 raise TestScenarioFailure("test failed when you called send_packet: output device {} is ok, but\n\t{}\n\tdoesn't match what I expected\n\t{}".format(device, self.format_pkt(pkt, self._display), matcher.show(self._display)))
         else:

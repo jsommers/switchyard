@@ -7,6 +7,7 @@ from ..logging import log_warn
 from .packet import PacketHeaderBase,Packet
 from ..address import EthAddr,IPAddr,SpecialIPv6Addr,SpecialEthAddr
 from .common import IPProtocol, checksum
+from ..exceptions import *
 
 from .icmpv6 import ICMPv6
 from .tcp import TCP

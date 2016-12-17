@@ -4,6 +4,7 @@ import socket
 from .packet import PacketHeaderBase,Packet
 from .ipv4 import IPv4
 from .ipv6 import IPv6
+from ..exceptions import *
 
 AFTypeClasses = {
     socket.AF_INET: IPv4,
