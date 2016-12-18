@@ -115,7 +115,7 @@ def _prepare_debugger(tb):
     '''
     p = pdb.Pdb(
         skip=['switchyard.lib.testing', 'switchyard.llnettest', 
-              'switchayrd.lib.debugging', 'switchyard.llnetbase', ])
+              'switchyard.lib.debugging', 'switchyard.llnetbase', ])
     p.reset()
 
     usercode = height = 0

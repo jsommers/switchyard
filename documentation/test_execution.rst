@@ -133,8 +133,6 @@ failed, and how many are *pending*.  The pending category simply means that test
 
 Following the overall test results showing passed, failed, and pending tests, some summary information is displayed about the test failure, and a debugging session is started.  By default, Switchyard uses Python's built-in ``pdb`` debugger.  At the very end of the output, a stack trace is shown and a debugger prompt is displayed::
 
-::
-
     ************************************************************
     Your code didn't crash, but a test failed.
     ************************************************************
@@ -177,8 +175,6 @@ Following the overall test results showing passed, failed, and pending tests, so
     (Pdb) 
 
 Again, notice that the last couple lines show a (partial) stack trace.   These lines can help a bit to understand the context of the error, but it is often helpful to show the source code around the failed code in light of the error diagnosis, which was "Test failed when you called send_packet: output on device eth1 unexpected..."  If we keep reading the diagnosis, we see that the packet was expected to be forwarded out two ports (eth0 and eth2), but was only sent on eth1.  Showing the source code can be accomplished with ``pdb``'s ``list`` command::
-
-::
 
     (Pdb) list
       8     
@@ -266,9 +262,12 @@ In this case, we can see that the first section is basically the same as with th
     [EOF]
     (Pdb) 
 
+So, although the error diagnosis cannot generally state *why* a problem has happened, it can sometimes be quite specific about *what* has gone wrong.  That, coupled with showing the source code context, can be very helpful for tracking down bugs.  It might also be helpful to note that at the pdb prompt, you can inspect *any* variable in order to figure out what's happened, walk up and down the call stack, execute arbitrary Python statements, and even step *back* in execution in order to try to determine what has happened.  Debuggers can be a little bit daunting, but they're incredibly helpful tools.
 
+.. seealso:: 
 
-the context of the error.  An Ethernet frame should have been sent out two different ports, but the frame's contents failed to match what was expected.  Reading the specific text shows that the source Ethernet address did not match (look carefully above).  In the pdb session, when we list the code we see that the previous line foolishly set the Ethernet source address to something non-sensical.  Note that at the pdb prompt you can inspect *any* variable in order to figure out what's gone wrong, and walk up and down the call stack, if necessary.
+   To learn more about pdb and the various commands and capabilities it has, refer to the Python library documentation (there's a section specifically on ``pdb``).  There are other debuggers out there with additional features, but ``pdb`` is *always* available with any Python distribution so it is worth acquainting yourself with it.
+
 
 
 Even more verbose output
@@ -285,7 +284,7 @@ If you'd like to use a debugger, but just not ``pdb``, you can use the ``--nohan
 
     $ python3 -m pudb.run swyard --nohandle ... 
 
-Where the ellipsis is replaced with other command-line arguments to ``swyard``.  
+where the ellipsis is replaced with other command-line arguments to ``swyard``.  
 
 .. _debugging:
 

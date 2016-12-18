@@ -25,4 +25,4 @@ def setup_debugger(f):
 def debugger():
     '''Invoke the interactive debugger.  Can be used anywhere
     within a Switchyard program.'''
-    pdb.Pdb(skip=['switchyard.lib.debug']).set_trace()
+    pdb.Pdb(skip=['switchyard.lib.debugging']).set_trace()
