@@ -15,6 +15,9 @@ Note that the ``-t`` option puts ``swyard`` in test mode.  The argument to the `
 
 would work the same as above.
 
+Test output
+-----------
+
 When you run ``swyard`` in test mode and all tests pass, you'll see something similar to the following::
 
     Results for test scenario hub tests:8 passed, 0 failed, 0 pending
@@ -42,6 +45,9 @@ When you run ``swyard`` in test mode and all tests pass, you'll see something si
 
 
 Note that the above output is an abbreviated version of test output and is normally shown in colored text when run in a capable terminal.
+
+Verbose test output
+-------------------
 
 If you invoke ``swyard`` with the ``-v`` (verbose) option, the test output includes quite a bit more detail::
 
@@ -74,11 +80,10 @@ If you invoke ``swyard`` with the ``-v`` (verbose) option, the test output inclu
 
 Note that the above output has been truncated --- output would normally be shown for all tests.  When invoked with the *verbose* option, individual tests show exactly what packets would be expected (either as input to a device or as output from it).  
 
-*Test scenario* descriptions that drive test executions as shown here are composed of a series of test *expectations*.  Test expectations may be that a packet arrives on a particular port, or that a packet is emitted out one or more ports, or that the user code calls ``recv_packet`` but times out (and thus nothing is received).  
+*Test scenario* descriptions that drive test executions as shown here are composed of a series of test *expectations*.  Test expectations may be that a packet arrives on a particular port, or that a packet is emitted out one or more ports, or that the user code calls ``recv_packet`` but times out (and thus nothing is received).  Both the abbreviated and verbose test output shown above contain brief descriptions of the nature of each test.  In the verbose output, packet details related to each test are also shown.  Reading this information can help to understand what the tests are trying to accomplish, especially when a test expectation fails.
 
-Notice in the output above that each individual test expectation contains significant detail on the nature of the specific test.  Reading this information can help to understand what the tests are trying to accomplish, especially when a test expectation fails.
-
-
+When a test fails
+-----------------
 
 If some test expectation is not met, then the output indicates that something has gone wrong and, by default, Switchyard gives the user the standard Python pdb debugger prompt.  The motivation for immediately putting the user in pdb is to enable just-in-time debugging.  If the test output is read carefully and can be used to identify a flaw by inspecting code and data at the time of failure, then this should help to facilitate the development/testing/debugging cycle.  At least that's the hope.
 

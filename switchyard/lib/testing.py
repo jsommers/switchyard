@@ -855,7 +855,7 @@ class TestScenario(object):
                     print ("\nPending (couldn't test because of prior failure):")
                     for idx,ev in enumerate(self._pending_events[1:]):
                         idxstr = str(idx+1)
-                        print ("{}{}".format(idxstr, self.wrapevent(ev.description, str(ev.event))[len(idxstr):]))
+                        print ("{}{}".format(idxstr, self.wrapevent(ev.description, str(ev.event), VerboseOutput.enabled())[len(idxstr):]))
         print()
 
     def done(self):
