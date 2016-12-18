@@ -291,11 +291,28 @@ where the ellipsis is replaced with other command-line arguments to ``swyard``.
 Debugging Switchyard code
 -------------------------
 
-When running Switchyard, especially in test mode, it is often very helpful to use the interactive Python debugger as you work out problems and figure things out.  With the ``import`` of ``switchyard.lib.userlib`` you get a function named ``debugger``.  You can insert calls to the ``debugger`` function where ever you want to have an interactive debugger session start up.   For example, we could modify the above template program to invoke a debugger session when ever we receive a packet.  
-
+When running Switchyard, especially in test mode, it is often very helpful to use the interactive Python debugger as you work out problems and figure things out.  With the ``import`` of ``switchyard.lib.userlib`` you get a function named ``debugger``.  You can insert calls to the ``debugger`` function where ever you want to have an interactive debugger session start up.   For example, we could create a simple program that starts up a debugger session when ever we receive a packet:
 
 .. literalinclude:: code/enterdebugger.py
    :language: python
    :linenos:
-    
+
+If we run the above program, we will stop at the line *after* the call to ``debugger``::
+
+    > /users/jsommers/dropbox/src/switchyard/documentation/code/enterdebugger.py(17)main()
+    -> hdrs = packet.num_headers()
+    (Pdb) list
+     12                 break
+     13     
+     14             # invoke the debugger every time we get here, which
+     15             # should be for every packet we receive!
+     16             debugger()
+     17  ->         hdrs = packet.num_headers()
+     18     
+     19         # before exiting our main function,
+     20         # perform shutdown on network
+     21         net.shutdown()
+    [EOF]
+    (Pdb) 
+
 As noted above, if there is a runtime error in your code, Switchyard will automatically dump you into the Python debugger (pdb) to see exactly where the program crashed and what may have caused it.  You can use any Python commands to inspect variables, and try to understand the state of the program at the time of the crash.
