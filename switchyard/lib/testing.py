@@ -597,9 +597,9 @@ class PacketOutputEvent(SwitchyardTestEvent):
                 else:
                     return SwitchyardTestEvent.MATCH_PARTIAL
             else:
-                raise TestScenarioFailure("test failed when you called send_packet: output device {} is ok, but\n\t{}\n\tdoesn't match what I expected\n\t{}".format(device, self.format_pkt(pkt, self._display), matcher.show(self._display)))
+                raise TestScenarioFailure("Test failed when you called send_packet: output device {} is ok, but\n\t{}\n\tdoesn't match what I expected\n\t{}".format(device, self.format_pkt(pkt, self._display), matcher.show(self._display)))
         else:
-            raise TestScenarioFailure("test failed when you called send_packet: output on device {} unexpected (I expected this: {})".format(device, str(self)))
+            raise TestScenarioFailure("Test failed when you called send_packet: output on device {} unexpected (I expected this: {})".format(device, str(self)))
 
     @property
     def matches(self):
@@ -835,7 +835,7 @@ class TestScenario(object):
         a prior failure.
         '''
         with blue():
-            print ("\nResults for test scenario {}:".format(self.name), end='')
+            print ("\nResults for test scenario {}:".format(self.name), end=' ')
             print ("{} passed, {} failed, {} pending".format(len(self._completed_events), min(1,len(self._pending_events)), max(0,len(self._pending_events)-1)))
 
         if len(self._completed_events):
