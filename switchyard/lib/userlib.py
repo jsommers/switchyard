@@ -1,5 +1,5 @@
 '''
-Main modules, functions, and classes needed from the perspective of a user program in Switchyard.
+This is a wrapper module to facilitate easy import of the various modules, functions, classes, and other items needed from the perspective of a user program in Switchyard.
 '''
 from .packet import *
 from .address import *

@@ -3,6 +3,17 @@
 API Reference
 *************
 
+Before getting into all the details, it is important to note that all the below API features can be imported through the module ``switchyard.lib.userlib``.  
+
+.. automodule:: switchyard.lib.userlib
+
+Unless you are concerned about namespace pollution, importing all Switchyard symbols into your program can be done with the following:
+
+.. code-block:: python
+   
+   from switchyard.lib.userlib import *
+
+
 .. _netobj:
 
 Net object reference
@@ -428,10 +439,6 @@ be inspected and/or modified on them.
 
 Utility functions
 =================
-
-.. automodule:: switchyard.lib.userlib
-   :members:
-   :exclude-members: setup_logging, LLNetBase
 
 .. todo:: need to update 
 
