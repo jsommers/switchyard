@@ -353,7 +353,7 @@ As you can see, the program is paused on the next executable line following the 
 
 .. note::
 
-   When inserting a call to ``debugger()``, note one current limitation: if you 
+   There are currently a couple limitations when entering ``pdb`` through a call to ``debugger()``.  First, if you attempt to exit ``pdb`` while the Switchyard program is still running, an exception from ``pdb``'s base class (``Bdb``) will get raised.  Thus, it may take a couple invocations of the ``quit`` command to actually exit.  Second, only the ``pdb`` debugger may be invoked through a call to ``debugger``.  
 
 
 .. rubric:: Footnotes

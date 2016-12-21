@@ -3,7 +3,7 @@
 Running in the test environment
 *******************************
 
-To run Switchyard in test mode, you need a *test scenario* file that includes specific test cases to run, along with the Switchyard program you wish to test.  The test scenario files may be regular Python (``.py``) files, but they may alternatively have an extension ``.srpy`` if they have been *compiled* (see below).
+To run Switchyard in test mode, a *test scenario* file is needed.  This file includes specifications of various events (sending particularly crafted packets, receiving packets, etc.) that a Switchyard program is expected to do if it behaves correctly.  Also needed, of course, is the Switchyard program you wish to test.  The test scenario files may be regular Python (``.py``) files, but they may alternatively have an extension ``.srpy`` if they have been *compiled*.  For details on creating and compiling test scenarios, see :ref:`test-scenario-creation`.
 
 Let's say your program is named ``myhub.py``.  To invoke Switchyard in test mode and subject your program to a set of tests, at minimum you would invoke ``swyard`` as follows::
 
@@ -18,7 +18,10 @@ would work the same as above.
 Test output
 ^^^^^^^^^^^
 
-When you run ``swyard`` in test mode and all tests pass, you'll see something similar to the following::
+When you run ``swyard`` in test mode and all tests pass, you'll see something similar to the following:
+
+.. code-block:: none
+   :caption: Abbreviated (normal) test output.
 
     Results for test scenario hub tests:8 passed, 0 failed, 0 pending
 
@@ -49,7 +52,10 @@ Note that the above output is an abbreviated version of test output and is norma
 Verbose test output
 ^^^^^^^^^^^^^^^^^^^
 
-If you invoke ``swyard`` with the ``-v`` (verbose) option, the test output includes quite a bit more detail::
+If you invoke ``swyard`` with the ``-v`` (verbose) option, the test output includes quite a bit more detail:
+
+.. code-block:: none
+   :caption: Verbose test output.
 
     Results for test scenario hub tests:8 passed, 0 failed, 0 pending
 
@@ -80,16 +86,18 @@ If you invoke ``swyard`` with the ``-v`` (verbose) option, the test output inclu
 
 Note that the above output has been truncated --- output would normally be shown for all tests.  When invoked with the *verbose* option, individual tests show exactly what packets would be expected (either as input to a device or as output from it).  
 
-*Test scenario* descriptions that drive test executions as shown here are composed of a series of test *expectations*.  Test expectations may be that a packet arrives on a particular port, or that a packet is emitted out one or more ports, or that the user code calls ``recv_packet`` but times out (and thus nothing is received).  Both the abbreviated and verbose test output shown above contain brief descriptions of the nature of each test.  In the verbose output, packet details related to each test are also shown.  Reading this information can help to understand what the tests are trying to accomplish, especially when a test expectation fails.
+*Test scenario* descriptions that drive test executions as shown here are composed of a series of test *expectations*.  Test expectations may be that a packet is received on a particular port, or that a packet is emitted out one or more ports, or that the user code calls ``recv_packet`` but times out (and thus nothing is received).  Both the abbreviated and verbose test output shown above contain brief descriptions of the nature of each test.  In the verbose output, packet details related to each test are also shown.  Reading this information can help to understand what the tests are trying to accomplish, especially when a test expectation fails.
 
 When a test fails
 ^^^^^^^^^^^^^^^^^
 
 If some test expectation is not met, then the output indicates that something has gone wrong and, by default, Switchyard gives the user the standard Python pdb debugger prompt.  The motivation for immediately putting the user in pdb is to enable just-in-time debugging.  If the test output is read carefully and can be used to identify a flaw by inspecting code and data at the time of failure, then this should help to facilitate the development/testing/debugging cycle.  At least that's the hope.
 
-Say that we've done something wrong in our code, which causes a test expectation to fail.  The output we see might be similar to the following (note that to create the output below, we've used the full set of hub device tests, but the code we've used is the broken code we started with in :ref:`coding` that sends any packet back out the same port that it arrived on):
+Say that we've done something wrong in our code which causes a test expectation to fail.  The output we see might be similar to the following (note that to create the output below, we've used the full set of hub device tests, but the code we've used is the broken code we started with in :ref:`coding` that sends any packet back out the same port that it arrived on):
 
-::
+.. code-block:: none
+   :caption: Normal (abbreviated) test output when one test fails. 
+
 
     Results for test scenario hub tests: 1 passed, 1 failed, 6 pending
 
@@ -129,9 +137,13 @@ Say that we've done something wrong in our code, which causes a test expectation
     ... (output continues)
 
 Notice in the first line of output that Switchyard shows how many tests pass, how many have
-failed, and how many are *pending*.  The pending category simply means that tests cannot be run because some earlier test failed.   In the example above, the output from ``swyard`` clearly shows which test fails; when that happens, some additional explanatory text is shown, and a debugger session is started as close to the point of failure as Switchyard can infer.  When not run in verbose mode, Switchyard will show abbreviated test descriptions for any passed tests and any pending tests, but the failed test will show everything.
+failed, and how many are *pending*.  The pending category simply means that tests cannot be run because some earlier test failed.   In the example above, the output from ``swyard`` clearly shows which test fails; when that happens, some additional explanatory text is shown, and a debugger session is started as close as possible to the point of failure.  When not run in verbose mode, Switchyard will show abbreviated test descriptions for any passed tests and any pending tests, but the failed test will show everything.
 
-Following the overall test results showing passed, failed, and pending tests, some summary information is displayed about the test failure, and a debugging session is started.  By default, Switchyard uses Python's built-in ``pdb`` debugger.  At the very end of the output, a stack trace is shown and a debugger prompt is displayed::
+Following the overall test results showing passed, failed, and pending tests, some summary information is displayed about the test failure, and a debugging session is started.  By default, Switchyard uses Python's built-in ``pdb`` debugger.  At the very end of the output, a stack trace is shown and a debugger prompt is displayed:
+
+.. code-block:: none
+   :caption: Additional output from a test failure.  
+
 
     ************************************************************
     Your code didn't crash, but a test failed.
