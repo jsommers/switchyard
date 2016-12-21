@@ -351,11 +351,6 @@ For example, if we add a call to ``debugger()`` in the example code above just *
 
 As you can see, the program is paused on the next executable line following the call to ``debugger()``.  At this point, any valid ``pdb`` commands can be given to inspect or alter program state.  Once again, see later sections for details on running Switchyard code :ref:`in a live environment <runlive>` and on other :ref:`debugging capabilities <debugging>`.
 
-.. note::
-
-   There are currently a couple limitations when entering ``pdb`` through a call to ``debugger()``.  First, if you attempt to exit ``pdb`` while the Switchyard program is still running, an exception from ``pdb``'s base class (``Bdb``) will get raised.  Thus, it may take a couple invocations of the ``quit`` command to actually exit.  Second, only the ``pdb`` debugger may be invoked through a call to ``debugger``.  
-
-
 .. rubric:: Footnotes
 
 .. [#f1] A hub is a network device with multiple physical ports.  Any packet

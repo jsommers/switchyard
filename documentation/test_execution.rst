@@ -142,7 +142,7 @@ failed, and how many are *pending*.  The pending category simply means that test
 Following the overall test results showing passed, failed, and pending tests, some summary information is displayed about the test failure, and a debugging session is started.  By default, Switchyard uses Python's built-in ``pdb`` debugger.  At the very end of the output, a stack trace is shown and a debugger prompt is displayed:
 
 .. code-block:: none
-   :caption: Additional output from a test failure.  
+   :caption: Additional output from a test failure.  Notice the error diagnosis in the output below, as well as how Switchyard invokes the debugger (pdb) at the point of failure.
 
 
     ************************************************************
@@ -186,7 +186,10 @@ Following the overall test results showing passed, failed, and pending tests, so
     -> net.send_packet(recvdata.input_port, recvdata.packet)
     (Pdb) 
 
-Again, notice that the last couple lines show a (partial) stack trace.   These lines can help a bit to understand the context of the error, but it is often helpful to show the source code around the failed code in light of the error diagnosis, which was "Test failed when you called send_packet: output on device eth1 unexpected..."  If we keep reading the diagnosis, we see that the packet was expected to be forwarded out two ports (eth0 and eth2), but was only sent on eth1.  Showing the source code can be accomplished with ``pdb``'s ``list`` command::
+Again, notice that the last couple lines show a (partial) stack trace.   These lines can help a bit to understand the context of the error, but it is often helpful to show the source code around the failed code in light of the error diagnosis, which was "Test failed when you called send_packet: output on device eth1 unexpected..."  If we keep reading the diagnosis, we see that the packet was expected to be forwarded out two ports (eth0 and eth2), but was only sent on eth1.  Showing the source code can be accomplished with ``pdb``'s ``list`` command:
+
+.. code-block:: none
+   :caption: Output from pdb when listing the source code at the point of failure.
 
     (Pdb) list
       8     
@@ -207,7 +210,10 @@ Between thinking about the error diagnosis and viewing the code, we might realiz
 Another example
 ^^^^^^^^^^^^^^^
 
-To give a slightly different example, let's say that we're developing the code for a network hub, and because we love sheep, we decide to set every Ethernet source address to ``ba:ba:ba:ba:ba:ba``.  When we execute Switchyard in test mode (e.g., ``swyard -t hubtests.py badhub.py``), we get the following output::
+To give a slightly different example, let's say that we're developing the code for a network hub, and because we love sheep, we decide to set every Ethernet source address to ``ba:ba:ba:ba:ba:ba``.  When we execute Switchyard in test mode (e.g., ``swyard -t hubtests.py baaadhub.py``), we get the following output:
+
+.. code-block:: none
+   :caption: Test output for an example in which all Ethernet source addresses have been hijacked by sheep.
 
     Results for test scenario hub tests: 1 passed, 1 failed, 6 pending
 
@@ -261,7 +267,10 @@ To give a slightly different example, let's say that we're developing the code f
     ... output continues ...
 
 
-In this case, we can see that the first section is basically the same as with the other erroneous code, but the diagnosis is different:  Switchyard tells us that in the Ethernet header, the ``src`` attribute was wrong.  If, at the ``pdb`` prompt, we type ``list``, we see our wooly problem::
+In this case, we can see that the first section is basically the same as with the other erroneous code, but the diagnosis is different:  Switchyard tells us that in the Ethernet header, the ``src`` attribute was wrong.  If, at the ``pdb`` prompt, we type ``list``, we see our wooly problem:
+
+.. code-block:: none
+   :caption: Pdb source code listing showing the point of test failure.
 
     (Pdb) list
      28             else:
@@ -309,7 +318,10 @@ When running Switchyard, especially in test mode, it is often very helpful to us
    :language: python
    :linenos:
 
-If we run the above program, we will stop at the line *after* the call to ``debugger``::
+If we run the above program, we will stop at the line *after* the call to ``debugger``:
+
+.. code-block:: none
+   :caption: When the debugger() call is added to a Switchyard program, execution is halted at the *next* line of code.
 
     > /users/jsommers/dropbox/src/switchyard/documentation/code/enterdebugger.py(17)main()
     -> hdrs = packet.num_headers()
@@ -326,5 +338,11 @@ If we run the above program, we will stop at the line *after* the call to ``debu
      21         net.shutdown()
     [EOF]
     (Pdb) 
+
+
+.. note::
+
+   There are currently a couple limitations when entering ``pdb`` through a call to ``debugger()``.  First, if you attempt to exit ``pdb`` while the Switchyard program is still running, an exception from ``pdb``'s base class (``Bdb``) will get raised.  Thus, it may take a couple invocations of the ``quit`` command to actually exit.  Second, only the ``pdb`` debugger may be invoked through a call to ``debugger``.  
+
 
 As noted above, if there is a runtime error in your code, Switchyard will automatically dump you into the Python debugger (pdb) to see exactly where the program crashed and what may have caused it.  You can use any Python commands to inspect variables, and try to understand the state of the program at the time of the crash.
