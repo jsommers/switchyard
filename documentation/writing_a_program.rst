@@ -5,11 +5,11 @@ Writing a Switchyard program
 
 .. index:: switchy_main, main
 
-A Switchyard program is simply a Python program that includes a particular entrypoint function that accepts a single parameter.  The startup function can simply be named ``main``, but can also be named ``switchy_main`` if you like.  The function must accept a single parameter, which is a reference to the Switchyard *network object* (described below).  Method calls on the network object are used to send and receive packets to and from network ports.
+A Switchyard program is simply a Python program that includes a particular entrypoint function which accepts a single parameter.  The startup function can simply be named ``main``, but can also be named ``switchy_main`` if you like.  The function must accept a single parameter, which is a reference to the Switchyard *network object* (described below).  Method calls on the network object are used to send and receive packets to and from network ports.
 
 .. index:: swyard
 
-A Switchyard program isn't executed *directly* with the Python interpreter.  Instead, the program ``swyard`` is used to start up the Switchyard framework and to load your code.  Details on how to do this are given in the chapters on running a Switchyard in the "test" environment (:ref:`runtest`) and running Switchyard in a "live" environment (:ref:`runlive`).
+A Switchyard program isn't executed *directly* with the Python interpreter.  Instead, the program ``swyard`` is used to start up the Switchyard framework and to load your code.  When Switchyard starts your code it looks for a function named ``main`` and invokes it, passing in the network object as the only parameter.  Details on how to start Switchyard (and thus your program) are given in the chapters on :ref:`running a Switchyard in the test environment <runtest>` and :ref:`running Switchyard in a live environment <runlive>`.
 
 A Switchyard program will typically also import other Switchyard modules such as modules for parsing and constructing packets, dealing with network addresses, and other functions.  These modules are introduced below and described in detail in the API reference chapter (:ref:`apiref`).
 
@@ -23,7 +23,7 @@ Sending and receiving packets
 
 As a way to describe two of the most important methods on the network object, here is a program that receives one packet, prints it out, sends it *back out the same interface*, then quits.
 
-Notice in the code below that we only need to import :py:mod:`switchyard.lib.userlib` to get access to various Switchyard classes and functions.  Although you can import individual Switchyard modules separately (for the specific module to import, see :ref:`apiref`), but you will probably find that importing ``userlib`` is quite convenient.
+Notice in the code below that we only need to import :py:mod:`switchyard.lib.userlib` to get access to various Switchyard classes and functions; generally speaking, this is the *only* import you should ever need for any Switchyard program.  Although you can import individual Switchyard modules separately (for the specific module to import, see :ref:`apiref`), but you will probably find that importing ``userlib`` is much easier.
 
 .. literalinclude:: code/inout1.py
    :language: python
@@ -33,13 +33,13 @@ This program isn't likely to be very useful --- it is just meant as an illustrat
 
   * ``recv_packet(timeout=None)``
 
-    Not surprisingly, this method is used to receive at most one packet from any port.  The method will *block* until a packet is received, unless a timeout value >=0 is given.  The default is to block indefinitely.  The method returns a *namedtuple* (another example is given below, plus see :py:class:`collections.namedtuple` in the Python library reference) of length 3, which includes a timestamp for when the packet was received, the name of the input port on which the packet was received, and the packet itself.  
+    Not surprisingly, this method is used to receive at most one packet from any port.  The method will *block* until a packet is received, unless a timeout value >=0 is given.  The default is to block indefinitely.  The method returns a *namedtuple* of length 3, which includes a timestamp for when the packet was received, the name of the input port on which the packet was received, and the packet itself (another example is given below, plus see :py:class:`collections.namedtuple` in the Python library reference).
 
     The method raises a ``Shutdown`` exception if the Switchyard framework has been shut down.  It can also raise a ``NoPackets`` exception if no packets are received before the timeout value given to the method expires.
 
   * ``send_packet(output_port, packet)``
 
-    Again, the meaning of this method call is probably not especially surprising: when called, the given packet will be sent out the given output port.  For the ``output_port`` parameter, the string name of the port can be given, or an ``Interface`` object may also be supplied (see :ref:`intf-overview` as well as :ref:`intf-detail`).
+    Again, the meaning of this method call is probably not especially surprising: when called, the given packet will be sent out the given output port.  For the ``output_port`` parameter, the string name of the port can be given, or an ``Interface`` object may also be supplied (see below for :ref:`more about Interface objects <intf-overview>` as well as the :ref:`intf-detail`).
 
     This method returns ``None``.  If the ``output_port`` or some detail about the given packet is invalid (e.g., something other than a packet is passed as the second parameter), this method raises a ``ValueError``.
 
@@ -62,7 +62,7 @@ Let's rewrite the code above, and now put everything in a ``while`` loop so that
 
 .. index:: logging, ``log_debug``, ``log_info``, ``log_warn``, ``log_failure``
 
-In the example above, notice that we also changed the ``print`` function calls to ``log_info``.  Switchyard uses built-in Python logging capabilities (see :py:mod:`logging` in the Python library reference) for printing various notices to the console.  The logging functions, described in :ref:`logging-label`, each just accept one string parameter which is just the text to be printed on the console.
+In the example above, notice that we also changed the ``print`` function calls to ``log_info``.  Switchyard uses built-in Python logging capabilities (see :py:mod:`logging` in the Python library reference) for printing various notices to the console.  The :ref:`logging functions <logging-label>`, described below, each just accept one string parameter which is just the text to be printed on the console.
 
 For full details of the ``send_packet`` and ``recv_packet`` method calls, refer to :ref:`netobj` in the :ref:`apiref` section at the end of this documentation.
 
@@ -116,7 +116,7 @@ the above program might look like the following::
     09:10:08 2016/12/17     INFO eth1 has ethaddr 10:00:00:00:00:02 and ipaddr 10.10.0.1/255.255.0.0 and is of type Unknown
     09:10:08 2016/12/17     INFO eth2 has ethaddr 10:00:00:00:00:03 and ipaddr 192.168.1.1/255.255.255.0 and is of type Unknown
 
-The above example code was run in the Switchyard *test* environment (see :ref:`runtest`); when a Switchyard program is run in test mode, all interfaces will show type ``Unknown``.  Note also that there is *no inherent ordering* to the list of interfaces returned.
+The above example code was run in the :ref:`Switchyard *test* environment <runtest>`; when a Switchyard program is run in test mode, all interfaces will show type ``Unknown``.  Note also that there is *no inherent ordering* to the list of interfaces returned.
 
 There are a few convenience methods related to ``ports`` and ``interfaces``, 
 which can be used to look up a particular interface given a name, IPv4 address,
@@ -135,7 +135,9 @@ Note that the above lookup methods raise a ``KeyError`` exception if the lookup 
 Other methods on the network object
 -----------------------------------
 
-Lastly, there is a ``shutdown`` method available on the network object.  This method should be used by a Switchyard program prior to exiting, in order to clean up and shut down various resources.
+Lastly, there is a ``shutdown`` method available on the network object.  This method should be used by a Switchyard program prior to exiting in order to clean up and shut down various resources.
+
+
 
 Now, adding a bit to the previous example program, we have an almost-complete implementation of a network hub device:
 
