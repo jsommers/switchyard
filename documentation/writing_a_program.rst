@@ -341,6 +341,8 @@ For example, if we add a call to ``debugger()`` in the example code above just *
 As you can see, the program is paused on the next executable line following the call to ``debugger()``.  At this point, any valid ``pdb`` commands can be given to inspect program state.  Once again, see later sections for details on running Switchyard code (:ref:`runtest`, :ref:`runlive`) and on other debugging capabilities (:ref:`debugging`).
 
 
+.. rubric:: Footnotes
+
 .. [#f1] A hub is a network device with multiple physical ports.  Any packet
    to arrive on a port is sent back out *all* ports **except** for the one
    on which it arrived.

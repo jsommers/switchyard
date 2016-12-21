@@ -1,5 +1,9 @@
+.. _test-scenario-creation:
+
 Test scenario creation
 **********************
+
+
 
 In some situations, you may be given a set of tests to run in order to have some confidence that your program works correctly.  What if nobody has written a set of tests for poor you?  Never fear: creating a test scenario is pretty straightforward.
 
@@ -9,8 +13,7 @@ A test scenario is simply a Python program that exports one symbol (variable nam
  * A particular packet should be emitted out one or more ports
  * The user code should *time out* when calling ``recv_packet`` because no packets are available
 
-The class ``TestScenario`` is defined in the module ``switchyard.lib.testing``.  A scenario describes some imaginary network device (i.e., a switch or router) and some series of expectations of how a user program should behave if packets arrive on particular ports, etc.  The methods available on the 
-Scenario class reflect these basic requirements:
+The class ``TestScenario`` is defined in the module ``switchyard.lib.testing``.  A scenario describes some imaginary network device (i.e., a switch or router) and some series of expectations of how a user program should behave if packets arrive on particular ports, etc.  The methods available on the Scenario class reflect these basic requirements:
 
 .. py:class:: switchyard.lib.testing.TestScenario(name)
 
@@ -30,7 +33,7 @@ Scenario class reflect these basic requirements:
       Note that the order of adding expectations via calls to ``expect`` is critical:
       add expectations in the "right" order!
 
-The three "event" classes set up the specific expectations for each test, as described next.
+The three *event* classes set up the specific expectations for each test, as described next.
 
 .. py:class:: switchyard.lib.testing.PacketInputEvent(portname, packet, display=None)
 
