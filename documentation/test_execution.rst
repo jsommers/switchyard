@@ -23,7 +23,7 @@ When you run ``swyard`` in test mode and all tests pass, you'll see something si
 .. code-block:: none
    :caption: Abbreviated (normal) test output.
 
-    Results for test scenario hub tests:8 passed, 0 failed, 0 pending
+    Results for test scenario hub tests: 8 passed, 0 failed, 0 pending
 
     Passed:
     1   An Ethernet frame with a broadcast destination address
@@ -57,7 +57,7 @@ If you invoke ``swyard`` with the ``-v`` (verbose) option, the test output inclu
 .. code-block:: none
    :caption: Verbose test output.
 
-    Results for test scenario hub tests:8 passed, 0 failed, 0 pending
+    Results for test scenario hub tests: 8 passed, 0 failed, 0 pending
 
     Passed:
     1   An Ethernet frame with a broadcast destination address
@@ -98,7 +98,6 @@ Say that we've done something wrong in our code which causes a test expectation 
 .. code-block:: none
    :caption: Normal (abbreviated) test output when one test fails. 
 
-
     Results for test scenario hub tests: 1 passed, 1 failed, 6 pending
 
 
@@ -111,12 +110,9 @@ Say that we've done something wrong in our code which causes a test expectation 
         The Ethernet frame with a broadcast destination address
         should be forwarded out ports eth0 and eth2
             Expected event: send_packet(s) Ethernet
-            30:00:00:00:00:02->ff:ff:ff:ff:ff:ff IP | IPv4
-            172.16.42.2->255.255.255.255 ICMP | ICMP EchoRequest 0 0 (0
-            data bytes) out eth2 and Ethernet
-            30:00:00:00:00:02->ff:ff:ff:ff:ff:ff IP | IPv4
-            172.16.42.2->255.255.255.255 ICMP | ICMP EchoRequest 0 0 (0
-            data bytes) out eth0
+            30:00:00:00:00:02->ff:ff:ff:ff:ff:ff IP | IPv4 | ICMP out
+            eth0 and Ethernet 30:00:00:00:00:02->ff:ff:ff:ff:ff:ff IP |
+            IPv4 | ICMP out eth2
 
 
     Pending (couldn't test because of prior failure):
@@ -144,26 +140,26 @@ Following the overall test results showing passed, failed, and pending tests, so
 .. code-block:: none
    :caption: Additional output from a test failure.  Notice the error diagnosis in the output below, as well as how Switchyard invokes the debugger (pdb) at the point of failure.
 
-
     ************************************************************
     Your code didn't crash, but a test failed.
     ************************************************************
 
     This is the Switchyard equivalent of the blue screen of death.
-    Here (repeating what's above) is the failure that occurred:
+    As far as I can tell, here's what happened:
 
-        The Ethernet frame with a broadcast destination address
-        should be forwarded out ports eth0 and eth2
-        In particular:
-            Test failed when you called send_packet: output on device
-            eth1 unexpected (I expected this: send_packet(s) Ethernet
+        Expected event:
+            The Ethernet frame with a broadcast destination address
+            should be forwarded out ports eth0 and eth2
+
+        Failure observed:
+            You called send_packet with an unexpected output port eth1.
+            Here is what Switchyard expected: send_packet(s) Ethernet
             30:00:00:00:00:02->ff:ff:ff:ff:ff:ff IP | IPv4
             172.16.42.2->255.255.255.255 ICMP | ICMP EchoRequest 0 0 (0
-            data bytes) out eth2 and Ethernet
+            data bytes) out eth0 and Ethernet
             30:00:00:00:00:02->ff:ff:ff:ff:ff:ff IP | IPv4
             172.16.42.2->255.255.255.255 ICMP | ICMP EchoRequest 0 0 (0
-            data bytes) out eth0)
-
+            data bytes) out eth2.
 
     You can rerun with the -v flag to include full dumps of packets that
     may have caused errors. (By default, only relevant packet context may
@@ -173,20 +169,13 @@ Following the overall test results showing passed, failed, and pending tests, so
     I'm throwing you into the Python debugger (pdb) at the point of failure.
     If you don't want pdb, use the --nopdb flag to avoid this fate.
 
-        - Type "help" or "?" to get a list of valid debugger commands.
-        - Type "exit" to get out.
-        - Type "where" or "bt" to print a full stack trace.
-        - You can use any valid Python commands to inspect variables
-          for figuring out what happened.
-
-
-    > /Users/jsommers/Dropbox/src/switchyard/switchyard/llnettest.py(96)send_packet()
+    > /Users/jsommers/Dropbox/src/switchyard/switchyard/llnettest.py(95)send_packet()
     -> SwitchyardTestEvent.EVENT_OUTPUT, device=devname, packet=pkt)
-    > /Users/jsommers/Dropbox/src/switchyard/documentation/code/inout2.py(13)main()
-    -> net.send_packet(recvdata.input_port, recvdata.packet)
+    > /Users/jsommers/Dropbox/src/switchyard/documentation/code/inout1.py(6)main()
+    -> net.send_packet(input_port, packet)
     (Pdb) 
 
-Again, notice that the last couple lines show a (partial) stack trace.   These lines can help a bit to understand the context of the error, but it is often helpful to show the source code around the failed code in light of the error diagnosis, which was "Test failed when you called send_packet: output on device eth1 unexpected..."  If we keep reading the diagnosis, we see that the packet was expected to be forwarded out two ports (eth0 and eth2), but was only sent on eth1.  Showing the source code can be accomplished with ``pdb``'s ``list`` command:
+Again, notice that the last couple lines show a (partial) stack trace.   These lines can help a bit to understand the context of the error, but it is often helpful to show the source code around the failed code in light of the error diagnosis under "Failure observed", which says that we called ``send_packet`` with an unexpected output port. If we keep reading the diagnosis, we see that the packet was expected to be forwarded out two ports (eth0 and eth2), but was instead sent on eth1.  Showing the source code can be accomplished with ``pdb``'s ``list`` command:
 
 .. code-block:: none
    :caption: Output from pdb when listing the source code at the point of failure.
@@ -205,7 +194,7 @@ Again, notice that the last couple lines show a (partial) stack trace.   These l
     [EOF]
     (Pdb) 
 
-Between thinking about the error diagnosis and viewing the code, we might realize that we have foolishly sent the frame out the same interface on which it arrived.
+Between thinking about the observed failure and viewing the code, we might realize that we have foolishly sent the frame out the same interface on which it arrived.
 
 Another example
 ^^^^^^^^^^^^^^^
@@ -216,7 +205,6 @@ To give a slightly different example, let's say that we're developing the code f
    :caption: Test output for an example in which all Ethernet source addresses have been hijacked by sheep.
 
     Results for test scenario hub tests: 1 passed, 1 failed, 6 pending
-
 
     Passed:
     1   An Ethernet frame with a broadcast destination address
@@ -229,10 +217,10 @@ To give a slightly different example, let's say that we're developing the code f
             Expected event: send_packet(s) Ethernet
             30:00:00:00:00:02->ff:ff:ff:ff:ff:ff IP | IPv4
             172.16.42.2->255.255.255.255 ICMP | ICMP EchoRequest 0 0 (0
-            data bytes) out eth2 and Ethernet
+            data bytes) out eth0 and Ethernet
             30:00:00:00:00:02->ff:ff:ff:ff:ff:ff IP | IPv4
             172.16.42.2->255.255.255.255 ICMP | ICMP EchoRequest 0 0 (0
-            data bytes) out eth0
+            data bytes) out eth2
 
 
     Pending (couldn't test because of prior failure):
@@ -256,18 +244,22 @@ To give a slightly different example, let's say that we're developing the code f
     ************************************************************
 
     This is the Switchyard equivalent of the blue screen of death.
-    Here (repeating what's above) is the failure that occurred:
+    As far as I can tell, here's what happened:
 
-        The Ethernet frame with a broadcast destination address
-        should be forwarded out ports eth0 and eth2
-        In particular:
-            An exact match failed.  In the Ethernet header, src is wrong
-            (is ba:ba:ba:ba:ba:ba but should be 30:00:00:00:00:02).
+        Expected event:
+            The Ethernet frame with a broadcast destination address
+            should be forwarded out ports eth0 and eth2
+
+        Failure observed:
+            You called send_packet and while the output port eth0 is ok,
+            an exact match of packet contents failed.  In the Ethernet
+            header, src is wrong (is ba:ba:ba:ba:ba:ba but should be
+            30:00:00:00:00:02).
 
     ... output continues ...
 
 
-In this case, we can see that the first section is basically the same as with the other erroneous code, but the diagnosis is different:  Switchyard tells us that in the Ethernet header, the ``src`` attribute was wrong.  If, at the ``pdb`` prompt, we type ``list``, we see our wooly problem:
+In this case, we can see that the first section is basically the same as with the other erroneous code, but the failure description is different:  Switchyard tells us that in the Ethernet header, the ``src`` attribute was wrong.  If, at the ``pdb`` prompt, we type ``list``, we see our wooly problem:
 
 .. code-block:: none
    :caption: Pdb source code listing showing the point of test failure.
@@ -283,7 +275,7 @@ In this case, we can see that the first section is basically the same as with th
     [EOF]
     (Pdb) 
 
-So, although the error diagnosis cannot generally state *why* a problem has happened, it can sometimes be quite specific about *what* has gone wrong.  That, coupled with showing the source code context, can be very helpful for tracking down bugs.  It might also be helpful to note that at the pdb prompt, you can inspect *any* variable in order to figure out what's happened, walk up and down the call stack, execute arbitrary Python statements, and even step *back* in execution in order to try to determine what has happened.  Debuggers can be a little bit daunting, but they're incredibly helpful tools.
+So, although the error diagnosis cannot generally state *why* a problem has happened, it can sometimes be quite specific about *what* has gone wrong.  That, coupled with showing the source code context, can be very helpful for tracking down bugs.  It might also be helpful to note that at the pdb prompt, you can inspect *any* variable in order to figure out what's happened, walk up and down the call stack and execute arbitrary Python statements in order to try to determine what has happened.  Debuggers can be a little bit daunting, but they're incredibly helpful tools.
 
 .. seealso:: 
 

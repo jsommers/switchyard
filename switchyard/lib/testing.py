@@ -423,7 +423,7 @@ class PacketMatcher(object):
         aan = 'an' if xtype == 'exact' else 'a'
         xresults = "passed" if firstmatch else "failed"
         conjunction = ', but' if firstmatch else '. '
-        diagnosis = ["{} {} match of packet contents {}{}".format(aan.capitalize(), xtype, xresults, conjunction)]
+        diagnosis = ["{} {} match of packet contents {}{}".format(aan, xtype, xresults, conjunction)]
 
         # are there predicates that were tested?  
         if len(results):
