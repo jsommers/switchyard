@@ -194,7 +194,7 @@ def run_tests(scenario_names, usercode_entry_point, options):
         # if we got an exception, print some contextual information
         # and dump the user into pdb to try to see what happened.
         if failure is not None:
-            expected = None
+            expected = "Nothing: test scenario was apparently done."
             if sobj.get_failed_test() is not None:
                 expected = sobj.get_failed_test().description
 
