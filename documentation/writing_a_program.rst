@@ -201,7 +201,7 @@ Note that the ``len`` function on a packet returns the number of *bytes* that th
 
 Packet header objects can be accessed conveniently by indexing.  Standard negative indexing also works.  For example, to obtain a reference to the Ethernet header object and to inspect and modify the Ethernet header, we might do the following:
 
->>> p[0]
+>>> p[0] # access by index
 <switchyard.lib.packet.ethernet.Ethernet object at 0x104474248>
 >>> p[0].src
 EthAddr('00:00:00:00:00:00')
