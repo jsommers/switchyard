@@ -572,6 +572,8 @@ class PacketInputEvent(SwitchyardTestEvent):
         # delivering it.  cost is immaterial since this
         # is just testing code!
         self._packet = Packet(raw=self._packet.to_bytes(), first_header=self._first_header)
+        if self._device not in scenario.interfaces():
+            raise TestScenarioFailure("Test scenario problem: input event refers to an interface ({}) that is not configured in the scenario (these are the interfaces configured: {})".format(self._device, ', '.join(scenario.interfaces().keys())))
         if self._copyfromlastout:
             intf,outcls,outprop,incls,inprop = self._copyfromlastout
             hdrval = scenario.lastout(intf, outcls, outprop)
@@ -959,33 +961,42 @@ class TestScenario(object):
         Just carp warnings if anything looks incorrect, but don't
         fail: punt the problem to the user.
 
-        Returns nothing.
+        Returns bool (True if no warnings, False if there are warnings)
         '''
+        nowarnings = True
         log_debug("Doing sanity check on test scenario {}".format(self.name))
         for ev in self._pending_events:
             if isinstance(ev.event, PacketInputEvent):
                 if ev.event._device not in self._interface_map:
                     log_warn("PacketInputEvent ({}) refers to a device not part of scenario interface map".format(str(ev.event)))
+                    nowarnings = False
                 if not isinstance(ev.event._packet, Packet):
                     log_warn("PacketInputEvent ({}) refers to a non-packet object ({})".format(str(ev.event), type(ev.event._packet)))
+                    nowarnings = False
             elif isinstance(ev.event, PacketOutputEvent):
                 if not len(ev.event._device_packet_map):
                     log_warn("PacketOutputEvent ({}) doesn't have any output devices included".format(ev.event))
+                    nowarnings = False
                 for dev,pkt in ev.event._device_packet_map.items():
                     if dev not in self._interface_map:
-                        log_warn("PacketOutputEvent () refers to a device not part of scenario interface map".format(str(ev.event)))
+                        log_warn("PacketOutputEvent () refers to a device not part of test scenario".format(str(ev.event)))
+                        nowarnings = False
                     if not isinstance(pkt, PacketMatcher):
                         log_warn("PacketOutputEvent ({}) refers to a non-PacketMatcher object ({})".format(str(ev.event), type(pkt)))
+                        nowarnings = False
                     if pkt._predicates:
                         for pred in pkt._predicates:
                             try:
                                 xfn = eval(pred)
                             except Exception as e:
                                 log_warn("Couldn't eval the predicate ({}): {}".format(pred, str(e)))
+                                nowarnings = False
             elif isinstance(ev.event, PacketInputTimeoutEvent):
                 pass
             else:
                 log_warn("Unrecognized event type in scenario event list: {}".format(str(type(ev.event))))
+                nowarnings = False
+        return nowarnings
 
 def compile_scenario(scenario_file, output_filename=None):
     '''

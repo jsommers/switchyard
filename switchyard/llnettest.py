@@ -74,8 +74,9 @@ class LLNetTest(LLNetBase):
 
         ev = self.scenario.next()
         if ev.match(SwitchyardTestEvent.EVENT_INPUT) == SwitchyardTestEvent.MATCH_SUCCESS:
+            rv = ev.generate_packet(self.timestamp, self.scenario)
             self.scenario.testpass()
-            return ev.generate_packet(self.timestamp, self.scenario)
+            return rv
         else:
             raise TestScenarioFailure("recv_packet was called instead of {}".format(str(ev)))
 
@@ -148,6 +149,8 @@ def run_tests(scenario_names, usercode_entry_point, options):
     '''
     for sname in scenario_names:
         sobj = get_test_scenario_from_file(sname)
+        if not sobj.scenario_sanity_check():
+            log_warn("Your test scenario has warnings: expect trouble ahead.")
         sobj.write_files()
         sobj.do_setup()
         net = LLNetTest(sobj)

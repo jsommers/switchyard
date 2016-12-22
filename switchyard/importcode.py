@@ -45,4 +45,8 @@ def import_or_die(module_name, entrypoint_names):
         if method in existing_names:
             return getattr(user_module, method)
 
-    raise ImportError("Required entrypoint function (one of {}) not found in your code".format(entrypoint_names))
+    if len(entrypoint_names) > 1:
+        entrypoints = "one of {}".format(', '.join(entrypoint_names))
+    else:
+        entrypoints = entrypoint_names[0]
+    raise ImportError("Required entrypoint function or symbol ({}) not found in your code".format(entrypoints))

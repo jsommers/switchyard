@@ -27,7 +27,6 @@ Notice in the code below that we only need to import :py:mod:`switchyard.lib.use
 
 .. literalinclude:: code/inout1.py
    :language: python
-   :linenos:
     
 This program isn't likely to be very useful --- it is just meant as an illustration of the most important two methods on the network object:
 
@@ -50,7 +49,6 @@ Returning briefly to the ``recv_packet`` method, observe that in the above examp
 
 .. literalinclude:: code/inout2.py
    :language: python
-   :linenos:
 
 Importantly, note that in the above examples we are not handling any potential exceptions that could occur.  In particular, we really should be handling *at least* the situation in which the framework is shut down (and we receive a ``Shutdown`` exception).  Just for completeness, we should also handle the ``NoPackets`` exception, although if the code is designed to block indefinitely we shouldn't receive that particular exception.
 
@@ -58,7 +56,6 @@ Let's rewrite the code above, and now put everything in a ``while`` loop so that
 
 .. literalinclude:: code/inoutloop.py
    :language: python
-   :linenos:
 
 .. index:: logging, ``log_debug``, ``log_info``, ``log_warn``, ``log_failure``
 
@@ -141,7 +138,7 @@ Let's now add a bit to the previous example program to turn it into an almost-co
 
 .. literalinclude:: code/fullhub.py
    :language: python
-   :linenos:
+   :caption: A (nearly) full implementation of a hub.
 
 There's still one thing missing from the above code, which is for the hub to ignore any frames that are destined to the hub itself.  That is, if an Ethernet destination address in a received frame is the same as an Ethernet address assigned to one of the ports on the hub, the frame should *not* be forwarded (it can simply be ignored).  Finishing off the hub by doing this is left as an exercise.
 

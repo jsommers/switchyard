@@ -3,79 +3,95 @@
 Test scenario creation
 **********************
 
+Writing tests to determine whether a piece of code behaves as expected is an important part of the software development process.  With Switchyard, it is possible to create a set of tests that verify whether a program attempts to receive packets when it should and sends the *right* packet(s) out the *right* ports.  This section describes how to construct such tests.
+
+A *test scenario* is Switchyard's term for a series of tests that verify a program's behavior.  A test scenario is simply a Python source code file that includes a particular variable name (symbol) called ``scenario``, which must refer to an instance of the class ``TestScenario``.  A ``TestScenario`` object contains the basic configuration for an imaginary network device along with an ordered series of *test expectations*.  These expectations may be one of three types:
+
+  * that a particular packet should arrive on a particular interface/port,
+  * that a particular packet should be emitted out one or more ports, and
+  * that the user program should *time out* when calling ``recv_packet`` because no packets are available.
+
+To start off, here is an example of an *empty* test scenario:
+
+.. literalinclude:: code/emptytestscenario.py
+   :caption: An empty test scenario.
+   :language: python
+
+If we run ``swyard`` in test mode using this test description and *any* Switchyard program, here's the output we should see:
+
+.. code-block:: none
+
+    Results for test scenario test example: 0 passed, 0 failed, 0 pending
 
 
-In some situations, you may be given a set of tests to run in order to have some confidence that your program works correctly.  What if nobody has written a set of tests for poor you?  Never fear: creating a test scenario is pretty straightforward.
+    All tests passed!
 
-A test scenario is simply a Python program that exports one symbol (variable name) called ``scenario``, which refers to an instance of the class ``TestScenario``.  A ``TestScenario`` object contains a series of *test expectations*.  These expectations may be one of three types:
+Notice that in the above example code, we assigned the instance of the ``TestScenario`` class to a variable named ``scenario``.  An assignment to this variable name is **required**.  If it is not found, you'll get an ``ImportError`` exception.  Notice also that there's one parameter to ``TestScenario``: this value can be any meaningful description of the test scenario.
 
- * A particular packet should arrive on a particular interface/port
- * A particular packet should be emitted out one or more ports
- * The user code should *time out* when calling ``recv_packet`` because no packets are available
+There are two methods on ``TestScenario`` that are used to configure the test environment:
 
-The class ``TestScenario`` is defined in the module ``switchyard.lib.testing``.  A scenario describes some imaginary network device (i.e., a switch or router) and some series of expectations of how a user program should behave if packets arrive on particular ports, etc.  The methods available on the Scenario class reflect these basic requirements:
+  * ``add_interface(name, macaddr, ipaddr=None, netmask=None, **kwargs)``
 
-.. py:class:: switchyard.lib.testing.TestScenario(name)
+    This method adds an interface/port to an imaginary network device that is the subject of the test scenario.  For example, if you are creating a test for an IP router and you want to verify that a packet received on one port is forwarded out another (different) port on the device, you will need to add *at least* two interfaces.  Arguments to the ``add_interface`` method are used to specify the interface's name (e.g., ``en0``), its hardware Ethernet (MAC) address, and its (optional) IP address and netmask.  
 
-   Initialize a new test scenario.  The name can be any meaningful
-   description of the given test sequence.
+    Two optional keyword arguments can also be given: ``ifnum`` can be used to explicitly specify the number (integer) associated with this interface, and ``iftype`` can be used to explicitly indicate the type of the interface.  A value from the enumeration ``InterfaceType`` must be used, e.g., ``Wired``, ``Wireless``, ``Loopback``, or ``Unknown``. The type of an interface defaults to ``InterfaceType.Unknown``.
 
-   .. py:method:: add_interface(name, ethaddr, ipaddr=None, netmask=None)
+  * ``add_file(filename, text)``
 
-      Add an interface to the imaginary network device that is the subject
-      of this test sequence.  
+    It is sometimes necessary to make sure that certain text files are available during a test that a user program expects, e.g., a static forwarding table for an IP router.  This method can be used to specify that a file with the name ``filename`` and with contents ``text`` should be written to the current directory when the test scenario is run.
 
-   .. py:method:: expect(expectation, description)
+There is one method that creates a new test expectation in the test scenario:
 
-      Add a new expectation to the test scenario.  The expectation argument must
-      be an object of type ``PacketInputEvent``, ``PacketInputTimeoutEvent``, or 
-      ``PacketOutputEvent``.
-      Note that the order of adding expectations via calls to ``expect`` is critical:
-      add expectations in the "right" order!
+  * ``expect(expectation_object, description)``
+
+    This method adds a new expected event to the test scenario.  The expectation argument must be an object of type ``PacketInputEvent``, ``PacketInputTimeoutEvent``, or ``PacketOutputEvent`` (each described below).  The order in which expectations are added to a test scenario is critical: be certain that they're added in the right order for the test you want to accomplish!
+
+    The description parameter is a short text description of what this test step is designed to accomplish.  In ``swyard`` test output, this description is what is printed for each step in both the abbreviated and verbose output: make sure it is descriptive enough so that the purpose of the test can be easily understood.  At the same time, try to keep the text short so that it isn't overwhelming to a reader.
+
 
 The three *event* classes set up the specific expectations for each test, as described next.
 
-.. py:class:: switchyard.lib.testing.PacketInputEvent(portname, packet, display=None)
+  * ``PacketInputEvent(portname, packet, display=None)``
 
-   Create an expectation that a particular packet will arrive on a port named ``portname``.  
-   The packet must be an instance of the Switchyard ``Packet`` class.  The ``portname``
-   is just a string like ``eth0``.
+    Create an expectation that a particular packet will arrive on a port named ``portname``.  
+    The packet must be an instance of the Switchyard ``Packet`` class.  The ``portname``
+    is just a string like ``eth0``.  This port/interface must have previously be configured in the test scenario using the method ``add_interface`` (see above).
 
-   The ``display`` argument indicates whether a particular header in the packet should
-   be emphasized on output when Switchyard shows test output to a user.  By default,
-   all headers are shown.  If a test creator wants to ignore the Ethernet header but
-   emphasize the IPv4 header, he/she could use the argument ``display=IPv4``.  That is,
-   the argument is just the class name of the packet header to be emphasized.
+    The ``display`` argument indicates whether a particular header in the packet should
+    be emphasized on output when Switchyard shows test output to a user.  By default,
+    all headers are shown.  If a test creator wants to ignore the Ethernet header but
+    emphasize the IPv4 header, he/she could use the argument ``display=IPv4``.  That is,
+    the argument is just the class name of the packet header to be emphasized.
 
-.. py:class:: switchyard.lib.testing.PacketInputTimeoutEvent(timeout)
+  * ``PacketInputTimeoutEvent(timeout)``
 
-   Create an expectation that the Switchyard user program will *time out* prior to receiving 
-   a packet.  The timeout value is the number of seconds to wait within the test framework
-   before raising the ``NoPackets`` exception in the user code.  In order for this test expectation
-   to pass, the user code must correctly handle the exception and must not emit a packet.
+    Create an expectation that the Switchyard user program will *time out* prior to receiving 
+    a packet.  The timeout value is the number of seconds to wait within the test framework
+    before raising the ``NoPackets`` exception in the user code.  In order for this test expectation
+    to pass, the user code must correctly handle the exception and must not emit a packet.
+ 
+  * ``PacketOutputEvent(*args, display=None, exact=True, predicates=[], wildcard=[])``
 
-.. py:class:: switchyard.lib.testing.PacketOutputEvent(*args, display=None, exact=True, wildcard=[], predicates=[])
-
-   Create an expectation that the user program will emit packets out one or more ports/interfaces.
-   The only required arguments are ``args``, which is an *even number* of arguments where, for
-   each pair of arguments, the first is a port name (e.g., eth0) and the second is a reference to
-   a packet object.  Normally, a test wishes to establish that the *same* packet has been emitted
-   out multiple interfaces.  To do that, you could simply write::
+    Create an expectation that the user program will emit packets out one or more ports/interfaces.
+    The only required arguments are ``args``, which is an *even number* of arguments where, for
+    each pair of arguments, the first is a port name (e.g., eth0) and the second is a reference to
+    a packet object.  Normally, a test wishes to establish that the *same* packet has been emitted
+    out multiple interfaces.  To do that, you could simply write::
 
        p = Packet()
        # fill in some packet headers ...
        PacketOutputEvent("eth0", p, "eth1", p, "eth2", p)
 
-   The above code expects that the same packet (named p) will be emitted out three interfaces (eth0, eth1, and eth2).
+    The above code expects that the same packet (named p) will be emitted out three interfaces (eth0, eth1, and eth2).
 
-   By default, the PacketOutputEvent class looks for an **exact** match between the reference
-   packet supplied to PacketOutputEvent and the packet that the user code actually emits.  In some
-   cases, this isn't appropriate or even possible.  For example, you may want to verify that packets
-   are forwarded correctly using standard IP (longest prefix match) forwarding rules, but you may not
-   know the payload contents of a packet because another test element may modify them.  As another
-   example, in IP forwarding you know that the TTL (time-to-live) should be decremented by one, but
-   the specific value in an outgoing packet depends on the value on the incoming packet, which the
-   test framework may not know in advance.  To handle these situations, you can supply ``exact``, ``wildcard``, and/or ``predicates`` arguments.
+    By default, the PacketOutputEvent class looks for an **exact** match between the reference
+    packet supplied to PacketOutputEvent and the packet that the user code actually emits.  In some
+    cases, this isn't appropriate or even possible.  For example, you may want to verify that packets
+    are forwarded correctly using standard IP (longest prefix match) forwarding rules, but you may not
+    know the payload contents of a packet because another test element may modify them.  As another
+    example, in IP forwarding you know that the TTL (time-to-live) should be decremented by one, but
+    the specific value in an outgoing packet depends on the value on the incoming packet, which the
+    test framework may not know in advance.  To handle these situations, you can supply ``exact``,  ``wildcard``, and/or ``predicates`` arguments.
 
     * Setting ``exact`` to ``False`` causes only certain header fields to be compared to verify a "match".  In particular: Ethernet source and destination addresses, Ethernet ethertype field, IPv4 source and destination addresses and protocol, and TCP or UDP port numbers (or ICMP type/code fields).  
 
