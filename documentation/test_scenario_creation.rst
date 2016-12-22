@@ -44,54 +44,40 @@ There is one method that creates a new test expectation in the test scenario:
 
   * ``expect(expectation_object, description)``
 
-    This method adds a new expected event to the test scenario.  The expectation argument must be an object of type ``PacketInputEvent``, ``PacketInputTimeoutEvent``, or ``PacketOutputEvent`` (each described below).  The order in which expectations are added to a test scenario is critical: be certain that they're added in the right order for the test you want to accomplish!
+    This method adds a new expected event to the test scenario.  The first parameter must be an object of type ``PacketInputEvent``, ``PacketInputTimeoutEvent``, or ``PacketOutputEvent`` (each described below).  The order in which expectations are added to a test scenario is critical: be certain that they're added in the right order for the test you want to accomplish!
 
     The description parameter is a short text description of what this test step is designed to accomplish.  In ``swyard`` test output, this description is what is printed for each step in both the abbreviated and verbose output: make sure it is descriptive enough so that the purpose of the test can be easily understood.  At the same time, try to keep the text short so that it isn't overwhelming to a reader.
 
 
 The three *event* classes set up the specific expectations for each test, as described next.
 
-  * ``PacketInputEvent(portname, packet, display=None)``
+  * ``PacketInputEvent(portname, packet, display=None, copyfromlastout=None)``
 
-    Create an expectation that a particular packet will arrive on a port named ``portname``.  
-    The packet must be an instance of the Switchyard ``Packet`` class.  The ``portname``
-    is just a string like ``eth0``.  This port/interface must have previously be configured in the test scenario using the method ``add_interface`` (see above).
+    Create an expectation that a particular packet will arrive and be received on a port named ``portname``.  The packet must be an instance of the Switchyard ``Packet`` class.  The ``portname`` is just a string like ``eth0``.  This port/interface must have previously be configured in the test scenario using the method ``add_interface`` (see above).
 
-    The ``display`` argument indicates whether a particular header in the packet should
-    be emphasized on output when Switchyard shows test output to a user.  By default,
-    all headers are shown.  If a test creator wants to ignore the Ethernet header but
-    emphasize the IPv4 header, he/she could use the argument ``display=IPv4``.  That is,
-    the argument is just the class name of the packet header to be emphasized.
+    The ``display`` argument indicates whether a particular header in the packet should be emphasized on output when Switchyard shows test output to a user.  By default, all headers are shown.  If a test creator wants to ignore the Ethernet header but emphasize the IPv4 header, he/she could use the argument ``display=IPv4``.  That is, the argument is just the class name of the packet header to be emphasized.
+
+    The ``copyfromlastout`` argument can be used to address the situation in which a test scenario does not know some of the header values in the most recently sent packet, but must construct a new input packet that contains those (unknown) values.  This is a bit of a corner case, but comes up when 
+
+
 
   * ``PacketInputTimeoutEvent(timeout)``
 
-    Create an expectation that the Switchyard user program will *time out* prior to receiving 
-    a packet.  The timeout value is the number of seconds to wait within the test framework
-    before raising the ``NoPackets`` exception in the user code.  In order for this test expectation
-    to pass, the user code must correctly handle the exception and must not emit a packet.
+    Create an expectation that the Switchyard user program will call ``recv_packet`` but *time out* prior to receiving anything.  The timeout value is the number of seconds to wait within the test framework before raising the ``NoPackets`` exception in the user code.  In order for this test expectation to pass, the user code must correctly handle the exception and must not emit a packet.
+
+    Note that the test framework will pause for the *entire* duration of the given timeout.  If a user program calls ``net.recv_packet(timeout=1.0)`` but the timeout given for a ``PacketInputTimeoutEvent`` is 5 seconds, the call to ``recv_packet`` will appear to have blocked for 5 seconds, not 1.  So to force a ``NoPackets`` exception, the timeout value given to this event must be greater than the timeout value used in a call to ``recv_packet``.
  
   * ``PacketOutputEvent(*args, display=None, exact=True, predicates=[], wildcard=[])``
 
-    Create an expectation that the user program will emit packets out one or more ports/interfaces.
-    The only required arguments are ``args``, which is an *even number* of arguments where, for
-    each pair of arguments, the first is a port name (e.g., eth0) and the second is a reference to
-    a packet object.  Normally, a test wishes to establish that the *same* packet has been emitted
-    out multiple interfaces.  To do that, you could simply write::
+    Create an expectation that the user program will emit packets out one or more ports/interfaces. The only required arguments are ``args``, which must be an **even number** of arguments.  For each pair of arguments given, the first is a port name (e.g., eth0) and the second is a reference to a packet object.  Normally, a test wishes to establish that the *same* packet has been emitted out multiple interfaces.  To do that, you could simply write::
 
        p = Packet()
        # fill in some packet headers ...
        PacketOutputEvent("eth0", p, "eth1", p, "eth2", p)
 
-    The above code expects that the same packet (named p) will be emitted out three interfaces (eth0, eth1, and eth2).
+    The above code expects that the same packet (named ``p``) will be emitted out three interfaces (eth0, eth1, and eth2).
 
-    By default, the PacketOutputEvent class looks for an **exact** match between the reference
-    packet supplied to PacketOutputEvent and the packet that the user code actually emits.  In some
-    cases, this isn't appropriate or even possible.  For example, you may want to verify that packets
-    are forwarded correctly using standard IP (longest prefix match) forwarding rules, but you may not
-    know the payload contents of a packet because another test element may modify them.  As another
-    example, in IP forwarding you know that the TTL (time-to-live) should be decremented by one, but
-    the specific value in an outgoing packet depends on the value on the incoming packet, which the
-    test framework may not know in advance.  To handle these situations, you can supply ``exact``,  ``wildcard``, and/or ``predicates`` arguments.
+    By default, the PacketOutputEvent class looks for an **exact** match between the reference packet supplied to PacketOutputEvent and the packet that the user code actually emits.  In some cases, this isn't appropriate or even possible.  For example, you may want to verify that packets are forwarded correctly using standard IP (longest prefix match) forwarding rules, but you may not know the payload contents of a packet because another test element may modify them.  As another example, in IP forwarding you know that the TTL (time-to-live) should be decremented by one, but the specific value in an outgoing packet depends on the value on the incoming packet, which the test framework may not know in advance.  To handle these situations, you can supply ``exact``,  ``wildcard``, and/or ``predicates`` arguments.  
 
     * Setting ``exact`` to ``False`` causes only certain header fields to be compared to verify a "match".  In particular: Ethernet source and destination addresses, Ethernet ethertype field, IPv4 source and destination addresses and protocol, and TCP or UDP port numbers (or ICMP type/code fields).  
 

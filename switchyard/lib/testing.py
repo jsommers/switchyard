@@ -538,7 +538,16 @@ class PacketInputEvent(SwitchyardTestEvent):
         else:
             self._first_header = None
         self._display = display
-        self._copyfromlastout = copyfromlastout
+        if not isinstance(copyfromlastout, (tuple,list)):
+            raise ValueError("An argument to copyfromlastout must be a list or tuple")
+        if len(copyfromlastout) == 5 and isinstance(copyfromlastout[0], str):
+            self._copyfromlastout = [ copyfromlastout ]
+        elif isinstance(copyfromlastout[0], (tuple,list)):
+            self._copyfromlastout = copyfromlastout
+        elif copyfromlastout is not None:
+            raise ValueError("An argument to copyfromlastout must be a tuple or list of five elements, or a nested tuple or list where each element is a tuple/list of five elements.")
+        else:
+            self._copyfromlastout = copyfromlastout
 
     def __getstate__(self):
         rv = self.__dict__.copy()
@@ -575,10 +584,11 @@ class PacketInputEvent(SwitchyardTestEvent):
         if self._device not in scenario.interfaces():
             raise TestScenarioFailure("Test scenario problem: input event refers to an interface ({}) that is not configured in the scenario (these are the interfaces configured: {})".format(self._device, ', '.join(scenario.interfaces().keys())))
         if self._copyfromlastout:
-            intf,outcls,outprop,incls,inprop = self._copyfromlastout
-            hdrval = scenario.lastout(intf, outcls, outprop)
-            hdr = self._packet.get_header(incls)
-            setattr(hdr, inprop, hdrval)
+            for i in range(len(self._copyfromlastout)):
+                intf,outcls,outprop,incls,inprop = self._copyfromlastout[i]
+                hdrval = scenario.lastout(intf, outcls, outprop)
+                hdr = self._packet.get_header(incls)
+                setattr(hdr, inprop, hdrval)
         return ReceivedPacket(timestamp=timestamp, input_port=self._device, packet=self._packet)
 
     def fail_reason(self):
