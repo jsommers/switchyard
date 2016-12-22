@@ -1,5 +1,6 @@
 import sys
 from queue import Queue, Empty
+from threading import Lock
 from subprocess import getoutput
 import re
 import random
@@ -32,6 +33,8 @@ from ..address import ip_address
 
 has_ipv6 = True
 
+_lock = Lock()
+
 def _gather_ports():
     portset = set()
     out = getoutput("netstat -an | grep ^udp")
@@ -47,12 +50,14 @@ def _gather_ports():
                 portset.add(int(port))
     return portset
 
+
 def _get_ephemeral_port():
-    ports = _gather_ports()
-    while True:
-        p = random.randint(30000,60000)
-        if p not in ports:
-            return p
+    with _lock:
+        ports = _gather_ports()
+        while True:
+            p = random.randint(30000,60000)
+            if p not in ports and p not in ApplicationLayer._emuports():
+                return p
 
 _default_timeout = None
 
@@ -61,7 +66,8 @@ def getdefaulttimeout():
 
 def setdefaulttimeout(tmo):
     global _default_timeout
-    _default_timeout = tmo
+    with _lock:
+        _default_timeout = tmo
 
 def _normalize_addrs(addrtuple):
     return (ip_address(addrtuple[0]), int(addrtuple[1]))
@@ -136,7 +142,8 @@ class ApplicationLayer(object):
         local_addr = _normalize_addrs(local_addr)
         remote_addr = _normalize_addrs(remote_addr)
         xtup = (proto, local_addr[0], local_addr[1])
-        sockqueue = ApplicationLayer._to_app.get(xtup, None)
+        with _lock:
+            sockqueue = ApplicationLayer._to_app.get(xtup, None)
         if sockqueue is not None:
             sockqueue.put((local_addr,remote_addr,data))
         else:
@@ -150,7 +157,8 @@ class ApplicationLayer(object):
         Returns two queues: "downward" (fromapp) and "upward" (toapp).
         '''
         queue_to_app = Queue()
-        ApplicationLayer._to_app[s._sockid()] = queue_to_app
+        with _lock:
+            ApplicationLayer._to_app[s._sockid()] = queue_to_app
         return ApplicationLayer._from_app, queue_to_app
 
     @staticmethod
@@ -160,8 +168,9 @@ class ApplicationLayer(object):
         is re-bound to a different local port number.  Requires the socket object
         and old sockid.  Returns None.
         '''
-        sock_queue = ApplicationLayer._to_app.pop(oldid)
-        ApplicationLayer._to_app[s._sockid()] = sock_queue
+        with _lock:
+            sock_queue = ApplicationLayer._to_app.pop(oldid)
+            ApplicationLayer._to_app[s._sockid()] = sock_queue
 
     @staticmethod
     def _unregister_socket(s):
@@ -169,7 +178,8 @@ class ApplicationLayer(object):
         Internal method used to remove the socket from AppLayer registry.
         Warns if the "upward" socket queue has any left-over data.  
         '''
-        sock_queue = ApplicationLayer._to_app.pop(s._sockid())
+        with _lock:
+            sock_queue = ApplicationLayer._to_app.pop(s._sockid())
         if not sock_queue.empty():
             log_warn("Socket being destroyed still has data enqueued for application layer.")
 
