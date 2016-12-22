@@ -29,6 +29,12 @@ from ..llnetbase import ReceivedPacket
 from ..outputfmt import VerboseOutput
 
 
+class TestScenarioFailure(SwitchyardException):
+    '''An exception that is raised when a TestScenario expectation
+    is not met.'''
+    pass
+
+
 class SwitchyardTestEvent(object):
     MATCH_FAIL = 0x00
     MATCH_SUCCESS = 0x01
@@ -48,6 +54,10 @@ class SwitchyardTestEvent(object):
         events.  Default for base class is to return failed match.
         '''
         return SwitchyardTestEvent.MATCH_FAIL
+
+    @abstractmethod
+    def fail_reason(self):
+        pass
 
     def format_pkt(self, pkt):
         '''
@@ -329,6 +339,8 @@ class PacketMatcher(object):
                     raise Exception("Predicate was not a lambda expression: {}".format(predicate[i]))
                 self._predicates.append(predicates[i])
 
+        self._lastresults = None
+
     @property
     def packet(self):
         return self._packet
@@ -342,16 +354,21 @@ class PacketMatcher(object):
             while i < ref.num_headers() and i < current.num_headers():
                 if ref[i].__class__ != current[i].__class__:
                     return ("Header types differ at index {}: "
-                        "expecting {} but found {}. ".format(
+                        "expecting {} but found {}".format(
                         i, ref[i].__class__.__name__, 
                         current[i].__class__.__name__), i)
                 i += 1
             if i < ref.num_headers():
                 missing = [ref[x].__class__.__name__ for x in range(i, ref.num_headers())]
-                return ("Missing headers in your packet: {}. ".format(', '.join(missing)), i)
+                return ("Missing headers in your packet: {}".format(', '.join(missing)), i)
             if i < current.num_headers():
-                toomuch = [current[x].__class__.__name__ for x in range(i, current.num_headers())]
-                return ("Unnecessary headers were found in your packet: {}. ".format(', '.join(toomuch)),i)
+                toomuch = []
+                for j in range(i, current.num_headers()):
+                    if isinstance(current[j], RawPacketContents):
+                            toomuch.append('{} bytes of raw data'.format(len(current[j])))
+                    else:
+                        toomuch.append(current[x].__class__.__name__)
+                return ("Unnecessary headers were found in your packet: {}".format(', '.join(toomuch)),i)
 
             return (None, i)
 
@@ -375,7 +392,7 @@ class PacketMatcher(object):
 
             if diffs:
                 diffstr = '; '.join(diffs)
-                results.append("In the {} header, {}.".format(hdrname, diffstr))
+                results.append("In the {} header, {}".format(hdrname, diffstr))
 
         headerdiff,maxidx = compare_header_types(reference, comparepkt)
         if headerdiff is not None:
@@ -387,17 +404,18 @@ class PacketMatcher(object):
             compare_header_fields(reference[i], comparepkt[i], compare_results)
         return compare_results
 
-    def _diagnose(self, packet, results):
+    def fail_reason(self, packet):
         '''
         Construct/return a string that describes why a packet doesn't
         match this matcher.
         '''
+        results = self._lastresults
         firstmatch = results.pop(0)
         xtype = "exact" if self._exact else "wildcard"
         aan = 'an' if xtype == 'exact' else 'a'
         xresults = "passed" if firstmatch else "failed"
         conjunction = ', but' if firstmatch else '. '
-        diagnosis = ["{} {} match {}{}".format(aan.capitalize(), xtype, xresults, conjunction)]
+        diagnosis = ["{} {} match of packet contents {}{}".format(aan.capitalize(), xtype, xresults, conjunction)]
 
         # are there predicates that were tested?  
         if len(results):
@@ -424,15 +442,14 @@ class PacketMatcher(object):
             diagnosis.extend(differences)
 
             if VerboseOutput.enabled():
+                diagnosis[-1] += '.'
                 # packet header match failed
-                #diagnosis += ["{}".format(TextColor.magenta())]
                 diagnosis += ["\nDetails: here is the packet that failed the check: {},".format(packet)]
 
                 if self._exact:
-                    diagnosis += ["\nand here is exactly what I expected: {}.".format(self._matchobj.show(packet))]
+                    diagnosis += ["\nand here is exactly what I expected: {}".format(self._matchobj.show(packet))]
                 else:
-                    diagnosis += ["\nand here is what I expected to match: {}.".format(self._matchobj.show(packet))]
-                #diagnosis += ["{}".format(TextColor.reset())]
+                    diagnosis += ["\nand here is what I expected to match: {}".format(self._matchobj.show(packet))]
         return ' '.join(diagnosis)
 
     def match(self, packet):
@@ -443,12 +460,12 @@ class PacketMatcher(object):
         If no match, then construct a "nice" description
             of what doesn't match, and throw an exception.
         '''
-        results = [ self._matchobj.match(packet) ]
-        results += [ eval(fn)(packet) for fn in self._predicates ]
-        if all(results):
+        self._lastresults = [ self._matchobj.match(packet) ]
+        self._lastresults += [ eval(fn)(packet) for fn in self._predicates ]
+        if all(self._lastresults):
             return True
         else:
-            raise TestScenarioFailure(self._diagnose(packet, results))
+            return False
 
     def __getstate__(self):
         rv = self.__dict__.copy()
@@ -480,7 +497,7 @@ class PacketInputTimeoutEvent(SwitchyardTestEvent):
             self._timeout == other._timeout
 
     def __str__(self):
-        return "Timeout {}s on recv_packet".format(self._timeout)
+        return "Timeout after {}s on a call to recv_packet".format(self._timeout)
 
     def match(self, evtype, **kwargs):
         '''
@@ -495,6 +512,9 @@ class PacketInputTimeoutEvent(SwitchyardTestEvent):
     def generate_packet(self, timestamp, scenario):
         time.sleep(self._timeout)
         raise NoPackets()
+
+    def fail_reason(self):
+        return "Your code did not time out on a call to recv_packet"
 
 
 class PacketInputEvent(SwitchyardTestEvent):
@@ -551,6 +571,9 @@ class PacketInputEvent(SwitchyardTestEvent):
             setattr(hdr, inprop, hdrval)
         return ReceivedPacket(timestamp=timestamp, input_port=self._device, packet=self._packet)
 
+    def fail_reason(self):
+        return "Your code did not call recv_packet"
+
 
 class PacketOutputEvent(SwitchyardTestEvent):
     '''
@@ -568,9 +591,9 @@ class PacketOutputEvent(SwitchyardTestEvent):
             predicates = kwargs.pop('predicates')
 
         if len(args) == 0:
-            raise Exception("PacketOutputEvent expects a list of device1, pkt1, device2, pkt2, etc., but no arguments were given.")
+            raise ValueError("PacketOutputEvent expects a list of device1, pkt1, device2, pkt2, etc., but no arguments were given.")
         if len(args) % 2 != 0:
-            raise Exception("Arg list length to PacketOutputEvent must be even (device1, pkt1, device2, pkt2, etc.)")
+            raise ValueError("Arg list length to PacketOutputEvent must be even (device1, pkt1, device2, pkt2, etc.)")
         for i in range(0, len(args), 2):
             matcher = PacketMatcher(args[i+1], *predicates, **kwargs)
             self._device_packet_map[args[i]] = matcher
@@ -597,9 +620,27 @@ class PacketOutputEvent(SwitchyardTestEvent):
                 else:
                     return SwitchyardTestEvent.MATCH_PARTIAL
             else:
-                raise TestScenarioFailure("Test failed when you called send_packet: output device {} is ok, but\n\t{}\n\tdoesn't match what I expected\n\t{}".format(device, self.format_pkt(pkt, self._display), matcher.show(self._display)))
+                raise TestScenarioFailure("You called send_packet and while the output port {} is ok, {}.".format(device, matcher.fail_reason(pkt)))
         else:
-            raise TestScenarioFailure("Test failed when you called send_packet: output on device {} unexpected (I expected this: {})".format(device, str(self)))
+            raise TestScenarioFailure("You called send_packet with an unexpected output port {}.  Here is what Switchyard expected: {}.".format(device, str(self)))
+
+    def fail_reason(self):
+        message = ""
+        if len(self._matches):
+            plural = "" if len(self._matches) == 1 else "s"
+            message += "your code has sent a packet on port{} {}".format(plural,
+                ",".join(self._matches.keys()))
+            if len(self._device_packet_map):
+                message += ", but "
+        if len(self._device_packet_map):
+            plural = "" if len(self._device_packet_map) == 1 else "s"
+            if len(self._matches):
+                message += "not "
+            else:
+                message += "your code did not send packet{0} ".format(plural)
+            message += "on port{} {}".format(
+                    plural, ','.join(self._device_packet_map.keys()))
+        return message.capitalize()
 
     @property
     def matches(self):
@@ -752,16 +793,14 @@ class TestScenario(object):
         Return the next expected event to happen.
         '''
         if not self._pending_events:
-            raise TestScenarioFailure("next() called on scenario '{}', but not expecting anything else for this scenario".format(self.name))
+            raise TestScenarioFailure('''An internal error appears to have happened. 
+                next() was called on scenario '{}' to obtain the next expected event, 
+                but Switchyard isn't expecting anything else for this scenario'''.format(self.name))
         else:
             return self._pending_events[0].event
 
-    def testfail(self, message):
-        '''
-        Method to call if the current expected event does not
-        occur, i.e., the test expectation wasn't met.
-        '''
-        raise TestScenarioFailure("{}".format(message))
+    def failed_test_reason(self):
+        return self._pending_events[0].event.fail_reason()
 
     def _timer_expiry(self, signum, stackframe):
         '''
@@ -774,7 +813,9 @@ class TestScenario(object):
 
         if self._timer:
             log_debug("Timer expiration while expecting PacketOutputEvent")
-            raise TestScenarioFailure("Expected send_packet to be called to match {} in scenario {}, but it wasn't called, and after {} seconds I gave up.".format(str(self._pending_events[0]), self.name, self.timeout))
+            raise TestScenarioFailure('''Switchyard expected your program to call send_packet in 
+                order to match {} in scenario {}, but it wasn't called.  After {} seconds,
+                Switchyard gave up.'''.format(str(self._pending_events[0]), self.name, self.timeout))
         else:
             log_debug("Ignoring timer expiry with timer=False")
 

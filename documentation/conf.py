@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Switchyard'
-copyright = '2016, Joel Sommers'
+copyright = '2013-2017, Joel Sommers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -57,7 +57,7 @@ copyright = '2016, Joel Sommers'
 #
 # The short X.Y version.
 
-thisversion = '2016.12.dev2'
+thisversion = '2017.01.1'
 
 version = thisversion
 # The full version, including alpha/beta/rc tags.

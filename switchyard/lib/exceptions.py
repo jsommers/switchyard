@@ -8,11 +8,6 @@ class SwitchyardException(Exception):
     def __repr__(self):
         return self.message
 
-class TestScenarioFailure(SwitchyardException):
-    '''An exception that is raised when a TestScenario expectation
-    is not met.'''
-    pass
-
 class Shutdown(SwitchyardException):
     '''Exception that is raised in user Switchyard program when the
     framework is being shut down.'''

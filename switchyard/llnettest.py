@@ -77,8 +77,7 @@ class LLNetTest(LLNetBase):
             self.scenario.testpass()
             return ev.generate_packet(self.timestamp, self.scenario)
         else:
-            self.scenario.testfail(
-                "recv_packet called, but I was expecting {}".format(str(ev)))
+            raise TestScenarioFailure("recv_packet was called instead of {}".format(str(ev)))
 
     def send_packet(self, devname, pkt):
         if self.scenario.done():
@@ -97,8 +96,8 @@ class LLNetTest(LLNetBase):
         if match_results == SwitchyardTestEvent.MATCH_SUCCESS:
             self.scenario.testpass()
         elif match_results == SwitchyardTestEvent.MATCH_FAIL:
-            self.scenario.testfail(
-                "send_packet was called, but I was expecting {}".format(str(ev)))
+            raise TestScenarioFailure(
+                "send_packet was called instead of {}".format(str(ev)))
         else:
             # Not a pass or fail yet: means that we
             # are expecting more PacketOutputEvent objects before declaring
@@ -156,6 +155,8 @@ def run_tests(scenario_names, usercode_entry_point, options):
         log_info("Starting test scenario {}".format(sname))
         exc, value, tb = None, None, None
         message = '''All tests passed!'''
+        expected = None
+        failure = None
         try:
             usercode_entry_point(net)
         except Shutdown:
@@ -166,15 +167,18 @@ def run_tests(scenario_names, usercode_entry_point, options):
                 message = '''Your code didn't crash, but a test failed.'''
             else:
                 message = '''Your code didn't crash, but something unexpected happened.'''
+            failure = repr(value)
         except Exception:
             exc, value, tb = sys.exc_info()
             message = '''Your code crashed (or caused a crash) before I could run all the tests.'''
+            failure = "{}: {}".format(value.__class__.__name__, str(value))
         else:
             # it's possible that no exception gets raised, but that not all scenario steps are
             # completed.  if a failed test exists, then adjust the final output
             # message.
             if sobj.get_failed_test():
                 message = '''Your code didn't crash, but a test failed.'''
+                failure = sobj.failed_test_reason()
 
         sobj.do_teardown()
 
@@ -186,25 +190,27 @@ def run_tests(scenario_names, usercode_entry_point, options):
 
         # if we got an exception, print some contextual information
         # and dump the user into pdb to try to see what happened.
-        if value is not None:
-            failurecontext = ''
+        if failure is not None:
+            expected = None
             if sobj.get_failed_test() is not None:
-                failurecontext = '\n'.join(
-                    [' ' * 4 + s for s in textwrap.wrap(sobj.get_failed_test().description, 60)])
-                failurecontext += '\n{}In particular:\n'.format(' ' * 4)
-            failurecontext += '\n'.join([' ' * 8 +
-                                         s for s in textwrap.wrap(repr(value), 60)])
+                expected = sobj.get_failed_test().description
 
-            with red():
-                print ('''{}
-{}
-{}
-
+            print ('''{0}
+{1}
+{0}'''.format('*' * 60, message))
+            print('''
 This is the Switchyard equivalent of the blue screen of death.
-Here (repeating what's above) is the failure that occurred:
+As far as I can tell, here's what happened:
+''')
 
-{}
-'''.format('*' * 60, message, '*' * 60, failurecontext), file=sys.stderr)
+            print("    Expected event:") 
+            with yellow():
+                print('\n'.join([' ' * 8 +
+                                         s for s in textwrap.wrap(expected, 60)]))
+            print("    Failure observed:") 
+            with red():
+                print('\n'.join([' ' * 8 +
+                                         s for s in textwrap.wrap(failure, 60)]))
 
             if not options.verbose:
                 message = '''You can rerun with the -v flag to include full dumps of
@@ -223,6 +229,9 @@ context may be shown, not the full contents.)'''
                 print ('''
 I'm throwing you into the Python debugger (pdb) at the point of failure.
 If you don't want pdb, use the --nopdb flag to avoid this fate.
+''')
+                if options.verbose:
+                    print ('''
 
     - Type "help" or "?" to get a list of valid debugger commands.
     - Type "exit" to get out.
@@ -235,14 +244,12 @@ If you don't want pdb, use the --nopdb flag to avoid this fate.
                 if tb is not None:
                     dbg = _prepare_debugger(tb)
                     dbg.cmdloop()
-
-
                 else:
                     print("No exception traceback available")
 
         else:
             with green():
-                print('{}'.format(message), file=sys.stderr)
+                print('{}'.format(message))
 
 
 def main_test(options):
