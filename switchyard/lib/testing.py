@@ -69,14 +69,22 @@ class SwitchyardTestEvent(object):
         if VerboseOutput.enabled():
             cls = None
 
+        # no special header highlighted with display kw; just return the entire thing
         if cls is None:
             return str(pkt)
+
         idx = pkt.get_header_index(cls)
         if idx == -1:
             log_warn("Tried to find non-existent header for output formatting {}"
                 " (test scenario probably needs fixing)".format(str(cls)))
             return str(pkt)
-        return ' | '.join([str(pkt[i]) for i in range(idx, pkt.num_headers())])
+        hdrs = []
+        for i in range(pkt.num_headers()):
+            if i == idx:
+                hdrs.append(str(pkt[i]))
+            else:
+                hdrs.append(pkt[i].__class__.__name__)
+        return ' | '.join(hdrs)
 
 
 class AbstractMatch(metaclass=ABCMeta):
