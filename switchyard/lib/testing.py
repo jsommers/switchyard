@@ -281,11 +281,7 @@ class _PacketMatcher(object):
                 diagnosis[-1] += '.'
                 # packet header match failed
                 diagnosis += ["\nDetails: here is the packet that failed the check: {},".format(packet)]
-
-                if self._exact:
-                    diagnosis += ["\nand here is exactly what I expected: {}".format(self._showpkt(packet))]
-                else:
-                    diagnosis += ["\nand here is what I expected to match: {}".format(self._showpkt(packet))]
+                diagnosis += ["\nand here is what I expected to match: {}".format(self._showpkt(packet))]
         return ' '.join(diagnosis)
 
     def match(self, packet):

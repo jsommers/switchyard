@@ -43,7 +43,6 @@ class SrpyMatcherTest(unittest.TestCase):
         matcher = PacketMatcher(pkt, exact=False, wildcards=[(UDP, 'src')])
         self.assertTrue(matcher.match(pkt))
 
-
     def testWildcardMatch0(self):
         pkt = Ethernet() + IPv4()
         matcher = PacketMatcher(pkt, wildcards=[(Ethernet, 'src')], exact=True)
@@ -56,6 +55,9 @@ class SrpyMatcherTest(unittest.TestCase):
         pkt[0].dst = '01:02:03:04:05:06'
         self.assertFalse(matcher.match(pkt))
         self.assertIn("dst is wrong", matcher.fail_reason(pkt))
+
+        with self.assertRaises(ValueError):
+            PacketMatcher(pkt, wildcards=[(str, 'hello')])
 
     def testWildcardMatch1(self):
         pkt = Ethernet() + IPv4()
@@ -82,6 +84,7 @@ class SrpyMatcherTest(unittest.TestCase):
         matcher = PacketMatcher(pkt, predicates=['''lambda pkt: pkt[0].src == '00:00:00:00:00:01' '''], exact=False)
         rv = matcher.match(pkt)
         self.assertFalse(rv)
+        self.assertIn("(lambda pkt: pkt[0].src == '00:00:00:00:00:01' )", matcher.fail_reason(pkt))
 
     def testPredicateMatch3(self):
         pkt = Ethernet() + IPv4()
@@ -105,6 +108,14 @@ class SrpyMatcherTest(unittest.TestCase):
         pkt = Ethernet() + IPv4()
         with self.assertRaises(Exception):
             matcher = PacketMatcher(pkt, 'not a function', exact=False)
+        with self.assertRaises(Exception):
+            matcher = PacketMatcher(pkt, predicates='xstr', exact=False)
+        with self.assertRaises(Exception):
+            matcher = PacketMatcher(pkt, predicates=[123], exact=False)
+        with self.assertRaises(Exception):
+            matcher = PacketMatcher(pkt, predicates=['''
+def x():
+'''], exact=False)
 
     def testWildcarding(self):
         pkt = Ethernet() + IPv4()
