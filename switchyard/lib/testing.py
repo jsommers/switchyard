@@ -87,194 +87,6 @@ class SwitchyardTestEvent(object):
         return ' | '.join(hdrs)
 
 
-class AbstractMatch(metaclass=ABCMeta):
-    @abstractmethod
-    def match(self, pkt):
-        return False
-
-    @abstractmethod
-    def show(self, comparepkt):
-        pass
-
-
-class ExactMatch(AbstractMatch):
-    def __init__(self, pkt):
-        self._reference = pkt.to_bytes()
-
-    def match(self, pkt):
-        return self._reference == pkt.to_bytes()
-
-    def __str__(self):
-        return str(Packet(raw=self._reference))
-
-    def show(self, comparepkt):
-        return str(self)
-
-
-class WildcardMatchOpenflow(AbstractMatch):
-    ETHWILD = '**:**:**:**:**:**'
-    SINGLE = '*'
-    IP4WILD = '*.*.*.*'
-    IP6WILD = '**::**'
-    _ETHFMT = ("{} {}->{} {}", 'dl_src', 'dl_dst', 'dl_type')
-    _IPFMT = ("{} {}->{} {}", 'nw_src', 'nw_dst', 'nw_proto')
-    _ARPFMT = ("{} {}:{} {}:{}", 'arp_sha', 'arp_spa', 'arp_tha', 'arp_tpa')
-    _TPORTFMT = ("{} {}->{}", 'tp_src', 'tp_dst')
-    _SHOWORDER = [(Ethernet, _ETHFMT), (Arp, _ARPFMT),
-                  (IPv4, _IPFMT), (IPv6, _IPFMT),
-                  (TCP, _TPORTFMT), (UDP, _TPORTFMT), (ICMP, _TPORTFMT)]
-
-    _LOOKUP = {
-        'dl_src': [(Ethernet, 'src', ETHWILD)],
-        'dl_dst': [(Ethernet, 'dst', ETHWILD)],
-        'dl_type': [(Ethernet, 'ethertype', SINGLE)],
-        'nw_src': [(IPv4, 'src', IP4WILD), (IPv6, 'src', IP6WILD)],
-        'nw_dst': [(IPv4, 'dst', IP4WILD), (IPv6, 'dst', IP6WILD)],
-        'nw_proto': [(IPv4, 'protocol', SINGLE), (IPv6, 'protocol', SINGLE)],
-        'tp_src': [(TCP, 'src', SINGLE), (UDP, 'src', SINGLE), (ICMP, 'icmptype', SINGLE)],
-        'tp_dst': [(TCP, 'dst', SINGLE), (UDP, 'dst', SINGLE), (ICMP, 'icmpcode', SINGLE)],
-        'arp_tpa': [(Arp, 'targetprotoaddr', IP4WILD)],
-        'arp_spa': [(Arp, 'senderprotoaddr', IP4WILD)],
-        'arp_tha': [(Arp, 'targethwaddr', ETHWILD)],
-        'arp_sha': [(Arp, 'senderhwaddr', ETHWILD)],
-    }
-    _BYHEADER = None
-
-    def __init__(self, pkt, wildcard_fields):
-        if WildcardMatchOpenflow._BYHEADER is None:
-            WildcardMatchOpenflow._BYHEADER = defaultdict(list)
-            for xkey, xlist in WildcardMatchOpenflow._LOOKUP.items():
-                for cls, headerfield, wildfmt in xlist:
-                    WildcardMatchOpenflow._BYHEADER[cls].append(xkey)
-        if not isinstance(wildcard_fields, (tuple,list)):
-            raise ValueError("Wildcard fields should be given as a list or tuple,"
-                " but you gave a {}".format(type(wildcard_fields)))
-        self._wildcards = tuple(wildcard_fields)
-        self._matchvals = self._buildmvals(pkt)
-
-    def _buildmvals(self, pkt):
-        mvals = {}
-        for key,llist in WildcardMatchOpenflow._LOOKUP.items():
-
-            # only build a comparison table of fields that aren't
-            # listed in wildcards
-            if key in self._wildcards:
-                continue
-
-            for cls,field,_ in llist:
-                if pkt.has_header(cls):
-                    header = pkt.get_header(cls)
-                    value = getattr(header,field)
-                    mvals[key] = value
-        return mvals
-
-    def match(self, pkt):
-        mvals = self._buildmvals(pkt)
-        return mvals == self._matchvals
-
-    def __str__(self):
-        return 'Wildcarded fields: {}'.format(' '.join(self._wildcards))
-
-    def __getstate__(self):
-        d = self.__dict__.copy()
-        return d
-
-    def __setstate__(self, xdict):
-        self.__dict__.update(xdict)
-
-    def __getattr__(self, attr):
-        if attr in self._matchvals:
-            return self._matchvals[attr]
-        raise AttributeError("No such attribute {}".format(attr))
-
-    def show(self, comparepkt):
-        def fill_field(field, header):
-            for clsname,attr,wilddisplay in WildcardMatchOpenflow._LOOKUP[field]:
-                if isinstance(header, clsname):
-                    if field in self._wildcards:
-                        return wilddisplay
-                    elif hasattr(header, attr):
-                        a = getattr(header, attr)
-                        if isinstance(a, Enum):
-                            return str(a.name)
-                        return str(a)
-                    return wilddisplay
-            raise Exception("Should never get here!")
-
-        def with_wildcards(header, fmt):
-            args = [header.__class__.__name__]
-            args.extend([fill_field(field, header) for field in fmt[1:]])
-            return fmt[0].format(*args)
-
-        headers = []
-        for clsname, fmt in WildcardMatchOpenflow._SHOWORDER:
-            if comparepkt.has_header(clsname):
-                headers.append(with_wildcards(comparepkt.get_header(clsname), fmt))
-        return ' | '.join(headers)
-
-
-class WildcardMatchClassAttr(AbstractMatch):
-    def __init__(self, pkt, wildcard_fields):
-        self._pkt = self._rewrite_fields(pkt, wildcard_fields)
-        self._wildcards = wildcard_fields
-
-    @staticmethod
-    def _rewrite_fields(pkt, fields):
-        def star_out_attr(hdr, attr):
-            attrpriv = "_" + attr
-            if not hasattr(hdr, attr):
-                return
-            oldattr = getattr(hdr, attr)
-            newattr = '*'
-            if isinstance(oldattr, IPv4Address):
-                newattr = '*.*.*.*'
-            elif isinstance(oldattr, IPv6Address):
-                newattr = '*::*'
-            elif isinstance(oldattr, EthAddr):
-                newattr = '**:**:**:**:**:**'
-            setattr(hdr, attrpriv, newattr)
-
-        pktcopy = copy.deepcopy(pkt)
-        for klass,attr in fields:
-            header = pktcopy.get_header(klass)
-            if header is not None:
-                star_out_attr(header, attr)
-        return pktcopy
-
-    def match(self, comparepkt):
-        cpkt = self._rewrite_fields(comparepkt, self._wildcards)
-        return self._pkt == cpkt    
-
-    def show(self, comparepkt):
-        cpkt = self._rewrite_fields(comparepkt, self._wildcards)
-        return str(cpkt)
-
-
-class WildcardMatch(AbstractMatch):
-    def __init__(self, pkt, wildcard_fields):
-        if not isinstance(wildcard_fields, (tuple,list)):
-            raise ValueError("Wildcard fields should be given as a list or tuple,"
-                " but you gave a {} ({})".format(type(wildcard_fields), wildcard_fields))
-        self._delegate = None
-        if not len(wildcard_fields) or isinstance(wildcard_fields[0], str):
-            self._delegate = WildcardMatchOpenflow(pkt, wildcard_fields)
-        elif isinstance(wildcard_fields[0], (tuple,list)):
-            self._delegate = WildcardMatchClassAttr(pkt, wildcard_fields)
-        else:
-            raise ValueError("Wildcard fields can either be strings naming "
-                "fields in the style of Openflow 1.0, or as (class,attr) "
-                "elements.  You didn't appear to give me either.")
-
-    def match(self, comparepkt):
-        return self._delegate.match(comparepkt)
-
-    def __str__(self):
-        return str(self._delegate)
-
-    def show(self, comparepkt):
-        return self._delegate.show(comparepkt)
-
-
 class _PacketMatcher(object):
     '''
     Class whose job it is to define a packet template against which
@@ -314,33 +126,25 @@ class _PacketMatcher(object):
         to compare against even fewer fields.  If exact=True, *all* attributes
         are compared except for those that are explicitly wildcarded.
         '''
-
-        # self._exact = bool(kwargs.pop('exact'), True)
-        self._exact = False
-        if 'exact' in kwargs:
-            self._exact = bool(kwargs.pop('exact'))
-            if self._exact and len(wildcards):
-                log_warn("Wildcards given but exact match specified. "
-                         "Ignoring exact match.")
-                self._exact = False
-        elif not wildcards:
-            # if no wildcards given, default to exact match
-            self._exact = True
-
+        self._exact = kwargs.pop('exact', True)
+        self._reference_packet = copy.deepcopy(packet)
+        self._wildcards = self._check_wildcards(wildcards)
+        self._predicates = self._check_predicates(predicates)
+        self._compute_comparison_attrs(packet, self._exact, self._wildcards)
         if len(kwargs):
             log_warn("Ignoring unrecognized keyword arguments for building output packet matcher: {}".format(kwargs))
-
-        self._packet = copy.deepcopy(packet)
-        if self._exact:
-            self._matchobj = ExactMatch(self._packet)
-        else:
-            self._matchobj = WildcardMatch(self._packet, wildcards)
-
         self._first_header = None
-        if len(self._packet):
-            self._first_header = self._packet[0].__class__
+        if len(self._reference_packet):
+            self._first_header = self._reference_packet[0].__class__
+        self._lastresults = None
 
-        self._predicates = []
+    @property
+    def packet(self):
+        return self._reference_packet
+
+    @staticmethod
+    def _check_predicates(predicates):
+        pred = []
         if len(predicates) > 0:
             boguslambda = lambda: 0
             for i in range(len(predicates)):
@@ -352,72 +156,139 @@ class _PacketMatcher(object):
                     raise SyntaxError("Predicate strings must conform to Python lambda syntax")
                 if type(boguslambda) != type(fn):                    
                     raise Exception("Predicate was not a lambda expression: {}".format(predicate[i]))
-                self._predicates.append(predicates[i])
+                pred.append(predicates[i])
+        return pred
 
-        self._lastresults = None
+    @staticmethod
+    def _check_wildcards(wildcards):
+        if not isinstance(wildcards, list):
+            raise TypeError("wildcards must be in a list")
+        for wc in wildcards:
+            if not isinstance(wc, (list,tuple)) or len(wc) != 2:
+                raise ValueError("Each wildcard must be a list or tuple of length 2")
+            wcklass,wcattr = wc[0],wc[1]
+            if not issubclass(wcklass, PacketHeaderBase):
+                raise ValueError("First element in a wildcard must be the name of a packet header class")
+            if not (isinstance(wcattr, str) and hasattr(wcklass, wcattr)):
+                raise ValueError("Wildcard pair must be a valid packet header class and attribute on that class")
+        return wildcards
 
-    @property
-    def packet(self):
-        return self._packet
+    def _compute_comparison_attrs(self, pkt, exact, wildcards):
+        def _collect_header_attrs(pkthdr):
+            attrlist = []
+            for attr in dir(pkthdr):
+                if attr.startswith('_') or attr == 'checksum':
+                    continue
+                aval = getattr(pkthdr, attr)
+                if callable(aval):
+                    continue
+                attrlist.append(attr)
+            return attrlist
 
-    def _diagnose_packet_fields(self, comparepkt):
-        reference = self._packet
-        compare_results = []
+        def _collect_all_attrs(pkt):
+            attrhash = {}
+            for hdr in pkt:
+                hdrcls = hdr.__class__
+                attrhash[hdrcls] = _collect_header_attrs(hdr)
+            return attrhash
 
-        def compare_header_types(ref, current):
+        def _compute_inexact(pkt):
+            _inexact_comparison_attributes = {
+                Ethernet: ['src', 'dst', 'ethertype'],
+                Arp: ['targetprotoaddr', 'senderprotoaddr', 'targethwaddr', 'senderhwaddr'],
+                IPv4: ['src', 'dst', 'protocol'],
+                IPv6: ['src', 'dst', 'nextheader'],
+                TCP: ['src', 'dst'],
+                UDP: ['src', 'dst'],
+                ICMP: ['icmptype', 'icmpcode'],
+                ICMPv6: ['icmptype', 'icmpcode'],
+                Vlan: ['vlanid', 'ethertype'],
+            }
+            attrhash = copy.deepcopy(_inexact_comparison_attributes)
+            foundclasses = set([ hdr.__class__ for hdr in pkt ])
+            # remove classes/keys from attrhash if there aren't 
+            # corresponding headers in the pkt
+            for hdrcls in list(_inexact_comparison_attributes.keys()):
+                if hdrcls not in foundclasses:
+                    del attrhash[hdrcls]
+            return attrhash
+
+        def _filter_wildcards():
+            for klass,attr in self._wildcards:
+                attrlist = self._comparison_attrs.get(klass, [])
+                attrlist.remove(attr)
+
+        if exact:
+            self._comparison_attrs = _collect_all_attrs(pkt)
+        else:
+            self._comparison_attrs = _compute_inexact(pkt)
+        _filter_wildcards()
+
+    def _compare_packet_against_reference(self, packet):
+        def _compare_header_types(packet):
             i = 0
-            while i < ref.num_headers() and i < current.num_headers():
-                if ref[i].__class__ != current[i].__class__:
-                    return ("Header types differ at index {}: "
-                        "expecting {} but found {}".format(
-                        i, ref[i].__class__.__name__, 
-                        current[i].__class__.__name__), i)
+            while i < packet.num_headers() and i < self._reference_packet.num_headers():
+                if self._reference_packet[i].__class__ != packet[i].__class__:
+                    self._comparison_diagnosis = \
+                        "Packet header type is wrong at index {}: expecting {} but found {}".format(
+                            i, self._reference_packet[i].__class__.__name__, 
+                            packet[i].__class__.__name__)
+                    return False
                 i += 1
-            if i < ref.num_headers():
-                missing = [ref[x].__class__.__name__ for x in range(i, ref.num_headers())]
-                return ("Missing headers in your packet: {}".format(', '.join(missing)), i)
-            if i < current.num_headers():
-                toomuch = []
-                for j in range(i, current.num_headers()):
-                    if isinstance(current[j], RawPacketContents):
-                            toomuch.append('{} bytes of raw data'.format(len(current[j])))
-                    else:
-                        toomuch.append(current[j].__class__.__name__)
-                return ("Unnecessary headers were found in your packet: {}".format(', '.join(toomuch)),i)
 
-            return (None, i)
+            if i < packet.num_headers():
+                extras = ' | '.join([packet[j].__class__.__name__ for j in range(i, packet.num_headers())])
+                self._comparison_diagnosis = "Extra headers found in your packet: {}".format(extras)
+                return False
 
-        def compare_header_fields(ref, current, results):
-            hdrname = ref.__class__.__name__
-            diffs = []
-            for field in dir(ref):
-                if field.startswith('_') or field == 'checksum':
-                    continue
+            if i < self._reference_packet.num_headers():
+                missing = ' | '.join([self._reference_packet[j].__class__.__name__ for j in range(i, self._reference_packet.num_headers())])
+                self._comparison_diagnosis = "Missing headers in your packet: {}".format(missing)
+                return False
 
-                if not hasattr(ref, field) or not hasattr(current, field):
-                    continue
+            return True
 
-                refattr = getattr(ref, field)
-                curattr = getattr(current, field)
-                if callable(refattr):
-                    continue
-                    
-                if refattr != curattr:
-                    diffs.append("{} is wrong (is {} but should be {})".format(field, curattr, refattr))
+        def _compare_header_attrs(packet):
+            differences = []
+            for i,hdr in enumerate(self._reference_packet):
+                attrlist = self._comparison_attrs[hdr.__class__]
+                diffs = []
+                for attr in attrlist:
+                    refattr = getattr(hdr, attr)
+                    curattr = getattr(packet[i], attr)
+                    if refattr != curattr:
+                        diffs.append("{} is wrong (is {} but should be {})".format(attr, curattr, refattr))
 
-            if diffs:
-                diffstr = '; '.join(diffs)
-                results.append("In the {} header, {}".format(hdrname, diffstr))
+                if diffs:
+                    diffstr = '; '.join(diffs)
+                    differences.append("In the {} header, {}".format(hdr.__class__.__name__, diffstr))
+            if differences:
+                self._comparison_diagnosis = ', '.join(differences)
+            return len(differences) == 0
+            
+        return _compare_header_types(packet) and _compare_header_attrs(packet)
 
-        headerdiff,maxidx = compare_header_types(reference, comparepkt)
-        if headerdiff is not None:
-            compare_results.append(headerdiff)
-            return compare_results
+    def _showpkt(self, pkt):
+        def star_out_attr(hdr, attr):
+            attrpriv = "_" + attr
+            if not hasattr(hdr, attr):
+                return
+            oldattr = getattr(hdr, attr)
+            newattr = '*'
+            if isinstance(oldattr, IPv4Address):
+                newattr = '*.*.*.*'
+            elif isinstance(oldattr, IPv6Address):
+                newattr = '*::*'
+            elif isinstance(oldattr, EthAddr):
+                newattr = '**:**:**:**:**:**'
+            setattr(hdr, attrpriv, newattr)
 
-        # only check field by field in headers if the header types match 
-        for i in range(maxidx):
-            compare_header_fields(reference[i], comparepkt[i], compare_results)
-        return compare_results
+        pktcopy = copy.deepcopy(pkt)
+        for klass,attr in self._wildcards:
+            header = pktcopy.get_header(klass)
+            if header is not None:
+                star_out_attr(header, attr)
+        return str(pktcopy)
 
     def fail_reason(self, packet):
         '''
@@ -426,11 +297,12 @@ class _PacketMatcher(object):
         '''
         results = self._lastresults
         firstmatch = results.pop(0)
-        xtype = "exact" if self._exact else "wildcard"
+        xtype = "exact" if self._exact else "inexact"
+        wc = "with wildcards " if self._wildcards else "" 
         aan = 'an' if xtype == 'exact' else 'a'
         xresults = "passed" if firstmatch else "failed"
         conjunction = ', but' if firstmatch else '. '
-        diagnosis = ["{} {} match of packet contents {}{}".format(aan, xtype, xresults, conjunction)]
+        diagnosis = ["{} {} match {}of packet contents {}{}".format(aan, xtype, wc, xresults, conjunction)]
 
         # are there predicates that were tested?  
         if len(results):
@@ -440,6 +312,7 @@ class _PacketMatcher(object):
             if diagnosis[-2].endswith('.'):
                 diagnosis[-1] = diagnosis[-1].capitalize()
 
+            # go through each predicate
             for pidx,preresult in enumerate(results):
                 xresults = "passed" if preresult else "failed"
                 xname = self._predicates[pidx]
@@ -451,10 +324,9 @@ class _PacketMatcher(object):
 
         if firstmatch: 
             # headers match, but predicate(s) failed
-            diagnosis += ["\nThis part matched: {}.".format(self._matchobj.show(packet))]
+            diagnosis += ["\nPacket field comparisons matched correctly: {}.".format(self._showpkt(packet))]
         else:
-            differences = self._diagnose_packet_fields(packet)
-            diagnosis.extend(differences)
+            diagnosis.append(self._comparison_diagnosis)
 
             if VerboseOutput.enabled():
                 diagnosis[-1] += '.'
@@ -462,9 +334,9 @@ class _PacketMatcher(object):
                 diagnosis += ["\nDetails: here is the packet that failed the check: {},".format(packet)]
 
                 if self._exact:
-                    diagnosis += ["\nand here is exactly what I expected: {}".format(self._matchobj.show(packet))]
+                    diagnosis += ["\nand here is exactly what I expected: {}".format(self._showpkt(packet))]
                 else:
-                    diagnosis += ["\nand here is what I expected to match: {}".format(self._matchobj.show(packet))]
+                    diagnosis += ["\nand here is what I expected to match: {}".format(self._showpkt(packet))]
         return ' '.join(diagnosis)
 
     def match(self, packet):
@@ -475,7 +347,7 @@ class _PacketMatcher(object):
         If no match, then construct a "nice" description
             of what doesn't match, and throw an exception.
         '''
-        self._lastresults = [ self._matchobj.match(packet) ]
+        self._lastresults = [ self._compare_packet_against_reference(packet) ]
         self._lastresults += [ eval(fn)(packet) for fn in self._predicates ]
         if all(self._lastresults):
             return True
@@ -615,44 +487,19 @@ class PacketOutputEvent(SwitchyardTestEvent):
 
         predicates = []
         if 'predicates' in kwargs:
-            # should be a list/tuple of strings
             pval = kwargs.pop('predicates')
-            if not isinstance(pvap, (list,tuple)):
-                raise ValueError("predicates kwarg must be a list or tuple")
             predicates.extend(pval)
         if 'predicate' in kwargs:
-            # should be a single string
             pval = kwargs.pop('predicate')
-            if not isinstance(pval, str):
-                raise ValueError("predicate kwarg must be a lambda as a string")
             predicates.append(pval)
 
         wildcards = []
         if 'wildcards' in kwargs:
-            # should be (1) a list/tuple of strings or (2) list/tuple of 2-tuples or 2-lists
             wc = kwargs.pop('wildcards')
-            if not isinstance(wc, (list,tuple)):
-                raise ValueError("wildcards kwarg must be a list or tuple")
-            if isinstance(wc[0], str): # only check the first; should do better than this
-                wildcards.extend(wc)
-            elif isinstance(wc[0], (list,tuple)):
-                wildcards.extend(wc)
-            else:
-                raise ValueError("values for wildcards kwarg list/tuple must be strings or 2-tuples or 2-lists")
             wildcards.extend(wc)
-
         if 'wildcard' in kwargs:
-            # should be a single string or a single 2-tuple or 2-list
             wc = kwargs.pop('wildcard')
-            if isinstance(wc, str):
-                wildcards.append(wc)
-            elif isinstance(wc, (list,tuple)):
-                if len(wc) != 2:
-                    print(wc)
-                    raise ValueError("list or tuple value for wildcard kwarg must be of length 2")
-                wildcards.append(wc)
-            else:
-                raise ValueError("wildcard kwarg must be a string or 2-list or 2-tuple")
+            wildcards.append(wc)
 
         if len(args) == 0:
             raise ValueError("PacketOutputEvent expects a list of device1, pkt1, device2, pkt2, etc., but no arguments were given.")
