@@ -35,58 +35,6 @@ class TestScenarioFailure(SwitchyardException):
     pass
 
 
-class SwitchyardTestEvent(object):
-    MATCH_FAIL = 0x00
-    MATCH_SUCCESS = 0x01
-    MATCH_PARTIAL = 0x02
-
-    EVENT_INPUT = 0x10
-    EVENT_OUTPUT = 0x20
-
-    __metaclass__ = ABCMeta
-    def __init__(self):
-        self._display = None
-
-    @abstractmethod
-    def match(self, evtype, **kwargs):
-        '''
-        Abstract method that must be overridden in input/output
-        events.  Default for base class is to return failed match.
-        '''
-        return SwitchyardTestEvent.MATCH_FAIL
-
-    @abstractmethod
-    def fail_reason(self):
-        pass
-
-    def format_pkt(self, pkt):
-        '''
-        Return a string representation of a packet.  If display_class is a known
-        header type, just show the string repr of that header.  Otherwise, dump
-        the whole thing.
-        '''
-        cls = self._display
-        if VerboseOutput.enabled():
-            cls = None
-
-        # no special header highlighted with display kw; just return the entire thing
-        if cls is None:
-            return str(pkt)
-
-        idx = pkt.get_header_index(cls)
-        if idx == -1:
-            log_warn("Tried to find non-existent header for output formatting {}"
-                " (test scenario probably needs fixing)".format(str(cls)))
-            return str(pkt)
-        hdrs = []
-        for i in range(pkt.num_headers()):
-            if i == idx:
-                hdrs.append(str(pkt[i]))
-            else:
-                hdrs.append("{}...".format(pkt[i].__class__.__name__))
-        return ' | '.join(hdrs)
-
-
 class _PacketMatcher(object):
     '''
     Class whose job it is to define a packet template against which
@@ -216,7 +164,8 @@ class _PacketMatcher(object):
         def _filter_wildcards():
             for klass,attr in self._wildcards:
                 attrlist = self._comparison_attrs.get(klass, [])
-                attrlist.remove(attr)
+                if attr in attrlist:
+                    attrlist.remove(attr)
 
         if exact:
             self._comparison_attrs = _collect_all_attrs(pkt)
@@ -251,7 +200,7 @@ class _PacketMatcher(object):
         def _compare_header_attrs(packet):
             differences = []
             for i,hdr in enumerate(self._reference_packet):
-                attrlist = self._comparison_attrs[hdr.__class__]
+                attrlist = self._comparison_attrs.get(hdr.__class__, [])
                 diffs = []
                 for attr in attrlist:
                     refattr = getattr(hdr, attr)
@@ -356,12 +305,65 @@ class _PacketMatcher(object):
 
     def __getstate__(self):
         rv = self.__dict__.copy()
-        rv['_packet'] = rv['_packet'].to_bytes()
+        rv['_reference_packet'] = rv['_reference_packet'].to_bytes()
         return rv
 
     def __setstate__(self, xdict):
         self.__dict__.update(xdict)
-        self._packet = Packet(raw=self._packet, first_header=self._first_header)
+        self._reference_packet = Packet(raw=self._reference_packet, first_header=self._first_header)
+
+
+
+class SwitchyardTestEvent(object):
+    MATCH_FAIL = 0x00
+    MATCH_SUCCESS = 0x01
+    MATCH_PARTIAL = 0x02
+
+    EVENT_INPUT = 0x10
+    EVENT_OUTPUT = 0x20
+
+    __metaclass__ = ABCMeta
+    def __init__(self):
+        self._display = None
+
+    @abstractmethod
+    def match(self, evtype, **kwargs):
+        '''
+        Abstract method that must be overridden in input/output
+        events.  Default for base class is to return failed match.
+        '''
+        return SwitchyardTestEvent.MATCH_FAIL
+
+    @abstractmethod
+    def fail_reason(self):
+        pass
+
+    def format_pkt(self, pkt):
+        '''
+        Return a string representation of a packet.  If display_class is a known
+        header type, just show the string repr of that header.  Otherwise, dump
+        the whole thing.
+        '''
+        cls = self._display
+        if VerboseOutput.enabled():
+            cls = None
+
+        # no special header highlighted with display kw; just return the entire thing
+        if cls is None:
+            return str(pkt)
+
+        idx = pkt.get_header_index(cls)
+        if idx == -1:
+            log_warn("Tried to find non-existent header for output formatting {}"
+                " (test scenario probably needs fixing)".format(str(cls)))
+            return str(pkt)
+        hdrs = []
+        for i in range(pkt.num_headers()):
+            if i == idx:
+                hdrs.append(str(pkt[i]))
+            else:
+                hdrs.append("{}...".format(pkt[i].__class__.__name__))
+        return ' | '.join(hdrs)
 
 
 class PacketInputTimeoutEvent(SwitchyardTestEvent):

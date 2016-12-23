@@ -33,6 +33,17 @@ class SrpyMatcherTest(unittest.TestCase):
         rv = matcher.match(pkt)
         self.assertFalse(rv)
 
+    def testExactMatch3(self):
+        pkt = Null() + IPv4(src='127.0.0.1',dst='127.0.0.1',protocol=IPProtocol.UDP) + UDP(src=65535, dst=10000) + b'Hello stack'
+        matcher = PacketMatcher(pkt, wildcards=[(UDP,'src')], exact=True)
+        self.assertTrue(matcher.match(pkt))
+
+        with self.assertRaises(TypeError):
+            matcher = PacketMatcher(pkt, exact=False, wildcards=(UDP, 'src'))
+        matcher = PacketMatcher(pkt, exact=False, wildcards=[(UDP, 'src')])
+        self.assertTrue(matcher.match(pkt))
+
+
     def testWildcardMatch0(self):
         pkt = Ethernet() + IPv4()
         matcher = PacketMatcher(pkt, wildcards=[(Ethernet, 'src')], exact=True)

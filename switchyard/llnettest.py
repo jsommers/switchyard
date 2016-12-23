@@ -74,9 +74,8 @@ class LLNetTest(LLNetBase):
 
         ev = self.scenario.next()
         if ev.match(SwitchyardTestEvent.EVENT_INPUT) == SwitchyardTestEvent.MATCH_SUCCESS:
-            rv = ev.generate_packet(self.timestamp, self.scenario)
             self.scenario.testpass()
-            return rv
+            return ev.generate_packet(self.timestamp, self.scenario)
         else:
             raise TestScenarioFailure("recv_packet was called instead of {}".format(str(ev)))
 
@@ -262,7 +261,7 @@ def main_test(options):
     usercode = options.usercode
     tests = options.tests
     usercode_entry_point = import_or_die(
-        usercode, ('main', 'srpy_main', 'switchy_main'))
+        usercode, ('main', 'switchy_main'))
     if options.dryrun:
         log_info("Imported your code successfully.  Exiting dry run.")
         return

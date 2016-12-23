@@ -73,7 +73,7 @@ s = TestScenario("Ref to prev pkt")
 s.timeout = 1.0
 s.add_interface('lo0', '00:00:00:00:00:00', '127.0.0.1', iftype=InterfaceType.Loopback)
 p = Null() + IPv4(src='127.0.0.1',dst='127.0.0.1',protocol=IPProtocol.UDP) + UDP(src=65535, dst=10000) + b'Hello stack'
-s.expect(PacketOutputEvent("lo0", p, exact=False, wildcard=['tp_src']), "Emit UDP packet")
+s.expect(PacketOutputEvent("lo0", p, exact=False, wildcard=(UDP, 'src')), "Emit UDP packet")
 
 reply = deepcopy(p)
 reply[1].src,reply[1].dst = reply[1].dst,reply[1].src
@@ -94,7 +94,7 @@ def udp_stack_tests():
         IPv4(src='127.0.0.1',dst='127.0.0.1',protocol=IPProtocol.UDP) + \
         UDP(src=65535, dst=10000) + b'Hello stack'
 
-    s.expect(PacketOutputEvent("lo0", p, exact=False, wildcard=['tp_src']), "Emit UDP packet")
+    s.expect(PacketOutputEvent("lo0", p, exact=False, wildcard=(UDP,'src')), "Emit UDP packet")
 
     reply = deepcopy(p)
     reply[1].src,reply[1].dst = reply[1].dst,reply[1].src
@@ -143,8 +143,10 @@ def main(obj):
     pkt = create_ip_arp_reply("40:00:00:00:00:03", "30:00:00:00:00:01", "10.1.1.2", "10.1.1.1")
     obj.send_packet('router-eth3', pkt)
     try:
+        print ("before receive packet")
         obj.recv_packet()
     except NoPackets:
+        print ("timed out")
         pass
 
     obj.send_packet('router-eth3', pkt)
@@ -453,7 +455,7 @@ s.close()
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, re.compile('Passed:\s*1\s*Incoming ARP request', re.M))
         self.assertRegex(xio.contents, re.compile('Failed:\s*Outgoing ARP reply',re.M))
-        self.assertRegex(xio.contents, re.compile('recv_packet\s+called,\s+but\s+I\s+was\s+expecting\s+send_packet', re.M))
+        self.assertRegex(xio.contents, re.compile('recv_packet\s+was\s+called\s+instead\s+of\s+send_packet', re.M))
 
     def testDelayedSent(self):
         o = self._makeOptions(tests=['stest'], usercode='ucode4')
@@ -508,7 +510,7 @@ s.close()
                 main_test(o)
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, 
-            re.compile('output\s+on\s+device\s+router-eth2\s+unexpected', re.M))
+            re.compile('unexpected\s+output\s+port\s+router-eth2', re.M))
 
     def testPacketMatchFail(self):
         o = self._makeOptions(tests=['stest'], usercode='ucode10')
@@ -517,16 +519,15 @@ s.close()
                 main_test(o)
         self.assertIn('1 passed, 1 failed, 2 pending', xio.contents)
         self.assertRegex(xio.contents, 
-            re.compile('an\s+exact\s+match\s+failed', re.M | re.I))
+            re.compile('an\s+exact\s+match\s+of\s+packet\s+contents\s+failed', re.M | re.I))
 
     def testSendInsteadOfRecv(self):
         o = self._makeOptions(tests=['stest'], usercode='ucode11')
         with redirectio() as xio:
             with self.assertLogs(level='DEBUG') as cm:
                 main_test(o)
-        #print(xio.contents)
-        #print(cm.output)
-        self.assertIn('send_packet was called, but I was expecting recv_packet', xio.contents)
+        self.assertIn('0 passed, 1 failed, 3 pending', xio.contents)
+        self.assertIn('send_packet was called instead of recv_packet', xio.contents)
 
     def testRefToPrevInTest(self):
         o = self._makeOptions(tests=['stest2'], usercode='ucode12')
@@ -545,8 +546,8 @@ s.close()
                 start_framework(o)
         self.assertIn("All tests passed", xio.contents)
         self.assertIn("Client socket application received message", xio.contents)
-        self.assertIn("Preventing host from receiving traffic on", cm.output[4])
-        self.assertIn("Selecting only", cm.output[5])
+        self.assertIn("Preventing host from receiving traffic on", cm.output[5])
+        self.assertIn("Selecting only", cm.output[6])
         del(start_framework)
 
     def testNoCode(self):
