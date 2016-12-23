@@ -4,7 +4,18 @@ import unittest
 
 from switchyard.lib.packet import *
 from switchyard.lib.address import EthAddr, IPAddr
-from switchyard.lib.testing import PacketFormatter
+from switchyard.lib.testing import SwitchyardTestEvent
+
+class FakeTestEvent(SwitchyardTestEvent):
+    def __init__(self, display=None):
+        self._display = display
+
+    def match(self, evtype, **kwargs):
+        pass
+
+    def fail_reason(self):
+        pass
+
 
 class PacketTests(unittest.TestCase):
     def testEmptyPacket(self):
@@ -82,14 +93,18 @@ class PacketTests(unittest.TestCase):
         ip = IPv4()
         icmp = ICMP()
         fullpkt = e + ip + icmp
-        self.assertEqual(PacketFormatter.format_pkt(fullpkt), str(fullpkt))
-        partial = ip + icmp
-        self.assertEqual(PacketFormatter.format_pkt(fullpkt, cls=IPv4), str(partial))
+
+        xfull = FakeTestEvent(None)
+        self.assertEqual(xfull.format_pkt(fullpkt), str(fullpkt))
+
+        partial = "Ethernet... | " + str(ip) + " | ICMP..."
+        xpartial = FakeTestEvent(IPv4)
+        self.assertEqual(xpartial.format_pkt(fullpkt), str(partial))
+
+        xbad = FakeTestEvent(IPv6)
         with self.assertLogs(level='WARN') as cm:
-            self.assertEqual(PacketFormatter.format_pkt(fullpkt, cls=IPv6), str(fullpkt))
+            self.assertEqual(xbad.format_pkt(fullpkt), str(fullpkt))
         self.assertIn('non-existent header', cm.output[0])
-        PacketFormatter.full_display()
-        self.assertEqual(PacketFormatter.format_pkt(fullpkt), str(fullpkt))
 
     def testHeaderAccess(self):
         eth = Ethernet()

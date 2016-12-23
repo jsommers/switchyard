@@ -83,7 +83,7 @@ class SwitchyardTestEvent(object):
             if i == idx:
                 hdrs.append(str(pkt[i]))
             else:
-                hdrs.append(pkt[i].__class__.__name__)
+                hdrs.append("{}...".format(pkt[i].__class__.__name__))
         return ' | '.join(hdrs)
 
 
@@ -280,37 +280,44 @@ class PacketMatcher(object):
     Class whose job it is to define a packet template against which
     some other packet is matched, particularly for PacketOutputEvents,
     where we want to verify that a packet emitted by Switchyard app code
-    conforms to some expectation.  This class delegates some of the
-    matching work to the WildcardMatch class.
+    conforms to some expectation.  
     '''
+    # def __init__(self, packet, predicates=[], wildcards=[], **kwargs):
     def __init__(self, packet, *predicates, **kwargs):
         '''
         Instantiate the matcher delegate.  template is expected
         to be a Packet object.
 
         An arbitrary number of predicate functions can also be
-        passed.  Each predicate function must be defined as a
-        string with a single lambda.  Each lambda must take
-        a single arg (a Packet object) and return bool.
+        passed as a list to the kwarg predicates.  Each predicate 
+        function must be defined as a string with a single lambda.  
+        Each lambda must take a single arg (a Packet object) and 
+        return bool.
 
-        Recognized kwargs: exact and wildcard
+        wildcards is a list (or tuple) of either (1) strings that refer
+        to particular header attributes that should not be compared (the
+        strings are borrowed from the Openflow 1.0 spec), or (2) a 2-tuple
+        or 2-list composed of a header class name and an attribute.  
+        The second method of wildcarding is preferred and the first is
+        deprecated.  The ability to specify Openflow-like attributes
+        to wildcard will be removed from a future version.
 
-        exact determines whether a byte-by-byte comparison is done
-        against a reference packet, or a more flexible match is done
-        based on the fields available in an openflow flow table entry.
+        Recognized kwargs: exact.
+          exact determines whether a byte-by-byte comparison is done
+          against a reference packet, or a more limited set of attributes
+          is used for comparison.  
 
-        wildcard is a list of strings that must match fields in the
-        WildcardMatch structure.  this is only used if exact=False, and
-        the effect is to wildcard those fields in the WildcardMatch.
-        Fields: dl_src, dl_dst, dl_type, dl_vlan, dl_vlan_pcp,
-        nw_src, nw_dst, nw_proto, nw_tos, tp_src, tp_dst,
-        arp_tpa, arp_spa, arp_tha, arp_sha
+          The default is exact=True, i.e., all attributes are compared.
+
+        NB: both wildcards and exact can be reasonably used together.
+        exact=False simply means that fewer attributes are used by default
+        (e.g., addresses, protocol numbers, etc.).  Wildcarding can be used
+        to compare against even fewer fields.  If exact=True, *all* attributes
+        are compared except for those that are explicitly wildcarded.
         '''
-        wildcard = []
-        if 'wildcard' in kwargs:
-            wildcard = kwargs.pop('wildcard')
 
-        self._exact = False
+        # self._exact = bool(kwargs.pop('exact'), True)
+
         if 'exact' in kwargs:
             self._exact = bool(kwargs.pop('exact'))
             if self._exact and len(wildcard):
@@ -323,6 +330,7 @@ class PacketMatcher(object):
 
         if len(kwargs):
             log_warn("Ignoring unrecognized keyword arguments for building output packet matcher: {}".format(kwargs))
+
         self._packet = copy.deepcopy(packet)
         if self._exact:
             self._matchobj = ExactMatch(self._packet)
@@ -342,7 +350,7 @@ class PacketMatcher(object):
                 try:
                     fn = eval(predicates[i])
                 except SyntaxError:
-                    raise SyntaxError("Predicate strings passed to PacketMatcher must conform to Python lambda syntax")
+                    raise SyntaxError("Predicate strings must conform to Python lambda syntax")
                 if type(boguslambda) != type(fn):                    
                     raise Exception("Predicate was not a lambda expression: {}".format(predicate[i]))
                 self._predicates.append(predicates[i])
@@ -606,9 +614,22 @@ class PacketOutputEvent(SwitchyardTestEvent):
         self._display = None
         if 'display' in kwargs:
             self._display = kwargs.pop('display')
+
         predicates = []
         if 'predicates' in kwargs:
-            predicates = kwargs.pop('predicates')
+            pval = kwargs.pop('predicates')
+            predicates.extend(pval)
+        if 'predicate' in kwargs:
+            pval = kwargs.pop('predicate')
+            predicates.append(pval)
+
+        wildcards = []
+        if 'wildcards' in kwargs:
+            wc = kwargs.pop('wildcards')
+            wildcards.extend(wc)
+        if 'wildcard' in kwargs:
+            wc = kwargs.pop('wildcard')
+            wildcards.append(wc)
 
         if len(args) == 0:
             raise ValueError("PacketOutputEvent expects a list of device1, pkt1, device2, pkt2, etc., but no arguments were given.")
