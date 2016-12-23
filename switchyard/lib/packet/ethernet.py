@@ -40,11 +40,11 @@ class Vlan(PacketHeaderBase):
         self.set_next_header_class_key("_ethertype")
 
     @property
-    def vlan(self):
+    def vlanid(self):
         return self._vlanid
 
-    @vlan.setter
-    def vlan(self, value):
+    @vlanid.setter
+    def vlanid(self, value):
         self._vlanid = int(value) & 0x0fff # mask out high-order 4 bits
 
     @property
@@ -68,7 +68,7 @@ class Vlan(PacketHeaderBase):
             raise NotEnoughDataError("Not enough bytes to unpack Vlan header; need {}, "
                 "only have {}".format(Vlan._MINLEN, len(raw)))
         fields = struct.unpack(Vlan._PACKFMT, raw[:Vlan._MINLEN])
-        self.vlan = fields[0]
+        self.vlanid = fields[0]
         self.pcp = ((fields[0] & 0xf000) >> 12)
         self.ethertype = fields[1]
         return raw[Vlan._MINLEN:]
@@ -79,13 +79,13 @@ class Vlan(PacketHeaderBase):
 
     def __eq__(self, other):
         return isinstance(other, Vlan) and \
-            self.vlan == other.vlan and self.ethertype == other.ethertype
+            self.vlanid == other.vlanid and self.ethertype == other.ethertype
 
     def size(self):
         return Vlan._MINLEN
 
     def __str__(self): return '{} {} {}'.format(self.__class__.__name__,
-    self.vlan,  self.ethertype.name)
+    self.vlanid,  self.ethertype.name)
 
 
 EtherTypeClasses = {

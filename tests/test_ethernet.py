@@ -55,7 +55,7 @@ class EthernetPacketTests(unittest.TestCase):
         e.ethertype = EtherType.x8021Q
 
         v = Vlan()
-        v.vlan = 42
+        v.vlanid = 42
         v.pcp = 2
         v.ethertype = EtherType.IP
 
@@ -66,7 +66,7 @@ class EthernetPacketTests(unittest.TestCase):
 
         packet = e + v + ip + icmp
         self.assertEqual(packet.num_headers(), 4)
-        self.assertEqual(packet[1].vlan, 42)
+        self.assertEqual(packet[1].vlanid, 42)
         self.assertEqual(packet[1].pcp, 2)
         self.assertEqual(len(packet), 46)
         serialized = packet.to_bytes()
