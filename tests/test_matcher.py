@@ -6,6 +6,7 @@ import copy
 import time
 
 from switchyard.lib.testing import *
+from switchyard.lib.testing import _PacketMatcher as PacketMatcher
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
 from switchyard.lib.logging import setup_logging
@@ -29,8 +30,8 @@ class SrpyMatcherTest(unittest.TestCase):
         pkt = Ethernet() + IPv4() + ICMP()
         matcher = PacketMatcher(pkt, exact=True)
         pkt[0].ethertype = EtherType.ARP
-        with self.assertRaises(TestScenarioFailure) as err:
-            matcher.match(pkt)
+        rv = matcher.match(pkt)
+        self.assertFalse(rv)
 
     def testWildcardMatch0(self):
         pkt = Ethernet() + IPv4()
@@ -54,35 +55,32 @@ class SrpyMatcherTest(unittest.TestCase):
 
     def testPredicateMatch1(self):
         pkt = Ethernet() + IPv4()
-        matcher = PacketMatcher(pkt, '''lambda pkt: pkt[0].src == '00:00:00:00:00:00' ''', exact=False)
+        matcher = PacketMatcher(pkt, predicates=['''lambda pkt: pkt[0].src == '00:00:00:00:00:00' '''], exact=False)
         self.assertTrue(matcher.match(pkt))
 
     def testPredicateMatch2(self):
         pkt = Ethernet() + IPv4()
-        matcher = PacketMatcher(pkt, '''lambda pkt: pkt[0].src == '00:00:00:00:00:01' ''', exact=False)
-        with self.assertRaises(TestScenarioFailure):
-            matcher.match(pkt)
+        matcher = PacketMatcher(pkt, predicates=['''lambda pkt: pkt[0].src == '00:00:00:00:00:01' '''], exact=False)
+        rv = matcher.match(pkt)
+        self.assertFalse(rv)
 
     def testPredicateMatch3(self):
         pkt = Ethernet() + IPv4()
         matcher = PacketMatcher(pkt, 
-            '''lambda pkt: pkt[0].src == '00:00:00:00:00:00' ''', 
-            '''lambda pkt: isinstance(pkt[1], IPv4) and pkt[1].ttl == 0''',
+            predicates=['''lambda pkt: pkt[0].src == '00:00:00:00:00:00' ''', 
+            '''lambda pkt: isinstance(pkt[1], IPv4) and pkt[1].ttl == 0'''],
+            wildcards=[],
             exact=False)
         self.assertTrue(matcher.match(pkt))
 
     def testPredicateMatch4(self):
         pkt = Ethernet() + IPv4()
         matcher = PacketMatcher(pkt, 
+            predicates=[
             '''lambda pkt: pkt[0].src == '00:00:00:00:00:00' ''',
-            '''lambda pkt: isinstance(pkt[1], IPv4) and pkt[1].ttl == 0''',
+            '''lambda pkt: isinstance(pkt[1], IPv4) and pkt[1].ttl == 0'''],
             exact=False)        
         self.assertTrue(matcher.match(pkt))
-
-    def testPredicateMatch5(self):
-        pkt = Ethernet() + IPv4()
-        with self.assertRaises(Exception):
-            matcher = PacketMatcher(pkt, list(), exact=False)
 
     def testPredicateMatch6(self):
         pkt = Ethernet() + IPv4()
@@ -95,7 +93,7 @@ class SrpyMatcherTest(unittest.TestCase):
         pkt[1].dst = IPAddr("192.168.1.2")
         pkt[1].ttl = 64
         
-        matcher = PacketMatcher(pkt, wildcard=['dl_dst', 'nw_dst'], exact=False)
+        matcher = PacketMatcher(pkt, wildcards=['dl_dst', 'nw_dst'], exact=False)
         pkt[0].dst = "11:11:11:11:11:11"
         pkt[1].dst = "192.168.1.3"
         self.assertTrue(matcher.match(copy.deepcopy(pkt)))
@@ -104,28 +102,28 @@ class SrpyMatcherTest(unittest.TestCase):
         pkt = create_ip_arp_request('11:22:33:44:55:66', '192.168.1.1', '192.168.10.10')
         xcopy = copy.deepcopy(pkt)
         pkt[1].targethwaddr = '00:ff:00:ff:00:ff'
-        matcher = PacketMatcher(pkt, wildcard=['arp_tha'], exact=False)
+        matcher = PacketMatcher(pkt, wildcards=['arp_tha'], exact=False)
         self.assertTrue(matcher.match(xcopy))
 
-        with self.assertRaises(TestScenarioFailure):
-            pkt[1].senderhwaddr = '00:ff:00:ff:00:ff'
-            matcher = PacketMatcher(pkt, wildcard=['arp_tha'], exact=False)
-            matcher.match(xcopy)
+        pkt[1].senderhwaddr = '00:ff:00:ff:00:ff'
+        matcher = PacketMatcher(pkt, wildcards=['arp_tha'], exact=False)
+        rv = matcher.match(xcopy)
+        self.assertFalse(rv)
 
     def testWildcardMatchOutput(self):
         pkt = create_ip_arp_request('11:22:33:44:55:66', '192.168.1.1', '192.168.10.10')
-        outev = PacketOutputEvent("eth1", pkt, wildcard=('arp_tha',), exact=False)
+        outev = PacketOutputEvent("eth1", pkt, wildcards=('arp_tha',), exact=False)
         self.assertNotIn("IPv4", str(outev))
         rv = outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device='eth1', packet=pkt)
         self.assertEqual(rv, SwitchyardTestEvent.MATCH_SUCCESS)
 
-        outev = PacketOutputEvent("eth1", pkt, wildcard=('arp_tha',), exact=False)
+        outev = PacketOutputEvent("eth1", pkt, wildcards=('arp_tha',), exact=False)
         pktcopy = copy.deepcopy(pkt)
         pktcopy[1].targethwaddr = '00:ff:00:ff:00:ff'
         rv = outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device='eth1', packet=pktcopy)
         self.assertEqual(rv, SwitchyardTestEvent.MATCH_SUCCESS)
 
-        outev = PacketOutputEvent("eth1", pkt, wildcard=('arp_tha','dl_src'), exact=False)
+        outev = PacketOutputEvent("eth1", pkt, wildcards=('arp_tha','dl_src'), exact=False)
         with self.assertRaises(TestScenarioFailure) as exc:
             pktcopy[1].senderhwaddr = '00:ff:00:ff:00:ff'
             rv = outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device='eth1', packet=pktcopy)
@@ -136,11 +134,11 @@ class SrpyMatcherTest(unittest.TestCase):
             IPv4(protocol=IPProtocol.UDP,src="1.2.3.4",dst="5.6.7.8") + \
             UDP(src=9999, dst=4444)
         xcopy = copy.copy(p)
-        outev = PacketOutputEvent("eth1", p, wildcard=((UDP,'src'),), exact=False)
+        outev = PacketOutputEvent("eth1", p, wildcards=((UDP,'src'),), exact=False)
         rv = outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device='eth1', packet=xcopy)
         self.assertTrue(rv)
 
-        outev = PacketOutputEvent("eth1", p, wildcard=((UDP,'src'),), exact=False)
+        outev = PacketOutputEvent("eth1", p, wildcards=((UDP,'src'),), exact=False)
         with self.assertRaises(TestScenarioFailure) as exc:
             xcopy[2].dst = 5555
             rv = outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device='eth1', packet=xcopy)
@@ -162,7 +160,6 @@ class SrpyMatcherTest(unittest.TestCase):
             outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device="en0", packet=newp)
         self.assertIn("Missing headers", str(exc.exception))
 
-        PacketFormatter.full_display(True)
         p = Ethernet() + IPv4() + ICMP()
         newp = Packet() 
         outev = PacketOutputEvent("en0", p, exact=True)
@@ -170,7 +167,6 @@ class SrpyMatcherTest(unittest.TestCase):
             outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device="en0", packet=newp)
         self.assertIn("Missing headers", str(exc.exception))
 
-        PacketFormatter.full_display(True)
         p = Ethernet() + IPv4() + ICMP()
         newp = Ethernet() + IPv4(protocol=IPProtocol.UDP) + UDP()
         outev = PacketOutputEvent("en0", p, exact=True)
@@ -178,7 +174,6 @@ class SrpyMatcherTest(unittest.TestCase):
             outev.match(SwitchyardTestEvent.EVENT_OUTPUT, device="en0", packet=newp)
         self.assertIn("Header types differ at index 2", str(exc.exception))
 
-        PacketFormatter.full_display(False)
         p = Ethernet() + IPv4(src="1.2.3.4", dst="4.5.6.7", protocol=IPProtocol.UDP, ttl=78) + UDP(src=10, dst=42)
         newp = copy.deepcopy(p)
         newp[UDP].src = 11
@@ -229,15 +224,15 @@ class SrpyMatcherTest(unittest.TestCase):
             UDP(src=9999, dst=4444)
         xcopy = copy.copy(p)
         with self.assertLogs() as cm:
-            outev = PacketOutputEvent("eth1", p, wildcard=('tp_src',), exact=True)
+            outev = PacketOutputEvent("eth1", p, wildcards=('tp_src',), exact=True)
         self.assertIn("Wildcards given but exact match specified. Ignoring exact match.", cm.output[-1])
 
-        outev = PacketOutputEvent("eth1", p, wildcard=('tp_src',))
+        outev = PacketOutputEvent("eth1", p, wildcards=('tp_src',))
         for dev,mobj in outev._device_packet_map.items():
             self.assertFalse(mobj._exact)
 
         with self.assertLogs() as cm:
-            outev = PacketOutputEvent("eth1", p, wildcard=('tp_src',), blahblah=True)
+            outev = PacketOutputEvent("eth1", p, wildcards=('tp_src',), blahblah=True)
         self.assertIn("unrecognized keyword arg", cm.output[-1])
 
         with self.assertRaises(Exception):

@@ -254,7 +254,7 @@ class WildcardMatch(AbstractMatch):
     def __init__(self, pkt, wildcard_fields):
         if not isinstance(wildcard_fields, (tuple,list)):
             raise ValueError("Wildcard fields should be given as a list or tuple,"
-                " but you gave a {}".format(type(wildcard_fields)))
+                " but you gave a {} ({})".format(type(wildcard_fields), wildcard_fields))
         self._delegate = None
         if not len(wildcard_fields) or isinstance(wildcard_fields[0], str):
             self._delegate = WildcardMatchOpenflow(pkt, wildcard_fields)
@@ -275,7 +275,7 @@ class WildcardMatch(AbstractMatch):
         return self._delegate.show(comparepkt)
 
 
-class PacketMatcher(object):
+class _PacketMatcher(object):
     '''
     Class whose job it is to define a packet template against which
     some other packet is matched, particularly for PacketOutputEvents,
@@ -316,10 +316,10 @@ class PacketMatcher(object):
         '''
 
         # self._exact = bool(kwargs.pop('exact'), True)
-
+        self._exact = False
         if 'exact' in kwargs:
             self._exact = bool(kwargs.pop('exact'))
-            if self._exact and len(wildcard):
+            if self._exact and len(wildcards):
                 log_warn("Wildcards given but exact match specified. "
                          "Ignoring exact match.")
                 self._exact = False
@@ -382,7 +382,7 @@ class PacketMatcher(object):
                     if isinstance(current[j], RawPacketContents):
                             toomuch.append('{} bytes of raw data'.format(len(current[j])))
                     else:
-                        toomuch.append(current[x].__class__.__name__)
+                        toomuch.append(current[j].__class__.__name__)
                 return ("Unnecessary headers were found in your packet: {}".format(', '.join(toomuch)),i)
 
             return (None, i)
@@ -615,26 +615,51 @@ class PacketOutputEvent(SwitchyardTestEvent):
 
         predicates = []
         if 'predicates' in kwargs:
+            # should be a list/tuple of strings
             pval = kwargs.pop('predicates')
+            if not isinstance(pvap, (list,tuple)):
+                raise ValueError("predicates kwarg must be a list or tuple")
             predicates.extend(pval)
         if 'predicate' in kwargs:
+            # should be a single string
             pval = kwargs.pop('predicate')
+            if not isinstance(pval, str):
+                raise ValueError("predicate kwarg must be a lambda as a string")
             predicates.append(pval)
 
         wildcards = []
         if 'wildcards' in kwargs:
+            # should be (1) a list/tuple of strings or (2) list/tuple of 2-tuples or 2-lists
             wc = kwargs.pop('wildcards')
+            if not isinstance(wc, (list,tuple)):
+                raise ValueError("wildcards kwarg must be a list or tuple")
+            if isinstance(wc[0], str): # only check the first; should do better than this
+                wildcards.extend(wc)
+            elif isinstance(wc[0], (list,tuple)):
+                wildcards.extend(wc)
+            else:
+                raise ValueError("values for wildcards kwarg list/tuple must be strings or 2-tuples or 2-lists")
             wildcards.extend(wc)
+
         if 'wildcard' in kwargs:
+            # should be a single string or a single 2-tuple or 2-list
             wc = kwargs.pop('wildcard')
-            wildcards.append(wc)
+            if isinstance(wc, str):
+                wildcards.append(wc)
+            elif isinstance(wc, (list,tuple)):
+                if len(wc) != 2:
+                    print(wc)
+                    raise ValueError("list or tuple value for wildcard kwarg must be of length 2")
+                wildcards.append(wc)
+            else:
+                raise ValueError("wildcard kwarg must be a string or 2-list or 2-tuple")
 
         if len(args) == 0:
             raise ValueError("PacketOutputEvent expects a list of device1, pkt1, device2, pkt2, etc., but no arguments were given.")
         if len(args) % 2 != 0:
             raise ValueError("Arg list length to PacketOutputEvent must be even (device1, pkt1, device2, pkt2, etc.)")
         for i in range(0, len(args), 2):
-            matcher = PacketMatcher(args[i+1], predicates=predicates, wildcards=wildcards, **kwargs)
+            matcher = _PacketMatcher(args[i+1], predicates=predicates, wildcards=wildcards, **kwargs)
             self._device_packet_map[args[i]] = matcher
 
     def match(self, evtype, **kwargs):
@@ -1010,8 +1035,8 @@ class TestScenario(object):
                     if dev not in self._interface_map:
                         log_warn("PacketOutputEvent () refers to a device not part of test scenario".format(str(ev.event)))
                         nowarnings = False
-                    if not isinstance(pkt, PacketMatcher):
-                        log_warn("PacketOutputEvent ({}) refers to a non-PacketMatcher object ({})".format(str(ev.event), type(pkt)))
+                    if not isinstance(pkt, _PacketMatcher):
+                        log_warn("PacketOutputEvent ({}) refers to a non-PacketMatcher object ({}).  This is probably an internal error.".format(str(ev.event), type(pkt)))
                         nowarnings = False
                     if pkt._predicates:
                         for pred in pkt._predicates:
