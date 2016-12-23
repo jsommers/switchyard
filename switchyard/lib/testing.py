@@ -282,8 +282,7 @@ class PacketMatcher(object):
     where we want to verify that a packet emitted by Switchyard app code
     conforms to some expectation.  
     '''
-    # def __init__(self, packet, predicates=[], wildcards=[], **kwargs):
-    def __init__(self, packet, *predicates, **kwargs):
+    def __init__(self, packet, predicates=[], wildcards=[], **kwargs):
         '''
         Instantiate the matcher delegate.  template is expected
         to be a Packet object.
@@ -324,7 +323,7 @@ class PacketMatcher(object):
                 log_warn("Wildcards given but exact match specified. "
                          "Ignoring exact match.")
                 self._exact = False
-        elif not wildcard:
+        elif not wildcards:
             # if no wildcards given, default to exact match
             self._exact = True
 
@@ -335,7 +334,7 @@ class PacketMatcher(object):
         if self._exact:
             self._matchobj = ExactMatch(self._packet)
         else:
-            self._matchobj = WildcardMatch(self._packet, wildcard)
+            self._matchobj = WildcardMatch(self._packet, wildcards)
 
         self._first_header = None
         if len(self._packet):
@@ -546,16 +545,15 @@ class PacketInputEvent(SwitchyardTestEvent):
         else:
             self._first_header = None
         self._display = display
-        if not isinstance(copyfromlastout, (tuple,list)):
-            raise ValueError("An argument to copyfromlastout must be a list or tuple")
-        if len(copyfromlastout) == 5 and isinstance(copyfromlastout[0], str):
-            self._copyfromlastout = [ copyfromlastout ]
-        elif isinstance(copyfromlastout[0], (tuple,list)):
-            self._copyfromlastout = copyfromlastout
+
+        self._copyfromlastout = copyfromlastout
+        if isinstance(copyfromlastout, (tuple,list)):
+            if len(copyfromlastout) == 5 and isinstance(copyfromlastout[0], str):
+                self._copyfromlastout = [ copyfromlastout ]
+            elif isinstance(copyfromlastout[0], (tuple,list)):
+                self._copyfromlastout = copyfromlastout
         elif copyfromlastout is not None:
-            raise ValueError("An argument to copyfromlastout must be a tuple or list of five elements, or a nested tuple or list where each element is a tuple/list of five elements.")
-        else:
-            self._copyfromlastout = copyfromlastout
+            raise ValueError("An argument to copyfromlastout must be a list or tuple, or None")
 
     def __getstate__(self):
         rv = self.__dict__.copy()
@@ -636,7 +634,7 @@ class PacketOutputEvent(SwitchyardTestEvent):
         if len(args) % 2 != 0:
             raise ValueError("Arg list length to PacketOutputEvent must be even (device1, pkt1, device2, pkt2, etc.)")
         for i in range(0, len(args), 2):
-            matcher = PacketMatcher(args[i+1], *predicates, **kwargs)
+            matcher = PacketMatcher(args[i+1], predicates=predicates, wildcards=wildcards, **kwargs)
             self._device_packet_map[args[i]] = matcher
 
     def match(self, evtype, **kwargs):

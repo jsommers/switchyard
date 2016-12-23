@@ -6,9 +6,8 @@ import copy
 import time
 import importlib
 
-from switchyard.lib.exceptions import TestScenarioFailure
 from switchyard.lib.logging import setup_logging
-from switchyard.lib.testing import TestScenario,PacketInputEvent,PacketOutputEvent,compile_scenario,uncompile_scenario,get_test_scenario_from_file
+from switchyard.lib.testing import TestScenario,PacketInputEvent,PacketOutputEvent,compile_scenario,uncompile_scenario,get_test_scenario_from_file, TestScenarioFailure
 from switchyard.lib.packet import *
 from switchyard.lib.address import *
 

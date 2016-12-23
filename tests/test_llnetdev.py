@@ -8,7 +8,7 @@ from unittest.mock import Mock, MagicMock
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
 from switchyard.lib.interface import Interface, make_device_list
-from switchyard.lib.testing import TestScenario, SwitchyTestEvent
+from switchyard.lib.testing import TestScenario, SwitchyardTestEvent
 from switchyard.lib.exceptions import *
 from switchyard.llnettest import LLNetTest, _prepare_debugger
 from switchyard.llnetreal import LLNetReal, _RawSocket
@@ -51,14 +51,14 @@ class LLNetDevTests(unittest.TestCase):
     def testFakeSendDevName(self):
         p = Packet()
         self.fake.send_packet("eth1", p)
-        self.ev.match.assert_called_with(SwitchyTestEvent.EVENT_OUTPUT, device='eth1', packet=p)
+        self.ev.match.assert_called_with(SwitchyardTestEvent.EVENT_OUTPUT, device='eth1', packet=p)
 
     def testFakeSendDevNum(self):
         p = Packet()
         self.fake.send_packet(0, p)
-        self.ev.match.assert_called_with(SwitchyTestEvent.EVENT_OUTPUT, device='eth1', packet=p)
+        self.ev.match.assert_called_with(SwitchyardTestEvent.EVENT_OUTPUT, device='eth1', packet=p)
         self.fake.send_packet(3, p)
-        self.ev.match.assert_called_with(SwitchyTestEvent.EVENT_OUTPUT, device='eth7', packet=p)
+        self.ev.match.assert_called_with(SwitchyardTestEvent.EVENT_OUTPUT, device='eth7', packet=p)
 
     def testModeResult(self):
         self.assertTrue(self.fake.testmode)
@@ -68,9 +68,9 @@ class LLNetDevTests(unittest.TestCase):
         p = Packet()
         ifmap = self.scenario.interfaces()
         self.fake.send_packet(ifmap['eth1'], p)
-        self.ev.match.assert_called_with(SwitchyTestEvent.EVENT_OUTPUT, device='eth1', packet=p)
+        self.ev.match.assert_called_with(SwitchyardTestEvent.EVENT_OUTPUT, device='eth1', packet=p)
         self.fake.send_packet(ifmap['eth2'], p)
-        self.ev.match.assert_called_with(SwitchyTestEvent.EVENT_OUTPUT, device='eth2', packet=p)
+        self.ev.match.assert_called_with(SwitchyardTestEvent.EVENT_OUTPUT, device='eth2', packet=p)
 
     # def testRealSendDevName(self):
     #     p = Packet()

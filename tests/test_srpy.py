@@ -11,7 +11,6 @@ from contextlib import ContextDecorator
 import re
 
 from switchyard.llnettest import run_tests, main_test
-from switchyard.lib.exceptions import TestScenarioFailure
 from switchyard.lib.logging import setup_logging
 from switchyard.lib.testing import *
 from switchyard.lib.packet import *

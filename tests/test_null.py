@@ -3,7 +3,6 @@ from socket import AF_INET, AF_INET6, AF_DECnet
 
 from switchyard.lib.packet import *
 from switchyard.lib.address import EthAddr, IPAddr
-from switchyard.lib.testing import PacketFormatter
 
 class NullPacketTests(unittest.TestCase):
     def testNullInstance(self):
