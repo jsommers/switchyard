@@ -217,7 +217,7 @@ class _PcapFfi(object):
         pkthdr.tv_usec = int(1000000*(ts-int(ts)))
         pkthdr.caplen = len(pkt)
         pkthdr.len = len(pkt)
-        xpkt = self._ffi.new("char []", pkt)
+        xpkt = self._ffi.new("unsigned char []", pkt)
         self._libpcap.pcap_dump(dumper, pkthdr, xpkt)
 
     def open_pcap_file(self, filename):
