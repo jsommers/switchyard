@@ -79,6 +79,11 @@ class SrpyMatcherTest(unittest.TestCase):
         matcher = PacketMatcher(pkt, predicates=['''lambda pkt: pkt[0].src == '00:00:00:00:00:00' '''], exact=False)
         self.assertTrue(matcher.match(pkt))
 
+        pkt = Ethernet() + IPv4(ttl=32) + ICMP()
+        matcher = PacketOutputEvent('en1', pkt, exact=False, predicate='''lambda p: p.has_header(IPv4) and 32 <= p[IPv4].ttl <= 34''')
+        rv = matcher.match(SwitchyardTestEvent.EVENT_OUTPUT, device='en1', packet=pkt)
+        self.assertTrue(rv)
+
     def testPredicateMatch2(self):
         pkt = Ethernet() + IPv4()
         matcher = PacketMatcher(pkt, predicates=['''lambda pkt: pkt[0].src == '00:00:00:00:00:01' '''], exact=False)

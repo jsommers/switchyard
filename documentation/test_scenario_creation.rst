@@ -57,86 +57,90 @@ The three *event* classes set up the specific expectations for each test, as des
 
     The ``display`` argument indicates whether a particular header in the packet should be emphasized on output when Switchyard shows test output to a user.  By default, all headers are shown.  If a test creator wants to ignore the Ethernet header but emphasize the IPv4 header, he/she could use the argument ``display=IPv4``.  That is, the argument is just the class name of the packet header to be emphasized.
 
-    The ``copyfromlastout`` argument can be used to address the situation in which a test scenario does not know some of the header values in the most recently sent packet, but must construct a new input packet that contains those (unknown) values.  This is a bit of a corner case, but comes up when 
+    The ``copyfromlastout`` argument can be used to address the situation in which a test scenario author wants to construct an incoming packet (that will be received by ``recv_packet``) which has the same values in some packet header fields as the most recent packet emitted.  For example, when creating a protocol stack, an application (socket) program might emit a packet with a source port number assigned by the socket emulation module.  The destination port number in an arriving packet needs to be the same as the packet that was previously emitted in order for it to be handed to the correct application program.  Thus, the ``copyfromlastout`` can be used to copy one or more packet header attributes from the *last* emitted packet to header fields in an incoming packet.
 
+    ``copyfromlastout`` can take a tuple of 5 elements: the interface/port name out which the packet was sent, a header class name and attribute to copy *from*, and a header class name and attribute to copy *to*.  For example, if we wanted to copy the UDP source port value from the last packet emitted out port ``en1`` to the UDP destination port of the packet to be received, we could use the following::
+
+        PacketInputEvent('en1', pkt, copyfromlastout('en1', UDP, 'src', UDP, 'dst'))
+
+    Note that we would need to have created a ``Packet`` object named ``pkt`` which included a UDP header for this example to work correctly.
 
 
   * ``PacketInputTimeoutEvent(timeout)``
 
     Create an expectation that the Switchyard user program will call ``recv_packet`` but *time out* prior to receiving anything.  The timeout value is the number of seconds to wait within the test framework before raising the ``NoPackets`` exception in the user code.  In order for this test expectation to pass, the user code must correctly handle the exception and must not emit a packet.
 
-    Note that the test framework will pause for the *entire* duration of the given timeout.  If a user program calls ``net.recv_packet(timeout=1.0)`` but the timeout given for a ``PacketInputTimeoutEvent`` is 5 seconds, the call to ``recv_packet`` will appear to have blocked for 5 seconds, not 1.  So to force a ``NoPackets`` exception, the timeout value given to this event must be greater than the timeout value used in a call to ``recv_packet``.
+    To force a ``NoPackets`` exception, the timeout value given to this event must be greater than the timeout value used in a call to ``recv_packet``.  Note also that the test framework will pause for the *entire* duration of the given timeout.  If a user program calls ``net.recv_packet(timeout=1.0)`` but the timeout given for a ``PacketInputTimeoutEvent`` is 5 seconds, the call to ``recv_packet`` will appear to have blocked for 5 seconds, not 1.
+
  
   * ``PacketOutputEvent(*args, display=None, exact=True, predicates=[], wildcard=[])``
 
-    Create an expectation that the user program will emit packets out one or more ports/interfaces. The only required arguments are ``args``, which must be an **even number** of arguments.  For each pair of arguments given, the first is a port name (e.g., eth0) and the second is a reference to a packet object.  Normally, a test wishes to establish that the *same* packet has been emitted out multiple interfaces.  To do that, you could simply write::
+    Create an expectation that the user program will emit packets out one or more ports/interfaces. The only required arguments are ``args``, which must be an **even number** of arguments.  For each pair of arguments given, the first is a port name (e.g., ``en0``) and the second is a reference to a packet object.  Normally, a test wishes to establish that the *same* packet has been emitted out multiple interfaces.  To do that, you could simply write::
 
        p = Packet()
        # fill in some packet headers ...
-       PacketOutputEvent("eth0", p, "eth1", p, "eth2", p)
+       PacketOutputEvent('en0', pkt, 'en1', pkt, 'en2', pkt)
 
-    The above code expects that the same packet (named ``p``) will be emitted out three interfaces (eth0, eth1, and eth2).
+    The above code expects that the same packet (named ``pkt``) will be emitted out three interfaces (``en0``, ``en1``, and ``en2``).
 
-    By default, the PacketOutputEvent class looks for an **exact** match between the reference packet supplied to PacketOutputEvent and the packet that the user code actually emits.  In some cases, this isn't appropriate or even possible.  For example, you may want to verify that packets are forwarded correctly using standard IP (longest prefix match) forwarding rules, but you may not know the payload contents of a packet because another test element may modify them.  As another example, in IP forwarding you know that the TTL (time-to-live) should be decremented by one, but the specific value in an outgoing packet depends on the value on the incoming packet, which the test framework may not know in advance.  To handle these situations, you can supply ``exact``,  ``wildcard``, and/or ``predicates`` arguments.  
+    By default, the PacketOutputEvent class looks for an **exact** match between the reference packet supplied to PacketOutputEvent and the packet that the user code actually emits.  In some cases, this isn't appropriate or even possible.  For example, you may want to verify that packets are forwarded correctly using standard IP (longest prefix match) forwarding rules, but you may not know the payload contents of a packet because another test element may modify them.  As another example, in IP forwarding you know that the TTL (time-to-live) should be decremented by one, but the specific value in an outgoing packet depends on the value on the incoming packet, which the test framework may not know in advance.  To handle these situations, you can supply ``exact``,  ``wildcard(s)``, and/or ``predicate(s)`` keyword arguments, as detailed below.
 
-    * Setting ``exact`` to ``False`` causes only certain header fields to be compared to verify a "match".  In particular: Ethernet source and destination addresses, Ethernet ethertype field, IPv4 source and destination addresses and protocol, and TCP or UDP port numbers (or ICMP type/code fields).  
+    * **Exact vs. subset matching**:  Setting ``exact`` to ``True`` or ``False`` determines whether *all* packet header attributes are compared (``exact=True``) or whether a limited subset are compared (``exact=False``). 
 
-    * When specifying that matches should not be exact (i.e., ``exact=False``), some header field
-      comparisons can be "wildcarded" causing *any* value in an outgoing packet to match correctly.
-      To indicate that some fields should be wildcarded, you can supply one or more strings in the ``wildcard`` argument.  In particular: dl_src and dl_dst correspond to Ethernet source and destination addresses ("data-link" addresses), dl_type corresponds to the Ethernet ethertype,
-      nw_src, nw_dst, and nw_proto correspond to the IPv4 source, destination, and protocol ("nw" means network layer), and tp_src and tp_dst correspond to UDP/TCP ports (or ICMP type/code) ("tp" means transport layer). (Note that the field names are borrowed from the Openflow specification.)
+      The set of header fields that are compared when ``exact=False`` is specified are: Ethernet source and destination addresses, Ethernet ethertype field, Vlan vlanid and ethertype field, ARP target and sender protocol and hardware addresses (four fields), IPv4/IPv6 source and destination addresses and protocol, and TCP/UDP src/dst port numbers (or ICMP/ICMPv6 icmptype/icmpcode fields).
 
-      Lastly, predicate functions can be supplied to make *arbitrary* tests against packets.  The
-      ``predicates`` argument can take a list of either ``lambda`` functions or strings that contain
-      lambda function definitions (they're ``eval``\'ed internally by Switchyard).  There is one
-      parameter given to the ``lambda``, which is the packet to be evaluated.
+    * **Wildcard fields**:  In addition to specifying the ``exact`` keyword parameter, it is possible to specify that some additional header fields should be *wildcarded*.  That is, the wildcarded header fields are allowed to contain *any* value.  Wildcards are specified using a tuple of two elements: a header class name and a field name.
+
+      A single wildcard can be supplied (i.e., one 2-tuple) with the ``wildcard`` keyword parameter, or a *list* of 2-tuples can be supplied with the ``wildcards`` keyword.  For example, the following line of code uses subset matching (``exact=False``) and one wildcard.  For this example, assume that the packet ``pkt`` contains ``Ethernet``, ``IPv4``, and ``UDP`` headers::
+
+          PacketOutputEvent('en0', pkt, exact=False, wildcard=(IPv4, 'src'))
+
+      Note that for the above example, the only fields compared in the IPv4 header would be the destination address and protocol field (since other fields are already ignored with ``exact=False``).
+
+      Here is another example that ignores source addresses in the Ethernet, IPv4 and UDP fields, leaving only two fields in the Ethernet header to be compared (dst and ethertype), two fields to be compared in the IPv4 header (dst and protocol) and one field in UDP (dst).  Again, assume that the packet ``pkt`` contains ``Ethernet``, ``IPv4``, and ``UDP`` headers::
+
+          PacketOutputEvent('en0', pkt, exact=False, wildcards=[(Ethernet, 'src'), (IPv4, 'src'), (UDP, 'src')])
 
 
-.. todo:: new, more general wildcarding example
+    .. note:: 
 
-.. todo:: may need to modify wildcard stuff to only have limited fields compared, by default, much like OF, and allow wildcarding along those lines
+       Switchyard previously allowed certain strings (modeled on the Openflow 1.0 specification) to be used to indicate wildcarded fields.  These strings can *no longer be used* in the current version of Switchyard.  To specify wildcarded fields,  you **must** use the ``(hdrclass, attribute)`` syntax.
 
 
-Test scenario example
-=====================
+    * **Predicate functions**:  Lastly, predicate functions can be supplied to make *arbitrary* tests against packets.  The ``predicate`` keyword argument can take a single ``lambda`` function in the form of a string, and the ``predicates`` keyword argument can take a *list* of ``lambda`` functions, each as strings.  Each lambda given must take a single argument (the packet object to be inspected) and must yield a boolean value.  (Note that internally, each lambda definition is ``eval``\'ed by Switchyard.)
 
-Below is an example of a creating two test expectations for a network hub device:
+      Here is one example that checks whether the IPv4 ttl field is between 32 and 34, inclusive.  Note that this line of code contains a *single* predicate function as a string::
 
-.. code-block:: python
+          PacketOutputEvent('en1', pkt, exact=False, predicate='''lambda p: p.has_header(IPv4) and 32 <= p[IPv4].ttl <= 34''')
 
-    from switchyard.lib.userlib import *
+      To provide multiple predicates, just use the ``predicates`` (plural) keyword and provide a list of lambdas-as-strings.
 
-    def create_scenario():
-        s = TestScenario("hub tests")
-        s.add_interface('eth0', '10:00:00:00:00:01')
-        s.add_interface('eth1', '10:00:00:00:00:02')
-        s.add_interface('eth2', '10:00:00:00:00:03')
 
-        # test case 1: a frame with broadcast destination should get sent out all ports except ingress
-        testpkt = Ethernet() + IPv4() + ICMP()
-        testpkt[0].src = "30:00:00:00:00:02"
-        testpkt[0].dst = "ff:ff:ff:ff:ff:ff"
-        testpkt[1].src = "172.16.42.2"
-        testpkt[1].dst = "255.255.255.255"
 
-        # expect that the packet should arrive on port eth1
-        s.expect(PacketInputEvent("eth1", testpkt, display=Ethernet), "An Ethernet frame with a broadcast destination address should arrive on eth1")
+Test scenario examples
+======================
 
-        # expect that the packet should be sent out ports eth0 and eth2 (but *not* eth1)
-        s.expect(PacketOutputEvent("eth0", testpkt, "eth2", testpkt, display=Ethernet), "The Ethernet frame with a broadcast destination address should be forwarded out ports eth0 and eth2")
+First, here is an example of a test scenario in which a packet is constructed and is expected to be received on port ``eth1``, then sent back out the same port, unmodified.  Notice in the example that the name ``scenario`` is *required*.
 
-        return s
+.. literalinclude:: code/testscenario1.py
+   :caption: A test scenario in which a packet is received then sent back out the same port.
+   :language: python
 
-    # the name scenario here is required --- the Switchyard framework will
-    # explicitly look for an object named scenario in the test description file.
-    scenario = create_scenario()
+Here is an additional example with a bit more complexity.  The context for this example might be that we are implemented an IPv4 router.  First, notice that we include in the scenario a static forwarding table file (``forwarding_table.txt``) to be written out when the scenario is executed.  We construct a packet destined to a particular IP address and create an expectation that it arrives on port ``eth0``.  We then construct an expectation that the packet should be forwarded out port ``eth2`` (note that according to the forwarding table, any packets destined to 2.0.0.0/8 should be forwarded out that port).  We also include a predicate function to test that the IPv4 ttl is decremented by 1.  Note that if we did not include this predicate, *any* ttl value would be accepted since we have specified ``exact=False``.  Note also that if we had set ``exact=True`` we would almost certainly need to wildcard several fields, e.g., checksums in the IPv4 and UDP headers, and would still need to include a predicate to check that ttl has been properly decremented.  Furthermore, if we were writing a test scenario for an IP router, we would also want to include expectations that the correct ARP messages were sent in order to obtain the hardware address corresponding to the next hop IP address.
+
+.. literalinclude:: code/testscenario2.py
+   :caption: A simplified IP forwarding test scenario.
+   :language: python
 
 
 Compiling a test scenario
 =========================
 
-A test scenario can be run *directly* with ``swyard``, or it can be *compiled* into a form that can be distributed without giving away the code that was used to construct the reference packets.  To compile a test scenario, you can simply invoke ``swyard`` with the ``-c`` flag, as follows::
+A test scenario can be run *directly* with ``swyard`` or it can be *compiled* into a form that can be distributed without giving away the code which was used to construct it.  Compiled test scenario files are, by default, given a ``.srpy`` extension; uncompiled test scenarios should just be regular Python (``.py``) files.
 
-    swyard -c examples/hubtests.py
+To compile a test scenario, you can simply invoke ``swyard`` with the ``-c`` flag, as follows::
 
-The output from this command should be a new file named ``hubtests.srpy`` containing the obfuscated test scenario.  This file can be used as the argument to the ``-c`` option.
+    swyard -c code/testscenario2.py 
+
+The output from this command should be a new file named ``code/testscenario2.srpy`` containing the obfuscated test scenario.  This file can be used as the argument to the ``-t`` option when later running a Switchyard program against those tests.
+
