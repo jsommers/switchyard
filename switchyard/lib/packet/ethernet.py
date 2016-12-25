@@ -1,11 +1,12 @@
+import struct
 from .packet import PacketHeaderBase,Packet
 from ..address import EthAddr,SpecialEthAddr
-import struct
 from .arp import Arp
 from .ipv4 import IPv4
 from .ipv6 import IPv6
 from .common import EtherType
 from ..exceptions import *
+
 
 class Vlan(PacketHeaderBase):
     '''
@@ -26,6 +27,13 @@ class Vlan(PacketHeaderBase):
     __slots__ = ['_vlanid', '_pcp', '_ethertype']
     _PACKFMT = '!HH'
     _MINLEN = struct.calcsize(_PACKFMT)
+    _next_header_map = {
+        EtherType.IP: IPv4,
+        EtherType.ARP: Arp,
+        EtherType.IPv6: IPv6,
+        EtherType.NoType: None,
+    }
+    _next_header_class_key = '_ethertype'
 
     def __init__(self, **kwargs):
         '''
@@ -36,8 +44,6 @@ class Vlan(PacketHeaderBase):
         self._pcp = 0
         self._ethertype = EtherType.IP
         super().__init__(**kwargs)
-        self.set_next_header_map(EtherTypeClasses)
-        self.set_next_header_class_key("_ethertype")
 
     @property
     def vlanid(self):
@@ -88,26 +94,23 @@ class Vlan(PacketHeaderBase):
     self.vlanid,  self.ethertype.name)
 
 
-EtherTypeClasses = {
-    EtherType.IP: IPv4,
-    EtherType.ARP: Arp,
-    EtherType.IPv6: IPv6,
-    EtherType.x8021Q: Vlan,
-    EtherType.NoType: None,
-}
-
-
 class Ethernet(PacketHeaderBase):
     __slots__ = ['_src','_dst','_ethertype']
     _PACKFMT = '!6s6sH'
     _MINLEN = struct.calcsize(_PACKFMT)
+    _next_header_map = {
+        EtherType.IP: IPv4,
+        EtherType.ARP: Arp,
+        EtherType.IPv6: IPv6,
+        EtherType.x8021Q: Vlan,
+        EtherType.NoType: None,
+    }
+    _next_header_class_key = '_ethertype'
 
     def __init__(self, **kwargs):
         self._src = self._dst = EthAddr()
         self._ethertype = EtherType.IP
         super().__init__(**kwargs)
-        self.set_next_header_map(EtherTypeClasses)
-        self.set_next_header_class_key("_ethertype")
 
     def size(self):
         return struct.calcsize(Ethernet._PACKFMT)

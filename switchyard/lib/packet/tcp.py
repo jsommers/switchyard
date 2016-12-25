@@ -69,6 +69,8 @@ class TCP(PacketHeaderBase):
         '_flags','_window','_urg','_options','_len', '_checksum']
     _PACKFMT = '!HHIIHHHH'
     _MINLEN = struct.calcsize(_PACKFMT)
+    _next_header_map = {}
+    _next_header_class_key = '_dst'
 
     def __init__(self, **kwargs):
         self.src = self.dst = 0
@@ -80,7 +82,6 @@ class TCP(PacketHeaderBase):
         self._checksum = 0
         self._len = 0
         super().__init__(**kwargs)
-        self.set_next_header_class_key("_dst")
 
     def size(self):
         return struct.calcsize(TCP._PACKFMT)
@@ -168,8 +169,8 @@ class TCP(PacketHeaderBase):
         return '{} {}->{} ({} {}:{})'.format(self.__class__.__name__, 
             self.src, self.dst, self.flagstr, self.seq, self.ack)
 
-    def next_header_class(self):
-        return None
+    #def next_header_class(self):
+    #    return None
 
     @property
     def seq(self):

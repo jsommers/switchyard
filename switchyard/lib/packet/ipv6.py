@@ -494,6 +494,8 @@ class IPv6(PacketHeaderBase):
                  '_src','_dst','_extheaders']
     _PACKFMT = '!BBHHBB16s16s'
     _MINLEN = struct.calcsize(_PACKFMT)
+    _next_header_map = IPTypeClasses
+    _next_header_class_key = '_nextheader'
 
     def __init__(self, **kwargs):
         self.trafficclass = 0
@@ -505,8 +507,6 @@ class IPv6(PacketHeaderBase):
         self.dst = SpecialIPv6Addr.UNDEFINED.value
         self._extheaders = []
         super().__init__(**kwargs)
-        self.set_next_header_map(IPTypeClasses)
-        self.set_next_header_class_key("_nextheader")
         
     def size(self):
         return IPv6._MINLEN + 0 # FIXME extension headers

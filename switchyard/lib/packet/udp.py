@@ -15,13 +15,14 @@ class UDP(PacketHeaderBase):
     __slots__ = ['_src','_dst','_len','_checksum']
     _PACKFMT = '!HHHH'
     _MINLEN = struct.calcsize(_PACKFMT)
+    _next_header_map = {}
+    _next_header_class_key = '_dst'
 
     def __init__(self, **kwargs):
         self.src = self.dst = 0
         self._len = self.size()
         self._checksum = 0
         super().__init__(**kwargs)
-        self.set_next_header_class_key("_dst")
 
     def size(self):
         return struct.calcsize(UDP._PACKFMT)
@@ -72,8 +73,8 @@ class UDP(PacketHeaderBase):
     def __str__(self):
         return '{} {}->{}'.format(self.__class__.__name__, self.src, self.dst)
 
-    def next_header_class(self):
-        return None
+    #def next_header_class(self):
+    #    return None
 
     def _compute_checksum_ipv4(self, ip4, xdata):
         if ip4 is None:

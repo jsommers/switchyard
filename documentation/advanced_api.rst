@@ -16,6 +16,10 @@ For some Switchyard programs, it can be useful to create new packet header types
 
 .. todo:: finish this: use example of routing protocol and cook up some examples to show serialization, deserialization (i.e., use of class methods in PacketHeader class)
 
+``set_next_header_class_key(cls, attr)``
+``add_next_header_class(cls, attr, hdrcls)``
+``set_next_header_map(cls, mapdict)`` (attrval: hdrcls)
+
 .. _app-layer:
 
 .. index:: socket emulation, application layer, end-host protocol stack

@@ -529,13 +529,17 @@ s.close()
         self.assertIn('0 passed, 1 failed, 3 pending', xio.contents)
         self.assertIn('send_packet was called instead of recv_packet', xio.contents)
 
+    @unittest.skip
     def testRefToPrevInTest(self):
+        prevplat = sys.platform
+        setattr(sys, "platform", "test")
         o = self._makeOptions(tests=['stest2'], usercode='ucode12')
         with redirectio() as xio:
             with self.assertLogs(level='DEBUG') as cm:
                 main_test(o)
         self.assertIn("Ports match", xio.contents)
         self.assertIn("Test pass", cm.output[-1])
+        setattr(sys, "platform", prevplat)
 
     def testSockemu(self):
         from switchyard.syinit import start_framework

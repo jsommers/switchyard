@@ -238,10 +238,10 @@ class PacketHeaderBase(metaclass=ABCMeta):
     Base class for packet headers.
     '''
     __slots__ = []
+    _next_header_map = {}
+    _next_header_class_key = ''
 
     def __init__(self, **kwargs):
-        PacketHeaderBase._next_header_map = {}
-        PacketHeaderBase._next_header_class_key = ''
         for attrname, value in kwargs.items():
             setattr(self, attrname, value)
 
@@ -319,9 +319,9 @@ class PacketHeaderBase(metaclass=ABCMeta):
         p.add_header(ph)
         return p
 
-    @abstractmethod
     def __eq__(self, other):
-        pass
+        return isinstance(other, self.__class__) and \
+            self.to_bytes() == other.to_bytes()
 
     def __str__(self):
         return self.__class__.__name__

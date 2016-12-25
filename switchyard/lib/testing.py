@@ -12,7 +12,7 @@ import hashlib
 import pickle
 import base64
 import fnmatch
-import copy
+from copy import deepcopy
 import textwrap
 from collections import namedtuple, defaultdict
 from abc import ABCMeta, abstractmethod
@@ -75,7 +75,7 @@ class _PacketMatcher(object):
         are compared except for those that are explicitly wildcarded.
         '''
         self._exact = kwargs.pop('exact', True)
-        self._reference_packet = copy.deepcopy(packet)
+        self._reference_packet = deepcopy(packet)
         self._wildcards = self._check_wildcards(wildcards)
         self._predicates = self._check_predicates(predicates)
         self._compute_comparison_attrs(packet, self._exact, self._wildcards)
@@ -152,7 +152,7 @@ class _PacketMatcher(object):
                 ICMPv6: ['icmptype', 'icmpcode'],
                 Vlan: ['vlanid', 'ethertype'],
             }
-            attrhash = copy.deepcopy(_inexact_comparison_attributes)
+            attrhash = deepcopy(_inexact_comparison_attributes)
             foundclasses = set([ hdr.__class__ for hdr in pkt ])
             # remove classes/keys from attrhash if there aren't 
             # corresponding headers in the pkt
@@ -232,7 +232,7 @@ class _PacketMatcher(object):
                 newattr = '**:**:**:**:**:**'
             setattr(hdr, attrpriv, newattr)
 
-        pktcopy = copy.deepcopy(pkt)
+        pktcopy = deepcopy(pkt)
         for klass,attr in self._wildcards:
             header = pktcopy.get_header(klass)
             if header is not None:

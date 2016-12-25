@@ -385,6 +385,8 @@ class IPv4(PacketHeaderBase):
                  '_src','_dst','_options']
     _PACKFMT = '!BBHHHBBH4s4s'
     _MINLEN = struct.calcsize(_PACKFMT)
+    _next_header_map = IPTypeClasses
+    _next_header_class_key = '_protocol'
 
     def __init__(self, **kwargs):
         # fill in fields with (essentially) zero values
@@ -400,8 +402,6 @@ class IPv4(PacketHeaderBase):
         self.dst = SpecialIPv4Addr.IP_ANY.value
         self._options = IPOptionList()
         super().__init__(**kwargs)
-        self.set_next_header_map(IPTypeClasses)
-        self.set_next_header_class_key("_protocol")
         
     def size(self):
         return struct.calcsize(IPv4._PACKFMT) + self._options.raw_length()
