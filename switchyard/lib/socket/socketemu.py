@@ -7,22 +7,23 @@ import random
 from textwrap import indent
 from copy import copy
 from collections import namedtuple
+from time import time
 import socket
 from socket import error as sockerr
-from time import time
-import importlib
 
 # carefully control what we export to user code; we provide our own
 # implementation for some symbols, and others simply aren't supported
-explist = copy(socket.__all__)
+# ugly, but working within limitations of importlib, etc....
+implist = copy(socket.__all__)
+from socket import *
 dontimport = ('setdefaulttimeout', 'getdefaulttimeout', 'has_ipv6', 
     'socket', 'socketpair', 'fromfd', 'dup', 'create_connection')
 for name in dontimport:
-    explist.remove(name)
-explist.append('ApplicationLayer')
-__all__ = explist
+    implist.remove(name)
 
-from socket import *
+explist = ['socket', 'ApplicationLayer', 'getdefaulttimeout', 'setdefaulttimeout', 'has_ipv6']
+explist.extend(implist)
+__all__ = explist
 
 from ...hostfirewall import Firewall
 from ...pcapffi import PcapLiveDevice
@@ -189,17 +190,19 @@ class socket(object):
         '_timeout','_block','_remote_addr','_local_addr',
         '_socket_queue_app_to_stack','_socket_queue_stack_to_app')
 
-    def __init__(self, family, xtype, proto=0, fileno=0):
+    def __init__(self, family, socktype, proto=0, fileno=0):
+        if not ApplicationLayer._isinit:
+            raise RuntimeError("ApplicationLayer isn't initialized; this socket class can only be used within a Switchyard program.")
         family = AddressFamily(family)
         if family not in (AddressFamily.AF_INET, AddressFamily.AF_INET6):
             raise NotImplementedError(
                 "socket for family {} not implemented".format(family))
         # only UDP is supported right now...
-        if xtype not in (SOCK_DGRAM,):
+        if socktype not in (SOCK_DGRAM,):
             raise NotImplementedError(
-                "socket type {} not implemented".format(xtype))
+                "socket type {} not implemented".format(socktype))
         self._family = family
-        self._socktype = xtype
+        self._socktype = socktype
         self._protoname = 'udp'
         self._proto = IPProtocol.UDP
         if proto != 0:

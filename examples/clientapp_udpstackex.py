@@ -1,7 +1,7 @@
 #!/usr/bin/env python3 
 
 # import socket
-import switchyard.lib.socket.socketemu as socket
+import switchyard.lib.socket as socket
 import time
 
 HOST = '127.0.0.1'

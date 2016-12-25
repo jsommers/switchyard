@@ -8,10 +8,15 @@ from copy import deepcopy
 from .lib.logging import log_warn, log_info, log_debug
 
 #
-# Rule: 
+# Rule syntax: 
 # 'all'
 # proto[:port], e.g., tcp:80, icmp:*, udp:*, icmp, udp
 #
+
+# convert all cmds to check_output(progargs, input=X, universal_newlines=True)
+# args are same as Popen c'tor
+# returns output or raises exception
+# raises CalledProcessError.  The CalledProcessError object will have the return code in the returncode attribute and output in the output attribute
 
 def _sendcmd(progargs, cmdlist):
     pipe = Popen(progargs, stdin=PIPE, stdout=PIPE, stderr=STDOUT, universal_newlines=True)

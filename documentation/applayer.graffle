@@ -48,7 +48,7 @@
 	<array>
 		<dict>
 			<key>Bounds</key>
-			<string>{{244.29199954619014, 100.8999972641468}, {216.71999515593052, 43}}</string>
+			<string>{{223.19333511218429, 90.399997264146805}, {246.94667468219995, 64}}</string>
 			<key>Class</key>
 			<string>ShapedGraphic</string>
 			<key>FitText</key>
@@ -58,9 +58,9 @@
 			<key>FontInfo</key>
 			<dict>
 				<key>Font</key>
-				<string>GillSans</string>
+				<string>Monaco</string>
 				<key>Size</key>
-				<real>10</real>
+				<real>12</real>
 			</dict>
 			<key>ID</key>
 			<integer>67</integer>
@@ -86,19 +86,27 @@
 			<dict>
 				<key>Text</key>
 				<string>{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf760
-{\fonttbl\f0\fnil\fcharset0 GillSans;}
+{\fonttbl\f0\fnil\fcharset0 GillSans;\f1\fnil\fcharset0 Monaco;}
 {\colortbl;\red255\green255\blue255;}
 {\*\expandedcolortbl;;}
 \deftab720
 \pard\pardeftab720\qc\partightenfactor0
 
-\f0\fs20 \cf0 A (nearly) unmodified Python socket program.\
-Instead of \'93import socket\'94, \'93import switchyard.lib.socket.socketemu\'94}</string>
+\f0\fs24 \cf0 A (nearly) unmodified Python socket program.\
+
+\fs20 \
+
+\fs24 Instead of
+\fs20  
+\f1 import socket,
+\f0 \
+
+\f1 import switchyard.lib.socket}</string>
 			</dict>
 		</dict>
 		<dict>
 			<key>Bounds</key>
-			<string>{{221.38700294991338, 214.15396343940307}, {262.52998834848404, 65}}</string>
+			<string>{{168.9798136999209, 211.25999765843153}, {355.37371750672673, 80}}</string>
 			<key>Class</key>
 			<string>ShapedGraphic</string>
 			<key>FitText</key>
@@ -110,7 +118,7 @@ Instead of \'93import socket\'94, \'93import switchyard.lib.socket.socketemu\'94
 				<key>Font</key>
 				<string>GillSans</string>
 				<key>Size</key>
-				<real>10</real>
+				<real>12</real>
 			</dict>
 			<key>ID</key>
 			<integer>64</integer>
@@ -142,13 +150,14 @@ Instead of \'93import socket\'94, \'93import switchyard.lib.socket.socketemu\'94
 \deftab720
 \pard\pardeftab720\qc\partightenfactor0
 
-\f0\fs20 \cf0 Switchyard protocol stack\
-Call send_packet() and recv_packet() for sending/receiving on the underlying hardware.  Use ApplicationLayer.send_to_app() or ApplicatonLayer.recv_from_app() for delivering/receiving messages to/from an application.}</string>
+\f0\fs24 \cf0 Switchyard program: a protocol stack implementation\
+\
+Use net object for sending and receiving packets to/from network interfaces.  Use ApplicationLayer methods for delivering/receving messages to/from an application.}</string>
 			</dict>
 		</dict>
 		<dict>
 			<key>Bounds</key>
-			<string>{{233.13667640835047, 289.99999356269836}, {227.05999208986759, 23}}</string>
+			<string>{{218.79501612111926, 289}, {255.74331266433001, 25}}</string>
 			<key>Class</key>
 			<string>ShapedGraphic</string>
 			<key>FitText</key>
@@ -160,7 +169,7 @@ Call send_packet() and recv_packet() for sending/receiving on the underlying har
 				<key>Font</key>
 				<string>GillSans</string>
 				<key>Size</key>
-				<real>10</real>
+				<real>12</real>
 			</dict>
 			<key>ID</key>
 			<integer>63</integer>
@@ -192,7 +201,7 @@ Call send_packet() and recv_packet() for sending/receiving on the underlying har
 \deftab720
 \pard\pardeftab720\qc\partightenfactor0
 
-\f0\fs20 \cf0 Underlying hardware (real, or simulated for tests)}</string>
+\f0\fs24 \cf0 Network interfaces (real, or simulated for tests)}</string>
 			</dict>
 		</dict>
 		<dict>
@@ -234,6 +243,8 @@ Call send_packet() and recv_packet() for sending/receiving on the underlying har
 			<dict>
 				<key>Font</key>
 				<string>GillSans</string>
+				<key>Size</key>
+				<real>12</real>
 			</dict>
 			<key>ID</key>
 			<integer>61</integer>
@@ -268,7 +279,7 @@ Call send_packet() and recv_packet() for sending/receiving on the underlying har
 {\*\expandedcolortbl;;}
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\qc\partightenfactor0
 
-\f0\fs32 \cf0 Switchyard socket emulation layer}</string>
+\f0\fs24 \cf0 Switchyard socket emulation layer}</string>
 			</dict>
 		</dict>
 		<dict>
@@ -698,7 +709,7 @@ Call send_packet() and recv_packet() for sending/receiving on the underlying har
 	<key>MasterSheets</key>
 	<array/>
 	<key>ModificationDate</key>
-	<string>2016-12-21 19:24:15 +0000</string>
+	<string>2016-12-25 04:42:59 +0000</string>
 	<key>Modifier</key>
 	<string>Joel Sommers</string>
 	<key>NotesVisible</key>
@@ -786,7 +797,7 @@ Call send_packet() and recv_packet() for sending/receiving on the underlying har
 		<key>TopSlabHeight</key>
 		<real>33</real>
 		<key>VisibleRegion</key>
-		<string>{{-13, 0}, {603, 538}}</string>
+		<string>{{-13, 23.5}, {603, 538}}</string>
 		<key>Zoom</key>
 		<real>1</real>
 		<key>ZoomValues</key>

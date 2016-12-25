@@ -29,6 +29,11 @@ Application layer socket emulation and creating full protocol stacks
    :figwidth: 80%
 
 
+
+.. figure:: applayer_detail.*
+   :align: center
+   :figwidth: 80%
+
 .. todo:: need to discuss basic idea of ApplicationLayer class, how to start up swyard in test/live environments, how to make socket program that uses Switchyard, etc.  Use UDP client example (and also show a UDP server example using bind()).  Maybe also cook up and try a simple TCP client example.
 
 .. todo:: maybe also talk about firewalling here?

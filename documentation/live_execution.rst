@@ -63,6 +63,8 @@ Here is an example of running the Switchyard example ``sniff.py`` program on a L
     00:00:15 2016/12/00     INFO 1482564855.115: enp0s3 Ethernet 08:00:27:bb:27:89->01:00:5e:00:00:fb IP | IPv4 10.0.2.15->224.0.0.251 UDP | UDP 5353->5353 | RawPacketContents (45 bytes) b'\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00'...
     00:00:16 2016/12/00     INFO 1482564856.172: enp0s3 Ethernet 08:00:27:bb:27:89->33:33:00:00:00:fb IPv6 | IPv6 fe80::a00:27ff:febb:2789->ff02::fb UDP | UDP 5353->5353 | RawPacketContents (45 bytes) b'\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00'...
 
+    ... (more packets, removed for this example)
+
     ^C
     00:00:23 2016/12/00     INFO Restoring saved iptables state
 
@@ -96,7 +98,10 @@ When running Switchyard in a virtual machine environment such as on a Mininet co
 
    Switchyard's behavior with this option is to first discover *all* interfaces available on the host, then to remove any specified by ``-x``.  
 
-Note that given the semantics described above, it generally makes sense only to specify *one* of ``-i`` or ``-x``.     
+Note that given the semantics described above, it generally makes sense only to specify *one* of ``-i`` or ``-x``.
+
+
+
 
 
 Firewall options
@@ -108,3 +113,6 @@ As noted above, Switchyard's default behavior is to
 tcp:*
 udp:*
 icmp:*
+
+FIXME: make tcp, udp, icmp also work
+all
