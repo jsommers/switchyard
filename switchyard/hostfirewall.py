@@ -6,6 +6,7 @@ from subprocess import Popen, STDOUT, PIPE
 from copy import deepcopy
 
 from .lib.logging import log_warn, log_info, log_debug
+from .outputfmt import VerboseOutput
 
 #
 # Rule syntax: 
@@ -59,7 +60,8 @@ class Firewall(object):
 
     def __enter__(self):
         self._firewall_delegate.block()
-        self._firewall_delegate.show_rules()
+        if VerboseOutput.enabled():
+            self._firewall_delegate.show_rules()
         return None
 
     def __exit__(self, exctype, excvalue, traceback):
@@ -254,8 +256,10 @@ class MacOSFirewall(AbstractFirewall):
 
     def show_rules(self):
         st,output = _runcmd("/sbin/pfctl -aswitchyard  -srules")
-        log_debug("Rules installed: {}".format(output)) 
-
+        output = output.replace('No ALTQ support in kernel', '')
+        output = output.replace('ALTQ related functions disabled', '')
+        output = output.strip()
+        log_info("Rules installed: {}".format(output)) 
 
 _osmap = {
     'darwin': MacOSFirewall,

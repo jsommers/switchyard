@@ -236,8 +236,7 @@ One final limitation to be aware of: only one socket application can be started 
 
 Finally, note that Switchyard currently does not have any capabilities for testing the behavior of an application-layer socket program.  The application code could also contain calls to ``assert`` to verify that certain things happen as expected within the application, but there are no specific Switchyard features to help with this.
 
+.. note::
 
-.. Starting socket applications with ``swyard``
-.. """"""""""""""""""""""""""""""""""""""""""""
+   When using Switchyard to create a protocol stack and run a socket-based application on a standard commodity operating system (e.g., a desktop/laptop Linux or macOS system), you may need to be careful about configuring the host firewall settings when starting Switchyard in real/live mode.  In particular, any packets that you want Switchyard to handle should be explicitly *blocked* from the host operating system (or the host OS may respond in addition to Switchyard responding).  It may also be helpful to explicitly bind your application socket to a particular port in order to limit the number of protocols and/or ports that need to be blocked from the host OS.  Refer to the section on :ref:`firewall` for command-line options to ``swyard`` to ensure that you block the correct traffic.
 
-.. todo:: also talk about firewalling here

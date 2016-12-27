@@ -26,6 +26,7 @@ The ``sniff.py`` program will simply print out the contents of any packet receiv
 Here's an example of what output from running ``sniff.py`` might look like.  Note that the following example was run on a macOS host and that the text times/dates have been changed:
 
 .. code-block:: none
+   :caption: Example of Switchyard output from running in a live environment on a macOS host.
 
     00:00:56 2016/12/00     INFO Enabling pf: No ALTQ support in kernel; ALTQ related functions disabled; pf enabled; Token : 15170097737539790927
     00:00:56 2016/12/00     INFO Using network devices: en1 en0 en2
@@ -44,7 +45,9 @@ Note in particular a few things about the above example:
 
   * First, when started in a live setting, Switchyard *saves* then *clears* any current host firewall settings.  The saved firewall settings are restored when Switchyard exits (see the final log line, above).  
 
-    The reason Switchyard clears the host firewall is that it is often the case that you want Switchyard to receive *all* packets arriving on host interfaces.  While it is possible to specify different firewall settings (see below), the default behavior is to save and clear any firewall rules upon startup, then restore them when exiting.
+    The default behavior of Switchyard is to *block all traffic*.  This behavior may be undesirable in different situations and can be changed through the ``swyard`` command line option ``-f`` or ``--firewall``, as described below.
+
+    Switchyard's manipulation of the host operating system firewall is intended to prevent the host from receiving any traffic that should be the sole domain of Switchyard.  For example, if you are creating a Switchyard-based IP router, you want Switchyard, not the host, to be responsible for receiving and forwarding traffic.  As another example, if you are implementing a protocol stack for a particular UDP-based application, you will want to prevent the host from receiving any of that UDP traffic.
 
     Note that on macOS Switchyard configures host firewall settings using ``pfctl`` and on Linux Switchyard uses ``iptables``.
 
@@ -56,6 +59,7 @@ Note in particular a few things about the above example:
 Here is an example of running the Switchyard example ``sniff.py`` program on a Linux host (note again that the text times/dates have been changed):
 
 .. code-block:: none
+   :caption: Example of Switchyard output from running in a live environment on a Linux host.
 
     00:00:11 2016/12/00     INFO Saving iptables state and installing switchyard rules
     00:00:11 2016/12/00     INFO Using network devices: enp0s3
@@ -101,20 +105,54 @@ When running Switchyard in a virtual machine environment such as on a Mininet co
 Note that given the semantics described above, it generally makes sense only to specify *one* of ``-i`` or ``-x``.
 
 
-.. Firewall options
-.. ^^^^^^^^^^^^^^^^
+.. _firewall:
 
-.. As noted above, Switchyard's default behavior is to 
+Firewall options
+^^^^^^^^^^^^^^^^
+
+As noted above, Switchyard's default behavior is to prevent the host operating system from receiving any traffic while Switchyard is running.  This may be undesirable in certain situations, and the ``-f`` or ``--firewall`` options to ``swyard`` are available to change this behavior.
+
+The ``-f`` and ``--firewall`` options accept a single rule as a parameter (which in many cases needs to be quoted in the shell).  The rule syntax is ``proto[:port]``, where the ``[:port]`` part is optional and ``proto`` may be one of ``tcp``, ``udp``, ``icmp``, or ``all``.  If ``all`` is specified, the port part should not be included.  Here are some examples:
+
+``tcp``
+  Block the host from receiving all TCP traffic
+``tcp:8000``
+  Block the host from receiving TCP traffic on port 8000
+``icmp``
+  Block the host from receiving all ICMP traffic
+``udp:4567``
+  Block the host from receiving UDP traffic on port 4567
+``all``
+  Block the host from receiving all traffic.  This is the default behavior.
+
+If the ``-v`` (verbose) option is given to ``swyard``, the host firewall module will print (to the log) firewall settings that have been enabled.  Here are two examples from running ``swyard`` in a live environment (on macOS with the ``pf`` firewall).  First, an example showing Switchyard blocking *all* traffic on two interfaces:
+
+.. code-block:: none
+   :caption: Running Switchyard in a live environment (macOS) with -v flag: notice log line indicating firewall rules installed (2nd line, 2 rules).
 
 
-.. tcp:*
-.. udp:*
-.. icmp:*
+    $ sudo swyard -i lo0 -i en0 -v sniff.py 
+    11:39:58 2016/12/00     INFO Enabling pf: No ALTQ support in kernel; ALTQ related functions disabled; pf enabled; Token : 16107925605825483691; 
+    11:39:58 2016/12/00     INFO Rules installed: block drop on en0 all
+    block drop on lo0 all
+    11:39:58 2016/12/00     INFO Using network devices: en0 lo0
+    11:39:58 2016/12/00     INFO My interfaces: ['en0', 'lo0']
+    ^C11:40:00 2016/12/00     INFO Releasing pf: No ALTQ support in kernel; ALTQ related functions disabled; disable request successful. 4 more pf enable reference(s) remaining, pf still enabled.; 
 
-.. FIXME: make tcp, udp, icmp also work
-.. all
+Finally, an example showing Switchyard blocking all ICMP, all TCP, and UDP port 8888:
 
-.. todo:: add subsection on firewall options and how the host firewall is designed to work in live execution.
+.. code-block:: none
+   :caption: Running Switchyard in a live environment (macOS) with -v flag: notice log line indicating firewall rules installed (2nd line, 3 rules).
+
+    $ sudo swyard -i lo0 --firewall icmp --firewall tcp --firewall 'udp:8888' -v sniff.py 
+    11:43:46 2016/12/00     INFO Enabling pf: No ALTQ support in kernel; ALTQ related functions disabled; pf enabled; Token : 16107925605472991531; 
+    11:43:46 2016/12/00     INFO Rules installed: block drop on lo0 proto icmp all
+    block drop on lo0 proto tcp all
+    block drop on lo0 proto udp from any port = 8888 to any port = 8888
+    11:43:46 2016/12/00     INFO Using network devices: lo0
+    11:43:46 2016/12/00     INFO My interfaces: ['lo0']
+    ^C11:43:48 2016/12/00     INFO Releasing pf: No ALTQ support in kernel; ALTQ related functions disabled; disable request successful. 4 more pf enable reference(s) remaining, pf still enabled.; 
+
 
 
 .. note::
