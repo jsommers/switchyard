@@ -98,6 +98,11 @@ Packet parsing and construction reference
    of packet headers), or indexes may also be packet header class names.
    Exceptions are raised for invaliding indexing of either kind.
 
+   The optional raw parameter can accept a bytes object, which assumed
+   to be a serialized packet to be reconstructed.  The optional parameter
+   first_header indicates the first header of the packet to be reconstructed,
+   which defaults to Ethernet.
+
    >>> p = Packet()
    >>> p += Ethernet()
    >>> p[0]
@@ -181,6 +186,10 @@ and setting the header fields to non-default values:
 >>> e.dst = "ff:ff:ff:ff:ff:ff"
 >>> e.ethertype = EtherType.ARP
 
+As with all packet header classes, keyword parameters can be used to initialize header attributes:
+
+>>> e = Ethernet(src="de:ad:00:00:be:ef", dst="ff:ff:ff:ff:ff:ff", ethertype=EtherType.ARP)
+
 
 .. .. autoclass:: switchyard.lib.packet.Vlan
 ..    :members:
@@ -220,12 +229,11 @@ address is ``targetip``.
     ether.src = srchw
     ether.dst = 'ff:ff:ff:ff:ff:ff'
     ether.ethertype = EtherType.ARP
-    arp = Arp()
-    arp.operation = ArpOperation.Request
-    arp.senderhwaddr = srchw
-    arp.senderprotoaddr = srcip
-    arp.targethwaddr = 'ff:ff:ff:ff:ff:ff'
-    arp.targetprotoaddr = targetip
+    arp = Arp(operation=ArpOperation.Request,
+              senderhwaddr=srchw,
+              senderprotoaddr=srcip,
+              targethwaddr='ff:ff:ff:ff:ff:ff',
+              targetprotoaddr=targetip)
     arppacket = ether + arp 
 
 ------
@@ -256,7 +264,7 @@ IP version 4 header
 
    The IPProtocol class derives from the Python 3-builtin Enumerated
    class type.  There are other protocol numbers defined.  See 
-   switchyard.lib.packet.common for all defined values.
+   :py:mod:`switchyard.lib.packet.common` for all defined values.
 
 A just-constructed IPv4 header defaults to having all zeroes for 
 the source and destination addresses ('0.0.0.0') and the protocol
@@ -284,10 +292,9 @@ UDP (user datagram protocol) header
 To construct a packet that includes an UDP header as well as some application
 data, the same pattern of packet construction can be followed:
 
->>> p = Ethernet() + IPv4() + UDP()
->>> p[1].protocol = IPProtocol.UDP
->>> p[2].srcport = 4444
->>> p[2].dstport = 5555
+>>> p = Ethernet() + IPv4(protocol=IPProtocol.UDP) + UDP()
+>>> p[UDP].src = 4444
+>>> p[UDP].dst = 5555
 >>> p += b'These are some application data bytes'
 >>> print (p)
 Ethernet 00:00:00:00:00:00->00:00:00:00:00:00 IP | IPv4 0.0.0.0->0.0.0.0 UDP | UDP 4444->5555 | RawPacketContents (37 bytes) b'These are '...
@@ -479,7 +486,7 @@ Test scenario creation
 .. autoclass:: switchyard.lib.testing.TestScenario
    :members:
    :undoc-members:
-   :exclude-members: cancel_timer, done, get_failed_test, next, print_summary, scenario_sanity_check, testpass, wrapevent, timeout, do_setup, do_teardown, setup, teardown, lastout, failed_test_reason
+   :exclude-members: cancel_timer, done, get_failed_test, next, print_summary, scenario_sanity_check, testpass, wrapevent, timeout, do_setup, do_teardown, setup, teardown, lastout, failed_test_reason, write_files
 
 .. autoclass:: switchyard.lib.testing.PacketInputEvent
    :members:
@@ -493,8 +500,12 @@ Test scenario creation
 Application-layer
 =================
 
+Two static methods on the ``ApplicationLayer`` class are used to send messages up a socket application and to receive messages from socket applications.
+
 .. autoclass:: switchyard.lib.socket.ApplicationLayer
    :members:
+
+Switchyard's socket emulation module is intended to follow, relatively closely, the methods and attributes available in the built-in :py:mod:`socket` module.
 
 .. autoclass:: switchyard.lib.socket.socket
    :members:

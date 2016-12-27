@@ -11,7 +11,9 @@ ReceivedPacket = namedtuple('ReceivedPacket',
 
 class LLNetBase(metaclass=ABCMeta):
     '''
-    Base class for low-level networking library in Python.
+    Base class for the low-level networking library in Python.
+    "net" objects are constructed from classes derived from this
+    class.
     '''
     def __init__(self, name=None):
         self._devupdown_callback = None
