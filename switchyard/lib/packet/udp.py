@@ -16,7 +16,7 @@ class UDP(PacketHeaderBase):
     _PACKFMT = '!HHHH'
     _MINLEN = struct.calcsize(_PACKFMT)
     _next_header_map = {}
-    _next_header_class_key = '_dst'
+    _next_header_class_key = ''
 
     def __init__(self, **kwargs):
         self.src = self.dst = 0

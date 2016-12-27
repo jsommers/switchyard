@@ -40,7 +40,7 @@ def handle_app_data(net, intf, appdata):
     log_debug("flowaddr: {}".format(flowaddr))
 
     proto,srcip,srcport,dstip,dstport = flowaddr
-    p = Null() + IPv4(protocol=proto, src=srcip, dst=dstip, ipid=0xabcd, ttl=64, flags=IPFragmentFlag.DontFragment) + UDP(src=srcport,dst=dstport) + message
+    p = Null() + IPv4(protocol=proto, src=intf.ipaddr, dst=dstip, ipid=0xabcd, ttl=64, flags=IPFragmentFlag.DontFragment) + UDP(src=srcport,dst=dstport) + message
 
     log_debug("Sending {} to {}".format(p, intf.name))
     net.send_packet(intf, p)

@@ -94,7 +94,7 @@ def udp_stack_tests():
         IPv4(src='127.0.0.1',dst='127.0.0.1',protocol=IPProtocol.UDP) + \
         UDP(src=65535, dst=10000) + b'Hello stack'
 
-    s.expect(PacketOutputEvent("lo0", p, exact=False, wildcards=[(IPv4,'src'),(UDP,'src')]), "Emit UDP packet")
+    s.expect(PacketOutputEvent("lo0", p, exact=False, wildcards=[(UDP,'src')]), "Emit UDP packet")
 
     reply = deepcopy(p)
     reply[1].src,reply[1].dst = reply[1].dst,reply[1].src
@@ -249,12 +249,6 @@ from switchyard.lib.userlib import *
 from switchyard.llnetreal import LLNetReal
 
 def main(net):
-    # beware of limitations using loopback interface w/libpcap on
-    # non-macos (e.g., linux) platforms.  haven't yet tested it on
-    # platforms besides macos.
-    if isinstance(net, LLNetReal) and sys.platform != 'darwin': 
-        raise Exception("This example only works on macos at present")
-
     # find the loopback interface
     intf = None
     for i in net.interfaces():
@@ -293,7 +287,7 @@ def handle_app_data(net, intf, appdata):
     log_debug("flowaddr: {}".format(flowaddr))
 
     proto,srcip,srcport,dstip,dstport = flowaddr
-    p = Null() + IPv4(protocol=proto, src=srcip, dst=dstip, ipid=0xabcd, ttl=64, flags=IPFragmentFlag.DontFragment) + UDP(src=srcport,dst=dstport) + message
+    p = Null() + IPv4(protocol=proto, src=intf.ipaddr, dst=dstip, ipid=0xabcd, ttl=64, flags=IPFragmentFlag.DontFragment) + UDP(src=srcport,dst=dstport) + message
 
     log_debug("Sending {} to {}".format(p, intf.name))
     net.send_packet(intf, p)

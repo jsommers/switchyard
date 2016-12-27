@@ -11,7 +11,7 @@ def udp_stack_tests():
         IPv4(src='127.0.0.1',dst='127.0.0.1',protocol=IPProtocol.UDP) + \
         UDP(src=65535, dst=10000) + b'Hello stack'
 
-    s.expect(PacketOutputEvent("lo0", p, exact=False, wildcards=[(IPv4, 'src'), (UDP, 'src')]), "Emit UDP packet")
+    s.expect(PacketOutputEvent("lo0", p, exact=False, wildcards=[(UDP, 'src')]), "Emit UDP packet")
 
     reply = deepcopy(p)
     reply[1].src,reply[1].dst = reply[1].dst,reply[1].src

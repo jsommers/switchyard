@@ -311,7 +311,11 @@ class socket(object):
         '''
         Alter the local address with which this socket is associated.
         The address parameter is a 2-tuple consisting of an IP address
-        and port number.
+        and port number. 
+
+        NB: this method fails and returns -1 if the requested port
+        to bind to is already in use but does *not* check that the
+        address is valid.  
         '''
         portset = _gather_ports().union(ApplicationLayer._emuports())
         if address[1] in portset:
