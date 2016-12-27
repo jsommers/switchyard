@@ -69,6 +69,16 @@ class HostFirewallTests(unittest.TestCase):
         self.assertEqual(rules[2], 'block drop on eth0 proto udp from any port 123 to any port 123')
         fw.__exit__(0,0,0)
 
+    def testBadRule1(self):
+        setattr(sys, "platform", "test")
+        with self.assertRaises(ValueError):
+            fw = hf.Firewall(("eth0",), ("mpxyz",))
+
+    def testBadRule2(self):
+        setattr(sys, "platform", "test")
+        with self.assertRaises(ValueError):
+            fw = hf.Firewall(("eth0",), ("xicmp:asdf",))
+
     def testTest(self):
         setattr(sys, "platform", "test")
         fw = hf.Firewall(("eth0",), ("icmp:*","tcp:80"))
