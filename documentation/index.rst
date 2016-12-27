@@ -19,6 +19,7 @@ Switchyard documentation
    advanced_api
    installation
    reference
+   release_notes
    thanks
 
 
