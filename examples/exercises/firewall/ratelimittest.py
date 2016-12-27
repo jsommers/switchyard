@@ -5,10 +5,7 @@ from copy import deepcopy
 import struct
 import time
 
-from switchyard.lib.packet import *
-from switchyard.lib.address import *
-from switchyard.lib.common import *
-from switchyard.lib.testing import *
+from switchyard.lib.userlib import *
 
 firewall_rules = '''
 # drop everything from an internal subnet which shouldn't be allowed
@@ -80,7 +77,7 @@ def swap(pkt):
     e = pkt.get_header(Ethernet)
     e.src,e.dst = e.dst,e.src
     ip = pkt.get_header(IPv4)
-    ip.srcip,ip.dstip = ip.dstip, ip.srcip
+    ip.src,ip.dst = ip.dst, ip.src
     ip.ttl = 255-ip.ttl
     ip.ipid = 0
     tport = None
@@ -91,11 +88,11 @@ def swap(pkt):
     elif pkt.has_header(UDP):
         tport = pkt.get_header(UDP)
     if tport is not None:
-        tport.srcport,tport.dstport = tport.dstport, tport.srcport
+        tport.src,tport.dst = tport.dst, tport.src
     return pkt
 
 def firewall_tests():
-    s = Scenario("Firewall tests")
+    s = TestScenario("Firewall tests")
     s.add_file('firewall_rules.txt', firewall_rules)
 
     # two ethernet ports; no IP addresses assigned to
@@ -117,15 +114,15 @@ def firewall_tests():
         # next few tests hit rules that have rate limits, but these should
         # all be allowed since the payloads are small enough.
         t = TCP()
-        t.srcport = rand16(10000)
-        t.dstport = 80
+        t.src = rand16(10000)
+        t.dst = 80
         t.seq = rand32()
         t.ack = rand32()
         t.window = rand16()
         t.SYN = 1
         ip = IPv4()
-        ip.srcip = int(IPv4Address('192.168.213.0')) | rand8()
-        ip.dstip = rand32()
+        ip.src = int(IPv4Address('192.168.213.0')) | rand8()
+        ip.dst = rand32()
         ip.ttl = rand8(16)
         ip.protocol = IPProtocol.TCP
         pkt = mketh() + ip + t + b'\x25' * 1400
@@ -144,8 +141,8 @@ def firewall_tests():
         print ("ICMP rate limit {}".format(i))
 
         time.sleep(0.5)
-        ip.srcip = rand32()
-        ip.dstip = rand32()
+        ip.src = rand32()
+        ip.dst = rand32()
         ip.protocol = IPProtocol.ICMP
         pkt = mketh() + ip + ICMP()
         s.expect(PacketInputEvent('eth0', pkt),
@@ -159,8 +156,8 @@ def firewall_tests():
             'Packet forwarded out eth0; permitted since it matches rule 13.') 
 
 
-    ip.srcip = rand32()
-    ip.dstip = rand32()
+    ip.src = rand32()
+    ip.dst = rand32()
     ip.protocol = IPProtocol.ICMP
     pkt = mketh() + ip + ICMP() 
     pkt.get_header(ICMP).icmpdata.data = b'\x45' * 1000

@@ -13,11 +13,11 @@ def main(net):
 
     while True:
         try:
-            timestamp,input_port,packet = net.recv_packet(timeout=1.0)
+            timestamp,input_port,packet = net.recv_packet()
         except NoPackets:
             continue
         except Shutdown:
-            break
+            return
 
         log_debug ("In {} received packet {} on {}".format(net.name, packet, input_port))
         if packet[0].dst in mymacs:

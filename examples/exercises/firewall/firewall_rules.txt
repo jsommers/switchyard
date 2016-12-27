@@ -25,23 +25,20 @@ permit udp src any srcport 53 dst 192.168.0.0/16 dstport any
 # rule 7
 permit tcp src 192.168.0.0/16 srcport any dst any dstport 80 ratelimit 12500
 # rule 8
-permit tcp src any srcport 80 dst 192.168.0.0/16 dstport any ratelimit 12500
+permit tcp src any srcport any dst 172.16.42.0/24 dstport 80 ratelimit 12500
 # rule 9
 permit tcp src 192.168.0.0/16 srcport any dst any dstport 443
 # rule 10
-permit tcp src any srcport 443 dst 192.168.0.0/16 dstport any
+permit tcp src any srcport any dst 172.16.42.0/24 dstport 443
 
 # permit, but impair certain traffic flows
 # rule 11
 permit tcp src 192.168.0.0/24 srcport any dst any dstport 8000 impair
-# rule 12
-permit tcp src any srcport 8000 dst 192.168.0.0/24 dstport any impair
 
-# permit, but rate limit icmp to 150 bytes/sec.
-# NB: this includes *both* directions!
-# rule 13
-permit icmp src any dst any ratelimit 150
+# permit, but rate limit icmp to 100 bytes/sec
+# rule 12
+permit icmp src any dst any ratelimit 100
 
 # block everything else
-# rule 14
+# rule 13
 deny ip src any dst any 

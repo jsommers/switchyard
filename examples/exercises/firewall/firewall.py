@@ -1,6 +1,4 @@
-from switchyard.lib.packet import *
-from switchyard.lib.address import *
-from switchyard.lib.common import *
+from switchyard.lib.userlib import *
 import time
 
 def main(net):
@@ -11,7 +9,7 @@ def main(net):
     while True:
         pkt = None
         try:
-            port,pkt = net.recv_packet(timeout=0.5)
+            timestamp,port,pkt = net.recv_packet(timeout=0.5)
         except NoPackets:
             pass
         except Shutdown:

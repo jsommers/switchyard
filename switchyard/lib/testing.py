@@ -952,6 +952,9 @@ def get_test_scenario_from_file(sfile):
     sobj = None
     if fnmatch.fnmatch(sfile, "*.py"):
         sobj = import_or_die(sfile, ('scenario',))
+        pickle_repr = pickle.dumps(sobj, pickle.HIGHEST_PROTOCOL)
+        sobj = pickle.loads(pickle_repr)
+        sobj.scenario_sanity_check()
     elif fnmatch.fnmatch(sfile, "*.srpy"):
         sobj = uncompile_scenario(sfile)
     else:
