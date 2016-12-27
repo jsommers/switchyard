@@ -163,6 +163,8 @@ To deliver messages to or receive messages from a socket application, a Switchya
 
   If a message is available, this method returns two items in the form of a tuple: a *flow address* and the data to be sent.  The *flow address* consists of 5 items in the form of a tuple: the IP protocol value, a remote IP address and port, and the local IP address and port.
 
+  Note: if an application socket is *unbound*, the local IP address will be ``0.0.0.0``.  The protocol stack implementation is responsible for using a valid IP address in any outgoing packet (specifically, it should use the address assigned to the interface out which the packet is emitted).
+
 
 In sum, there are 4 API calls that must be used to move packets and data through a protocol stack implementation, as shown in the figure below.  
 
