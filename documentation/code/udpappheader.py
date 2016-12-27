@@ -5,8 +5,8 @@ class UDPPing(PacketHeaderBase):
     _PACKFMT = "!H"
 
     def __init__(self, seq=0, **kwargs):
-        PacketHeaderBase.__init__(self, **kwargs)
         self._sequence = int(seq)
+        PacketHeaderBase.__init__(self, **kwargs)
 
     def to_bytes(self):
         raw = struct.pack(self._PACKFMT, self._sequence)

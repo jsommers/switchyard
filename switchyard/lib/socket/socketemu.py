@@ -118,8 +118,8 @@ class ApplicationLayer(object):
         raises NoPackets exception.
 
         Returns a 2-tuple: flowaddr and data.
-        The flowaddr consists of 5 items: protocol, localaddr, localport, remoteaddr,
-        remoteport.
+        The flowaddr consists of 5 items: protocol, localaddr, localport, 
+        remoteaddr, remoteport.
         '''
         try:
             return ApplicationLayer._from_app.get(timeout=timeout)
@@ -133,9 +133,9 @@ class ApplicationLayer(object):
         Called by a network stack implementer to push application-layer
         data "up" from the stack.
 
-        Arguments are protocol number, remote_addr, and local_addr.  The
-        two address arguments are two-tuples with address and port (or some
-        other integer end-point identifier). 
+        Arguments are protocol number, local_addr (a 2-tuple of IP address
+        and port), remote_addr (a 2-tuple of IP address and port), and the
+        message.  
 
         Returns None.
         '''

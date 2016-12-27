@@ -4,10 +4,10 @@ import struct
 class SpanningTreeMessage(PacketHeaderBase):
     _PACKFMT = "6sxB" 
 
-    def __init__(self, root="00:00:00:00:00:00"):
-        PacketHeaderBase.__init__(self)
+    def __init__(self, root="00:00:00:00:00:00", **kwargs):
         self._root = EthAddr(root)
         self._hops_to_root = 0
+        PacketHeaderBase.__init__(self, **kwargs)
 
     def to_bytes(self):
         raw = struct.pack(self._PACKFMT, self._root.raw, self._hops_to_root)
@@ -40,7 +40,7 @@ class SpanningTreeMessage(PacketHeaderBase):
 
 
 if __name__ == '__main__':
-    spm = SpanningTreeMessage("00:11:22:33:44:55")
+    spm = SpanningTreeMessage("00:11:22:33:44:55", hops_to_root=1)
     print(spm)
 
     Ethernet.add_next_header_class(EtherType.SLOW, SpanningTreeMessage)

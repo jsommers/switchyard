@@ -36,7 +36,7 @@ As mentioned above, to create a new packet header class you must create a class 
 
 There is one restriction when implementing a new packet header class:
 
-  * The ``__init__`` method should only take *optional* parameters.  Switchyard assumes that a packet header object can be constructed which assigns attributes to reasonable default values, thus no explicit initialization parameters can be required by the constructor (``__init__``). Moreover, for compatibility with keyword-style attribute assignment in packet header classes, a ``kwargs`` parameter should be included and passed to the base class initialization method call.
+  * The ``__init__`` method should only take *optional* parameters.  Switchyard assumes that a packet header object can be constructed which assigns attributes to reasonable default values, thus no explicit initialization parameters can be required by the constructor (``__init__``). Moreover, for compatibility with keyword-style attribute assignment in packet header classes, a ``kwargs`` parameter should be included and passed to the base class initialization method call and this call to the base class must come **last** in the ``__init__`` method.
 
 Below is an example of a new packet header called ``UDPPing`` that contains a single attribute: ``sequence``.  This packet header is designed to be included in a packet following a ``UDP`` header.  Besides implementing an ``__init__`` method (which optionally accepts an initial sequence value) and the two required methods, there are property getter and setter methods for ``sequence`` and a string conversion magic method.  Note that we've decided to store the sequence value as a network-byte-order (big endian) unsigned 16 bit value (this is what the ``!H`` signifies for ``_PACKFMT``: refer to the ``struct`` Python library documentation):
 
@@ -109,8 +109,25 @@ Here is the output, showing
 
 .. code-block:: none
 
-    Before serialize/deserialize: Ethernet 11:22:11:22:11:22->22:33:22:33:22:33 IP | IPv4 1.2.3.4->5.6.7.8 UDP | UDP 55555->12345 | UDPPing seq: 0
-    After deserialization: Ethernet 11:22:11:22:11:22->22:33:22:33:22:33 IP | IPv4 1.2.3.4->5.6.7.8 UDP | UDP 55555->12345 | UDPPing seq: 0
+    Before serialize/deserialize: Ethernet 11:22:11:22:11:22->22:33:22:33:22:33 IP | IPv4 1.2.3.4->5.6.7.8 UDP | UDP 55555->12345 | UDPPing seq: 13
+    After deserialization: Ethernet 11:22:11:22:11:22->22:33:22:33:22:33 IP | IPv4 1.2.3.4->5.6.7.8 UDP | UDP 55555->12345 | UDPPing seq: 13
+
+
+One more example
+""""""""""""""""
+
+Here is one additional example.  Say that we want to implement a simplified Ethernet spanning tree protocol and want to create a packet header that includes an identifier for the root note and an integer value which indicates the number of hops to the root.  We could do the following:
+
+.. literalinclude:: code/newheader.py
+   :language: python
+   :lines: 1-39
+
+Here is some example code for how we might use this class.  Note that since we are creating a protocol header that should follow the ``Ethernet`` header, we must (due to a current limitation with Switchyard) use an existing ``ethertype`` value.  We are reusing the value ``EtherType.SLOW`` for no particular reason other than it is presently unused by Switchyard:
+
+.. literalinclude:: code/newheader.py
+   :language: python
+   :lines: 43-53
+   :dedent: 4
 
 
 .. _app-layer:
@@ -120,17 +137,80 @@ Here is the output, showing
 Application layer socket emulation and creating full protocol stacks
 --------------------------------------------------------------------
 
-``import switchyard.lib.socket as socket``
+It is possible within Switchyard to implement a program that resembles a full end-host protocol stack.  The protocol stack can be used along with Switchyard's socket *emulation* library to execute nearly unmodified Python UDP socket programs.  In this section, we discuss (1) additional API calls used to receive messages "down" from socket applications as well as deliver messages "up" to socket applications, (2) usage of and limitations with Switchyard's socket emulation library, and (3) additional command-line options with ``swyard`` for executing a socket application along with a protocol stack program.
+
+A general picture of using Switchyard to execute a protocol stack *and* a socket application is shown below.  Note that the figure shows two components that are provided (or controlled) by Switchyard, and two components that must be written or provided by a user of Switchyard.  
 
 .. figure:: applayer.*
    :align: center
    :figwidth: 80%
 
 
+API calls for delivering/receiving messages to/from applications
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+To deliver messages to or receive messages from a socket application, a Switchyard user must use two static methods on the ``ApplicationLayer`` class.  These methods are similar in many ways to the two methods on the *net* object used to send and receive packets.  The application-related methods are:
+
+``ApplicationLayer.send_to_app(proto, local_addr, remote_addr, data)``
+  This method is used to pass a message received on the network up to an application.  The ``proto`` parameter is the IP protocol number of the packet from which the data was received.  ``local_addr`` and ``remote_addr`` are 2-tuples consisting of an IP address and port.   This method returns None.
+
+  Note that if there is no socket associated with the address information given, a log warning is emitted but the method does not raise an exception or return an error.
+
+
+``ApplicationLayer.recv_from_app(timeout=None)``
+  This method is used to receive an application message to be sent on the network.  It takes an optional timeout argument which indicates the number of seconds to wait until giving up and raising a ``NoPackets`` exception.  This exception is a bit of a misnomer here, but it is used for consistency with ``net.recv_packet()``.  If ``None`` is passed as a timeout value, this method will block until a message is available.
+
+  If a message is available, this method returns two items in the form of a tuple: a *flow address* and the data to be sent.  The *flow address* consists of 5 items in the form of a tuple: the IP protocol value, a remote IP address and port, and the local IP address and port.
+
+
+In sum, there are 4 API calls that must be used to move packets and data through a protocol stack implementation, as shown in the figure below.  
 
 .. figure:: applayer_detail.*
    :align: center
    :figwidth: 80%
+
+Using a similar pattern as with a "regular" Switchyard program, it is possible to service both of the incoming data channels (i.e., either packets received from a network port, or messages received from an application), as follows:
+
+
+.. literalinclude:: code/protostackpattern.py
+   :language: python
+
+
+Switchyard's socket emulation library
+"""""""""""""""""""""""""""""""""""""
+
+Switchyard provides a module similar to Python's built-in ``socket`` module that contains clones of many of the methods, functions and other items in the built-in module.  We refer to the Switchyard socket module as an *emulation* module since it emulates the semantics of methods in the built-in module. The only line of code required to take advantage of Switchyard's socket emulation module is the import line.  Instead of using importing a module named ``socket``, you must import a module named ``switchyard.lib.socket``.  The ``from ... import *`` idiom is generally discouraged in Python, and a way to avoid this while isolating the change in a socket application to a single line is to do the following:
+
+.. code-block:: python
+
+   # instead of:
+   import socket
+
+   # to use Switchyard's socket emulation module, do:
+   import switchyard.lib.socket as socket
+
+When using the suggested modification above, any use of attributes within the socket module (either built-in or emulated) can just be prefixed with ``socket.`` as normal.  Note that in the code below, bytes objects are sent and received using ``sendto`` and ``recvfrom``.  (This same code is available in the ``examples`` folder in the Switchyard github repo.)
+
+.. literalinclude:: code/clientsocketapp.py
+   :language: python
+
+.. note::
+   
+   Limitations: only UDP sockets at present.  On a live host, there is a chance that the ephemeral port number used by Switchyard may clash with a non-Switchyard socket application.  No getsockopt/setsockopt. Note other limitations related to localhost.
+
+.. note::
+
+   Some implementation details.
+
+
+Starting socket applications with ``swyard``
+""""""""""""""""""""""""""""""""""""""""""""
+
+
+.. note::
+   
+   Limitations: only one socket application can be started at a time.  May change in the future.
+
 
 .. todo:: need to discuss basic idea of ApplicationLayer class, how to start up swyard in test/live environments, how to make socket program that uses Switchyard, etc.  Use UDP client example (and also show a UDP server example using bind()).  Maybe also cook up and try a simple TCP client example.
 
