@@ -50,7 +50,7 @@ Note in particular a few things about the above example:
 
   * By default, Switchyard finds and uses all interfaces on the host that are (1) determined to be "up" (according to libpcap), and (2) *not* a localhost interface.  In the above example run, Switchyard finds and uses three interfaces (``en0``, ``en1``, and ``en2``).  
 
-  * The above example shows three packets that were observed by Switchyard, each arriving on interface ``en0``.  Notice that the three packets each contain Ethernet, IPv4 and TCP packet headers, as well as payload (in the form of RawPacketContents objects at the "end" of each packet).
+  * The above example shows three packets that were observed by Switchyard, each arriving on interface ``en0``.  Notice that the three packets each contain Ethernet, IPv4 and TCP packet headers, as well as payload (in the form of ``RawPacketContents`` objects at the end of each packet).
 
 
 Here is an example of running the Switchyard example ``sniff.py`` program on a Linux host (note again that the text times/dates have been changed):
@@ -90,7 +90,7 @@ When running Switchyard in a virtual machine environment such as on a Mininet co
 
    If this option is given, *only* the interfaces specified by ``-i`` options will be used by Switchyard.  If no ``-i`` option is specified, Switchyard uses all available interfaces *except* the localhost interface.
 
-   To use a localhost interface, you must explicitly include it using this option.
+   To use a localhost interface, you must explicitly include it using this option.  If you explicitly include the localhost interface, you can still explicitly include other interfaces.
 
 .. option:: -x <interface-name>
 
@@ -101,18 +101,17 @@ When running Switchyard in a virtual machine environment such as on a Mininet co
 Note that given the semantics described above, it generally makes sense only to specify *one* of ``-i`` or ``-x``.
 
 
+.. Firewall options
+.. ^^^^^^^^^^^^^^^^
+
+.. As noted above, Switchyard's default behavior is to 
 
 
+.. tcp:*
+.. udp:*
+.. icmp:*
 
-Firewall options
-^^^^^^^^^^^^^^^^
+.. FIXME: make tcp, udp, icmp also work
+.. all
 
-As noted above, Switchyard's default behavior is to 
-
-
-tcp:*
-udp:*
-icmp:*
-
-FIXME: make tcp, udp, icmp also work
-all
+.. todo:: add subsection on firewall options and how the host firewall is designed to work in live execution.
