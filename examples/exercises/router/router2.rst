@@ -111,7 +111,7 @@ Switchyard testing
 
 To test your router, you can use the same formula you've used in the past::
 
-    $ ./switchyard/srpy.py -t -s routertests2.srpy myrouter.py
+    $ swyard -t routertests2.srpy myrouter.py
 
 If you need to step through code to see what's going on, you can add calls to ``debugger()`` at any point in your code.  When execution reaches that line, you'll get a Python debugger (pdb) command line at which you can inspect variables, call methods, etc., in order to understand what's happening.  This kind of debugging will, in general, be much more effective than "printf" debugging.  This project includes quite a bit of complexity, so inspecting variables and stepping through your program in the debugger can be extremely helpful!
 
@@ -130,7 +130,7 @@ To test your router in Mininet, open up a terminal on the virtual machine, and c
 
 Once Mininet starts up, you should open an xterm on the router node (``xterm router``), and type::
 
-    router# ./switchyard/srpy.py myrouter.py
+    router# swyard myrouter.py
 
 to start the router.
 

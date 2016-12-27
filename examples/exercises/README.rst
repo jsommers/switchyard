@@ -32,12 +32,6 @@ UDP network stack (TBD)
 	API emulation capabilities.  The goal is to build the Ethernet/IP/UDP
 	layers to support a UDP-based application.
 
-TCP network stack (TBD)
-	The goal of this exercise is to build the Ethernet/IP/TCP 
-	layers to support a TCP-based socket application.  The TCP
-	implementation is simplified from a "real" TCP, but can still be
-	used to communicate with a "real" TCP remote endpoint.
-
 License
 -------
 

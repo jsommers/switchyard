@@ -162,7 +162,7 @@ Testing
 
 There is a Switchyard test script available for basic firewalling capabilities (i.e., permit and deny rules without any rate limits or impairment).  This file is available in the project repo as firewalltests.srpy.  The source code for this test scenario is also included as firewalltests.py.  The test source is given since you may find it helpful to add new tests or modify existing tests as you develop your code.  As usual, you can test your code using a command line like::
 
-	$ python3 ./switchyard/srpy.py -t -s firewalltests.srpy firewall.py
+	$ swyard -t firewalltests.srpy firewall.py
 
 Note that you can either use ``firewalltests.srpy`` or ``firewalltests.py`` in the command line above.
 
@@ -181,7 +181,7 @@ Once Mininet is started, open an xterm on the node named "firewall", and then st
 
 and on the firewall node::
 
-	firewall# python3 ./switchyard/srpy.py firewall.py
+	firewall# swyard firewall.py
 
 There are two other hosts in the Mininet setup: one named "internal" and another named "external".
 

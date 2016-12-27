@@ -3,8 +3,6 @@
 
 In this exercise, you will write the code to implement the core logic in an Ethernet learning switch using the Switchyard framework.  Besides using Switchyard for developing and testing your switch, you can deploy it in Mininet to test it in a "live" setting. The code you'll need to add should be less than 20 lines (and possibly quite a bit less depending on exactly how you write the code).
 
-Note: the ``setup.sh`` script in this directory can be used to bootstrap your development environment.  It clones the Switchyard repository from Github and installs any necessary Python modules.  If you already have an environment set up, you don't need to run this script.
-
 Ethernet Learning Switch Operation
 ----------------------------------
 
@@ -43,8 +41,7 @@ Testing and Deploying your Switch
 
 You should first develop your switch code using the Switchyard test framework.   If you run::
 
-	./switchyard/srpy.py -t -s switchtests.srpy myswitch.py
-
+	swyard -t switchtests.srpy myswitch.py
 
 it will execute a series of test cases against your program and display whether the tests pass or fail.  Once you get the tests to pass, you can try running your code in Mininet.
 
@@ -61,8 +58,7 @@ Once Mininet starts up, you should open a terminal window on the Mininet node na
 
 In the window that opens, run your switch in "real" (non-test) mode::
 
-	$ ./switchyard/srpy.py myswitch.py
-
+	$ swyard myswitch.py
 
 To examine whether your switch is behaving correctly, you can do the following:
 
