@@ -115,3 +115,8 @@ Note that given the semantics described above, it generally makes sense only to 
 .. all
 
 .. todo:: add subsection on firewall options and how the host firewall is designed to work in live execution.
+
+
+.. note::
+
+   When using a loopback interface, there are a couple things to be aware of.  First, while Switchyard normally uses ``libpcap`` for sending and receiving packets, a *raw socket* is used for sending packets on the localhost interface.  This is done due to limitations on some operating systems, notably Linux.  Receiving packets is still done with ``libpcap``, though on different operating systems you may observe that packets are encapsulated differently.  In particular, on Linux, an ``Ethernet`` header with zeroed addresses is used, while on macOS the BSD Null header is used, which just consists of a protocol number (i.e., the ethertype value normally found in the Ethernet header).

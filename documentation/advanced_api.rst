@@ -204,20 +204,32 @@ There are some key limitations and other issues to be aware of with Switchyard's
 
 .. note::
 
-   
+   Switchyard implements the socket layer by attempting to mirror, as closely as possible, the same constants, classes, and functions in the built-in socket module.  It maintains a shared (threadsafe) queue that handles all data passed *down* from a socket application, and creates a separate queue for each socket for handling data being passed *up* to an application.  As a result, Switchyard can support an application using *multiple* sockets at the same time (as long as they're all UDP!).  
 
 
 Starting socket applications with ``swyard``
 """"""""""""""""""""""""""""""""""""""""""""
 
+There is one additional command-line option for ``swyard`` when using a socket emulation application.  The ``-a`` is used to specify the name of a file that contains the application-layer socket program.  
 
-.. note::
-   
-   Limitations: only one socket application can be started at a time.  May change in the future.
+The ``a`` option can be used in conjunction with a Switchyard test scenario.  If you want to test that a socket application emits a packet, then receives a packet from some "remote" host, you could create an expectation that a packet is emitted and an expectation that some other packet is received.  You may need to use the ``copyfromlastout`` argument when creating the ``PacketInputEvent``, since the test scenario may not actually know what local port is being used by an application (among other things).  
+
+For example, to run a particular test scenario as well as an application program, the command line might look like the following:
+
+.. code-block:: none
+
+    $ swyard -a clientapp_udpstackex.py -t udpstack_tests.py udpstack.py 
+
+Note that the Python files used in the command line above are available in the ``examples`` folder of the Switchyard github repo.
+
+To run in *live* mode, simply remove the ``t`` option.  Note that there is a server program in the ``examples`` folder that can be run with this code in live mode: you can see that the Switchyard-based UDP stack and associated client-side program can interact correctly with a "regular" Python UDP-based server program.
+
+One final limitation to be aware of: only one socket application can be started by Switchyard at a time.  This limitation may change in a future version.
+
+Finally, note that Switchyard currently does not have any capabilities for testing the behavior of an application-layer socket program.  The application code could also contain calls to ``assert`` to verify that certain things happen as expected within the application, but there are no specific Switchyard features to help with this.
 
 
-.. todo:: need to discuss basic idea of ApplicationLayer class, how to start up swyard in test/live environments, how to make socket program that uses Switchyard, etc.  Use UDP client example (and also show a UDP server example using bind()).  Maybe also cook up and try a simple TCP client example.
+.. Starting socket applications with ``swyard``
+.. """"""""""""""""""""""""""""""""""""""""""""
 
-.. todo:: maybe also talk about firewalling here?
-
-.. todo:: be clear about limitations wrt UDP, no TCP server, maybe TCP client?
+.. todo:: also talk about firewalling here

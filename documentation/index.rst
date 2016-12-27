@@ -18,7 +18,6 @@ Switchyard documentation
    live_execution
    advanced_api
    installation
-   problems_solutions
    reference
    thanks
 
