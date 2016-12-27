@@ -200,18 +200,11 @@ There are some key limitations and other issues to be aware of with Switchyard's
   * The ``create_connection`` and ``socketpair`` calls are not available.
   * The ``getsockopt`` and ``setsockopt`` calls are not currently supported, but may be in a future version.
   * The various DNS-related calls in the socket module (e.g., ``gethostbyname``, etc.) are available and simply handed off to the built-in ``socket`` module for handling.  Switchyard does not implement any DNS capability directly.  Same for the byte-ordering calls (e.g., ``ntohs``, ``ntohl``, etc.)
-  * 
-
-
-
+  * Switchyard attempts to be careful about choosing a local (ephemeral) port number for use, but its approach isn't fool-proof.  There may be problems that arise due to a host OS using a local port that was already being used by Switchyard, but these situations should be rare in occurrence.
 
 .. note::
+
    
-   Limitations: only UDP sockets at present.  On a live host, there is a chance that the ephemeral port number used by Switchyard may clash with a non-Switchyard socket application.  No getsockopt/setsockopt. Note other limitations related to localhost.
-
-.. note::
-
-   Some implementation details.
 
 
 Starting socket applications with ``swyard``

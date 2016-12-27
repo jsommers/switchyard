@@ -154,10 +154,21 @@ class ApplicationLayer(object):
         xtup = (proto, local_addr[0], local_addr[1])
         with _lock:
             sockqueue = ApplicationLayer._to_app.get(xtup, None)
+
         if sockqueue is not None:
             sockqueue.put((local_addr,remote_addr,data))
-        else:
-            log_warn("No socket queue found for local proto/address: {}".format(xtup))
+            return
+        
+        # no dice, try local IP addr of 0.0.0.0
+        local2 = _normalize_addrs(("0.0.0.0", local_addr[1]))
+        xtup = (proto, local2[0], local2[1])
+        with _lock:
+            sockqueue = ApplicationLayer._to_app.get(xtup, None)
+        if sockqueue is not None:    
+            sockqueue.put((local_addr,remote_addr,data))
+            return
+
+        log_warn("No socket queue found for local proto/address: {}".format(xtup))
 
     @staticmethod
     def _register_socket(s):
@@ -222,7 +233,7 @@ class socket(object):
         self._timeout = _default_timeout
         self._block = True
         self._remote_addr = (None,None)
-        self._local_addr = (ip_address('127.0.0.1'),_get_ephemeral_port())
+        self._local_addr = (ip_address('0.0.0.0'),_get_ephemeral_port())
         self.__set_fw_rules() 
         self._socket_queue_app_to_stack, self._socket_queue_stack_to_app = \
             ApplicationLayer._register_socket(self)
