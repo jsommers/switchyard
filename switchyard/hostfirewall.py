@@ -84,6 +84,8 @@ class AbstractFirewall(metaclass=ABCMeta):
         d = mobj.groupdict()
         proto = d['proto']
         port = d['port']
+        if port == '*':
+            port = None
         return proto,port
 
     @abstractmethod
@@ -115,7 +117,7 @@ class TestModeFirewall(AbstractFirewall):
         pass
 
     def show_rules(self):
-        log_debug("No rules in test mode")
+        pass
 
     def add_rule(self, rule):
         self._rules.append(rule)
@@ -159,12 +161,12 @@ class LinuxFirewall(AbstractFirewall):
         else:    
             proto,port = self._interp_rule(rule)
             if port is not None:
-                portpart = "--port {}".format(port)
+                portpart = " --port {}".format(port)
             else:
                 portpart = ""            
 
             for intf in self._intf:
-                cmds.append('iptables -t raw -P PREROUTING DROP --protocol {} -i {} {}'.format(
+                cmds.append('iptables -t raw -P PREROUTING DROP --protocol {} -i {}{}'.format(
                     proto, intf, portpart))
         return cmds
 
@@ -190,7 +192,7 @@ class LinuxFirewall(AbstractFirewall):
                 st,output = _runcmd('sysctl -w net.ipv4.conf.{}.arp_ignore={}'.format(intf, self._arpignore[intf]))
 
     def show_rules(self):
-        assert(False)
+        st,output = _runcmd("iptables -t raw -n --list")
 
 
 class MacOSFirewall(AbstractFirewall):
@@ -216,10 +218,10 @@ class MacOSFirewall(AbstractFirewall):
         else:
             proto, port = self._interp_rule(rule)
             if port is not None:
-                portpart = "port {}".format(port)
+                portpart = " port {}".format(port)
             else:
                 portpart = ""
-            rulestr = "proto {0} from any {1} to any {1}".format(proto, portpart)
+            rulestr = "proto {0} from any{1} to any{1}".format(proto, portpart)
             rulestr = "block drop on {} " + rulestr
         for intf in self._interfaces:
             cmds.append(rulestr.format(intf))
