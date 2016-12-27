@@ -34,10 +34,12 @@ class Interface(object):
 
     @property
     def name(self):
+        '''Get the name of the interface'''
         return self.__name
 
     @property
     def ethaddr(self):
+        '''Get the Ethernet address associated with the interface'''
         return self.__ethaddr
 
     @ethaddr.setter
@@ -53,10 +55,14 @@ class Interface(object):
 
     @property 
     def ipaddr(self):
+        '''Get the IPv4 address associated with the interface'''
         return self.__ipaddr.ip
 
     @property
     def ipinterface(self):
+        '''
+        Returns the address assigned to this interface as an IPInterface object.  (see documentation for the built-in ipaddress module).
+        '''
         return self.__ipaddr
 
     @ipaddr.setter
@@ -70,6 +76,7 @@ class Interface(object):
 
     @property 
     def netmask(self):
+        '''Get the IPv4 subnet mask associated with the interface'''
         return self.__ipaddr.netmask
 
     @netmask.setter
@@ -83,6 +90,7 @@ class Interface(object):
 
     @property 
     def ifnum(self):
+        '''Get the interface number (integer) associated with the interface'''
         return self.__ifnum
 
     @ifnum.setter
@@ -94,6 +102,7 @@ class Interface(object):
 
     @property
     def iftype(self):
+        '''Get the type of the interface as a value from the InterfaceType enumeration.'''
         return self.__iftype
 
     def __str__(self):

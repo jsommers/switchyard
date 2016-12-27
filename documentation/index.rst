@@ -33,6 +33,4 @@ I gratefully acknowledge support from the NSF.  The materials here are based upo
 
 Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author and do not necessarily reflect the views of the National Science Foundation.
 
-.. todo:: add something like a FAQ
-
 .. todolist::

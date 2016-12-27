@@ -133,11 +133,19 @@ class Packet(object):
         self.add_header(ph)
 
     def has_header(self, hdrclass):
+        '''
+        Return True if the packet has a header of the given hdrclass, 
+        False otherwise.
+        '''
         if isinstance(hdrclass, str):
             return self.get_header_by_name(hdrclass) is not None
         return self.get_header(hdrclass) is not None
 
     def get_header_by_name(self, hdrname):
+        '''
+        Return the header object that has the given (string) header
+        class name.  Returns None if no such header exists.
+        '''
         for hdr in self._headers:
             if hdr.__class__.__name__ == hdrname:
                 return hdr
@@ -252,7 +260,7 @@ class PacketHeaderBase(metaclass=ABCMeta):
         return self.size()
 
     def size(self):
-        '''Return the packed length of this header'''
+        '''Returns the number of bytes that the header would consist of when serialized to wire format'''
         return len(self.to_bytes())
 
     @classmethod
@@ -302,12 +310,14 @@ class PacketHeaderBase(metaclass=ABCMeta):
 
     @abstractmethod
     def to_bytes(self):
-        '''return a 'packed' byte-level representation of *this*
-        packet header.'''
+        '''Return a 'packed' byte-level representation of this packet header.'''
         return b''
 
     @abstractmethod
     def from_bytes(self, raw):
+        '''
+        Reconstruct the attributes of a header given the bytes object named raw.  The method returns any bytes that are *not* used to reconstruct a header.  An exception (typically a ValueError) is raised if there is some kind of problem deserializing the bytes object into packet header attributes.
+        '''
         pass
 
     def __add__(self, ph):

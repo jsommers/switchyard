@@ -144,3 +144,6 @@ To compile a test scenario, you can simply invoke ``swyard`` with the ``-c`` fla
 
 The output from this command should be a new file named ``code/testscenario2.srpy`` containing the obfuscated test scenario.  This file can be used as the argument to the ``-t`` option when later running a Switchyard program against those tests.
 
+.. note::
+
+   Note that if a scenario is *compiled* using a different version of Python than the one used to *run* a test scenario (especially a different major version, e.g., 3.4 vs. 3.5), you may get some mysterious errors.  The errors are due to the fact that serialized representations of Python objects may change from one version to the next; if there are any changes, then the version used to run the test cannot correctly deserialize the various objects stored in the test scenario.

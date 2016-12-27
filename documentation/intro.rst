@@ -19,7 +19,7 @@ The typical goal of a Switchyard-based program is to receive a packet on one por
  * Following that, the next section, :ref:`running in the test environment <runtest>`, provides details on running a Switchyard program in the test environment.  The section after that gives details on :ref:`how to write test scenarios<test-scenario-creation>`.
  * The next section describes :ref:`running Switchyard in a live environment <runlive>`, such as on a standard Linux host or within the Mininet emulation environment or some other kind of virtual environment.  
  * :ref:`Advanced API topics <advanced>` are addressed next, such as creating new packet header types, and implementing network protocol stacks that can interoperate with a Python socket-based program.  
- * An :ref:`installation guide <install>` and a troubleshooting and debugging guide in the form of a :ref:`FAQ-like section <faq>` appear next.
+ * An :ref:`installation guide <install>` appears next.
  * Finally, you can find an :ref:`apiref` at the end of this documentation along with and an index.
 
 **A note to the pedantic**: In this documentation we use the term *packet* in a generic sense to refer to what may more traditionally be a link layer *frame*, a network layer *packet*, a transport layer *segment*, or an application layer *message*.  Where appropriate, we use the appropriate specific term, but often resort to using *packet* in a more general sense.

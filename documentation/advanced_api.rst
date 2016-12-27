@@ -5,9 +5,10 @@ Advanced API topics
 
 This section introduces two additional, and slightly advanced topics related to Switchyard APIs: creating new packet header types and using Switchyard's application-layer socket emulation capabilities.
 
-.. _new-packet-header-types:
 
 .. index:: packet headers, new packet header types
+
+.. _new-packet-header-types:
 
 Creating new packet header types
 --------------------------------

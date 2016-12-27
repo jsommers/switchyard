@@ -112,18 +112,31 @@ class LLNetBase(metaclass=ABCMeta):
 
     @property
     def testmode(self):
+        '''
+        Returns True if running in test mode and False if running in
+        live/real mode.
+        '''
         raise NotImplementedError("This property must be overridden by derived classes")
 
     @abstractmethod
-    def recv_packet(self, timeout=None, timestamp=False):
+    def recv_packet(self, timeout=None):
         '''
-        ordinarily will return the ReceivedPacket named tuple
-        (timestamp, input_port, packet)
+        Receive a packet on any port/interface.
+        If a non-None timeout is given, the method will block for up
+        to timeout seconds.  If no packet is available, the exception
+        NoPackets will be raised.  If the Switchyard framework is being
+        shut down, the Shutdown exception will be raised.
+        If a packet is available, the ReceivedPacket named tuple 
+        (timestamp, input_port, packet) will be returned.
         '''
         raise NoPackets()
 
     @abstractmethod
-    def send_packet(self, dev, packet):
+    def send_packet(self, output_port, packet):
+        '''
+        Send a packet out the given output port/interface.  
+        Returns None.
+        '''
         pass
 
     @abstractmethod
