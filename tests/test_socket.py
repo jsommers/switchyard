@@ -61,7 +61,7 @@ class SocketEmuTests(unittest.TestCase):
         self.assertEqual(s.proto, IPProtocol.UDP)
         localport = s._local_addr[1]
         self.assertEqual(len(sock.ApplicationLayer._to_app), 1)
-        self.assertIn((IPProtocol.UDP, IPv4Address('127.0.0.1'), localport), sock.ApplicationLayer._to_app)
+        self.assertIn((IPProtocol.UDP, IPv4Address('0.0.0.0'), localport), sock.ApplicationLayer._to_app)
 
         self.firemock.add_rule.assert_called_with('udp:{}'.format(localport))
         self.pcapmock.set_bpf_filter_on_all_devices.assert_called_with('udp dst port {} or icmp or icmp6'.format(localport))
@@ -131,7 +131,7 @@ class SocketEmuTests(unittest.TestCase):
         addrs,data = sock.ApplicationLayer.recv_from_app(timeout=0.1)
         self.assertEqual(data, "testme!")
         self.assertEqual(addrs[0], 17)
-        self.assertEqual(str(addrs[1]), '127.0.0.1')
+        self.assertEqual(str(addrs[1]), '0.0.0.0')
         self.assertEqual(str(addrs[3]), '127.0.0.1')
         self.assertEqual(addrs[4], 10000)
 
@@ -191,7 +191,7 @@ class SocketEmuTests(unittest.TestCase):
         addrs,data = sock.ApplicationLayer.recv_from_app(timeout=0.1)
         self.assertEqual(data, "testsend")
         self.assertEqual(addrs[0], 55)
-        self.assertEqual(str(addrs[1]), '127.0.0.1')
+        self.assertEqual(str(addrs[1]), '0.0.0.0')
         self.assertEqual(str(addrs[3]), '127.0.0.1')
         self.assertEqual(addrs[4], 4567)
 
@@ -226,8 +226,10 @@ class SocketEmuTests(unittest.TestCase):
         s = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, 55)
         s.connect(('127.0.0.1', 4567))
         localport = s._local_addr[1]
-        self.assertEqual(s.getsockname(), ('127.0.0.1', localport))
+        self.assertEqual(s.getsockname(), ('0.0.0.0', localport))
         self.assertEqual(s.getpeername(), ('127.0.0.1', 4567))
+        s.bind(('127.0.0.1', 9876))
+        self.assertEqual(s.getsockname(), ('127.0.0.1', 9876))
 
     def testTimeouts(self):
         t = sock.getdefaulttimeout()
