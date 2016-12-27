@@ -17,7 +17,8 @@ from socket import error as sockerr
 implist = copy(socket.__all__)
 from socket import *
 dontimport = ('setdefaulttimeout', 'getdefaulttimeout', 'has_ipv6', 
-    'socket', 'socketpair', 'fromfd', 'dup', 'create_connection')
+    'socket', 'socketpair', 'fromfd', 'dup', 'create_connection', 'CMSG_LEN',
+    'CMSG_SPACE')
 for name in dontimport:
     implist.remove(name)
 
@@ -63,9 +64,17 @@ def _get_ephemeral_port():
 _default_timeout = None
 
 def getdefaulttimeout():
+    '''
+    Get the default timeout value for a socket.  The preset default
+    is None, meaning to block indefinitely.
+    '''
     return _default_timeout
 
 def setdefaulttimeout(tmo):
+    '''
+    Set the default timeout value for a socket to the given value.
+    Calling this function does not affect any preexisting sockets.
+    '''
     global _default_timeout
     with _lock:
         _default_timeout = tmo
@@ -186,6 +195,9 @@ class ApplicationLayer(object):
 
 
 class socket(object):
+    '''
+    A socket object, emulated by Switchyard.
+    '''
     __slots__ =  ('_family','_socktype','_protoname','_proto',
         '_timeout','_block','_remote_addr','_local_addr',
         '_socket_queue_app_to_stack','_socket_queue_stack_to_app')
@@ -241,14 +253,23 @@ class socket(object):
 
     @property
     def family(self):
+        '''
+        Get the address family of the socket.
+        '''
         return self._family
 
     @property
     def type(self):
+        '''
+        Get the type of the socket.
+        '''
         return self._socktype
 
     @property
     def proto(self):
+        '''
+        Get the protocol of the socket.
+        '''
         return self._proto
 
     def _sockid(self):
@@ -259,9 +280,15 @@ class socket(object):
             self._remote_addr[0], self._remote_addr[1]) 
 
     def accept(self):
+        '''
+        Not implemented.
+        '''
         raise NotImplementedError()
 
     def close(self):
+        '''
+        Close the socket.  
+        '''
         try:
             ApplicationLayer._unregister_socket(self)
         except:
@@ -270,6 +297,11 @@ class socket(object):
         return 0
 
     def bind(self, address):
+        '''
+        Alter the local address with which this socket is associated.
+        The address parameter is a 2-tuple consisting of an IP address
+        and port number.
+        '''
         portset = _gather_ports().union(ApplicationLayer._emuports())
         if address[1] in portset:
             log_warn("Port is already in use.")
@@ -285,44 +317,87 @@ class socket(object):
         return 0
 
     def connect(self, address):
+        '''
+        Set the remote address (IP address and port) with which
+        this socket is used to communicate.
+        '''
         self._remote_addr = _normalize_addrs(address)
         return 0
 
     def connect_ex(self, address):
+        '''
+        Set the remote address (IP address and port) with which
+        this socket is used to communicate.
+        '''
         self._remote_addr = _normalize_addrs(address)
         return 0
 
     def getpeername(self):
+        '''
+        Return a 2-tuple containing the remote IP address and port
+        associated with the socket, if any.
+        '''
         return _stringify_addrs(self._remote_addr)
 
     def getsockname(self):
+        '''
+        Return a 2-tuple containing the local IP address and port
+        associated with the socket.
+        '''
         return _stringify_addrs(self._local_addr)
 
     def getsockopt(self, level, option, buffersize=0):
+        '''
+        Not implemented.
+        '''
         raise NotImplementedError()
 
     def gettimeout(self):
+        '''
+        Obtain the currently set timeout value.
+        '''
         return self._timeout
 
     @property 
     def timeout(self):
+        '''
+        Obtain the currently set timeout value.
+        '''
         return self._timeout
 
     def listen(self, backlog):
+        '''
+        Not implemented.
+        '''
         raise NotImplementedError()
 
     def recv(self, buffersize, flags=0):
+        '''
+        Receive data on the socket.  The buffersize and flags
+        arguments are currently ignored.  Only returns the data.
+        '''
         _,_,data = self._recv(buffersize)
         return data
 
     def recv_into(self, *args):
+        '''
+        Not implemented.
+        '''
         raise NotImplementedError("*_into calls aren't implemented")
 
     def recvfrom(self, buffersize, flags=0):
+        '''
+        Receive data on the socket.  The buffersize and flags
+        arguments are currently ignored.  Returns the data and
+        an address tuple (IP address and port) of the remote host.
+        '''
         _,remoteaddr,data = self._recv(buffersize)
         return data,remoteaddr
 
     def recvfrom_into(self, *args):
+        '''
+        Not implemented.
+        '''
         raise NotImplementedError("*_into calls aren't implemented")
 
     def _recv(self, nbytes):
@@ -335,11 +410,22 @@ class socket(object):
         raise timeout("timed out")
 
     def send(self, data, flags=0):
+        '''
+        Send data on the socket.  A call to connect() must have
+        been previously made for this call to succeed.
+        Flags is currently ignored.
+        '''
         if self._remote_addr == (None,None):
             raise sockerr("ENOTCONN: socket not connected")
         return self._send(data, self._flowaddr())
 
     def sendto(self, data, *args):
+        '''
+        Send data on the socket.  Accepts the same parameters as the
+        built-in socket sendto: data[, flags], address
+        where address is a 2-tuple of IP address and port.
+        Any flags are currently ignored.
+        '''
         remoteaddr = args[-1]
         remoteaddr = _normalize_addrs(remoteaddr)
         return self._send(data, (self._proto, self._local_addr[0], 
@@ -350,21 +436,39 @@ class socket(object):
         return len(data)
 
     def sendall(self, *args):
+        '''
+        Not implemented.
+        '''
         raise NotImplementedError("sendall isn't implemented")
 
     def sendmsg(self, *args):
+        '''
+        Not implemented.
+        '''
         raise NotImplementedError("*msg calls aren't implemented")
 
     def recvmsg(self, *args):
+        '''
+        Not implemented.
+        '''
         raise NotImplementedError("*msg calls aren't implemented")
 
     def setblocking(self, flags):
+        '''
+        Set whether this socket should block on a call to recv*.
+        '''
         self._block = bool(flags)
 
     def setsockopt(self, *args):
+        '''
+        Not implemented.
+        '''
         raise NotImplementedError("set/get sockopt calls aren't implemented")
 
     def settimeout(self, timeout):
+        '''
+        Set the timeout value for this socket.
+        '''
         if timeout is None:
             self._block = True
         elif float(timeout) == 0.0:
@@ -374,8 +478,8 @@ class socket(object):
             self._block = True
 
     def shutdown(self, flag):
-        try:
-            ApplicationLayer._unregister_socket(self)
-        except:
-            pass
-        return 0
+        '''
+        Shut down the socket.  This is currently implemented by
+        calling close().
+        '''
+        return self.close()

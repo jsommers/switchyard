@@ -194,6 +194,17 @@ When using the suggested modification above, any use of attributes within the so
 .. literalinclude:: code/clientsocketapp.py
    :language: python
 
+There are some key limitations and other issues to be aware of with Switchyard's socket emulation component:
+
+  * The most important limitation is that **only UDP sockets are supported**.  Attempting to create any other type of socket will result in failure.  Other socket types and support for using arbitrary protocol numbers may be supported in the future.  As a result, there are a few socket object method calls that are not supported, such as ``listen`` and ``accept``.  
+  * The ``create_connection`` and ``socketpair`` calls are not available.
+  * The ``getsockopt`` and ``setsockopt`` calls are not currently supported, but may be in a future version.
+  * The various DNS-related calls in the socket module (e.g., ``gethostbyname``, etc.) are available and simply handed off to the built-in ``socket`` module for handling.  Switchyard does not implement any DNS capability directly.  Same for the byte-ordering calls (e.g., ``ntohs``, ``ntohl``, etc.)
+  * 
+
+
+
+
 .. note::
    
    Limitations: only UDP sockets at present.  On a live host, there is a chance that the ephemeral port number used by Switchyard may clash with a non-Switchyard socket application.  No getsockopt/setsockopt. Note other limitations related to localhost.
