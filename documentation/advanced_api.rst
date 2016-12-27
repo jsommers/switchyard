@@ -179,6 +179,11 @@ Using a similar pattern as with a "regular" Switchyard program, it is possible t
    :language: python
 
 
+.. note::
+   
+   Although the protocol stack example above uses a single Python thread to service both the from-network and from-application queues, it is possible to use multiple Python threads.  The socket emulation library (discussed next) is threadsafe, as is the library code that handles sending/receiving packets on network ports.
+
+
 Switchyard's socket emulation library
 """""""""""""""""""""""""""""""""""""
 
