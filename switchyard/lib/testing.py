@@ -292,6 +292,12 @@ class _PacketMatcher(object):
         If no match, then construct a "nice" description
             of what doesn't match, and throw an exception.
         '''
+        # we don't need the binary representation, but we do need to ensure
+        # that any pre_serialization triggers have been executed to fill in
+        # various headers correctly.
+        packet.to_bytes()
+        self._reference_packet.to_bytes()
+
         self._lastresults = [ self._compare_packet_against_reference(packet) ]
         self._lastresults += [ eval(fn)(packet) for fn in self._predicates ]
         if all(self._lastresults):
@@ -952,8 +958,6 @@ def get_test_scenario_from_file(sfile):
     sobj = None
     if fnmatch.fnmatch(sfile, "*.py"):
         sobj = import_or_die(sfile, ('scenario',))
-        pickle_repr = pickle.dumps(sobj, pickle.HIGHEST_PROTOCOL)
-        sobj = pickle.loads(pickle_repr)
         sobj.scenario_sanity_check()
     elif fnmatch.fnmatch(sfile, "*.srpy"):
         sobj = uncompile_scenario(sfile)
