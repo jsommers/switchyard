@@ -548,12 +548,6 @@ class IPv6(PacketHeaderBase):
             self._dst == other._dst and \
             self._extheaders == other._extheaders
 
-    # def next_header_class(self):
-    #     cls = IPTypeClasses.get(self.nextheader, None)
-    #     if cls is None and self.nextheader not in IPTypeClasses:
-    #         log_warn("Warning: no class exists to parse next header type: {}".format(self.nextheader))
-    #     return cls
-
     # accessors and mutators
     @property
     def trafficclass(self):

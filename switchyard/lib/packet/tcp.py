@@ -169,9 +169,6 @@ class TCP(PacketHeaderBase):
         return '{} {}->{} ({} {}:{})'.format(self.__class__.__name__, 
             self.src, self.dst, self.flagstr, self.seq, self.ack)
 
-    #def next_header_class(self):
-    #    return None
-
     @property
     def seq(self):
         return self._seq

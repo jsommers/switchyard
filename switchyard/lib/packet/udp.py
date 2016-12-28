@@ -73,9 +73,6 @@ class UDP(PacketHeaderBase):
     def __str__(self):
         return '{} {}->{}'.format(self.__class__.__name__, self.src, self.dst)
 
-    #def next_header_class(self):
-    #    return None
-
     def _compute_checksum_ipv4(self, ip4, xdata):
         if ip4 is None:
             return 0
