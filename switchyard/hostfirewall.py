@@ -131,10 +131,10 @@ class LinuxFirewall(AbstractFirewall):
     def __init__(self, interfaces, rules):
         super().__init__(interfaces, rules)
         self._intf = deepcopy(list(interfaces))
-        st,output = _runcmd("iptables-save")
+        st,output = _runcmd("/sbin/iptables-save")
         self._saved_iptables = output
         self._arpignore = {}
-        self._rulecmds = [ 'iptables -F', 'iptables -t raw -F' ]
+        self._rulecmds = [ '/sbin/iptables -F', '/sbin/iptables -t raw -F' ]
 
         # --protocol {}  -i {} --port {}
         doall = False
@@ -147,21 +147,21 @@ class LinuxFirewall(AbstractFirewall):
         if doall:
             badintf = []
             for intf in interfaces:
-                st,output = _runcmd('sysctl net.ipv4.conf.{}.arp_ignore'.format(intf))
+                st,output = _runcmd('/sbin/sysctl net.ipv4.conf.{}.arp_ignore'.format(intf))
                 if st != 0:
                     badintf.append(intf)
                     continue
                 self._arpignore[intf] = int(output.split()[-1])
-                st,output = _runcmd('sysctl -w net.ipv4.conf.{}.arp_ignore=8'.format(intf))
+                st,output = _runcmd('/sbin/sysctl -w net.ipv4.conf.{}.arp_ignore=8'.format(intf))
             for intf in badintf:
                 self._intf.remove(intf) # alias of interfaces, so just remove
                                         # from self._intf
-        log_debug("Rules to install: {}".format(self._rulecmds))
+        log_debug("Commands for firewall: {}".format(self._rulecmds))
 
     def _parse_rule(self, rule):
         cmds = []
         if rule.strip() == 'all':
-            cmds.append('iptables -t raw -P PREROUTING DROP') 
+            cmds.append('/sbin/iptables -t raw -P PREROUTING DROP') 
         else:    
             proto,port = self._interp_rule(rule)
             if port is not None:
@@ -170,7 +170,7 @@ class LinuxFirewall(AbstractFirewall):
                 portpart = ""            
 
             for intf in self._intf:
-                cmds.append('iptables -t raw -P PREROUTING DROP --protocol {} -i {}{}'.format(
+                cmds.append('/sbin/iptables -t raw -P PREROUTING DROP --protocol {} -i {}{}'.format(
                     proto, intf, portpart))
         return cmds
 
@@ -188,15 +188,17 @@ class LinuxFirewall(AbstractFirewall):
     def unblock(self):
         # clear switchyard tables, load up saved state
         log_info("Restoring saved iptables state")
-        st,output = _runcmd("iptables", "-F")
-        st,output = _runcmd("iptables -t raw -F")
-        st,output = _runcmd("iptables-restore", self._saved_iptables)
+        st,output = _runcmd("/sbin/iptables -F")
+        st,output = _runcmd("/sbin/iptables -t raw -F")
+        st,output = _runcmd("/sbin/iptables-restore", [self._saved_iptables])
         for intf in self._intf:
             if intf in self._arpignore:
-                st,output = _runcmd('sysctl -w net.ipv4.conf.{}.arp_ignore={}'.format(intf, self._arpignore[intf]))
+                st,output = _runcmd('/sbin/sysctl -w net.ipv4.conf.{}.arp_ignore={}'.format(intf, self._arpignore[intf]))
 
     def show_rules(self):
-        st,output = _runcmd("iptables -t raw -n --list")
+        st,output = _runcmd("/sbin/iptables -t raw -n --list")
+        output = output.strip()
+        log_info("Rules installed: {}".format(output)) 
 
 
 class MacOSFirewall(AbstractFirewall):
