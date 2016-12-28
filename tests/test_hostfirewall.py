@@ -20,22 +20,21 @@ class HostFirewallTests(unittest.TestCase):
         setattr(sys, "platform", "linux")
         fw = hf.Firewall(("eth0",), ("icmp:*","tcp:80"))
         fw.__enter__()
-        cmds = ['iptables-save',
-        'iptables -F',
-        'iptables -t raw -F', 
-        'iptables -t raw -P PREROUTING DROP --protocol icmp -i eth0',
-        'iptables -t raw -P PREROUTING DROP --protocol tcp -i eth0 --port 80',
-        'iptables -t raw -n --list']
+        cmds = ['/sbin/iptables-save',
+        '/sbin/iptables -F',
+        '/sbin/iptables -t raw -F', 
+        '/sbin/iptables -t raw -A PREROUTING -j DROP --protocol icmp -i eth0',
+        '/sbin/iptables -t raw -A PREROUTING -j DROP --protocol tcp -i eth0 --dport 80']
+
         xcmds = [ c for c,inp in self.cmds]
         self.assertEqual(cmds, xcmds)
         fw.add_rule("udp:123")
-        cmds = ['iptables-save', 
-        'iptables -F', 
-        'iptables -t raw -F',
-        'iptables -t raw -P PREROUTING DROP --protocol icmp -i eth0',
-        'iptables -t raw -P PREROUTING DROP --protocol tcp -i eth0 --port 80',
-        'iptables -t raw -n --list',
-        'iptables -t raw -P PREROUTING DROP --protocol udp -i eth0 --port 123']
+        cmds = ['/sbin/iptables-save', 
+        '/sbin/iptables -F', 
+        '/sbin/iptables -t raw -F',
+        '/sbin/iptables -t raw -A PREROUTING -j DROP --protocol icmp -i eth0',
+        '/sbin/iptables -t raw -A PREROUTING -j DROP --protocol tcp -i eth0 --dport 80',
+        '/sbin/iptables -t raw -A PREROUTING -j DROP --protocol udp -i eth0 --dport 123']
         xcmds = [ c for c,inp in self.cmds]
         self.assertEqual(cmds, xcmds)
         fw.__exit__(0,0,0)
@@ -44,13 +43,12 @@ class HostFirewallTests(unittest.TestCase):
         setattr(sys, "platform", "linux")
         fw = hf.Firewall(("eth0","eth1"), ("all",))
         fw.__enter__()
-        cmds = ['iptables-save',
-                'sysctl net.ipv4.conf.eth0.arp_ignore',
-                'sysctl net.ipv4.conf.eth1.arp_ignore',
-                'iptables -F',
-                'iptables -t raw -F',
-                'iptables -t raw -P PREROUTING DROP',
-                'iptables -t raw -n --list']
+        cmds = ['/sbin/iptables-save',
+                '/sbin/sysctl net.ipv4.conf.eth0.arp_ignore',
+                '/sbin/sysctl net.ipv4.conf.eth1.arp_ignore',
+                '/sbin/iptables -F',
+                '/sbin/iptables -t raw -F',
+                '/sbin/iptables -t raw -P PREROUTING DROP',]
         xcmds = [ c for c,inp in self.cmds]
         self.assertEqual(cmds, xcmds)
         fw.__exit__(0,0,0)
