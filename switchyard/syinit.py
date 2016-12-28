@@ -52,6 +52,11 @@ def start_framework(args):
         _appt = Thread(target=_start_app, args=(args.app,barrier))
         _appt.start()
 
+    if args.app:
+        args.fwconfig = []
+    elif args.fwconfig is None or len(args.fwconfig) == 0:
+        args.fwconfig = ('all',)
+
     if testmode:
         if args.compile:
             if args.usercode:
@@ -78,11 +83,6 @@ def start_framework(args):
             args.exclude = []
         if args.intf is None:
             args.intf = []
-
-        if args.app:
-            args.fwconfig = []
-        elif args.fwconfig is None or len(args.fwconfig) == 0:
-            args.fwconfig = ('all',)
 
         devlist = make_device_list(includes=args.intf, excludes=args.exclude)
         if not devlist:

@@ -238,5 +238,9 @@ Finally, note that Switchyard currently does not have any capabilities for testi
 
 .. note::
 
-   When using Switchyard to create a protocol stack and run a socket-based application on a standard commodity operating system (e.g., a desktop/laptop Linux or macOS system), you may need to be careful about configuring the host firewall settings when starting Switchyard in real/live mode.  In particular, any packets that you want Switchyard to handle should be explicitly *blocked* from the host operating system (or the host OS may respond in addition to Switchyard responding).  It may also be helpful to explicitly bind your application socket to a particular port in order to limit the number of protocols and/or ports that need to be blocked from the host OS.  Refer to the section on :ref:`firewall` for command-line options to ``swyard`` to ensure that you block the correct traffic.
+   When using Switchyard to create a protocol stack and run a socket-based application on a standard commodity operating system (e.g., a desktop/laptop Linux or macOS system), you may need to be careful about configuring the host firewall settings when starting Switchyard in real/live mode.  In particular, any packets that you want Switchyard to handle should be explicitly *blocked* from the host operating system (or the host OS may respond in addition to Switchyard responding).  It may also be helpful to explicitly bind your application socket to a particular port in order to limit the number of protocols and/or ports that need to be blocked from the host OS.  
+
+   Note that when Switchyard is started with the ``-a`` flag and is thus starting an application-layer socket program, its default behavior with respect to the firewall is different.  Normally, Switchyard blocks the host OS from receiving *any* traffic, but when executing an application-layer program *no* traffic is blocked, by default.  
+   
+   Refer to the section on :ref:`firewall` for command-line options to ``swyard`` to ensure that you block the correct traffic.
 

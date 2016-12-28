@@ -111,7 +111,10 @@ class TestModeFirewall(AbstractFirewall):
     def __init__(self, interfaces, rules):
         super().__init__(interfaces, rules)
         for r in rules:
-            proto,port = self._interp_rule(r)
+            if r == 'all':
+                proto,port = 'all',None
+            else:
+                proto,port = self._interp_rule(r)
             self._rules.append((proto,port))
 
     def block(self):
