@@ -21,6 +21,15 @@ The basic recipe for running Switchyard on a live host is pretty simple.  If we 
 
 Again, note that the above line uses ``sudo`` to gain the necessary privileges to be able to send and receive "live" packets on a host.  
 
+.. note::
+
+   If you can an error when attempting to run ``swyard`` with ``sudo`` such as this::
+
+        sudo: swyard: command not found
+
+   you will need to either create a shell script which sources your Python virtual environment and run that script with ``sudo``, or run ``swyard`` from a root shell (e.g., by running ``sudo -s``.  If doing the latter, you will still need to activate the Python virtual environment once you start the root shell, after which you can run ``swyard`` as normal.  If using Switchyard in Mininet, in any shell you open (e.g., using the ``xterm`` command, which opens a root shell on a virtual host in Mininet) you'll need to activate the Python virtual environment prior to running ``swyard``.
+
+
 The ``sniff.py`` program will simply print out the contents of any packet received on *any* interface while the program runs.  To stop the program, type :kbd:`Control+c`.
 
 Here's an example of what output from running ``sniff.py`` might look like.  Note that the following example was run on a macOS host and that the text times/dates have been changed:
@@ -139,7 +148,7 @@ If the ``-v`` (verbose) option is given to ``swyard``, the host firewall module 
     11:39:58 2016/12/00     INFO My interfaces: ['en0', 'lo0']
     ^C11:40:00 2016/12/00     INFO Releasing pf: No ALTQ support in kernel; ALTQ related functions disabled; disable request successful. 4 more pf enable reference(s) remaining, pf still enabled.; 
 
-Finally, an example showing Switchyard blocking all ICMP, all TCP, and UDP port 8888:
+Here is an example showing Switchyard blocking all ICMP, all TCP, and UDP port 8888:
 
 .. code-block:: none
    :caption: Running Switchyard in a live environment (macOS) with -v flag: notice log line indicating firewall rules installed (2nd line, 3 rules).
@@ -153,6 +162,24 @@ Finally, an example showing Switchyard blocking all ICMP, all TCP, and UDP port 
     11:43:46 2016/12/00     INFO My interfaces: ['lo0']
     ^C11:43:48 2016/12/00     INFO Releasing pf: No ALTQ support in kernel; ALTQ related functions disabled; disable request successful. 4 more pf enable reference(s) remaining, pf still enabled.; 
 
+And finally, the same example as previous, but on Linux with iptables:
+
+.. code-block:: none
+   :caption: Running Switchyard in a live environment (Linux) with -v flag: notice log line indicating firewall rules installed (2nd line, 3 rules).
+
+    # swyard -v sniff.py --firewall icmp --firewall udp:8888 --firewall tcp
+    19:53:42 2016/12/00     INFO Saving iptables state and installing switchyard rules
+    19:53:42 2016/12/00     INFO Rules installed: Chain PREROUTING (policy ACCEPT)
+    target     prot opt source               destination         
+    DROP       icmp --  0.0.0.0/0            0.0.0.0/0           
+    DROP       udp  --  0.0.0.0/0            0.0.0.0/0            udp dpt:8888
+    DROP       tcp  --  0.0.0.0/0            0.0.0.0/0           
+    
+    Chain OUTPUT (policy ACCEPT)
+    target     prot opt source               destination
+    19:53:42 2016/12/00     INFO Using network devices: enp0s3
+    19:53:42 2016/12/00     INFO My interfaces: ['enp0s3']
+    ^C19:53:45 2016/12/00     INFO Restoring saved iptables state
 
 
 .. note::
