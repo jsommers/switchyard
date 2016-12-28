@@ -1,8 +1,8 @@
 import json
 from collections import defaultdict
-from switchyard.lib.address import EthAddr,IPAddr
-from switchyard.lib.common import Interface
-from switchyard.lib.topo.util import *
+from ..address import EthAddr,IPAddr
+from ..interface import Interface
+from .util import *
 import networkx as nx
 from networkx.readwrite import json_graph
 import ipaddress

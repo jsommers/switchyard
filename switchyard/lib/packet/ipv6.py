@@ -3,15 +3,15 @@ from ipaddress import IPv6Address
 from abc import ABCMeta, abstractmethod
 from enum import IntEnum
 
-from switchyard.lib.common import log_warn
-from switchyard.lib.packet.packet import PacketHeaderBase,Packet
-from switchyard.lib.address import EthAddr,IPAddr,SpecialIPv6Addr,SpecialEthAddr
-from switchyard.lib.packet.common import IPProtocol, checksum
+from ..logging import log_warn
+from .packet import PacketHeaderBase,Packet
+from ..address import EthAddr,IPAddr,SpecialIPv6Addr,SpecialEthAddr
+from .common import IPProtocol, checksum
+from ..exceptions import *
 
-from switchyard.lib.packet.icmpv6 import ICMPv6
-from switchyard.lib.packet.tcp import TCP
-from switchyard.lib.packet.udp import UDP
-from switchyard.lib.packet.igmp import IGMP
+from .icmpv6 import ICMPv6
+from .tcp import TCP
+from .udp import UDP
 
 '''
 References:
@@ -60,7 +60,7 @@ class IPv6ExtensionHeader(PacketHeaderBase):
     def next_header_class(self):
         cls = IPTypeClasses.get(self.nextheader, None) 
         if cls is None and self.nextheader not in IPTypeClasses:
-            print ("Warning: no class exists to parse next protocol type: {}".format(self.protocol))
+            log_warn("Warning: no class exists to parse next protocol type: {}".format(self.protocol))
         return cls
 
     def to_bytes(self):
@@ -69,7 +69,7 @@ class IPv6ExtensionHeader(PacketHeaderBase):
 
     def from_bytes(self, raw):
         if len(raw) < IPv6ExtensionHeader._MINLEN:
-            raise Exception("Not enough data to unpack IPv6ExtensionHeader")
+            raise NotEnoughDataError("Not enough data to unpack IPv6ExtensionHeader")
 
         self.nextheader = IPProtocol(raw[0])
         self._optdatalen = int(raw[1])
@@ -119,7 +119,7 @@ class IPv6RouteOption(IPv6ExtensionHeader):
             remain = remain[22:]
             self._address = IPv6Address(rawaddr)
         else:
-            raise Exception("IPv6 routing option only supports type 2 (but I got type {})".format(self._routingtype))
+            raise ValueError("IPv6 routing option only supports type 2 (but I got type {})".format(self._routingtype))
         return remain
 
 class IPv6Fragment(IPv6ExtensionHeader):
@@ -169,7 +169,7 @@ class IPv6Fragment(IPv6ExtensionHeader):
     def from_bytes(self, raw):
         remain = super().from_bytes(raw)
         if len(remain) < IPv6Fragment._MINLEN:
-            raise Exception("Not enough data to unpack IPv6Fragment extension header")
+            raise NotEnoughDataError("Not enough data to unpack IPv6Fragment extension header")
         offsetfield, xid = struct.unpack(IPv6Fragment._PACKFMT, remain[:IPv6Fragment._MINLEN])
         self._id = xid
         self._offset = offsetfield >> 3
@@ -372,7 +372,7 @@ class IPv6HopOption(IPv6ExtensionHeader):
                 raw = raw[(2+xlen):]
                 cls = IPv6HopOption._option_type_dict.get(xtype, None)
                 if cls is None:
-                    raise Exception("Bad IPv6 option type {}".format(xtype))
+                    raise ValueError("Bad IPv6 option type {}".format(xtype))
                 self._options.append(cls.from_bytes(raw=data))
 
 class IPv6DestinationOption(IPv6HopOption):
@@ -415,7 +415,7 @@ class IPv6Mobility(IPv6ExtensionHeader):
     enumeration, above).  
     '''
 
-    __slots__ = ('_mhtype','_checksum','_data','_srcip','_dstip')
+    __slots__ = ('_mhtype','_checksum','_data','_src','_dst')
     _PACKFMT = '!BBH'
     _MINLEN = struct.calcsize(_PACKFMT)
 
@@ -424,13 +424,13 @@ class IPv6Mobility(IPv6ExtensionHeader):
         self._optdatalen = 0 #FIXME
         self._mhtype = IPv6MobilityHeaderType(0)
         self._data = (0,)
-        self._srcip = self._dstip = SpecialIPv6Addr.UNDEFINED.value
+        self._src = self._dst = SpecialIPv6Addr.UNDEFINED.value
         super().__init__(8, **kwargs)
 
     def pre_serialize(self, raw, pkt, i):
         ipv6hdr = pkt.get_header(IPv6)
-        self._srcip = ipv6hdr.srcip
-        self._dstip = ipv6hdr.dstip
+        self._src = ipv6hdr.src
+        self._dst = ipv6hdr.dst
 
     def __str__(self):
         return "IPv6Mobility ({})".format(self._mhtype.name)
@@ -441,8 +441,8 @@ class IPv6Mobility(IPv6ExtensionHeader):
         self._checksum = 0
         exthdr = self.to_bytes(computecsum=False)
         self._checksum = checksum(struct.pack('16s16sIxxxB',
-                                  self._srcip.packed,
-                                  self._dstip.packed,
+                                  self._src.packed,
+                                  self._dst.packed,
                                   len(exthdr), IPProtocol.IPv6Mobility.value) +
             exthdr)
         return self._checksum
@@ -462,7 +462,7 @@ class IPv6Mobility(IPv6ExtensionHeader):
         super().from_bytes(raw)
         remain = raw[2:]
         if len(remain) < IPv6Mobility._MINLEN:
-            raise Exception("Not enough data to unpack IPv6Mobility header")
+            raise NotEnoughDataError("Not enough data to unpack IPv6Mobility header")
         mhtype,reserved,checksum = struct.unpack(IPv6Mobility._PACKFMT, 
                                                  remain[:IPv6Mobility._MINLEN])
         self._mhtype = IPv6MobilityHeaderType(mhtype)
@@ -472,10 +472,10 @@ class IPv6Mobility(IPv6ExtensionHeader):
         self._data = struct.unpack(mobheaderstruct, remain[IPv6Mobility._MINLEN:(IPv6Mobility._MINLEN+structsize)])
         return raw[(IPv6Mobility._MINLEN + structsize):]
 
+
 IPTypeClasses = {
     IPProtocol.TCP: TCP,
     IPProtocol.UDP: UDP,
-    IPProtocol.IGMP: IGMP,
     IPProtocol.ICMPv6: ICMPv6,
 
     # IPv6 extension headers
@@ -491,9 +491,11 @@ IPTypeClasses = {
 class IPv6(PacketHeaderBase):
     __slots__ = ['_trafficclass','_flowlabel','_ttl',
                  '_nextheader','_payloadlen',
-                 '_srcip','_dstip','_extheaders']
+                 '_src','_dst','_extheaders']
     _PACKFMT = '!BBHHBB16s16s'
     _MINLEN = struct.calcsize(_PACKFMT)
+    _next_header_map = IPTypeClasses
+    _next_header_class_key = '_nextheader'
 
     def __init__(self, **kwargs):
         self.trafficclass = 0
@@ -501,8 +503,8 @@ class IPv6(PacketHeaderBase):
         self.ttl = 128
         self.nextheader = IPProtocol.ICMP
         self._payloadlen = 0
-        self.srcip = SpecialIPv6Addr.UNDEFINED.value
-        self.dstip = SpecialIPv6Addr.UNDEFINED.value
+        self.src = SpecialIPv6Addr.UNDEFINED.value
+        self.dst = SpecialIPv6Addr.UNDEFINED.value
         self._extheaders = []
         super().__init__(**kwargs)
         
@@ -518,23 +520,23 @@ class IPv6(PacketHeaderBase):
             (self.trafficclass & 0x0f) << 4 | (self.flowlabel & 0xf0000) >> 16,
             self.flowlabel & 0x0ffff,
             self._payloadlen, self.nextheader.value,
-            self.ttl, self.srcip.packed, self.dstip.packed)
+            self.ttl, self.src.packed, self.dst.packed)
 
     def from_bytes(self, raw):
         if len(raw) < IPv6._MINLEN:
-            raise Exception("Not enough data to unpack IPv6 header (only {} bytes)".format(len(raw)))
+            raise NotEnoughDataError("Not enough data to unpack IPv6 header (only {} bytes)".format(len(raw)))
         fields = struct.unpack(IPv6._PACKFMT, raw[:IPv6._MINLEN])
         ipversion = fields[0] >> 4
         if ipversion != 6:
-            raise Exception("Trying to parse IPv6 header, but IP version is not 6! ({})".format(ipversion))
+            raise ValueError("Trying to parse IPv6 header, but IP version is not 6! ({})".format(ipversion))
         self.trafficclass = (fields[0] & 0x0f) << 4 | (fields[1] >> 4)
         self.flowlabel = (fields[1] & 0x0f) << 16 | fields[2]
         self._payloadlen = fields[3]
         self.nextheader = IPProtocol(fields[4])
         self.ttl = fields[5]
-        self.srcip = IPv6Address(fields[6])
-        self.dstip = IPv6Address(fields[7])
-        # FIXME
+        self.src = IPv6Address(fields[6])
+        self.dst = IPv6Address(fields[7])
+        # FIXME: extension headers
         return raw[IPv6._MINLEN:]
 
     def __eq__(self, other):
@@ -542,15 +544,9 @@ class IPv6(PacketHeaderBase):
             self._flowlabel == other._flowlabel and \
             self._ttl == other._ttl and \
             self._nextheader == other._nextheader and \
-            self._srcip == other._srcip and \
-            self._dstip == other._dstip and \
+            self._src == other._src and \
+            self._dst == other._dst and \
             self._extheaders == other._extheaders
-
-    def next_header_class(self):
-        cls = IPTypeClasses.get(self.nextheader, None)
-        if cls is None and self.nextheader not in IPTypeClasses:
-            print ("Warning: no class exists to parse next header type: {}".format(self.nextheader))
-        return cls
 
     # accessors and mutators
     @property
@@ -593,37 +589,21 @@ class IPv6(PacketHeaderBase):
     def hopcount(self, value):
         self.ttl = value
 
-    @property 
-    def srcip(self):
-        return self._srcip
-
-    @srcip.setter
-    def srcip(self, value):
-        self._srcip = IPv6Address(value)
-
     @property
     def src(self):
-        return self.srcip 
+        return self._src 
 
     @src.setter
     def src(self, value):
-        self.srcip = value
-
-    @property
-    def dstip(self):
-        return self._dstip
-
-    @dstip.setter
-    def dstip(self, value):
-        self._dstip = IPv6Address(value)
+        self._src = value
 
     @property
     def dst(self):
-        return self.dstip
+        return self._dst
 
     @dst.setter
     def dst(self, value):
-        self.dstip = value
+        self._dst = value
 
     def __str__(self):
-        return '{} {}->{} {}'.format(self.__class__.__name__, self.srcip, self.dstip, self.nextheader.name) 
+        return '{} {}->{} {}'.format(self.__class__.__name__, self.src, self.dst, self.nextheader.name) 

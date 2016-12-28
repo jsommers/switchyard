@@ -2,8 +2,9 @@ from switchyard.lib.packet import *
 from switchyard.lib.address import EthAddr, IPAddr
 from switchyard.lib.topo.util import *
 from switchyard.lib.topo.topobuild import *
-from switchyard.lib.common import Interface
+import switchyard.lib.interface as intfmod
 import unittest 
+from unittest.mock import Mock
 
 class TopologyTests(unittest.TestCase):
     def testHumanizeCap(self):
@@ -49,6 +50,7 @@ class TopologyTests(unittest.TestCase):
         self.assertEqual(humanize_delay(0.0002), "200 \u00B5secs")
         self.assertEqual(humanize_delay(1), "1 sec")
         self.assertEqual(humanize_delay(1.5), "1500 msecs")
+        self.assertEqual(humanize_delay(0.00000001), "1e-08 sec")
 
     def testUnhumanizeDelay(self):
         self.assertEqual(unhumanize_delay("100 milliseconds"), 0.1)
@@ -73,6 +75,12 @@ class TopologyTests(unittest.TestCase):
         t.addLink('h1','s1','1 Mb/s','5 milliseconds')
         t.addLink('h2','r1','1 Mb/s','5 milliseconds')
         t.addLink('h2','s1','1 Mb/s','5 milliseconds')
+        self.assertTrue(t.auto_macs)
+        self.assertIn("h1", t)
+        with self.assertRaises(Exception):
+            t.addHost("h1")
+        self.assertTrue(t.hasEdge("h1", "r1"))
+        self.assertFalse(t.hasEdge("h1", "h2"))
         self.assertListEqual(sorted(t.nodes), sorted(['h1','h2','r1','s1']))
         self.assertListEqual(t.routers, ['r1'])
         self.assertListEqual(t.switches, ['s1'])
@@ -95,6 +103,7 @@ class TopologyTests(unittest.TestCase):
         self.assertEqual(len(nobj.interfaces), 2)
         self.assertEqual(str(nobj.interfaces['eth0'].ethaddr), '00:00:00:00:00:01')
         self.assertEqual(str(nobj.interfaces['eth1'].ethaddr), '00:00:00:00:00:03')
+        self.assertTrue(str(nobj).startswith("Host eth0 "))
 
         t.assignIPAddresses(prefix='192.168.1.0/24')
         self.assertEqual(str(nobj.interfaces['eth0'].ipaddr)[:-1], "192.168.1.")
@@ -108,6 +117,21 @@ class TopologyTests(unittest.TestCase):
         self.assertEqual(ethaddr,EthAddr("11:22:33:44:55:66"))
         self.assertEqual(ip,IPAddr("10.0.1.1"))
         self.assertEqual(mask,IPAddr("255.255.0.0"))
+
+        t.removeLink('h1', 'r1')
+        self.assertFalse(t.hasEdge('h1', 'r1'))
+        with self.assertRaises(Exception):
+            t.setLinkCharacteristics('h1', 'r1', capacity="10Mbps")
+
+        t.assignIPAddresses()
+        n = t.getNode('h2')
+        nobj = n['nodeobj']
+        self.assertRegex(str(nobj), "\s+ip:10\.0\.0\.\d\/8\s+")
+
+        with self.assertRaises(Exception):
+            t.setInterfaceAddresses('h42', 'eth0')
+        with self.assertRaises(Exception):
+            t.setInterfaceAddresses('h2', 'eth99')
 
     def testTopoCompose(self):
         t1 = Topology('A')
@@ -132,6 +156,9 @@ class TopologyTests(unittest.TestCase):
         self.assertListEqual(sorted([sorted(x) for x in t3.links]), sorted([sorted(x) for x in [('A_h1', 'A_s1'), ('B_h1', 'B_r1'), ('A_h2', 'A_s1'), ('B_r1', 'A_s1'), ('B_r1', 'B_h2')]]))
         t3.addRouter()
         self.assertListEqual(sorted(t3.nodes), sorted(['A_h1','A_h2','A_s1','B_h1','B_h2','B_r1','r0']))
+        self.assertEqual(t1.name, "A")
+        t1.name = "B"
+        self.assertEqual(t1.name, "B")
 
     def testTopoAddRemove(self):
         t1 = Topology('A')
@@ -178,7 +205,7 @@ class TopologyTests(unittest.TestCase):
         self.assertEqual(rdict['interfaces'], d)
 
     def testInterface(self):
-        intf = Interface("test", None, None, None)
+        intf = intfmod.Interface("test", None, None, None)
         self.assertTrue(str(intf).startswith("test"))
         self.assertTrue("mac:00:00:00:00:00:00" in str(intf))
         intf.ethaddr = EthAddr("00:11:22:33:44:55")
@@ -194,6 +221,64 @@ class TopologyTests(unittest.TestCase):
         self.assertTrue("ip:1.2.3.4/22" in str(intf))
         with self.assertRaises(Exception):
             intf.netmask = True
+        with self.assertRaises(Exception):
+            intf.ethaddr = True
+        intf.ethaddr = b'\x01\x02\x03\x04\x05\x06'
+        self.assertEqual(intf.ethaddr, EthAddr("01:02:03:04:05:06"))
+        intf.ipaddr = "9.8.7.6"
+        intf.netmask = None
+        self.assertEqual(intf.ipaddr, IPv4Address("9.8.7.6"))
+        self.assertEqual(str(intf.ipinterface), "9.8.7.6/32")
+        with self.assertRaises(Exception):
+            intf.netmask = 4.5
+        self.assertEqual(intf.iftype, intfmod.InterfaceType.Unknown)
+        with self.assertRaises(Exception):
+            intf.iftype = intfmod.InterfaceType.Wireless
+
+    def testDevListMaker(self):
+        import switchyard.pcapffi as pf
+        import socket as sock
+
+        # name, intname, desc, loop, up, running
+        dlist = [
+            pf.PcapInterface("a", "aint", "", False, True, True),
+        ]
+        devmock = Mock(return_value=dlist)
+        ifnum = Mock(side_effect=range(0,100))
+        setattr(intfmod, "pcap_devices", devmock)
+        setattr(intfmod, "if_nametoindex", ifnum)
+        # includes, excludes
+        rv = intfmod.make_device_list(set({"a"}), set())
+        self.assertEqual(len(rv), 1)
+        self.assertIn("a", rv)
+        rv = intfmod.make_device_list(set(), set())
+        self.assertEqual(len(rv), 1)
+        self.assertIn("a", rv)
+        rv = intfmod.make_device_list(set(), set({"a"}))
+        self.assertEqual(len(rv), 0)
+        rv = intfmod.make_device_list(set({"xyz"}), set({"a"}))
+        self.assertEqual(len(rv), 0)
+        dlist = [
+            pf.PcapInterface("a", "aint", "", False, True, True),
+            pf.PcapInterface("b", "bint", "", True, True, True),
+            pf.PcapInterface("c", "cint", "", False, True, True),
+        ]
+        devmock = Mock(return_value=dlist)
+        setattr(intfmod, "pcap_devices", devmock)
+
+        rv = intfmod.make_device_list(includes=set({"xyz"}), excludes=set({"a"}))
+        self.assertEqual(len(rv), 1)
+        self.assertIn("c", rv)
+        
+        rv = intfmod.make_device_list(excludes=set({"a"}))
+        self.assertEqual(len(rv), 1)
+        self.assertIn("c", rv)
+
+        ifnum = Mock(side_effect=Exception)
+        setattr(intfmod, "if_nametoindex", ifnum)
+        rv = intfmod.make_device_list(includes=set(), excludes=set())
+        self.assertEqual(len(rv), 0)
+
 
 if __name__ == '__main__':
-    unittest.main()
+        unittest.main()

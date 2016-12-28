@@ -1,7 +1,11 @@
-xenv3
+xenv
 *.pyc
 __pycache__
 *.pcap
 .coverage
 htmlcov
 sandbox
+updatepypi.sh
+switchyard.egg-info
+build
+dist

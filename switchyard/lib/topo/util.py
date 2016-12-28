@@ -104,7 +104,7 @@ def humanize_delay(delay):
         value = int(microsecs / 1000000)
     else:
         units = ' sec'
-        value = 0
+        value = delay
     if value > 1:
         units += 's'
     return '{}{}'.format(value, units)

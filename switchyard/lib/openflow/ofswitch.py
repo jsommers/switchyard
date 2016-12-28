@@ -5,10 +5,12 @@ import time
 from heapq import heappush, heappop, heapreplace
 from copy import deepcopy
 
-from switchyard.lib.packet import *
-from switchyard.lib.openflow import *
-from switchyard.lib.address import *
-from switchyard.lib.common import *
+from ..packet import *
+from . import openflow10 as of10
+from . import openflow13 as of13
+from ..address import *
+from ..logging import *
+from ..exceptions import *
 
 
 class FullBuffer(Exception):
@@ -183,19 +185,23 @@ class FlowTable(object):
 
 class OpenflowSwitch(object):
     '''
-    An Openflow v1.0 switch.
+    An Openflow v1.0 or v1.3 switch.
     '''
     def __init__(self, switchyard_net, switchid, callbacks):
-        self._switchid = switchid  # aka, dpid
+        self._switchid = switchid.encode() # aka, dpid
         self._controller_connections = []
         self._switchyard_net = switchyard_net
         self._running = True
+        self._version = 0x04 # default to 1.3
         self._buffer_manager = PacketBufferManager(100)
         self._xid = 0
         self._miss_len = 1500
-        self._flags = OpenflowConfigFlags.FragNormal
+        self._oflib = of13
+        self._flags = self._oflib.OpenflowConfigFlags.FragNormal
         self._ready = False
-        self._table = FlowTable(callbacks)
+        self._tables = [ FlowTable(callbacks) ]
+        self._group_table = FlowTable(callbacks)
+        self._meter_table = None # not supported yet
         self._action_callbacks = callbacks
 
     def add_controller(self, host, port):
@@ -224,10 +230,10 @@ class OpenflowSwitch(object):
         return self._xid
 
     def _send_packet_in(self, port, packet):
-        ofpkt = OpenflowHeader.build(OpenflowType.PacketIn, xid=self.xid)
+        ofpkt = self._oflib.OpenflowHeader.build(self._oflib.OpenflowType.PacketIn, xid=self.xid)
         ofpkt[1].packet = packet.to_bytes()[:self._miss_len]
         ofpkt[1].buffer_id = self._buffer_manager.add(port, packet)
-        ofpkt[1].reason = OpenflowPacketInReason.NoMatch
+        ofpkt[1].reason = self._oflib.OpenflowPacketInReason.NoMatch
         ofpkt[1].in_port = port
         for _,sock in self._controller_connections:
             self._send_openflow_message_internal(sock, ofpkt)
@@ -235,33 +241,46 @@ class OpenflowSwitch(object):
     def _controller_thread(self, sock):
         def _hello_handler(pkt):
             log_debug("Hello version: {}".format(pkt[0].version))
-            pkt = Packet()
-            pkt += OpenflowHeader(OpenflowType.Hello, self.xid)
+            if pkt[0].version == 0x01:
+                log_info("Controller version {}; changing switch version to match.".format(pkt[0].version))
+                self._version = pkt[0].version
+                self._oflib = of10
+                _handler_map = _handler_map_10
+            elif pkt[0].version == 0x04:
+                log_info("Controller version {}; same as switch.".format(pkt[0].version))
+                self._version = pkt[0].version
+                self._oflib = of13
+                _handler_map = _handler_map_13
+            else:
+                log_warn("Controller wants a version we don't support ({})".format(pkt[0].version))
+                return
+
+            pkt = self._oflib.OpenflowHeader.build(self._oflib.OpenflowType.Hello, xid=self.xid)
             self._send_openflow_message_internal(sock, pkt) 
             self._ready = True
 
-        def _send_removal_notification(entries, why=FlowRemovedReason.Unknown):
+        def _send_removal_notification(entries, why=self._oflib.FlowRemovedReason.Unknown):
             for e in entries:
-                header = OpenflowHeader(OpenflowType.FlowRemoved, self.xid)
-                removed = OpenflowFlowRemoved(why, e.match)
+                header = self._oflib.OpenflowHeader(self._oflib.OpenflowType.FlowRemoved, xid=self.xid)
+                removed = self._oflib.OpenflowFlowRemoved(why, e.match)
                 log_debug("Sending flow removal notification: {}".format(removed))
                 self._send_openflow_message_internal(sock, header + removed)
 
         def _send_error(errorcode):
-            header = OpenflowHeader(OpenflowType.Error, self.xid)
-            err = OpenflowError() 
-            err.errortype = OpenflowErrorType.FlowModFailed
+            header = self._oflib.OpenflowHeader(self._oflib.OpenflowType.Error, xid=self.xid)
+            err = self._oflib.OpenflowError() 
+            err.errortype = self._oflib.OpenflowErrorType.FlowModFailed
             err.errorcode = errorcode
             log_debug("Sending error message: {}".format(err))
             self._send_openflow_message_internal(sock, header + err)
 
         def _features_request_handler(pkt):
-            header = OpenflowHeader(OpenflowType.FeaturesReply, self.xid)
-            featuresreply = OpenflowSwitchFeaturesReply()
-            featuresreply.dpid_low48 = self._switchid
+            header = self._oflib.OpenflowHeader(self._oflib.OpenflowType.FeaturesReply, xid=self.xid)
+            featuresreply = self._oflib.OpenflowSwitchFeaturesReply()
+            featuresreply.dpid = self._switchid
             for i, intf in enumerate(self._switchyard_net.ports()):
                 featuresreply.ports.append(
-                    OpenflowPhysicalPort(i, intf.ethaddr, intf.name))
+                    self._oflib.OpenflowPhysicalPort(i, intf.ethaddr, intf.name))
             log_debug("Sending features reply: {}".format(featuresreply))
             self._send_openflow_message_internal(sock, header + featuresreply)
 
@@ -274,15 +293,15 @@ class OpenflowSwitch(object):
 
         def _get_config_request_handler(pkt):
             log_debug("Get Config request")
-            header = OpenflowHeader(OpenflowType.GetConfigReply, self.xid)
-            reply = OpenflowGetConfigReply()
+            header = self._oflib.OpenflowHeader(self._oflib.OpenflowType.GetConfigReply, xid=self.xid)
+            reply = self._oflib.OpenflowGetConfigReply()
             reply.flags = self._flags
             reply.miss_send_len = self._miss_len
             self._send_openflow_message_internal(sock, header + reply)
 
         def _flow_mod_handler(pkt):
             fmod = pkt[1]
-            if fmod.command == FlowModCommand.Add:
+            if fmod.command == self._oflib.FlowModCommand.Add:
                 log_debug("Flow mod add")
                 rv = self._table.add(fmod)
                 if rv:
@@ -291,18 +310,18 @@ class OpenflowSwitch(object):
                     pp = self._buffer_manager.pop(pkt[1].buffer_id)
                     self._datapath_action(*pp)
 
-            elif fmod.command == FlowModCommand.Modify:
+            elif fmod.command == self._oflib.FlowModCommand.Modify:
                 log_debug("Flow mod modify")
                 self._table.modify(fmod, strict=False)
-            elif fmod.command == FlowModCommand.ModifyStrict:
+            elif fmod.command == self._oflib.FlowModCommand.ModifyStrict:
                 log_debug("Flow mod modify strict")
                 self._table.modify(fmod, strict=True)
-            elif fmod.command == FlowModCommand.Delete:
+            elif fmod.command == self._oflib.FlowModCommand.Delete:
                 log_debug("Flow mod delete")
                 notify = self._table.delete(fmod.match)
                 if notify:
                     _send_removal_notification(notify)
-            elif fmod.command == FlowModCommand.DeleteStrict:
+            elif fmod.command == self._oflib.FlowModCommand.DeleteStrict:
                 log_debug("Flow mod delete strict")
                 notify = self._table.delete(fmod.match, strict=True)
                 if notify:
@@ -312,7 +331,7 @@ class OpenflowSwitch(object):
 
         def _barrier_request_handler(pkt):
             log_debug("Barrier request")
-            reply = OpenflowHeader(OpenflowType.BarrierReply, xid=pkt[0].xid)
+            reply = self._oflib.OpenflowHeader.build(self._oflib.OpenflowType.BarrierReply, xid=pkt[0].xid)
             self._send_openflow_message_internal(sock, reply)
 
         def _packet_out_handler(pkt):
@@ -327,22 +346,22 @@ class OpenflowSwitch(object):
 
         def _stats_request_handler(pkt):
             log_debug("Stats request: {}".format(str(pkt)))
-            rheader = OpenflowHeader(OpenflowType.StatsReply, xid=pkt[0].xid)
-            if pkt[1].type == OpenflowStatsType.SwitchDescription:
-                statsbody = SwitchDescriptionStatsReply(mfr_desc='Switchyard', 
+            rheader = self._oflib.OpenflowHeader(OpenflowType.StatsReply, xid=pkt[0].xid)
+            if pkt[1].type == self._oflib.OpenflowStatsType.SwitchDescription:
+                statsbody = self._oflib.SwitchDescriptionStatsReply(mfr_desc='Switchyard', 
                     hw_desc='Switchyard', sw_desc='Switchyard', 
                     serial_num='0000', dp_desc=str(self._switchid))
-            elif pkt[1].type == OpenflowStatsType.IndividualFlow:
+            elif pkt[1].type == self._oflib.OpenflowStatsType.IndividualFlow:
                 pass
-            elif pkt[1].type == OpenflowStatsType.AggregateFlow:
+            elif pkt[1].type == self._oflib.OpenflowStatsType.AggregateFlow:
                 pass
-            elif pkt[1].type == OpenflowStatsType.Table:
+            elif pkt[1].type == self._oflib.OpenflowStatsType.Table:
                 pass
-            elif pkt[1].type == OpenflowStatsType.Port:
+            elif pkt[1].type == self._oflib.OpenflowStatsType.Port:
                 pass
-            elif pkt[1].type == OpenflowStatsType.Queue:
+            elif pkt[1].type == self._oflib.OpenflowStatsType.Queue:
                 pass
-            elif pkt[1].type == OpenflowStatsType.Vendor:
+            elif pkt[1].type == self._oflib.OpenflowStatsType.Vendor:
                 pass
             else:
                 log_info("Unrecognized stats request type")
@@ -350,39 +369,58 @@ class OpenflowSwitch(object):
 
         def _echo_request_handler(pkt):
             log_debug("Echo request: {}".format(str(pkt)))
-            reply = OpenflowHeader(OpenflowType.EchoReply, xid=pkt[0].xid)
+            reply = self._oflib.OpenflowHeader(OpenflowType.EchoReply, xid=pkt[0].xid)
             self._send_openflow_message_internal(sock, reply)
 
-        _handler_map = {
-            OpenflowType.Hello: _hello_handler,
-            OpenflowType.FeaturesRequest: _features_request_handler,
-            OpenflowType.SetConfig: _set_config_handler,
-            OpenflowType.GetConfigRequest: _get_config_request_handler,
-            OpenflowType.FlowMod: _flow_mod_handler,
-            OpenflowType.BarrierRequest: _barrier_request_handler,
-            OpenflowType.PacketOut: _packet_out_handler,
-            OpenflowType.StatsRequest: _stats_request_handler,
-            OpenflowType.EchoRequest: _echo_request_handler,
+        _handler_map_10 = {
+            of10.OpenflowType.Hello: _hello_handler,
+            of10.OpenflowType.FeaturesRequest: _features_request_handler,
+            of10.OpenflowType.SetConfig: _set_config_handler,
+            of10.OpenflowType.GetConfigRequest: _get_config_request_handler,
+            of10.OpenflowType.FlowMod: _flow_mod_handler,
+            of10.OpenflowType.BarrierRequest: _barrier_request_handler,
+            of10.OpenflowType.PacketOut: _packet_out_handler,
+            of10.OpenflowType.StatsRequest: _stats_request_handler,
+            of10.OpenflowType.EchoRequest: _echo_request_handler,
         }
+
+        _handler_map_13 = {
+            of13.OpenflowType.Hello: _hello_handler,
+            of13.OpenflowType.FeaturesRequest: _features_request_handler,
+            of13.OpenflowType.SetConfig: _set_config_handler,
+            of13.OpenflowType.GetConfigRequest: _get_config_request_handler,
+            of13.OpenflowType.FlowMod: _flow_mod_handler,
+            of13.OpenflowType.BarrierRequest: _barrier_request_handler,
+            of13.OpenflowType.PacketOut: _packet_out_handler,
+            of13.OpenflowType.EchoRequest: _echo_request_handler,
+        }
+
+        _handler_map = _handler_map_13
 
         def _unknown_type_handler(pkt):
             log_debug("Unknown OF message type: {}".format(pkt[0].type))
 
+        def _expire_table_entries():
+            entries = []
+            for t in self._tables:
+                entries.extend(t.expire_entries())
+            if entries:
+                _send_removal_notification(entries)
 
-        while self._running:
+        while True:
             pkt = None
             try:
                 pkt = self._receive_openflow_message_internal(sock)
             except socket.timeout:
                 pass
 
-            entries = self._table.expire_entries()
-            if entries:
-                _send_removal_notification(entries)
+            _expire_table_entries()
 
             if pkt is not None:
                 _handler_map.get(pkt[0].type, _unknown_type_handler)(pkt)
 
+            if not self._running:
+                break
 
     def _process_actions(self, actions, inport, packet):
         '''
@@ -412,6 +450,28 @@ class OpenflowSwitch(object):
             self._process_actions(actions, inport, packet)
             self._action_callbacks.afterApplyActions(packet, actions)        
 
+    def _handle_datapath(self, inport, packet):
+        '''
+        Handle single packet on the data plane.
+        '''
+        inport = self._switchyard_net.port_by_name(inport)
+        portnum = inport.ifnum
+        log_info("Processing packet: {}->{}".format(portnum, packet))
+        for tnum,t in enumerate(self._tables):
+            # FIXME: start at table 0
+            # if match: Update counters Execute instructions:
+            #           update action set
+            #           update packet/match set fields
+            #            update metadata
+            # if no match and table miss entry exists, do the above
+            # otherwise, drop the packet
+            pass
+            # actions = self._table.match_packet(portnum, packet)
+            # if actions is None:
+            #     self._send_packet_in(portnum, packet)
+            # else:
+            #     self._datapath_action(portnum, packet, actions=actions)
+
     def datapath_loop(self):
         log_debug("datapath loop: not ready to receive")
         while not self._ready:
@@ -425,15 +485,7 @@ class OpenflowSwitch(object):
                 break
             except NoPackets:
                 continue
-
-            inport = self._switchyard_net.port_by_name(inport)
-            portnum = inport.ifnum
-            log_info("Processing packet: {}->{}".format(portnum, packet))
-            actions = self._table.match_packet(portnum, packet)
-            if actions is None:
-                self._send_packet_in(portnum, packet)
-            else:
-                self._datapath_action(portnum, packet, actions=actions)
+            self._handle_datapath(inport, packet)
 
     def shutdown(self):
         self._running = False
@@ -493,7 +545,7 @@ class SwitchActionCallbacks(object):
     def afterTableEntryMod(self, table, entry):
         pass
 
-def main(net, host='localhost', port=6633, switchid=EthAddr("de:ad:00:00:be:ef")):
+def main(net, host='localhost', port=6633, switchid=b'\xc0\xde' + EthAddr("6a:7e:c0:ff:ee:00").raw):
     callbacks = SwitchActionCallbacks()
     switch = OpenflowSwitch(net, switchid, callbacks)
     switch.add_controller('localhost', 6633)

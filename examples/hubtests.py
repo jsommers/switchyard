@@ -1,33 +1,19 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
-from switchyard.lib.address import *
-from switchyard.lib.packet import *
-from switchyard.lib.common import *
-from switchyard.lib.testing import *
+from switchyard.lib.userlib import *
 
 def mk_pkt(hwsrc, hwdst, ipsrc, ipdst, reply=False):
-    ether = Ethernet()
-    ether.src = EthAddr(hwsrc)
-    ether.dst = EthAddr(hwdst)
-    ether.ethertype = EtherType.IP
-
-    ippkt = IPv4()
-    ippkt.srcip = IPAddr(ipsrc)
-    ippkt.dstip = IPAddr(ipdst)
-    ippkt.protocol = IPProtocol.ICMP
-    ippkt.ttl = 32
-
+    ether = Ethernet(src=hwsrc, dst=hwdst, ethertype=EtherType.IP)
+    ippkt = IPv4(src=ipsrc, dst=ipdst, protocol=IPProtocol.ICMP, ttl=32)
     icmppkt = ICMP()
     if reply:
         icmppkt.icmptype = ICMPType.EchoReply
     else:
         icmppkt.icmptype = ICMPType.EchoRequest
-
     return ether + ippkt + icmppkt
 
 def hub_tests():
-    s = Scenario("hub tests")
+    s = TestScenario("hub tests")
     s.add_interface('eth0', '10:00:00:00:00:01')
     s.add_interface('eth1', '10:00:00:00:00:02')
     s.add_interface('eth2', '10:00:00:00:00:03')

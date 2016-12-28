@@ -1,4 +1,6 @@
-from switchyard.lib.textcolor import green, red, blue, cyan, magenta, yellow
+from switchyard.textcolor import green, red, blue, \
+    cyan, magenta, yellow, TextColor
+
 import unittest 
 
 class ColorlibTests(unittest.TestCase):
@@ -17,6 +19,13 @@ class ColorlibTests(unittest.TestCase):
         with yellow():
             print ("This should be yellow!")
         print ("This should not be colored")
+
+    def testOther(self):
+        TextColor.setup()
+        self.assertTrue(TextColor._SETUP)
+        with self.assertRaises(Exception):
+            TextColor()
+
 
 
 if __name__ == '__main__':

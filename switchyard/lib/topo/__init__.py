@@ -1,2 +1,2 @@
-from switchyard.lib.topo.util import *
-from switchyard.lib.topo.topobuild import *
+from .util import *
+from .topobuild import *

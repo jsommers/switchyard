@@ -1,12 +1,19 @@
-from switchyard.lib.packet.packet import PacketHeaderBase,Packet
-from switchyard.lib.packet.ipv4 import IPv4
-from switchyard.lib.packet.ipv6 import IPv6
 import struct
 import socket
+
+from .packet import PacketHeaderBase,Packet
+from .ipv4 import IPv4
+from .ipv6 import IPv6
+from ..exceptions import *
 
 AFTypeClasses = {
     socket.AF_INET: IPv4,
     socket.AF_INET6: IPv6
+}
+
+AFTypeNames = {
+    socket.AF_INET: "AF_INET",
+    socket.AF_INET6: "AF_INET6"
 }
 
 class Null(PacketHeaderBase):
@@ -37,17 +44,15 @@ class Null(PacketHeaderBase):
         '''Return a Null header object reconstructed from raw bytes, or an
         Exception if we can't resurrect the packet.'''
         if len(raw) < 4:
-            raise Exception("Not enough bytes ({}) to reconstruct a Null object".format(len(raw)))
+            raise NotEnoughDataError("Not enough bytes ({}) to reconstruct a Null object".format(len(raw)))
         fields = struct.unpack('=I', raw[:4])
         self._af = fields[0]
         return raw[4:]
 
     def next_header_class(self):
-        if self.af not in AFTypeClasses:
-            raise Exception("No mapping for address family {} to a packet header class".format(self.af))
         cls = AFTypeClasses.get(self.af, None)
         if cls is None:
-            print ("Warning: no class exists to parse next protocol type: {}".format(self.af))
+            raise Exception("No mapping from address family {} to a packet header class".format(self.af))
         return cls
 
     def pre_serialize(self, raw, pkt, i):
@@ -57,5 +62,5 @@ class Null(PacketHeaderBase):
         return self.af == other.af
 
     def __str__(self):
-        return '{}: {}'.format(self.__class__.__name__, self.af)
+        return '{}: {}'.format(self.__class__.__name__, AFTypeNames.get(self.af, "?"))
 

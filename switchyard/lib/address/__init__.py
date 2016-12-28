@@ -157,6 +157,7 @@ class EthAddr (object):
 ethaddr = EthAddr
 macaddr = EthAddr
 
+
 class SpecialIPv6Addr(Enum):
     UNDEFINED = ip_address('::')
     ALL_NODES_LINK_LOCAL = ip_address('ff02::1')
@@ -168,9 +169,11 @@ class SpecialIPv6Addr(Enum):
 #ff02::1:ff00:0/104 solicited-node
 #ff02::2:ff00:0/104 node information query
 
+
 class SpecialIPv4Addr(Enum):
     IP_ANY = ip_address("0.0.0.0")
     IP_BROADCAST = ip_address("255.255.255.255")
+
 
 class SpecialEthAddr(Enum):
     ETHER_ANY            = EthAddr(b'\x00\x00\x00\x00\x00\x00')
@@ -181,6 +184,7 @@ class SpecialEthAddr(Enum):
                                                    # 802.1x Port Access Entity
     NDP_MULTICAST        = EthAddr(b'\x01\x23\x20\x00\x00\x01') 
                                                    # Nicira discovery multicast
+
 
 def netmask_to_cidr (dq):
   """
@@ -200,7 +204,6 @@ def netmask_to_cidr (dq):
     raise RuntimeError("Netmask %s is not CIDR-compatible" % (dq,))
   return c
 
-
 def cidr_to_netmask (bits):
   """
   Takes a number of network bits, and returns the corresponding netmask
@@ -209,7 +212,6 @@ def cidr_to_netmask (bits):
   v = (1 << bits) - 1
   v = v << (32-bits)
   return IPAddr(v)
-
 
 def parse_cidr (addr, infer=True, allow_host=False):
   """
@@ -228,6 +230,7 @@ def parse_cidr (addr, infer=True, allow_host=False):
       raise RuntimeError("Host part of CIDR address is not zero (%s)"
                          % (addr,))
     return (r0,32-r1)
+
   addr = addr.split('/', 2)
   if len(addr) == 1:
     if infer is False:
@@ -260,7 +263,6 @@ def parse_cidr (addr, infer=True, allow_host=False):
     raise RuntimeError("Invalid mask length")
   return check(IPAddr(addr[0]), wild)
 
-
 def infer_netmask (addr):
   """
   Uses network classes to guess the number of network bits
@@ -282,4 +284,4 @@ def infer_netmask (addr):
     # Class D (Multicast)
     return 32-0 # exact match
   # Must be a Class E (Experimental)
-    return 32-0
+  return 32-0

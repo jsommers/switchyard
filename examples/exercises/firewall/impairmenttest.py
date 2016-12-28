@@ -3,10 +3,7 @@
 from copy import deepcopy
 import random
 
-from switchyard.lib.packet import *
-from switchyard.lib.address import *
-from switchyard.lib.common import *
-from switchyard.lib.testing import *
+from switchyard.lib.userlib import *
 
 firewall_rules = '''
 # drop everything from an internal subnet which shouldn't be allowed
@@ -55,7 +52,7 @@ deny ip src any dst any
 '''
 
 def firewall_tests():
-    s = Scenario("Firewall tests")
+    s = TestScenario("Firewall tests")
     s.add_file('firewall_rules.txt', firewall_rules)
 
     # two ethernet ports; no IP addresses assigned to
@@ -68,11 +65,11 @@ def firewall_tests():
     t.ACK = 1
     t.ack = random.randrange(0,2**32)
     t.seq = random.randrange(0,2**32)
-    t.srcport = random.randrange(2**12,2**16)
-    t.dstport = 8000
+    t.src = random.randrange(2**12,2**16)
+    t.dst = 8000
     ip = IPv4()
-    ip.srcip = '192.168.0.13'
-    ip.dstip = IPv4Address(random.randrange(2**16, 2**32))
+    ip.src = '192.168.0.13'
+    ip.dst = IPv4Address(random.randrange(2**16, 2**32))
     ip.protocol = IPProtocol.TCP
     pkt = Ethernet() + ip + t + "This is some TCP data!".encode()
     # fill in any other packet headers or data to the constructed packet

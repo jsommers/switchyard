@@ -3,23 +3,88 @@
 API Reference
 *************
 
-The "net" object
-================
+Before getting into all the details, it is important to note that all the below API features can be imported through the module ``switchyard.lib.userlib``.  
 
-.. autoclass:: switchyard.switchy_real.PyLLNet 
+.. automodule:: switchyard.lib.userlib
+
+Unless you are concerned about namespace pollution, importing all Switchyard symbols into your program can be done with the following:
+
+.. code-block:: python
+   
+   from switchyard.lib.userlib import *
+
+
+.. _netobj:
+
+Net object reference
+====================
+
+The *net* object is used for sending and receiving packets on network interfaces/ports.  The API documentation below is for a base class that defines the various methods on a net object; there are two classes that derive from this base class which help to implement Switchyard's test mode and Switchyard's live network mode.
+
+.. autoclass:: switchyard.llnetbase.LLNetBase
    :members:
    :inherited-members:
-   :exclude-members: set_devupdown_callback
+   :exclude-members: set_devupdown_callback, intf_down, intf_up
 
    An object of this class is passed into the main function of a user's
    Switchyard program.  Using methods on this object, a user can send/receive
    packets and query the device for what interfaces are available and how
    they are configured.
 
+
+
+.. _intf-detail:
+
+Interface and InterfaceType reference
+=====================================
+
+The ``InterfaceType`` enumeration is referred to by the ``Interface`` class, which encapsulates information about a network interface/port.  The ``InterfaceType`` defines some basic options for types of interfaces:
+
+.. autoclass:: switchyard.lib.interface.InterfaceType
+
+   .. attribute:: Unknown=1
+   .. attribute:: Loopback=2
+   .. attribute:: Wired=3
+   .. attribute:: Wireless=4
+
+The ``Interface`` class is used to encapsulate information about a network interface:
+
+.. autoclass:: switchyard.lib.interface.Interface
+   :members: 
+   :undoc-members:
+   :member-order: name, ethaddr, ipaddr, netmask, ipinterface, ifnum, iftype
+
+
+.. _addresses:
+
+Ethernet and IP addresses
+=========================
+
+Switchyard uses the built-in ``ipaddress`` module to the extent possible.  Refer to the Python library documentation for details on the ``IPv4Address`` class and related classes.  As noted in the source code, the ``EthAddr`` class based on source code from the POX Openflow controller.
+
+.. autoclass:: switchyard.lib.address.EthAddr
+   :members:
+   :undoc-members:
+
+.. autoclass:: switchyard.lib.address.SpecialIPv4Addr
+
+   .. attribute:: IP_ANY = ip_address("0.0.0.0")
+   .. attribute:: IP_BROADCAST = ip_address("255.255.255.255")
+
+
+.. autoclass:: switchyard.lib.address.SpecialIPv6Addr
+
+   .. attribute:: UNDEFINED = ip_address('::')
+   .. attribute:: ALL_NODES_LINK_LOCAL = ip_address('ff02::1')
+   .. attribute:: ALL_ROUTERS_LINK_LOCAL = ip_address('ff02::2')
+   .. attribute:: ALL_NODES_INTERFACE_LOCAL = ip_address('ff01::1')
+   .. attribute:: ALL_ROUTERS_INTERFACE_LOCAL = ip_address('ff01::2')
+
+
 .. _pktlib:
 
-Packet parsing and construction
-===============================
+Packet parsing and construction reference
+=========================================
 
 .. autoclass:: switchyard.lib.packet.Packet
    :members:
@@ -32,6 +97,11 @@ Packet parsing and construction
    Indexes may be integers (from 0 up to, but not including, the number
    of packet headers), or indexes may also be packet header class names.
    Exceptions are raised for invaliding indexing of either kind.
+
+   The optional raw parameter can accept a bytes object, which assumed
+   to be a serialized packet to be reconstructed.  The optional parameter
+   first_header indicates the first header of the packet to be reconstructed,
+   which defaults to Ethernet.
 
    >>> p = Packet()
    >>> p += Ethernet()
@@ -62,19 +132,22 @@ by packet header class index::
 Header classes
 --------------
 
-In this section, detailed documentation for all packet header classes is
-given.  For each header class, there are three common methods that may be
-useful and which are *not* documented below for clarity:
+In this section, detailed documentation for all packet header classes is given.  For each header class, there are three common *instance* methods that may be useful and which are *not* documented below for clarity. They are defined in the base class ``PacketHeaderBase``.  Note that any new packet header classes that derive from ``PacketHeaderBase`` must implement these three methods.
 
- * ``size()``: returns the number of bytes that the header would consist of when serialized to wire format
- * ``to_bytes()``: returns the serialized (wire format) representation of the packet as a byte string
- * ``from_bytes(b)``: parses a byte string representing this packet header and constructs the various header fields from the raw bytes
+.. autoclass:: switchyard.lib.packet.PacketHeaderBase
+   :members: size, to_bytes, from_bytes
+
+
+There are also three common *class* methods that are used when creating a new packet header class (see :ref:`new-packet-header-types`).
+
+.. autoclass:: switchyard.lib.packet.PacketHeaderBase
+   :members: set_next_header_class_key, add_next_header_class, set_next_header_map
 
 
 ------
 
 Ethernet header
-^^^^^^^^^^^^^^^
+---------------
 
 .. autoclass:: switchyard.lib.packet.Ethernet
    :members:
@@ -113,6 +186,10 @@ and setting the header fields to non-default values:
 >>> e.dst = "ff:ff:ff:ff:ff:ff"
 >>> e.ethertype = EtherType.ARP
 
+As with all packet header classes, keyword parameters can be used to initialize header attributes:
+
+>>> e = Ethernet(src="de:ad:00:00:be:ef", dst="ff:ff:ff:ff:ff:ff", ethertype=EtherType.ARP)
+
 
 .. .. autoclass:: switchyard.lib.packet.Vlan
 ..    :members:
@@ -122,7 +199,7 @@ and setting the header fields to non-default values:
 ------
 
 ARP (address resolution protocol) header
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------------
 
 .. autoclass:: switchyard.lib.packet.Arp
    :members:
@@ -152,18 +229,17 @@ address is ``targetip``.
     ether.src = srchw
     ether.dst = 'ff:ff:ff:ff:ff:ff'
     ether.ethertype = EtherType.ARP
-    arp = Arp()
-    arp.operation = ArpOperation.Request
-    arp.senderhwaddr = srchw
-    arp.senderprotoaddr = srcip
-    arp.targethwaddr = 'ff:ff:ff:ff:ff:ff'
-    arp.targetprotoaddr = targetip
+    arp = Arp(operation=ArpOperation.Request,
+              senderhwaddr=srchw,
+              senderprotoaddr=srcip,
+              targethwaddr='ff:ff:ff:ff:ff:ff',
+              targetprotoaddr=targetip)
     arppacket = ether + arp 
 
 ------
 
 IP version 4 header
-^^^^^^^^^^^^^^^^^^^
+-------------------
 
 .. autoclass:: switchyard.lib.packet.IPv4
    :members:
@@ -188,7 +264,7 @@ IP version 4 header
 
    The IPProtocol class derives from the Python 3-builtin Enumerated
    class type.  There are other protocol numbers defined.  See 
-   switchyard.lib.packet.common for all defined values.
+   :py:mod:`switchyard.lib.packet.common` for all defined values.
 
 A just-constructed IPv4 header defaults to having all zeroes for 
 the source and destination addresses ('0.0.0.0') and the protocol
@@ -204,7 +280,7 @@ and setting various fields is shown below:
 ------
 
 UDP (user datagram protocol) header
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------------
 
 .. autoclass:: switchyard.lib.packet.UDP
    :members:
@@ -216,10 +292,9 @@ UDP (user datagram protocol) header
 To construct a packet that includes an UDP header as well as some application
 data, the same pattern of packet construction can be followed:
 
->>> p = Ethernet() + IPv4() + UDP()
->>> p[1].protocol = IPProtocol.UDP
->>> p[2].srcport = 4444
->>> p[2].dstport = 5555
+>>> p = Ethernet() + IPv4(protocol=IPProtocol.UDP) + UDP()
+>>> p[UDP].src = 4444
+>>> p[UDP].dst = 5555
 >>> p += b'These are some application data bytes'
 >>> print (p)
 Ethernet 00:00:00:00:00:00->00:00:00:00:00:00 IP | IPv4 0.0.0.0->0.0.0.0 UDP | UDP 4444->5555 | RawPacketContents (37 bytes) b'These are '...
@@ -234,7 +309,7 @@ packet header class that wraps a set of raw bytes.
 ------
 
 TCP (transmission control protocol) header
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------------------
 
 .. autoclass:: switchyard.lib.packet.TCP
    :members:
@@ -259,7 +334,7 @@ the flag value:
 ------
 
 ICMP (Internet control message protocol) header
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------------------------
 
 .. autoclass:: switchyard.lib.packet.ICMP
    :members:
@@ -372,54 +447,80 @@ be inspected and/or modified on them.
    :members:
    :inherited-members:
    :undoc-members:
-   :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class
+   :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class, set_next_header_class_key, set_next_header_map, add_next_header_class
 
 .. autoclass:: switchyard.lib.packet.ICMPDestinationUnreachable
    :members:
    :inherited-members:
    :undoc-members:
-   :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class
+   :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class, set_next_header_class_key, set_next_header_map, add_next_header_class
 
 .. autoclass:: switchyard.lib.packet.ICMPSourceQuench
    :members:
    :inherited-members:
    :undoc-members:
-   :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class
+   :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class, set_next_header_class_key, set_next_header_map, add_next_header_class
 
 .. autoclass:: switchyard.lib.packet.ICMPRedirect
    :members:
    :inherited-members:
    :undoc-members:
-   :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class
+   :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class, set_next_header_class_key, set_next_header_map, add_next_header_class
 
 .. autoclass:: switchyard.lib.packet.ICMPEchoRequest
    :members:
    :inherited-members:
    :undoc-members:
-   :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class
+   :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class, set_next_header_class_key, set_next_header_map, add_next_header_class
 
 .. autoclass:: switchyard.lib.packet.ICMPTimeExceeded
    :members:
    :inherited-members:
    :undoc-members:
-   :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class
+   :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class, set_next_header_class_key, set_next_header_map, add_next_header_class
 
 
-.. FIXME: do something about this, later
+Test scenario creation
+======================
 
-.. Test scenario creation
-.. ======================
-.. 
-.. .. autoclass:: switchyard.lib.testing.Scenario
-..    :members:
+.. autoclass:: switchyard.lib.testing.TestScenario
+   :members:
+   :undoc-members:
+   :exclude-members: cancel_timer, done, get_failed_test, next, print_summary, scenario_sanity_check, testpass, wrapevent, timeout, do_setup, do_teardown, setup, teardown, lastout, failed_test_reason, write_files
+
+.. autoclass:: switchyard.lib.testing.PacketInputEvent
+   :members:
+
+.. autoclass:: switchyard.lib.testing.PacketInputTimeoutEvent
+   :members:
+
+.. autoclass:: switchyard.lib.testing.PacketOutputEvent
+   :members:
+
+Application-layer
+=================
+
+Two static methods on the ``ApplicationLayer`` class are used to send messages up a socket application and to receive messages from socket applications.
+
+.. autoclass:: switchyard.lib.socket.ApplicationLayer
+   :members:
+
+Switchyard's socket emulation module is intended to follow, relatively closely, the methods and attributes available in the built-in :py:mod:`socket` module.
+
+.. autoclass:: switchyard.lib.socket.socket
+   :members:
 
 
 Utility functions
 =================
 
-.. automodule:: switchyard.lib.common
-   :members:
-   :exclude-members: setup_logging, LLNetBase
+.. autofunction:: switchyard.lib.logging.log_failure
 
-.. autofunction:: switchyard.lib.debug.debugger
+.. autofunction:: switchyard.lib.logging.log_warn
+
+.. autofunction:: switchyard.lib.logging.log_info
+
+.. autofunction:: switchyard.lib.logging.log_debug
+
+.. autofunction:: switchyard.lib.debugging.debugger
 

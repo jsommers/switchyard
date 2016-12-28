@@ -1,24 +1,25 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''
 Packet sniffer in Python
 '''
 
-from switchyard.lib.address import *
-from switchyard.lib.packet import *
-from switchyard.lib.common import *
+from switchyard.lib.userlib import *
 
-def switchy_main(net):
+def main(net):
     my_interfaces = net.interfaces() 
     log_info ("My interfaces: {}".format([intf.name for intf in my_interfaces]))
+    count = 0
     while True:
         try:
-            dev,packet = net.recv_packet(timeout=1.0)
+            timestamp,dev,packet = net.recv_packet(timeout=1.0)
         except NoPackets:
             continue
         except Shutdown:
             return
 
-        log_info ("In {} received packet {} on {}".format(net.name, packet, dev))
+        log_info("{:.3f}: {} {}".format(timestamp,dev,packet))
+        count += 1
 
     net.shutdown()
+    print ("Got {} packets.".format(count))

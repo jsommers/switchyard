@@ -6,7 +6,7 @@
 Switchyard documentation
 ========================
 
-Contents:
+.. Contents:
 
 .. toctree::
    :maxdepth: 2
@@ -16,8 +16,12 @@ Contents:
    test_execution
    test_scenario_creation
    live_execution
+   advanced_api
    installation
    reference
+   release_notes
+   thanks
+
 
 Indices and tables
 ==================
@@ -26,11 +30,8 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
-Acknowledgments
-===============
-
 I gratefully acknowledge support from the NSF.  The materials here are based upon work supported by the National Science Foundation under grant CNS-1054985 ("CAREER: Expanding the functionality of Internet routers").     
 
 Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author and do not necessarily reflect the views of the National Science Foundation.
 
-Thanks to Colgate COSC465 students from Spring 2014 and Spring 2015 for being guinea pigs and giving feedback.  Special thanks to Saul Shanabrook '18 for specific suggestions that have improved Switchyard.
+.. todolist::

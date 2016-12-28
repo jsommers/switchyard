@@ -74,7 +74,7 @@ For creating any ICMP error packet (i.e., any of the packets in the table above)
     >>> ip = IPv4()
     >>> ip.protocol = IPProtocol.ICMP # protocol defaults to ICMP;
     >>>                               # setting it explicitly here anyway
-    >>> # would also need to set ip.srcip, ip.dstip, and ip.ttl to something non-zero
+    >>> # would also need to set ip.src, ip.dst, and ip.ttl to something non-zero
     >>> pkt = ip + icmp
     >>> print(pkt)
     IPv4 0.0.0.0->0.0.0.0 ICMP | ICMP TimeExceeded:TTLExpired 28 bytes of raw payload (b'E\x00\x00\x1c\x00\x00\x00\x00\x00\x01') OrigDgramLen: 28
@@ -87,7 +87,7 @@ Switchyard testing
 
 To test your router, you can use the same formula you've used in the past::
 
-    $ ./switchyard/srpy.py -t -s routertests3.srpy myrouter.py
+    $ swyard -t routertests3.srpy myrouter.py
 
 
 Mininet ("live") testing
@@ -103,7 +103,7 @@ To test each of the new router functionalities in Mininet, you can open up a ter
 
     $ sudo python start_mininet.py
 
-Once Mininet is running, open a terminal on the router node (xterm router) and get the router running (``./switchyard/srpy.py myrouter.py``).  
+Once Mininet is running, open a terminal on the router node (xterm router) and get the router running (``swyard myrouter.py``).  
 
 Next, open a terminal on the client node (``xterm client``).  Now, you should be able to:
 

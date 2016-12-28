@@ -13,8 +13,12 @@ class AddressTests(unittest.TestCase):
         self.assertTrue(e2.is_local)
         self.assertFalse(e2.is_global)
         self.assertEqual(e2.raw, b'\xe2\x00\x00\x00\x00\x00')
+        self.assertEqual(e2.toRaw(), b'\xe2\x00\x00\x00\x00\x00')
         self.assertEqual(e2.packed, b'\xe2\x00\x00\x00\x00\x00')
         self.assertEqual(e2.toStr('-'), "e2-00-00-00-00-00")
+        self.assertEqual(str(e2), "e2:00:00:00:00:00")
+        self.assertEqual(repr(e2), "EthAddr('e2:00:00:00:00:00')")
+        self.assertEqual(e2.toTuple(), (0xe2, 0x0, 0x0, 0x0, 0x0, 0x0))
         self.assertTrue(e1 < e2)
 
     def testSpecialEth(self):
@@ -47,6 +51,18 @@ class AddressTests(unittest.TestCase):
             parse_cidr("1.2.3.4/40")
         with self.assertRaises(RuntimeError) as _:
             parse_cidr("1.2.3.1/24")
+        self.assertEqual(parse_cidr('149.43.80.1', infer=False), (IPv4Address("149.43.80.1"), 32))
+        self.assertEqual(parse_cidr('149.43.80.0', infer=False), (IPv4Address("149.43.80.0"), 32))
+        self.assertEqual(parse_cidr('149.43.80.0', infer=True), (IPv4Address("149.43.80.0"), 32))
+        self.assertEqual(parse_cidr('149.43.0.0', infer=True), (IPv4Address("149.43.0.0"), 16))
+        self.assertEqual(parse_cidr('149.43.80.0/255.255.252.0'), (IPv4Address("149.43.80.0"), 22))
+        self.assertEqual(parse_cidr('149.43.80.1/255.255.252.0', allow_host=True), 
+            (IPv4Address("149.43.80.1"), 22))
+        with self.assertRaises(RuntimeError) as _:
+            parse_cidr('149.43.0.0/255.240.255.254')
+        self.assertEqual(infer_netmask(IPv4Address("242.0.0.0")), 32)
+        self.assertEqual(infer_netmask(IPv4Address("224.0.0.0")), 32)
+
 
 if __name__ == '__main__':
     unittest.main()

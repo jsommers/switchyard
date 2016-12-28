@@ -7,9 +7,7 @@ Basic IPv4 router (static routing) in Python.
 import sys
 import os
 import time
-from switchyard.lib.packet import *
-from switchyard.lib.address import *
-from switchyard.lib.common import *
+from switchyard.lib.userlib import *
 
 class Router(object):
     def __init__(self, net):
@@ -25,7 +23,7 @@ class Router(object):
         while True:
             gotpkt = True
             try:
-                dev,pkt = self.net.recv_packet(timeout=1.0)
+                timestamp,dev,pkt = self.net.recv_packet(timeout=1.0)
             except NoPackets:
                 log_debug("No packets available in recv_packet")
                 gotpkt = False
@@ -38,7 +36,7 @@ class Router(object):
 
 
 
-def switchy_main(net):
+def main(net):
     '''
     Main entry point for router.  Just create Router
     object and get it going.

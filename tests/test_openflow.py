@@ -1,14 +1,14 @@
 import unittest 
 from copy import deepcopy
-from switchyard.lib.openflow import *
-from switchyard.lib.address import EthAddr, IPv4Address, SpecialIPv4Addr
-from switchyard.lib.pcapffi import PcapDumper
-from switchyard.lib.packet import Ethernet, IPv4, TCP, TCPFlags, ICMP
 from time import time
 
+from switchyard.lib.openflow.openflow10 import *
+from switchyard.lib.address import EthAddr, IPv4Address, SpecialIPv4Addr
+from switchyard.pcapffi import PcapDumper
+from switchyard.lib.packet import Ethernet, IPv4, TCP, TCPFlags, ICMP
 
 class OpenflowPacketTests(unittest.TestCase):
-    def _storePkt(self, ofhdr, dstport=6633):
+    def _storePkt(self, ofhdr, dst=6633):
         # comment the return to save pcap packets for analysis
         return
 
@@ -23,8 +23,8 @@ class OpenflowPacketTests(unittest.TestCase):
         pkt[IPv4].dst = "149.43.80.25"
         pkt[IPv4].ttl = 5
         pkt[IPv4].ipid = 42
-        pkt[TCP].dstport = dstport
-        pkt[TCP].srcport = 5555
+        pkt[TCP].dst = dst
+        pkt[TCP].src = 5555
         pkt[TCP].window = 1000
         pkt[TCP].seq = 42
         pkt[TCP].ack = 500
@@ -34,7 +34,7 @@ class OpenflowPacketTests(unittest.TestCase):
         dumper.close()
 
     def testHello(self):
-        hello = OpenflowHeader.build(OpenflowType.Hello, xid=0)
+        hello = OpenflowHeader.build(OpenflowType.Hello, xid=0, version=0x01)
         self.assertEqual(hello.to_bytes(), b'\x01\x00\x00\x08\x00\x00\x00\x00')
         hello[0].xid = 42
         self.assertEqual(hello.to_bytes(), b'\x01\x00\x00\x08\x00\x00\x00\x2a')
@@ -45,12 +45,12 @@ class OpenflowPacketTests(unittest.TestCase):
         self._storePkt(hello)
        
     def testSwitchFeatureRequest(self):
-        featuresreq = OpenflowHeader.build(OpenflowType.FeaturesRequest, xid=0)
+        featuresreq = OpenflowHeader.build(OpenflowType.FeaturesRequest, xid=0, version=0x01)
         self.assertEqual(featuresreq.to_bytes(), b'\x01\x05\x00\x08\x00\x00\x00\x00')
         self._storePkt(featuresreq)
 
     def testSwitchFeatureReply(self):
-        featuresreply = OpenflowHeader.build(OpenflowType.FeaturesReply, xid=0)
+        featuresreply = OpenflowHeader.build(OpenflowType.FeaturesReply, xid=0, version=0x01)
         featuresreply[1].dpid_low48 = EthAddr("00:01:02:03:04:05")
         featuresreply[1].dpid_high16 = b'\xab\xcd'
         p = OpenflowPhysicalPort(0, EthAddr("ab:cd:ef:ab:cd:ef"), "eth0")
@@ -143,7 +143,7 @@ class OpenflowPacketTests(unittest.TestCase):
     def testBuildMatch(self):
         pkt = Ethernet(src="11:22:33:44:55:66", dst="aa:bb:cc:dd:ee:ff") + \
               IPv4(src="1.2.3.4", dst="5.6.7.8", protocol=6) + \
-              TCP(srcport=4000, dstport=10000)
+              TCP(src=4000, dst=10000)
         m = OpenflowMatch.build_from_packet(pkt)
         self.assertEqual(m.dl_src, "11:22:33:44:55:66")
         self.assertEqual(m.dl_dst, "aa:bb:cc:dd:ee:ff")
@@ -159,11 +159,11 @@ class OpenflowPacketTests(unittest.TestCase):
     def testPacketMatch(self):
         pkt = Ethernet(src="11:22:33:44:55:66", dst="aa:bb:cc:dd:ee:ff") + \
               IPv4(src="1.2.3.4", dst="5.6.7.8", protocol=6) + \
-              TCP(srcport=4000, dstport=10000)
+              TCP(src=4000, dst=10000)
         m = OpenflowMatch.build_from_packet(pkt)
         self.assertTrue(m.matches_packet(pkt))
 
-        pkt[TCP].srcport = 42
+        pkt[TCP].src = 42
         self.assertFalse(m.matches_packet(pkt))
 
         m.add_wildcard(OpenflowWildcard.TpSrc)
@@ -188,7 +188,7 @@ class OpenflowPacketTests(unittest.TestCase):
         self.assertTrue(m.matches_packet(pkt))
         
     def testError(self):
-        e = OpenflowHeader.build(OpenflowType.Error, xid=0)
+        e = OpenflowHeader.build(OpenflowType.Error, xid=0, version=0x01)
         e[1].errortype = OpenflowErrorType.HelloFailed
         e[1].errorcode = OpenflowHelloFailedCode.PermissionsError
         e[1].data = b'\xef' * 10
@@ -202,7 +202,7 @@ class OpenflowPacketTests(unittest.TestCase):
         self._storePkt(e)
 
     def testPacketIn(self):
-        pktin = OpenflowHeader.build(OpenflowType.PacketIn, xid=44)
+        pktin = OpenflowHeader.build(OpenflowType.PacketIn, xid=44, version=0x01)
         pktin[1].packet = Ethernet(src="11:22:33:44:55:66", dst="aa:bb:cc:dd:ee:ff") + \
                           IPv4(src="1.2.3.4", dst="5.6.7.8") + ICMP()
         pktin[1].in_port = OpenflowPort.NoPort

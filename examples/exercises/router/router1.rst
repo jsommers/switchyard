@@ -16,10 +16,6 @@ Tasks to accomplish
 
 In the source directory for this exercise, there is a Python file to use as a starter template: ``myrouter1.py``.  This file contains the outline of a Router class, and currently contains a constructor (``__init__``) method and a ``router_main`` method.  This is just a starter template: you can refactor and redesign the code in any way you like.
 
-If you do not already have a suitable Switchyard development environment set up, you'll need to run the set up script::
-
-    $ ./setup.sh
-
 The main task for this project is to modify the Router class to do the following:
 
 1. Upon receiving a packet, determine whether it is an ARP request.
@@ -59,7 +55,7 @@ Switchyard testing
 
 For initial testing and debugging of your code, you can run the Switchyard test scenario (routertests1.srpy).  Run it like this::
 
-    $ ./switchyard/srpy.py -t -s routertests1.srpy myrouter.py 
+    $ swyard -t routertests1.srpy myrouter.py 
 
 Read each individual test case output carefully (yes, it can be a lot to read!) since each test case has an explanation for what your code should be doing.  
 
@@ -94,7 +90,7 @@ To test your router in Mininet, you do the following:
 
 5. Start your router::
 
-    router# ./switchyard/srpy.py myrouter1.py
+    router# swyard myrouter1.py
 
 6. Now, in the xterm running on the client, try to send an ICMP echo request to the IP address at the "other end" of the link between the client and the router.
 

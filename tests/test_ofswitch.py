@@ -1,19 +1,23 @@
 #!/usr/bin/env python
 
 '''
-OF switch unit tests.
+OF (v13) switch unit tests.
 '''
 
 import sys
 import asyncore
 import socket
 import unittest
+
 from unittest.mock import MagicMock
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
-from switchyard.lib.common import *
-from switchyard.lib.openflow import *
+from switchyard.lib.exceptions import *
+import switchyard.lib.openflow.openflow13 as of13
+import switchyard.lib.openflow.openflow10 as of10
 from switchyard.lib.openflow.ofswitch import OpenflowSwitch, SwitchActionCallbacks, FlowTable
+from switchyard.llnetbase import LLNetBase
+from switchyard.lib.interface import Interface
 
 
 def mk_pkt(hwsrc, hwdst, ipsrc, ipdst, reply=False):
@@ -41,10 +45,10 @@ class NetConnection(LLNetBase):
     '''
     def __init__(self):
         LLNetBase.__init__(self)
-        self.devinfo['eth0'] = Interface('eth0', '11:22:33:44:55:66', '192.168.1.1', '255.255.255.0', 0)
+        self._devinfo['eth0'] = Interface('eth0', '11:22:33:44:55:66', '192.168.1.1', '255.255.255.0', 0)
         self.lastsent = None
 
-    def recv_packet(self, timeout=None, timestamp=False):
+    def recv_packet(self, timeout=None):
         time.sleep(0.5)
         raise NoPackets()
 
@@ -56,28 +60,79 @@ class NetConnection(LLNetBase):
 
 class SwitchUnitTests(unittest.TestCase):
     def _receiver(self, sock, pkt):
-        self.lastrecv = pkt
+        self.lastrecv.append(pkt)
 
     def setUp(self):
-        socket.socket = MagicMock(return_value=MagicMock()) 
+        setattr(socket, "socket", MagicMock(return_value=MagicMock()))
         self.net = NetConnection()
         self.cb = SwitchActionCallbacks()
 
-    # def testHello(self):
-    #     def switch_off(*args):
-    #         self.switch._running = False
+    def _setup_switch(self, pkt):
+        self.switch = OpenflowSwitch(self.net, "abcdef00", self.cb)
+        self.lastrecv = []
+        self.switch._send_openflow_message_internal = self._receiver
+        self.switch._running = False
+        self.switch._receive_openflow_message_internal = MagicMock(return_value=pkt) 
 
-    #     self.switch = OpenflowSwitch(self.net, "abcdef00", self.cb)
-    #     self.switch._send_openflow_message_internal = self._receiver
-    #     hellopkt = OpenflowHeader.build(OpenflowType.Hello, xid=42)
-    #     self.switch._receive_openflow_message_internal = MagicMock(return_value=hellopkt, side_effect=switch_off)
-    #     self.switch._running = True
+    def testHello10(self):
+        hellopkt = of10.OpenflowHeader.build(of10.OpenflowType.Hello, xid=42)
+        self._setup_switch(hellopkt)
+        self.switch._controller_thread(MagicMock())
 
-    #     self.switch.add_controller('localhost', 6633)
-    #     self.switch._controller_thread(MagicMock())
-    #     self.assertEqual(self.lastrecv[0].type, hellopkt[0].type)
-    #     self.assertEqual(self.lastrecv[0].version, hellopkt[0].version)
-    #     self.assertEqual(self.lastrecv[0].length, hellopkt[0].length)
+        self.assertEqual(len(self.lastrecv), 1)
+        pkt = self.lastrecv.pop()[0]
+        self.assertEqual(pkt.type, of10.OpenflowType.Hello)
+        self.assertEqual(pkt.version, 0x01)
+        self.assertEqual(pkt.length, hellopkt[0].length)
+
+    def testHello13(self):
+        hellopkt = of13.OpenflowHeader.build(of13.OpenflowType.Hello, xid=42)
+        self._setup_switch(hellopkt)
+        self.switch._controller_thread(MagicMock())
+
+        self.assertEqual(len(self.lastrecv), 1)
+        pkt = self.lastrecv.pop()[0]
+        self.assertEqual(pkt.type, of13.OpenflowType.Hello)
+        self.assertEqual(pkt.version, 0x04)
+        self.assertEqual(pkt.length, hellopkt[0].length)
+
+    def testBarrier10(self):
+        barrier = of10.OpenflowHeader.build(of10.OpenflowType.BarrierRequest, xid=42)
+        self._setup_switch(barrier)
+        self.switch._controller_thread(MagicMock())
+
+        pkt = self.lastrecv.pop()[0]
+        self.assertEqual(pkt.type, of10.OpenflowType.BarrierReply)
+        self.assertEqual(pkt.version, barrier[0].version)
+        self.assertEqual(pkt.length, barrier[0].length)
+
+    def testBarrier13(self):
+        barrier = of13.OpenflowHeader.build(of13.OpenflowType.BarrierRequest, xid=42)
+        self._setup_switch(barrier)
+        self.switch._controller_thread(MagicMock())
+
+        pkt = self.lastrecv.pop()[0]
+        self.assertEqual(pkt.type, of13.OpenflowType.BarrierReply)
+        self.assertEqual(pkt.version, barrier[0].version)
+        self.assertEqual(pkt.length, barrier[0].length)
+
+    def testFeaturesRequest10(self):
+        request = of10.OpenflowHeader.build(of10.OpenflowType.FeaturesRequest, xid=42)
+        self._setup_switch(request)
+        self.switch._controller_thread(MagicMock())
+
+        self.assertEqual(len(self.lastrecv), 1)
+        pkt = self.lastrecv.pop()[0]
+        print(pkt)
+
+    def testData1(self):
+        self.switch = OpenflowSwitch(self.net, "abcdef00", self.cb)
+        self.switch._send_openflow_message_internal = self._receiver
+        self.switch._running = False
+
+        self.switch._handle_datapath("eth0", Ethernet() + IPv4() + ICMP())
+
+
 
     # def testTable1(self):
     #     table = FlowTable(self.cb)

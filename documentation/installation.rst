@@ -5,40 +5,35 @@ Installing Switchyard
 
 Switchyard has been tested and developed on the following operating systems:
 
- * MacOS X 10.10
- * Ubuntu 14.04
+ * macOS 10.10 and later
+ * Ubuntu LTS releases from 14.04 and later
  * Fedora 21
 
-Note that these are all Unix-based systems.  Switchyard may be enhanced in the future to support Windows-based systems, but there no plans currently to do so.
+Note that these are all Unix-based systems.  Switchyard may be enhanced in the future to support Windows-based systems, but there no plans currently to do so.  Ubuntu and macOS get the most testing of the above operating systems.
 
 ---
 
 The steps for getting Switchyard up and running are as follows:
 
   0. Install Python 3.4 or later, if you don't already have it.
-  1. Install any necessary libraries and/or programs on your OS
+  1. Install any necessary libraries for your operating system.
   2. Create an Python "virtual environment" for installing Python modules (or install the modules to your system Python)
-  3. Install the necessary Python modules
+  3. Install Switchyard.
 
-For step 0, you're on your own.  Go to https://www.python.org/downloads/, or install packages via
-your OS'es package system, or use homebrew if you're on a Mac.  Have fun.
+For step 0, you're on your own.  Go to https://www.python.org/downloads/, or install packages via your OS'es package system, or use homebrew if you're on a Mac.  Have fun.
 
-The specific libraries necessary for different OSes (step 1) are described below, but steps 2 and 3 are the same for all operating systems and are covered next.  See below for how to install libraries on specific OSes.
+The specific libraries necessary for different OSes (step 1) are described below, but steps 2 and 3 are the same for all operating systems and are covered next.  
 
-I recommend creating a Python virtual environment for installing the Switchyard-specific modules.  Python 3 includes the program ``pyvenv`` for this purpose.  You can invoke it with the name of the environment you're creating::
+The recommended install procedure is to create a Python virtual environment for installing Switchyard and other required Python modules.  One way to create a new virtual environment is to execute the following at a command line (in the folder in which you want to create the virtual environment)::
 
-    $ pyvenv swenv
+    $ python3 -m venv syenv
 
-This command will create a new virtual environment called ``swenv``.  Once that's done, you can "load" that environment and install the necessary Python modules. Let's say that we're starting from scratch and we don't even have the sourcecode for Switchyard.  Here are the steps::
+This command will create a new virtual environment called ``syenv``.  Once that's done, you can "activate" that environment and install Switchyard as follows::
 
-    $ . ./swenv/bin/activate
-    (swenv)$ git clone https://github.com/jsommers/switchyard
-    ... git clone happens
-    (swenv)$ cd switchyard
-    (swenv)$ pip install -r requirements.txt
+    $ source ./syenv/bin/activate
+    (syenv)$ python3 -m pip install switchyard
 
-Some (experimental) parts of Switchyard use the ``matplotlib`` Python libraries.  These can be difficult to compile on some systems, but if you want to use them you can try running ``pip install matplotlib``.  Your mileage may greatly vary.
-
+That's it.  Once you've done that, the ``swyard`` program should be on your ``PATH`` (you can check by typing ``which swyard``).  If you no longer want to use the Python virtual environment you've created, you can just type ``deactivate``.  
 
 Operating system-specific instructions
 ======================================
@@ -46,20 +41,19 @@ Operating system-specific instructions
 MacOS X
 -------
 
-The easiest way to get Switchyard running in MacOS X is to install homebrew.  You can use ``brew`` to install Python 3.  You should also ``brew`` to install the ``libpcap`` package.  That should be all that is necessary.
-
-Fedora/RedHat
--------------
-
-For Fedora and RedHat-based systems, you'll need to use ``yum`` or something similar to install the following packages::
-
-    libffi-devel libpcap-devel freetype-devel python3-devel gcc make git
+The easiest way to get Switchyard running in macOS is to install homebrew.  You can use ``brew`` to install Python 3.  You should also ``brew`` to install the ``libpcap`` package.  That should be all that is necessary.
 
 Ubuntu
 ------
 
-For Ubuntu systems, you'll need similar packages as those required on Fedora (but with the right name changes for the way packages are identified on Ubuntu)::
+For Ubuntu systems, you'll need to use ``apt-get`` or something similar to install the following packages::
 
-    python3-venv gcc git make python3-dev libpcap-dev libffi-dev freetype-dev
+    libffi-dev libpcap-dev python3-dev python3-pip python3-venv
 
-Note that the main difference is that Ubuntu doesn't include the ``pyvenv`` tool by default in its base Python 3 installation.
+Fedora/RedHat
+-------------
+
+For Fedora and RedHat-based systems, you'll need to use ``yum`` or something similar to install a similar set of packages as with Ubuntu (but with the right name changes for the way packages are identified on Fedora)::
+
+    libffi-devel libpcap-devel python3-devel python3-pip python3-virtualenv
+

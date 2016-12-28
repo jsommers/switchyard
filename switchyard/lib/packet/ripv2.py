@@ -2,8 +2,10 @@ import struct
 from enum import IntEnum
 from ipaddress import IPv4Network
 
-from switchyard.lib.packet.packet import PacketHeaderBase,Packet,RawPacketContents
-from switchyard.lib.address import SpecialIPv4Addr, IPv4Address
+from .packet import PacketHeaderBase,Packet,RawPacketContents
+from ..address import SpecialIPv4Addr, IPv4Address
+from ..logging import log_warn
+from ..exceptions import *
 
 '''
 References:
@@ -41,7 +43,7 @@ class RIPRouteEntry(object):
     @staticmethod
     def from_bytes(raw):
         if len(raw) != RIPRouteEntry._MINLEN:
-            raise Exception("Wrong number of bytes to reconstruct RIP Route Entry")
+            raise NotEnoughDataError("Wrong number of bytes to reconstruct RIP Route Entry")
         fields = struct.unpack(RIPRouteEntry._PACKFMT, raw)            
         entry = RIPRouteEntry()
         entry._family = int(fields[0])
@@ -73,6 +75,10 @@ class RIPRouteEntry(object):
     def metric(self):
         return self._metric
 
+    def __eq__(self, other):
+        return isinstance(other, RIPRouteEntry) and \
+            self.to_bytes() == other.to_bytes()
+
 
 class RIPv2(PacketHeaderBase):
     __slots__ = ('_command','_domain','_routes')
@@ -102,7 +108,7 @@ class RIPv2(PacketHeaderBase):
         if isinstance(raw, RawPacketContents):
             raw = raw.to_bytes()
         if len(raw) < RIPv2._MINLEN:
-            raise Exception("Not enough bytes to reconstruct RIPv2 header")
+            raise NotEnoughDataError("Not enough bytes to reconstruct RIPv2 header")
         fields = struct.unpack(RIPv2._PACKFMT, raw[:RIPv2._MINLEN])
         self.command = fields[0]
         self.domain = fields[2]
