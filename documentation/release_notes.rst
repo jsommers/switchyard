@@ -1,6 +1,8 @@
 Release notes
 *************
 
+The headings below refer either to branches on Switchyard's github repo (v1 and v2) or tags (2017.01.1).
+
 2017.01.1
 ---------
 
