@@ -58,6 +58,7 @@ if __name__ == '__main__':
     print("*" * 40)
 
     UDP.add_next_header_class(UDP_PING_PORT, UDPPing)
+    UDP.set_next_header_class_key('dst')
     pkt = Ethernet(src="11:22:11:22:11:22", 
                    dst="22:33:22:33:22:33") + \
           IPv4(src="1.2.3.4", dst="5.6.7.8", 

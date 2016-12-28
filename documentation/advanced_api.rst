@@ -86,7 +86,7 @@ Switchyard assumes that there exists one attribute in a packet header that can b
 Switchyard contains methods to make it possible to change the *attribute* on which lookups are performed, to *add* new mappings from a value on the mapped attribute to a packet header class, and to *completely (re)initialize* the mappings from attribute values to packet header classes.  Noting that one should, of course, use care when modifying any existing mappings or when modifying the attribute on which mappings are performed, here are the three *class* methods available on ``PacketHeaderBase``-derived classes:
 
 ``set_next_header_class_key(attr)``
-  This method is used to specify the *attribute* on which lookups to determine the next header class should be performed.  Switchyard-provided header classes contain sensible defaults for this value.  For example, with ``Ethernet`` this attribute is preconfigured as ``ethertype``, for ``IPv4`` this attribute is configured as ``protocol``, and with ``UDP`` and ``TCP`` this attribute is configured as ``dst`` (i.e., the destination port is used as the key).  Most other headers are configured with the empty string, indicating that no "next header" is assumed by Switchyard.
+  This method is used to specify the *attribute* on which lookups to determine the next header class should be performed.  Switchyard-provided header classes contain sensible defaults for this value.  For example, with ``Ethernet`` this attribute is preconfigured as ``ethertype``, and for ``IPv4`` this attribute is configured as ``protocol``.  There is no default configuration set for ``UDP`` or ``TCP``, but the natural choice would be ``dst`` (i.e., to use the destination port as the key).  Most other headers are configured with the empty string, indicating that no "next header" is assumed by Switchyard.
 
 ``add_next_header_class(attr, hdrcls)``
   This method is used to add a new attribute value-header class mapping to the next header mapping dictionary.  
@@ -99,11 +99,11 @@ Switchyard contains methods to make it possible to change the *attribute* on whi
    A key limitation of Switchyard, currently, is that arbitrary values for core protocol number enumerations (in particular, ``EtherType`` and ``IPProtocol``) cannot be dynamically added and/or modified because Python's ``enum`` types are constant once created.  This makes it impossible, at present, to use *arbitrary* protocol numbers for new layer 3 or 4 protocols and packet header types.  This will be changed in a future version of Switchyard.  In the meantime, a workaround is to use an existing protocol number which is not used in the next header map.  For example, if you are implementing a routing protocol on top of IPv4, you could use ``IPProtocol.OSPF`` as the protocol number for your (non-OSPF) protocol since Switchyard does not have any current mapping between that protocol number and a packet header class.  
 
 
-Building on the previous example with ``UDPPing``, if we add *one* line of code to, in a sense, *register* a particular UDP destination port as being associated with the ``UDPPing`` protocol, the final couple bytes can get properly interpreted and deserialized into the right packet header (notice the first line of code, which is the *only* difference with the previous example):
+Building on the previous example with ``UDPPing``, if we add *two* lines of code to specify that the destination port should be used as a key to look up the correct next header in a packet, and to *register* a particular UDP destination port as being associated with the ``UDPPing`` protocol, the final couple bytes can get properly interpreted and deserialized into the right packet header (notice the first line of code, which is the *only* difference with the previous example):
 
 .. literalinclude:: code/udpappheader.py
    :language: python
-   :lines: 60-70
+   :lines: 60-71
    :dedent: 4
 
 Here is the output, showing 
