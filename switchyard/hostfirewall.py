@@ -165,12 +165,12 @@ class LinuxFirewall(AbstractFirewall):
         else:    
             proto,port = self._interp_rule(rule)
             if port is not None:
-                portpart = " --port {}".format(port)
+                portpart = " --dport {}".format(port)
             else:
                 portpart = ""            
 
             for intf in self._intf:
-                cmds.append('/sbin/iptables -t raw -P PREROUTING DROP --protocol {} -i {}{}'.format(
+                cmds.append('/sbin/iptables -t raw -A PREROUTING -j DROP --protocol {} -i {}{}'.format(
                     proto, intf, portpart))
         return cmds
 
