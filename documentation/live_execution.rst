@@ -5,7 +5,7 @@ Running in a "live" environment
 
 Switchyard programs can be either run in an isolated :ref:`test environment <runtest>`, as described above, or on a *live* host operating system.  Switchyard currently supports Linux and macOS hosts for live execution.  
 
-.. sidebar::
+.. note:: 
 
    Switchyard uses the ``libpcap`` library for receiving and sending packets, which generally requires *root* privileges.  Although hosts can be configured so that root isn't required for using ``libpcap``, this documentation does not include instructions on how to do so.  The discussion below assumes that you are gaining root privileges by using the ``sudo`` (i.e., "do this as superuser") program.  Contrary to popular belief, ``sudo`` cannot make you a sandwich.
 
