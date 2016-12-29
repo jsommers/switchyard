@@ -1,7 +1,7 @@
 ﻿Overview
 --------
 
-This project is the third (and final!) in a series of three projects that have the ultimate goal of creating the "brains" for an IPv4 router.   The basic functions of an Internet router are to:
+This project is the third in a series of projects that have the ultimate goal of creating an IPv4 router.   The basic functions of an Internet router are to:
 
 1. Respond to ARP (address resolution protocol) requests for addresses that are assigned to interfaces on the router.  (Remember that the purpose of ARP is to obtain the Ethernet MAC address associated with an IP address so that an Ethernet frame can be sent to another host over the link layer.)
 
@@ -13,7 +13,7 @@ This project is the third (and final!) in a series of three projects that have t
 
 5. Generate ICMP error messages when necessary, such as when an IP packet's TTL (time to live) value has been decremented to zero.
 
-The goal of the third router project is to accomplish items 4 and 5 above.  When you're done with this project, you will have a fully functioning Internet router!
+The goal of this stage of the project is to accomplish items 4 and 5 above.  When you're done with this project, you will have a fully functioning Internet router.  You don't need to end there, though: some fun extensions to the router are described in another project description.
 
 
 Task 1: Responding to ICMP echo requests
@@ -57,7 +57,6 @@ There are 4 situations in which you'll need to generate ICMP error messages.  To
 
     The only packets destined for the router itself that it knows how to handle are ICMP echo requests.  Any other packets should cause the router to send an ICMP destination port unreachable error message back to the source address in the IP packet.  Note: the ICMP type should be destination unreachable, and the ICMP code should be port unreachable.
     
-
 Again, refer to the Switchyard documentation on ICMP headers.  
 
 For creating any ICMP error packet (i.e., any of the packets in the table above), you must include as the "data" payload of the ICMP header up to the first 28 bytes of the original packet, starting with the IPv4 header.  (That is, your ICMP message will include part of the packet that caused the problem.)  The switchyard documentation has an example of doing this, and an example is also given below.  Also, be careful to make sure that the newly constructed IP packet you send has a non-zero TTL --- by default, when you create a new IPv4 header, the TTL value is zero (0).  A code formula for including the "dead" packet in the ICMP payload is shown below::
@@ -84,10 +83,11 @@ For creating any ICMP error packet (i.e., any of the packets in the table above)
 Switchyard testing
 ------------------
 
-
 To test your router, you can use the same formula you've used in the past::
 
     $ swyard -t routertests3.srpy myrouter.py
+
+Note that the test scenario file is *not* included in this repository but is available on request.
 
 
 Mininet ("live") testing
@@ -102,8 +102,8 @@ Once the Switchyard tests pass, you can test your router in Mininet.  There is a
 To test each of the new router functionalities in Mininet, you can open up a terminal on the virtual machine, and cd (if necessary) to the folder where your project files are located (or transfer them into the virtual machine).  Then type the following to get Mininet started::
 
     $ sudo python start_mininet.py
-
-Once Mininet is running, open a terminal on the router node (xterm router) and get the router running (``swyard myrouter.py``).  
+  
+Once Mininet is running, open a terminal on the router node (xterm router) and get the router running (``swyard myrouter.py``).  Again, be aware that you may need to activate a Python virtual environment in order for this command to succeed.
 
 Next, open a terminal on the client node (``xterm client``).  Now, you should be able to:
 

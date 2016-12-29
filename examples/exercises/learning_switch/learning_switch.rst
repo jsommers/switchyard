@@ -84,6 +84,8 @@ You should first develop your switch code using the Switchyard test framework.  
 
 The above command it will execute a series of test cases against your program and display whether the tests pass or fail.  Once you get the tests to pass, you can try running your code in Mininet.
 
+Note that the tests are *not* included in this repository but they are available on request.
+
 To run your switch in Mininet, run the ``switchtopo.py`` custom topology script.  It will create a small network consisting of a single switch with three hosts (client, server1, and server2) in the following configuration (note that only IP addresses of the 3 hosts are shown in the picture; Ethernet MAC addresses for each interface (6 interfaces total) are not shown).
 
 To start up Mininet using this script, just type::

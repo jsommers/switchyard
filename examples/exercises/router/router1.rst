@@ -14,7 +14,7 @@ The goal of this first router project is to accomplish item #1 above: respond to
 Tasks to accomplish
 -------------------
 
-In the source directory for this exercise, there is a Python file to use as a starter template: ``myrouter1.py``.  This file contains the outline of a Router class, and currently contains a constructor (``__init__``) method and a ``router_main`` method.  This is just a starter template: you can refactor and redesign the code in any way you like.
+In the source directory for this exercise, there is a Python file to use as a starter template: ``myrouter.py``.  This file contains the outline of a Router class, and currently contains a constructor (``__init__``) method and a ``router_main`` method.  This is just a starter template: you can refactor and redesign the code in any way you like.
 
 The main task for this project is to modify the Router class to do the following:
 
@@ -53,11 +53,13 @@ You'll eventually need to store a mapping in the Router between destination IP a
 Switchyard testing
 ------------------
 
-For initial testing and debugging of your code, you can run the Switchyard test scenario (routertests1.srpy).  Run it like this::
+For initial testing and debugging of your code, you can run the Switchyard test scenario (``routertests1.srpy``).  Run it like this::
 
     $ swyard -t routertests1.srpy myrouter.py 
 
 Read each individual test case output carefully (yes, it can be a lot to read!) since each test case has an explanation for what your code should be doing.  
+
+Note that the test scenario file is *not* included in this repository, but is available on request.
 
 Mininet ("live") testing
 ------------------------
@@ -68,7 +70,7 @@ Once the Switchyard tests pass, you can test your router in Mininet.  There is a
 
 (Note that the above topology may not be the same as the one implied by the Switchyard tests.)
 
-To test your router in Mininet, you do the following:
+To test your router in Mininet, you can do the following:
 
 1. Open up a terminal on the virtual machine, and cd (if necessary) to the folder where your project files are located (or transfer them into the virtual machine).  Then type the following to get Mininet started::
 
@@ -91,6 +93,8 @@ To test your router in Mininet, you do the following:
 5. Start your router::
 
     router# swyard myrouter1.py
+
+Note that successfully running the above command will depend on how you've installed Switchyard.  If it is installed in a Python virtual environment, you will need to activate that environment before running ``swyard``.
 
 6. Now, in the xterm running on the client, try to send an ICMP echo request to the IP address at the "other end" of the link between the client and the router.
 

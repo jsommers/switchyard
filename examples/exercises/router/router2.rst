@@ -46,9 +46,9 @@ After you build the forwarding table (which should be done once, upon startup), 
 
 Two special cases to consider:
 
-1. If there is no match in the table, just drop the packet.  (We'll handle this better in a later project.)
+1. If there is no match in the table, just drop the packet.  (We'll handle this better in a later stage of creating the router.)
 
-2. If packet is for the router itself (i.e., destination address is an address of one of the router's interfaces), also drop/ignore the packet.  (We'll also handle this better in a later project.)
+2. If packet is for the router itself (i.e., destination address is an address of one of the router's interfaces), also drop/ignore the packet.  (We'll also handle this better at a later stage.)
 
 There are a couple functions and methods in the Python 3's ``ipaddress`` library (also available through Switchyard's IP address library) that are helpful for building forwarding table entries and/or for matching destination IP addresses against forwarding table entries:
 
@@ -115,6 +115,8 @@ To test your router, you can use the same formula you've used in the past::
 
 If you need to step through code to see what's going on, you can add calls to ``debugger()`` at any point in your code.  When execution reaches that line, you'll get a Python debugger (pdb) command line at which you can inspect variables, call methods, etc., in order to understand what's happening.  This kind of debugging will, in general, be much more effective than "printf" debugging.  This project includes quite a bit of complexity, so inspecting variables and stepping through your program in the debugger can be extremely helpful!
 
+Note that the above test scenario file is *not* included in this repository but is available on request.
+
 Mininet ("live") testing
 ------------------------
 
@@ -132,7 +134,7 @@ Once Mininet starts up, you should open an xterm on the router node (``xterm rou
 
     router# swyard myrouter.py
 
-to start the router.
+to start the router.  Note again that you may need to activate your Python virtual environment in order for the above command to work correctly.
 
 
 Note: when you run your router in Mininet, you'll almost certainly receive packets that you didn't ask for!  In particular, you'll likely receive non-IPv4 and non-ARP packets (you'll likely receive some IPv6 packets and some other fun stuff).  You should just ignore these non-IPv4 and non-ARP packets (and your router should not crash when it receives them!)
