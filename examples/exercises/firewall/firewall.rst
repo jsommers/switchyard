@@ -1,7 +1,9 @@
 ﻿Overview
 --------
 
-The goal for this project is to create a "silent" firewall that inspects and possibly changes packet contents for packet traffic entering and exiting a network.  The firewall rules we will use will be simple static rules (i.e., no "stateful" or dynamic rules), with one twist: we'll add the option to rate-limit certain packet flows using the token bucket algorithm.
+The goal for this project is to create firewall that inspects and possibly changes packet contents for packet traffic entering and exiting a network.  The firewall rules we will use will be simple static rules (i.e., no "stateful" or dynamic rules), with one twist: we'll add the option to rate-limit certain packet flows using the token bucket algorithm.
+
+The firewall can either be created as an extension of the IPv4 router project, or as a separate device that *silently* inspects and possibly blocks traffic.  The silent version of the firewall is described below.  To integrate the firewall with the router, you would need to apply firewall rules (described below) after receiving a packet and before any forwarding decision is made.  Again, the description below assumes a standalone device, but the differences between this and integrating with the router are quite minor.
 
 Below is a picture of the example network topology that is implied by the tests, and that is created by the Mininet script supplied with this project.  The firewall for which you will be writing the logic is positioned at the exterior of a network to be protected ("internal network"), inside what is often referred to as the network DMZ.  The firewall has just two interfaces, and is connected such that it will "see" all traffic sent from the internal network out to the rest of the internet, and it will also see any traffic coming from the rest of the internet back to the internal network.  
 
