@@ -9,7 +9,7 @@ Switchyard has been tested and developed on the following operating systems:
  * Ubuntu LTS releases from 14.04 and later
  * Fedora 21
 
-Note that these are all Unix-based systems.  Switchyard may be enhanced in the future to support Windows-based systems, but there no plans currently to do so.  Ubuntu and macOS get the most testing of the above operating systems.
+Note that these are all Unix-based systems.  Switchyard may be enhanced in the future to support Windows-based systems.  Ubuntu (current LTS) and macOS receive the most testing of Unix-based operating systems.
 
 ---
 

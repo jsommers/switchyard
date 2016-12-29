@@ -146,7 +146,9 @@ class ApplicationLayer(object):
         and port), remote_addr (a 2-tuple of IP address and port), and the
         message.  
 
-        Returns None.
+        Returns True if a socket was found to which to deliver the message,
+        and False otherwise.  When False is returned, a log warning is also
+        emitted.
         '''
         proto = IPProtocol(proto)
         local_addr = _normalize_addrs(local_addr)
@@ -157,7 +159,7 @@ class ApplicationLayer(object):
 
         if sockqueue is not None:
             sockqueue.put((local_addr,remote_addr,data))
-            return
+            return True
         
         # no dice, try local IP addr of 0.0.0.0
         local2 = _normalize_addrs(("0.0.0.0", local_addr[1]))
@@ -166,9 +168,10 @@ class ApplicationLayer(object):
             sockqueue = ApplicationLayer._to_app.get(xtup, None)
         if sockqueue is not None:    
             sockqueue.put((local_addr,remote_addr,data))
-            return
+            return True
 
         log_warn("No socket queue found for local proto/address: {}".format(xtup))
+        return False
 
     @staticmethod
     def _register_socket(s):

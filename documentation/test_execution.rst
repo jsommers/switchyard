@@ -308,7 +308,6 @@ When running Switchyard, especially in test mode, it is often very helpful to us
 
 .. literalinclude:: code/enterdebugger.py
    :language: python
-   :linenos:
 
 If we run the above program, we will stop at the line *after* the call to ``debugger``:
 

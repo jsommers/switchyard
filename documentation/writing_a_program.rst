@@ -50,7 +50,7 @@ Returning briefly to the ``recv_packet`` method, observe that in the above examp
 .. literalinclude:: code/inout2.py
    :language: python
 
-Importantly, note that in the above examples we are not handling any potential exceptions that could occur.  In particular, we really should be handling *at least* the situation in which the framework is shut down (and we receive a ``Shutdown`` exception).  Just for completeness, we should also handle the ``NoPackets`` exception, although if the code is designed to block indefinitely we shouldn't receive that particular exception.
+Importantly, note that in the above examples we are not handling any potential exceptions that could occur.  In particular, we really should be handling *at least* the situation in which the framework is shut down (and we receive a ``Shutdown`` exception).  Just for completeness, we should also handle the ``NoPackets`` exception, although if the code is designed to block indefinitely we shouldn't normally receive that particular exception.
 
 Let's rewrite the code above, and now put everything in a ``while`` loop so that we keep reading and sending packets as long as we're running.  We will eventually turn this code into a working network *hub* implementation [#f1]_, but it's currently broken because it still just sends a packet out the *same port* on which it arrived:
 
@@ -92,7 +92,7 @@ All the above properties except ``ifnum`` and ``iftype`` are modifiable.  Changi
 
 For full interface details, see :ref:`intf-detail`.
 
-As an example, to simply print out information regarding each interface defined on the current network device, you could use the following program:
+As an example, to simply print out information regarding each interface defined on the current network device you could use the following program:
 
 .. code-block:: python
 
@@ -138,6 +138,7 @@ Let's now add a bit to the previous example program to turn it into an almost-co
 
 .. literalinclude:: code/fullhub.py
    :language: python
+   :linenos:
    :caption: A (nearly) full implementation of a hub.
 
 There's still one thing missing from the above code, which is for the hub to ignore any frames that are destined to the hub itself.  That is, if an Ethernet destination address in a received frame is the same as an Ethernet address assigned to one of the ports on the hub, the frame should *not* be forwarded (it can simply be ignored).  Finishing off the hub by doing this is left as an exercise.
@@ -152,7 +153,7 @@ Switchyard's packet construction/parsing library is found in ``switchyard.lib.pa
 
 There are a few key ideas to understand when using the packet library:
 
- * The ``Packet`` class acts as a container of headers (rather, header objects).
+ * The ``Packet`` class acts as a container of headers (or rather, of header objects).
  * Headers within a packet can be accessed through methods on the Packet container object, and also by indexing.  Headers are ordered starting with lowest layer protocols.  For example, if a ``Packet`` has an ``Ethernet`` header (which is likely to be the lowest layer protocol), this header can be accessed with index 0 as in ``pktobj[0]``.  Indexes can be integers, and they can also be packet header class names (e.g., ``Ethernet``, ``IPv4``, etc.).  For example, to access the ``Ethernet`` header of a packet, you can write ``pktobj[Ethernet]``.
  * Fields in header objects are accessed through standard Python *properties*.  The code to manipulate header fields thus looks like it is just accessing instance variables, but "getter" and "setter" method calls actually take place, depending on whether a property is being retrieved or assigned to.
  * A packet object can be constructed by either expliciting instantiating an object and adding headers, or it can be formed by "adding" (using the ``+`` operator) headers together, or by appending headers onto a packet (using ``+`` or ``+=``).
@@ -217,7 +218,7 @@ EthAddr('00:00:00:00:00:00')
 Ethernet 00:00:00:00:00:00->00:00:00:00:00:00 ARP | IPv4 0.0.0.0->0.0.0.0 ICMP | ICMP EchoRequest 0 0 (0 data bytes)
 >> p[0].ethertype = EtherType.IPv4 # set it back to sensible value
 
-Note that all header field elements are accessed through *properties*.  For Ethernet headers, there are three properties that can be inspected and modified, ``src``, ``dst`` and ``ethertype``, as shown above.  Notice also that Switchyard doesn't prevent a user from setting header fields to illogical values, e.g., when we set the ethertype to ARP.  All ``EtherType`` values are specified in ``switchyard.lib.packet.common``, and imported when the module ``switchyard.lib.packet`` is imported.
+Note that all header field elements are accessed through *properties*.  For Ethernet headers, there are three properties that can be inspected and modified, ``src``, ``dst`` and ``ethertype``, as shown above.  Notice also that Switchyard doesn't prevent a user from setting header fields to illogical values, e.g., when we set the ethertype to ARP although the next header is IPv4, not ARP.  All ``EtherType`` values are specified in ``switchyard.lib.packet.common``, and imported when the module ``switchyard.lib.packet`` is imported.
 
 Accessing header fields in other headers works similarly.  Here are examples involving the IPv4 header:
 
@@ -239,7 +240,7 @@ IPv4Address('0.0.0.0')
 
 IPv4 protocol values are specified in ``switchyard.lib.packet.common``, just as with ``EtherType`` values.  Note, however, that you do not need to explicitly import this module if you import ``switchyard.lib.userlib`` --- packet-related classes and enumerations are imported when importing ``userlib``. The full set of properties that can be manipulated in the IPv4 header as well as all other headers is described in the :ref:`reference documentation for the packet library <pktlib>`.
 
-Lastly, an example with the ICMP header shows some perhaps familiar patterns.  The main difference with ICMP is that the "data" portion of an ICMP packet changes, depending on the ICMP type.  For example, if the type is 8 (ICMP echo request) the ICMP data becomes an object that allows the identifier and sequence values to be inspected and modified.
+Lastly, an example with the ICMP header shows some perhaps now familiar patterns.  The main difference with ICMP is that the "data" portion of an ICMP packet changes, depending on the ICMP type.  For example, if the type is 8 (ICMP echo request) the ICMP data becomes an object that allows the identifier and sequence values to be inspected and modified.
 
 >>> p.has_header(ICMP)
 True
@@ -270,12 +271,7 @@ By default, no "payload" data are included in with an ICMP header, but we can ch
 >>> print (p)
 Ethernet 00:00:00:00:00:00->00:11:22:33:44:55 IP | IPv4 0.0.0.0->149.43.80.13 ICMP | ICMP EchoRequest 42 13 (12 data bytes)
 
-To serialize the packet into a wire format sequence of bytes, we can use the ``to_bytes()`` method:
-
->>> p.to_bytes()
-b'\x00\x11"3DU\x00\x00\x00\x00\x00\x00\x08\x00E\x00\x00(\x00\x00\x00\x00\x00\x01\xba\xd6\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\xb7|\x00*\x00\rhello, world'
-
-Lastly, Python keyword argument syntax can be used to assign values to header fields when a header object is constructed.  This kind of syntax can make packet construction a bit more compact and streamlined.  For example, if we wanted to make a UDP packet with some payload, we could do something like the following:
+Python keyword argument syntax can be used to assign values to header fields when a header object is constructed.  This kind of syntax can make packet construction a bit more compact and streamlined.  For example, if we wanted to make a UDP packet with some payload, we could do something like the following:
 
 >>> e = Ethernet(src="11:22:33:44:55:66", dst="66:55:44:33:22:11", ethertype=EtherType.IP)
 >>> ip = IPv4(src="1.2.3.4", dst="4.3.2.1", protocol=IPProtocol.UDP, ttl=32)
@@ -284,6 +280,15 @@ Lastly, Python keyword argument syntax can be used to assign values to header fi
 >>> print(p)
 Ethernet 11:22:33:44:55:66->66:55:44:33:22:11 IP | IPv4 1.2.3.4->4.3.2.1 UDP | UDP 1234->4321 | RawPacketContents (33 bytes) b'this is so'...
 >>> 
+
+Finally, to serialize the packet into a wire format sequence of bytes, we can use the ``to_bytes()`` method:
+
+>>> p.to_bytes()
+b'\x00\x11"3DU\x00\x00\x00\x00\x00\x00\x08\x00E\x00\x00(\x00\x00\x00\x00\x00\x01\xba\xd6\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\xb7|\x00*\x00\rhello, world'
+
+Switchyard normally handles *deserialization* automatically, but there is a ``from_bytes(raw)`` method available that accepts a raw bytes object and reconstructs packet header attributes.  It either succeeds or throws an exception.  It returns any bytes that were not necessary for reconstructing the header.
+
+As mentioned above, Switchyard does not require packets to be correctly constructed (e.g., there may be a TCP header in a packet without any IP header).  As a result, while serialization will often succeed even if the packet is malformed, whereas deserialization often will not.  The reason is that in deserialization, the contents of bytes earlier in a packet are necessary for determining how to reconstruct later headers and attributes in a packet (e.g., the ``ethertype`` attribute in the Ethernet header is necessary for determining which header comes next).
 
 Other header classes that are available in Switchyard include ``Arp``, ``UDP``, ``TCP``, ``IPv6``, and ``ICMPv6``.  Again, see the :ref:`packet library reference documentation <pktlib>` for details on these header classes, and full documentation for all classes.
 
@@ -300,7 +305,7 @@ There are a few additional utility functions that are useful when developing a S
 Logging functions
 -----------------
 
-Switchyard uses the standard Python logging facilities, but provides four convenience functions.  Each of these functions takes a string as a parameter and prints it to the console as a logging message.  The only difference with the functions relates to the logging *level* (see :py:mod:`logging` in the Python library reference), and whether the output is colored to visually highlight a problem.  The default logging level is INFO  within Switchyard.  If you wish to include debugging messages, you can use the ``-d`` flag for the various invocation programs (e.g., ``swyard``), as described in :ref:`runtest` and :ref:`runlive`.
+Switchyard uses Python's standard logging facilities and provides four convenience functions.  Each of these functions takes a string as a parameter and prints it to the console as a logging message.  The only difference with the functions relates to the logging *level* (see :py:mod:`logging` in the Python library reference), and whether the output is colored to visually highlight a problem.  The default logging level is INFO  within Switchyard.  If you wish to include debugging messages, you can use the ``-d`` flag for the various invocation programs (e.g., ``swyard``), as described in :ref:`runtest` and :ref:`runlive`.
 
 
 .. py:function:: log_debug(str)

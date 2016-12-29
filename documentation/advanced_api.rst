@@ -20,7 +20,7 @@ Before discussing how to create a new packet header class that integrates well w
 If you want to work with Switchyard's packet header and packet classes, there are two main steps to take:
 
   * First, create a new class that derives from ``PacketHeaderBase``.  There are two required methods (``to_bytes()`` and ``from_bytes()``) that you'll need to write, and some other things to be aware of when writing this class.
-  * Second, some configuration to the packet header class that appears *before* your header in a normal packet needs to be done.  This is just a matter of a couple method class to do the configuration.
+  * Second, some configuration to the packet header class that appears *before* your header in a normal packet needs to be done.  This is just a matter of a couple method calls to do the configuration.
 
 These steps are described below along with short examples and a longer (full) example follows.
 
@@ -86,7 +86,7 @@ Switchyard assumes that there exists one attribute in a packet header that can b
 Switchyard contains methods to make it possible to change the *attribute* on which lookups are performed, to *add* new mappings from a value on the mapped attribute to a packet header class, and to *completely (re)initialize* the mappings from attribute values to packet header classes.  Noting that one should, of course, use care when modifying any existing mappings or when modifying the attribute on which mappings are performed, here are the three *class* methods available on ``PacketHeaderBase``-derived classes:
 
 ``set_next_header_class_key(attr)``
-  This method is used to specify the *attribute* on which lookups to determine the next header class should be performed.  Switchyard-provided header classes contain sensible defaults for this value.  For example, with ``Ethernet`` this attribute is preconfigured as ``ethertype``, and for ``IPv4`` this attribute is configured as ``protocol``.  There is no default configuration set for ``UDP`` or ``TCP``, but the natural choice would be ``dst`` (i.e., to use the destination port as the key).  Most other headers are configured with the empty string, indicating that no "next header" is assumed by Switchyard.
+  This method is used to specify the *attribute* on which lookups to determine the next header class should be performed.  Switchyard-provided header classes contain sensible defaults for this value.  For example, with ``Ethernet`` and ``Vlan`` this attribute is preconfigured as ``ethertype``, for ``IPv4`` this attribute is configured as ``protocol``, and for ``IPv6`` it is ``nextheader``.  There is no default configuration set for ``UDP`` or ``TCP``, but the natural choice would be ``dst`` (i.e., to use the destination port as the key).  Most other headers are configured with the empty string, indicating that no "next header" is assumed by Switchyard.  In that case, Switchyard will construct a ``RawPacketHeader`` object containing the remaining bytes.
 
 ``add_next_header_class(attr, hdrcls)``
   This method is used to add a new attribute value-header class mapping to the next header mapping dictionary.  
@@ -99,7 +99,7 @@ Switchyard contains methods to make it possible to change the *attribute* on whi
    A key limitation of Switchyard, currently, is that arbitrary values for core protocol number enumerations (in particular, ``EtherType`` and ``IPProtocol``) cannot be dynamically added and/or modified because Python's ``enum`` types are constant once created.  This makes it impossible, at present, to use *arbitrary* protocol numbers for new layer 3 or 4 protocols and packet header types.  This will be changed in a future version of Switchyard.  In the meantime, a workaround is to use an existing protocol number which is not used in the next header map.  For example, if you are implementing a routing protocol on top of IPv4, you could use ``IPProtocol.OSPF`` as the protocol number for your (non-OSPF) protocol since Switchyard does not have any current mapping between that protocol number and a packet header class.  
 
 
-Building on the previous example with ``UDPPing``, if we add *two* lines of code to specify that the destination port should be used as a key to look up the correct next header in a packet, and to *register* a particular UDP destination port as being associated with the ``UDPPing`` protocol, the final couple bytes can get properly interpreted and deserialized into the right packet header (notice the first line of code, which is the *only* difference with the previous example):
+Building on the previous example with ``UDPPing``, if we add *two* lines of code to specify that the destination port should be used as a key to look up the correct next header in a packet, and to *register* a particular UDP destination port as being associated with the ``UDPPing`` protocol, the final couple bytes can get properly interpreted and deserialized into the right packet header (notice the first two lines of code, which are the *only* differences with the previous example):
 
 .. literalinclude:: code/udpappheader.py
    :language: python
@@ -153,9 +153,9 @@ API calls for delivering/receiving messages to/from applications
 To deliver messages to or receive messages from a socket application, a Switchyard user must use two static methods on the ``ApplicationLayer`` class.  These methods are similar in many ways to the two methods on the *net* object used to send and receive packets.  The application-related methods are:
 
 ``ApplicationLayer.send_to_app(proto, local_addr, remote_addr, data)``
-  This method is used to pass a message received on the network up to an application.  The ``proto`` parameter is the IP protocol number of the packet from which the data was received.  ``local_addr`` and ``remote_addr`` are 2-tuples consisting of an IP address and port.   This method returns None.
+  This method is used to pass a message received on the network up to an application.  The ``proto`` parameter is the IP protocol number of the packet from which the data was received.  ``local_addr`` and ``remote_addr`` are 2-tuples consisting of an IP address and port.   This method returns a boolean value: if there is a socket associated with the address information given, True is returned.  Otherwise, False is returned.
 
-  Note that if there is no socket associated with the address information given, a log warning is emitted but the method does not raise an exception or return an error.
+  Note that if there is no socket associated with the address information given, a log warning is also emitted.
 
 
 ``ApplicationLayer.recv_from_app(timeout=None)``
@@ -207,7 +207,7 @@ There are some key limitations and other issues to be aware of with Switchyard's
   * The most important limitation is that **only UDP sockets are supported**.  Attempting to create any other type of socket will result in failure.  Other socket types and support for using arbitrary protocol numbers may be supported in the future.  As a result, there are a few socket object method calls that are not supported, such as ``listen`` and ``accept``.  
   * The ``create_connection`` and ``socketpair`` calls are not available.
   * The ``getsockopt`` and ``setsockopt`` calls are not currently supported, but may be in a future version.
-  * The various DNS-related calls in the socket module (e.g., ``gethostbyname``, etc.) are available and simply handed off to the built-in ``socket`` module for handling.  Switchyard does not implement any DNS capability directly.  Same for the byte-ordering calls (e.g., ``ntohs``, ``ntohl``, etc.)
+  * The various DNS-related calls in the socket module (e.g., ``gethostbyname``, etc.) are available and simply handed off to the built-in ``socket`` module.  Switchyard does not implement any DNS capability directly.  Same for the byte-ordering calls (e.g., ``ntohs``, ``ntohl``, etc.)
   * Switchyard attempts to be careful about choosing a local (ephemeral) port number for use, but its approach isn't fool-proof.  There may be problems that arise due to a host OS using a local port that was already being used by Switchyard, but these situations should be rare in occurrence.
 
 .. note::
@@ -220,7 +220,7 @@ Starting socket applications with ``swyard``
 
 There is one additional command-line option for ``swyard`` when using a socket emulation application.  The ``-a`` is used to specify the name of a file that contains the application-layer socket program.  
 
-The ``a`` option can be used in conjunction with a Switchyard test scenario.  If you want to test that a socket application emits a packet, then receives a packet from some "remote" host, you could create an expectation that a packet is emitted and an expectation that some other packet is received.  You may need to use the ``copyfromlastout`` argument when creating the ``PacketInputEvent``, since the test scenario may not actually know what local port is being used by an application (among other things).  
+The ``-a`` option can be used in conjunction with a Switchyard test scenario.  If you want to test that a socket application emits a packet, then receives a packet from some "remote" host, you could create an expectation that a packet is emitted and an expectation that some other packet is received.  You may need to use the ``copyfromlastout`` argument when creating the ``PacketInputEvent``, since the test scenario may not actually know what local port is being used by an application (among other things).  
 
 For example, to run a particular test scenario as well as an application program, the command line might look like the following:
 
@@ -230,11 +230,11 @@ For example, to run a particular test scenario as well as an application program
 
 Note that the Python files used in the command line above are available in the ``examples`` folder of the Switchyard github repo.
 
-To run in *live* mode, simply remove the ``t`` option.  Note that there is a server program in the ``examples`` folder that can be run with this code in live mode: you can see that the Switchyard-based UDP stack and associated client-side program can interact correctly with a "regular" Python UDP-based server program.
+To run in *live* mode, simply remove the ``-t`` option.  Note that there is a server program in the ``examples`` folder that can be run with this code in live mode: you can see that the Switchyard-based UDP stack and associated client-side program can interact correctly with a "regular" Python UDP-based server program.
 
 One final limitation to be aware of: only one socket application can be started by Switchyard at a time.  This limitation may change in a future version.
 
-Finally, note that Switchyard currently does not have any capabilities for testing the behavior of an application-layer socket program.  The application code could also contain calls to ``assert`` to verify that certain things happen as expected within the application, but there are no specific Switchyard features to help with this.
+Finally, note that Switchyard currently does not have any capabilities for testing the behavior of an application-layer socket program.  The application code could use calls to ``assert()`` to verify that certain things happen as expected within the application, but there are no specific Switchyard features to help with this.
 
 .. note::
 

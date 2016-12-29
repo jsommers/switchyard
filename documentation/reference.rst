@@ -66,6 +66,8 @@ Switchyard uses the built-in ``ipaddress`` module to the extent possible.  Refer
    :members:
    :undoc-members:
 
+There are two enumeration classes that hold special values for the IPv4 and IPv6 address families.  Note that since these classes derive from ``enum``, you must use ``name`` to access the name attribute and ``value`` to access the value (address) attribute.
+
 .. autoclass:: switchyard.lib.address.SpecialIPv4Addr
 
    .. attribute:: IP_ANY = ip_address("0.0.0.0")

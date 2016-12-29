@@ -10,7 +10,7 @@ Major revision; expansion of types of exercises supported (notably application-l
 
 Some key API changes to be aware of:
 
- * the Scenario class is renamed TestScenario.
+ * the Scenario class is renamed TestScenario.  The PacketOutputEvent previously allowed Openflow 1.0-like wildcard strings to specify wildcards for matching packets; these strings are no longer supported.  To specify wildcards, a tuple of (classname,attribute) must be used; refer to :ref:`test-scenario-creation`, above.
  * ``recv_packet`` *always* returns a timestamp now; it returns a 3-tuple (named tuple) of timestamp, input_port and packet.
  * The only import required by user code is switchyard.lib.userlib, although individual imports are still fine (just more verbose).
  * Instead of invoking ``srpy.py``, a ``swyard`` program is installed during the new install process.  ``swyard`` has a few command-line changes compared with ``srpy.py``.  In particular, the ``-s`` option has gone away; to run Switchyard with a test, just use the ``-t`` option with the scenario file as the argument.
