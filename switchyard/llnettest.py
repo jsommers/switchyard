@@ -16,7 +16,7 @@ import copy
 import textwrap
 from collections import namedtuple
 
-from .llnetbase import LLNetBase, ReceivedPacket
+from .llnetbase import LLNetBase, ReceivedPacket, _start_usercode
 from .lib.packet import *
 from .lib.address import *
 from .importcode import import_or_die
@@ -160,7 +160,7 @@ def run_tests(scenario_names, usercode_entry_point, options):
         expected = None
         failure = None
         try:
-            usercode_entry_point(net)
+            _start_usercode(usercode_entry_point, net, options.codearg)
         except Shutdown:
             pass
         except TestScenarioFailure:

@@ -10,7 +10,9 @@ from io import StringIO
 from contextlib import ContextDecorator
 import re
 
+from switchyard.syinit import _parse_codeargs
 from switchyard.llnettest import run_tests, main_test
+from switchyard.llnetbase import _start_usercode
 from switchyard.lib.logging import setup_logging
 from switchyard.lib.testing import *
 from switchyard.lib.packet import *
@@ -377,6 +379,7 @@ s.close()
         o.exclude = kwargs.get('exclude', [])
         o.intf = kwargs.get('intf', [])
         o.topology = kwargs.get('topology', None)
+        o.codearg = _parse_codeargs(kwargs.get('codearg', ''))
         return o
 
     @classmethod
@@ -417,6 +420,42 @@ s.close()
         o = self._makeOptions(debug=False, tests=['ucode1'], usercode='ucode1')
         with self.assertRaises(ImportError):
             main_test(o)
+
+    def testParseCodeArgs(self):
+        x = _parse_codeargs(None)
+        self.assertEqual({'args':[], 'kwargs':{}}, x)
+        x = _parse_codeargs('abc')
+        self.assertEqual({'args':['abc'], 'kwargs':{}}, x)
+        x = _parse_codeargs('abc=5')
+        self.assertEqual({'args':[], 'kwargs':{'abc':'5'}}, x)
+        def testfn1(net):
+            print()
+        def testfn2(net, *args):
+            print(args)
+        def testfn3(net, *args, **kwargs):
+            print(args, kwargs)
+        with redirectio() as xio:
+            with self.assertLogs(level='WARNING') as cm:
+                _start_usercode(testfn1, None, _parse_codeargs('abc'))
+        with redirectio() as xio:
+            with self.assertLogs(level='WARNING') as cm:
+                _start_usercode(testfn1, None, _parse_codeargs('abc efg=13'))
+        with redirectio() as xio:
+            with self.assertLogs(level='WARNING') as cm:
+                _start_usercode(testfn1, None, _parse_codeargs('efg=13'))
+        with redirectio() as xio:
+            with self.assertLogs(level='WARNING') as cm:
+                _start_usercode(testfn2, None, _parse_codeargs('efg=13'))
+        with redirectio() as xio:
+            _start_usercode(testfn2, None, _parse_codeargs('efg'))
+        self.assertIn('efg', xio.contents)
+        with redirectio() as xio:
+            _start_usercode(testfn3, None, _parse_codeargs('efg'))
+        self.assertIn('efg', xio.contents)
+        with redirectio() as xio:
+            _start_usercode(testfn3, None, _parse_codeargs('efg abc=42'))
+        self.assertIn('efg', xio.contents)
+        self.assertIn("'abc': '42'", xio.contents)
 
     def testEmptyUserProgram(self):
         o = self._makeOptions(tests=['stest'], usercode='ucode1')
@@ -523,17 +562,16 @@ s.close()
         self.assertIn('0 passed, 1 failed, 3 pending', xio.contents)
         self.assertIn('send_packet was called instead of recv_packet', xio.contents)
 
-    @unittest.skip
-    def testRefToPrevInTest(self):
-        prevplat = sys.platform
-        setattr(sys, "platform", "test")
-        o = self._makeOptions(tests=['stest2'], usercode='ucode12')
-        with redirectio() as xio:
-            with self.assertLogs(level='DEBUG') as cm:
-                main_test(o)
-        self.assertIn("Ports match", xio.contents)
-        self.assertIn("Test pass", cm.output[-1])
-        setattr(sys, "platform", prevplat)
+    # def testRefToPrevInTest(self):
+    #     prevplat = sys.platform
+    #     setattr(sys, "platform", "test")
+    #     o = self._makeOptions(tests=['stest2'], usercode='ucode12')
+    #     with redirectio() as xio:
+    #         with self.assertLogs(level='DEBUG') as cm:
+    #             main_test(o)
+    #     self.assertIn("Ports match", xio.contents)
+    #     self.assertIn("Test pass", cm.output[-1])
+    #     setattr(sys, "platform", prevplat)
 
     def testSockemu(self):
         from switchyard.syinit import start_framework
@@ -622,4 +660,4 @@ s.close()
 
 if __name__ == '__main__':
     setup_logging(False)
-    unittest.main() 
+    unittest.main()

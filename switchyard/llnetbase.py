@@ -2,12 +2,44 @@ from abc import ABCMeta,abstractmethod
 from collections import namedtuple
 
 from .pcapffi import pcap_devices
-from .lib.logging import log_debug
+from .lib.logging import log_debug, log_warn
 from .lib.exceptions import *
 from .lib.address import *
 
 ReceivedPacket = namedtuple('ReceivedPacket', 
     ['timestamp', 'input_port', 'packet'])
+
+def _start_usercode(entryfunction, netobj, codeargdict):
+    '''
+    figure out how to correctly start the user code.  warn if
+    args are passed on the command line, but the code doesn't 
+    accept them.
+    '''
+    # p22, python3 lang ref
+    takenet = entryfunction.__code__.co_argcount >= 1
+    takeargs = entryfunction.__code__.co_flags & 0x04 == 0x04
+    takekw = entryfunction.__code__.co_flags & 0x08 == 0x08
+
+    args = codeargdict['args']
+    kwargs = codeargdict['kwargs']
+
+    if args and not takeargs:
+        log_warn("User code arguments passed on command line, "
+            "but the user code doesn't take arguments")
+    if kwargs and not takekw:
+        log_warn("User code keyword args passed on command line, "
+            "but the user code doesn't take kwargs")
+
+    if not takenet:
+        raise RuntimeError("Your code does not appear to accept at "
+            "least one parameter for the net object")
+    if takeargs:
+        if takekw:
+            entryfunction(netobj, *args, **kwargs)
+        else:
+            entryfunction(netobj, *args)
+    else:
+        entryfunction(netobj)
 
 class LLNetBase(metaclass=ABCMeta):
     '''

@@ -19,7 +19,7 @@ from .importcode import import_or_die
 from .textcolor import *
 
 from .pcapffi import *
-from .llnetbase import LLNetBase, ReceivedPacket
+from .llnetbase import LLNetBase, ReceivedPacket, _start_usercode
 
 _dlt_to_decoder = {}
 _dlt_to_decoder[Dlt.DLT_EN10MB] = lambda raw: Packet(raw, first_header=Ethernet)
@@ -301,14 +301,14 @@ def main_real(usercode, netobj, options):
     Entrypoint function for non-test ("real") mode.  At this point
     we assume that we are running as root and have pcap module.
     '''
-    usercode_entry_point = import_or_die(usercode, ('main','srpy_main','switchy_main'))
+    usercode_entry_point = import_or_die(usercode, ('main', 'switchy_main'))
     if options.dryrun:
         log_info("Imported your code successfully.  Exiting dry run.")
         netobj.shutdown()
         return
 
     try:
-        usercode_entry_point(netobj)
+        _start_usercode(usercode, netobj, options.codearg)
     except Exception as e:
         import traceback
 

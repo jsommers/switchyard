@@ -29,12 +29,16 @@ def main():
              dest="exclude", action='append')
     parser.add_argument('usercode', metavar="YOURCODE", type=str, nargs='?', 
         help='User switch/router code to execute.')
+    parser.add_argument("-g", "--codearg", metavar="YOURCODE_ARGS", 
+        type=str, default='', 
+        help='Arguments to pass to your code (if multiple args, they need to be '
+             ' quoted in the shell)')
     parser.add_argument("-c", "--compile", 
         help="Compile test scenario to binary format for distribution.", 
-        dest="compile", action="append")
+        dest="compile", action="append", metavar="TEST_SCENARIO")
     parser.add_argument("-t", "--test", 
         help="Run {} in testing mode, using the given test "
-             "scenario file.".format(progname), 
+             "scenario file.".format(progname), metavar="TESTSCENARIO", 
         dest="tests", action="append")
     parser.add_argument("--dryrun", 
         help="Get everything ready to go, but don't actually do anything.", 
@@ -52,7 +56,7 @@ def main():
         dest="fwconfig", action="append")
     parser.add_argument("-a", "--app", 
         help="Specify application layer (socket-based) program to start", 
-        dest="app", default=None)
+        dest="app", default=None, metavar="SOCKET_APP")
     parser.add_argument("-e", "--nohandle", 
         help="Don't trap exceptions.  Use of this option is helpful if you want"
              " to use Switchyard with a different symbolic debugger than pdb", 

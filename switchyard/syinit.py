@@ -19,6 +19,23 @@ from switchyard.outputfmt import VerboseOutput
 _setup_ok = False
 _netobj = None
 
+def _parse_codeargs(argstr):
+    '''
+    Parse and clean up argument to user code; separate *args from
+    **kwargs.
+    '''
+    args = []
+    kwargs = {}
+    if isinstance(argstr, str):
+        for a in argstr.split():
+            if '=' in a:
+                k,attr = a.split('=')
+                kwargs[k] = attr
+            else:
+                args.append(a)
+    rd = {'args':args, 'kwargs':kwargs}
+    return rd
+
 def start_framework(args):
     global _netobj, _setup_ok
     setup_logging(args.debug)
@@ -27,6 +44,8 @@ def start_framework(args):
     testmode = False
     if args.compile or args.tests:
         testmode = True
+
+    args.codearg = _parse_codeargs(args.codearg)
 
     if args.verbose:
         VerboseOutput.enable()
