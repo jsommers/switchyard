@@ -5,11 +5,11 @@ Writing a Switchyard program
 
 .. index:: switchy_main, main
 
-A Switchyard program is simply a Python program that includes a particular entrypoint function which accepts a single parameter.  The startup function can simply be named ``main``, but can also be named ``switchy_main`` if you like.  The function must accept a single parameter, which is a reference to the Switchyard *network object* (described below).  Method calls on the network object are used to send and receive packets to and from network ports.
+A Switchyard program is simply a Python program that includes a particular entrypoint function which accepts a single parameter.  The startup function can simply be named ``main``, but can also be named ``switchy_main`` if you like.  The function must accept at least one parameter, which is a reference to the Switchyard *network object* (described below).  Method calls on the network object are used to send and receive packets to and from network ports.
 
-.. index:: swyard
+.. index:: swyard, Switchyard program arguments
 
-A Switchyard program isn't executed *directly* with the Python interpreter.  Instead, the program ``swyard`` is used to start up the Switchyard framework and to load your code.  When Switchyard starts your code it looks for a function named ``main`` and invokes it, passing in the network object as the only parameter.  Details on how to start Switchyard (and thus your program) are given in the chapters on :ref:`running a Switchyard in the test environment <runtest>` and :ref:`running Switchyard in a live environment <runlive>`.
+A Switchyard program isn't executed *directly* with the Python interpreter.  Instead, the program ``swyard`` is used to start up the Switchyard framework and to load your code.  When Switchyard starts your code it looks for a function named ``main`` and invokes it, passing in the network object as the first parameter.  Details on how to start Switchyard (and thus your program) are given in the chapters on :ref:`running a Switchyard in the test environment <runtest>` and :ref:`running Switchyard in a live environment <runlive>`.  Note that it is possible to pass arguments into a Switchyard program; see :ref:`swyardargs` for details.
 
 A Switchyard program will typically also import other Switchyard modules such as modules for parsing and constructing packets, dealing with network addresses, and other functions.  These modules are introduced below and described in detail in the :ref:`API reference chapter <apiref>`.
 
@@ -352,6 +352,32 @@ For example, if we add a call to ``debugger()`` in the example code above just *
      32     
 
 As you can see, the program is paused on the next executable line following the call to ``debugger()``.  At this point, any valid ``pdb`` commands can be given to inspect or alter program state.  Once again, see later sections for details on running Switchyard code :ref:`in a live environment <runlive>` and on other :ref:`debugging capabilities <debugging>`.
+
+.. index:: Switchyard program arguments, swyard_main, main
+
+.. _swyardargs:
+
+Passing arguments into a Switchyard program
+===========================================
+
+It is possible to pass in additional arguments to a Switchyard program via its ``main`` function.  To accept additional arguments into your ``main`` function, you should *at least* add a ``*args`` parameter.  You can optionally also accept keyword-style arguments by including a ``**kwargs`` parameter.  For example, here is the initial part of a ``main`` function which accepts both:
+
+.. code-block:: python
+
+    def main(netobj, *args, **kwargs):
+        # args is a list of arguments 
+        # kwargs is a dictionary of key-value keyword arguments
+
+As noted in the code comment, the parameter ``*args`` will collect any *non-keyword* arguments into a list and the parameter ``**kwargs`` will collect any keyword-style arguments into a dictionary.  Note that *all* argument values are passed in as strings, so your program may need to do some type conversion.
+
+To pass arguments into your ``main`` function from invoking ``swyard`` on the command line, use the ``-g`` option.  This option accepts a string, which should include all arguments to be passed to your ``main`` function, each separated by spaces.  For keyword-style arguments, you can use the syntax ``param=value``.  Any space-separated strings that do not include the ``=`` character as passed into the arglist (``args``).  For example, to pass in the value ``13`` and the keyword parameter ``debug=True``, you could use the following command-line:
+
+.. code-block:: none
+
+   $ swyard -g "13 debug=True" ... (other arguments to swyard)
+
+When invoking your ``main`` function, ``args`` would have a single value (the string ``'13'``) and ``kwargs`` would be the dictionary ``{'debug': 'True'}`` (notice that ``True`` would be a string since all arguments end up being passed in as strings).
+
 
 .. rubric:: Footnotes
 

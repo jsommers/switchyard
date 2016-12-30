@@ -3,6 +3,12 @@ Release notes
 
 The headings below refer either to branches on Switchyard's github repo (v1 and v2) or tags (2017.01.1).
 
+2017.01.2
+---------
+
+Add the capability to pass arguments to a Switchyard program via ``-g`` option to ``swyard``.
+Switchyard parses and assembles ``*args`` and ``**kwargs`` to pass into the user code, being careful to only pass them if the code can accept them.
+
 2017.01.1
 ---------
 

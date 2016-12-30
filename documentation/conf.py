@@ -57,7 +57,7 @@ copyright = '2013-2017, Joel Sommers'
 #
 # The short X.Y version.
 
-thisversion = '2017.01.1'
+thisversion = '2017.01.2'
 
 version = thisversion
 # The full version, including alpha/beta/rc tags.
