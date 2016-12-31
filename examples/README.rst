@@ -51,7 +51,7 @@ To run this example in test mode, you can use the following command line:
 
 To run this example in real mode, you might want to start the server first, but you don't actually need to::
 
-    ``python3 server_udpstackex.py``
+    $ python3 server_udpstackex.py
 
 The Switchyard component(s) then can be executed as:``swyard -i lo0 -a clientapp_udpstackex.py udpstack.py``.  Note that if the server isn't started, you should see an ICMP destination unreachable (port unreachable) error message returned to the stack.  
 
