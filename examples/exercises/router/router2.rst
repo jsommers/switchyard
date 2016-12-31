@@ -1,7 +1,7 @@
 ﻿Overview
 --------
 
-This project is the second in a set of projects that have the ultimate goal of creating the "brains" for an IPv4 router.   The basic functions of an Internet router are to:
+This is the second in a set of exercises that have the ultimate goal of creating the "brains" for an IPv4 router.   The basic functions of an Internet router are to:
 
 1. Respond to ARP (address resolution protocol) requests for addresses that are assigned to interfaces on the router.  (Remember that the purpose of ARP is to obtain the Ethernet MAC address associated with an IP address so that an Ethernet frame can be sent to another host over the link layer.)
 
@@ -13,12 +13,12 @@ This project is the second in a set of projects that have the ultimate goal of c
 
 5. Generate ICMP error messages when necessary, such as when an IP packet's TTL (time to live) value has been decremented to zero.
 
-The goal of the second router project is to accomplish items 2 and 3 above.
+The goal of this stage is accomplish items 2 and 3 above.
 
 Task 1: IP Forwarding Table Lookup
 ----------------------------------
 
-One of the key tasks to accomplish for this project is to do the fundamental thing that routers do: receive packets, match their destination addresses against a forwarding table, and forward them out the correct interface.
+One of the key tasks to accomplish for this project is to perform the fundamental thing that routers do: receive packets, match their destination addresses against a forwarding table, and forward them out the correct interface.
 
 You will need to implement some kind of forwarding table, with each entry containing the following:
 
@@ -104,7 +104,24 @@ You will need to carefully structure your code to be able to receive and process
 
 For keeping track of how long it has been since an ARP request has been sent, you can use the built-in ``time`` module.  It has a ``time`` function that returns the current time in seconds (as a floating point value) (e.g., ``time.time()`` # -> current time in seconds as a float).  
 
-Lastly, refer to the Switchyard documentation details and examples for parsing and constructing packets containing Ethernet, ARP, and IP packet headers: http://cs.colgate.edu/~jsommers/switchyard.
+Lastly, refer to the Switchyard documentation details and examples for parsing and constructing packets containing Ethernet, ARP, and IP packet headers.
+
+Some questions and answers
+--------------------------
+
+Q: What should the router do in the following scenario:  say a packet for a certain IP address arrives at the router and it sends an ARP request to obtain the corresponding MAC address. Before receiving the ARP reply, the router receives another packet (non-ARP) for the same IP address, should it send an ARP request again?
+
+  A: No, in this case you should not retransmit the ARP request for the second packet. More generally, your router might receive many packets for a certain IP address while there is an outstanding ARP request for that IP address. In this case, your router should not send out any new ARP requests or update the timestamp of the initial ARP request. However, your router should buffer the new data packets so that it can transmit them to the destination host once it receives the ARP reply. IMPORTANT: If your router buffers multiple packets for a destination host that has an outstanding ARP request, upon receiving the corresponding ARP reply these packets has to be forwarded to the destination host in the order they arrived to the router!
+
+
+Q: When an ARP request arrives at the router for a destination IP address that is not assigned to one of the router's interfaces, does the router need to flood the ARP request, or should it just drop the request?
+
+    A: Your router should drop the packet in this case.
+
+
+Q: When the router needs to make an ARP request for the next hop IP address (which is obtained after the longest prefix match lookup), should it flood the request on all ports?
+
+    A: The router does *not* flood the ARP request on all ports. The ARP query is merely sent to the broadcast Ethernet address on the port obtained from doing a longest prefix match lookup. The response ARP query *should* come back on the same port but it doesn't actually need to (and it doesn't matter for the purposes of forwarding the packet or sending out the ARP request).
 
 Switchyard testing
 ------------------
@@ -120,7 +137,7 @@ Note that the above test scenario file is *not* included in this repository but 
 Mininet ("live") testing
 ------------------------
 
-Once the Switchyard tests pass, you can test your router in Mininet.  There is a ``start_mininet.py`` script in the project git repo for building the following network topology::
+Once the Switchyard tests pass, you should test your router in Mininet.  There is a ``start_mininet.py`` available for building the following network topology::
 
 .. image:: router2_topology.png
 
@@ -147,7 +164,7 @@ At this point, you should be able to open another xterm on any one of the other 
 
 .. image:: router2_pcap.png
 
-Testing your router in the "live" network (i.e., in Mininet) is the "big" test: if it passes all the tests then works in Mininet when trying various examples of pinging hosts, everything should be good.
+Testing your router in the "live" network (i.e., in Mininet) is a major step: if it passes all the tests then works in Mininet when trying various examples of pinging hosts, you might have done things correctly!
 
 License
 -------

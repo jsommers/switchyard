@@ -7,18 +7,7 @@ Here are three ideas to consider for extending the functionality of your router:
   * Add a dynamic routing capability; instead of using a static forwarding table, dynamically compute routes through a network.  You could implement something similar to RIPv2 or a simplified version of a protocol like OSPF.
   * Add a firewall capability to the router.
 
-The first two ideas are sketched below.  For a full description of the firewall extension, see the ``firewall`` exercise folder.
-
-Load balancing
---------------
-
-
-
-Dynamic routing
----------------
-
-
-
+For a full description of the firewall extension, see the ``firewall`` exercise folder.
 
 License
 -------
