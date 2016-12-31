@@ -40,7 +40,7 @@ class EthAddr (object):
       self.__value = None
 
       if isinstance(addr, bytes):
-          self.__value = bytes(addr)
+          self.__value = bytes(addr[:6])
       elif isinstance(addr, EthAddr):
           self.__value = addr.raw
       elif addr is None:

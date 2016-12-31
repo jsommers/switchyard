@@ -9,7 +9,7 @@ def main(net):
     while True:
         pkt = None
         try:
-            timestamp,port,pkt = net.recv_packet(timeout=0.5)
+            timestamp,input_port,pkt = net.recv_packet(timeout=0.5)
         except NoPackets:
             pass
         except Shutdown:
@@ -21,7 +21,7 @@ def main(net):
             # rule tests.  It currently just forwards the packet
             # out the other port, but depending on the firewall rules
             # the packet may be dropped or mutilated.
-            net.send_packet(portpair[port], pkt)
+            net.send_packet(portpair[input_port], pkt)
 
             
     net.shutdown()
