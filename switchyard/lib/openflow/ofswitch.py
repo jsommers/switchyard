@@ -5,12 +5,12 @@ import time
 from heapq import heappush, heappop, heapreplace
 from copy import deepcopy
 
-from ..packet import *
-from . import openflow10 as of10
-from . import openflow13 as of13
-from ..address import *
-from ..logging import *
-from ..exceptions import *
+from switchyard.lib.packet import *
+from switchyard.lib.openflow import openflow10 as of10
+from switchyard.lib.openflow import openflow13 as of13
+from switchyard.lib.address import *
+from switchyard.lib.logging import *
+from switchyard.lib.exceptions import *
 
 
 class FullBuffer(Exception):
@@ -188,7 +188,9 @@ class OpenflowSwitch(object):
     An Openflow v1.0 or v1.3 switch.
     '''
     def __init__(self, switchyard_net, switchid, callbacks):
-        self._switchid = switchid.encode() # aka, dpid
+        if isinstance(switchid, str):
+            switchid = switchid.encode()
+        self._switchid = switchid
         self._controller_connections = []
         self._switchyard_net = switchyard_net
         self._running = True
@@ -215,12 +217,12 @@ class OpenflowSwitch(object):
 
     def _send_openflow_message_internal(self, sock, pkt):
         self._action_callbacks.beforeControllerSend(sock, pkt)
-        send_openflow_message(sock, pkt)
+        of10.send_openflow_message(sock, pkt)
         self._action_callbacks.afterControllerSend(sock, pkt)
 
     def _receive_openflow_message_internal(self, sock):
         self._action_callbacks.beforeControllerRecv(sock)
-        pkt = receive_openflow_message(sock)
+        pkt = of10.receive_openflow_message(sock)
         self._action_callbacks.afterControllerRecv(sock, pkt)
         return pkt
 

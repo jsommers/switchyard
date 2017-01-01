@@ -308,7 +308,7 @@ def main_real(usercode, netobj, options):
         return
 
     try:
-        _start_usercode(usercode, netobj, options.codearg)
+        _start_usercode(usercode_entry_point, netobj, options.codearg)
     except Exception as e:
         import traceback
 
