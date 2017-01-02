@@ -13,6 +13,9 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+thisversion = '2017.01.3'
+
+
 import sys
 import os
 
@@ -57,7 +60,6 @@ copyright = '2013-2017, Joel Sommers'
 #
 # The short X.Y version.
 
-thisversion = '2017.01.2'
 
 version = thisversion
 # The full version, including alpha/beta/rc tags.
