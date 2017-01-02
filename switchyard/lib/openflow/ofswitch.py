@@ -209,7 +209,7 @@ class OpenflowSwitch(object):
     def add_controller(self, host, port):
         log_debug("Switch connecting to controller {}:{}".format(host, port))
         sock = socket.socket()  # ssl.wrap_socket(socket.socket())
-        sock.settimeout(1.0)
+        sock.settimeout(5.0)
         sock.connect((host, port))
         t = Thread(target=self._controller_thread, args=(sock,))
         self._controller_connections.append((t,sock))
@@ -459,7 +459,7 @@ class OpenflowSwitch(object):
         inport = self._switchyard_net.port_by_name(inport)
         portnum = inport.ifnum
         log_info("Processing packet: {}->{}".format(portnum, packet))
-        for tnum,t in enumerate(self._tables):
+        #for tnum,t in enumerate(self._tables):
             # FIXME: start at table 0
             # if match: Update counters Execute instructions:
             #           update action set
@@ -467,12 +467,12 @@ class OpenflowSwitch(object):
             #            update metadata
             # if no match and table miss entry exists, do the above
             # otherwise, drop the packet
-            pass
-            # actions = self._table.match_packet(portnum, packet)
-            # if actions is None:
-            #     self._send_packet_in(portnum, packet)
-            # else:
-            #     self._datapath_action(portnum, packet, actions=actions)
+         #    pass
+        actions = self._table.match_packet(portnum, packet)
+        if actions is None:
+            self._send_packet_in(portnum, packet)
+        else:
+            self._datapath_action(portnum, packet, actions=actions)
 
     def datapath_loop(self):
         log_debug("datapath loop: not ready to receive")

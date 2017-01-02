@@ -14,7 +14,7 @@ class InterfaceType(Enum):
 
 class Interface(object):
     __slots__ = ['__name','__ethaddr','__ipaddr','__ifnum','__iftype']
-    __nextnum = 0
+    __nextnum = 1
 
     '''
     Class that models a single logical interface on a network
@@ -106,7 +106,7 @@ class Interface(object):
         return self.__iftype
 
     def __str__(self):
-        s =  "{} mac:{}".format(str(self.name), str(self.ethaddr))
+        s =  "{} {} {} mac:{}".format(str(self.name), self.__ifnum, self.__iftype.name, str(self.ethaddr))
         if int(self.ipaddr) != 0:
             s += " ip:{}".format(self.__ipaddr)
         return s 
