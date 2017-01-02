@@ -309,6 +309,14 @@ def handle_network_data(netdata):
         else:
             log_info("Received an unexpected packet: {}".format(pkt[1:]))
 '''
+
+    USERCODE14 = '''
+from switchyard.lib.userlib import *
+def main(obj):
+    log_info("hello, test")
+    print("hello, test", flush=True)
+'''
+
     APPCODE13 = '''
 import switchyard.lib.socket.socketemu as socket
 import time
@@ -356,6 +364,7 @@ s.close()
         writeFile('ucode11.py', TestFrameworkTests.USERCODE11)
         writeFile('ucode12.py', TestFrameworkTests.USERCODE12)
         writeFile('ucode13.py', TestFrameworkTests.USERCODE13)
+        writeFile('ucode14.py', TestFrameworkTests.USERCODE14)
         writeFile('appcode13.py', TestFrameworkTests.APPCODE13)
 
         sys.path.append('.')
@@ -376,8 +385,8 @@ s.close()
         o.fwconfig = kwargs.get('fwconfig', [])
         o.tests = kwargs.get('tests', [])
         o.usercode = kwargs.get('usercode', None)
-        o.exclude = kwargs.get('exclude', [])
-        o.intf = kwargs.get('intf', [])
+        o.exclude = kwargs.get('exclude', None)
+        o.intf = kwargs.get('intf', None)
         o.topology = kwargs.get('topology', None)
         o.codearg = _parse_codeargs(kwargs.get('codearg', ''))
         return o
@@ -402,7 +411,7 @@ s.close()
         removeFile('stest2')
         removeFile('stest3')
         removeFile('appcode13')
-        for t in range(1, 14):
+        for t in range(1, 15):
             removeFile("ucode{}".format(t))
 
     def testDryRun(self):
@@ -656,6 +665,25 @@ s.close()
                 start_framework(o)
 
         self.assertIn("CRITICAL:root:Here are all the interfaces I see on your system: fakedev", cm.output[-1])
+        del(start_framework)
+
+    def testReal3(self):
+        from switchyard.syinit import start_framework
+        prevplat = sys.platform
+        setattr(sys, "platform", "test")
+
+        o = self._makeOptions(app=None, intf=None, exclude=None, verbose=True, debug=True, tests=[], fwconfig=['none'], usercode='ucode14')
+        mdlmock = Mock(return_value={'happy', 'joy'})
+        netmock = Mock(return_value=Mock())
+        import switchyard.syinit
+        setattr(switchyard.syinit, "LLNetReal", netmock)
+        setattr(switchyard.syinit, "make_device_list", mdlmock)
+
+        with redirectio() as xio:
+            with self.assertLogs(level='DEBUG') as cm:
+                start_framework(o)
+        self.assertIn("expect errors", cm.output[0])
+        setattr(sys, "platform", prevplat)
         del(start_framework)
 
 if __name__ == '__main__':

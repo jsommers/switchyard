@@ -111,11 +111,7 @@ class TestModeFirewall(AbstractFirewall):
     def __init__(self, interfaces, rules):
         super().__init__(interfaces, rules)
         for r in rules:
-            if r == 'all':
-                proto,port = 'all',None
-            else:
-                proto,port = self._interp_rule(r)
-            self._rules.append((proto,port))
+            self.add_rule(r)
 
     def block(self):
         pass
@@ -127,7 +123,13 @@ class TestModeFirewall(AbstractFirewall):
         pass
 
     def add_rule(self, rule):
-        self._rules.append(rule)
+        if rule.strip() == 'all':
+            proto,port = 'all',None
+        elif rule.strip() == 'none':
+            proto,port = 'none',None
+        else:
+            proto,port = self._interp_rule(rule)
+        self._rules.append((proto,port))
 
 
 class LinuxFirewall(AbstractFirewall):
