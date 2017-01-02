@@ -3368,24 +3368,3 @@ class OpenflowHeader(PacketHeaderBase):
     def __str__(self):
         return '{} xid={} len={}'.format(self.type.name,
                                          self.xid, self.length)
-
-
-def send_openflow_message(sock, pkt):
-    log_debug("Sending Openflow message {} ({} bytes)".format(pkt, len(pkt)))
-    sock.sendall(pkt.to_bytes())
-
-
-def receive_openflow_message(sock):
-    ofheader = OpenflowHeader()
-    data = sock.recv(ofheader.size())
-    ofheader.from_bytes(data)
-    log_debug("Attempting to receive Openflow message (header: {}) ({} bytes)".format(
-        ofheader, ofheader.length))
-
-    remain = ofheader.length - ofheader.size()
-    while remain > 0:
-        more = sock.recv(remain)
-        data += more
-        remain -= len(more)
-    p = Packet.from_bytes(data, OpenflowHeader)
-    return p
