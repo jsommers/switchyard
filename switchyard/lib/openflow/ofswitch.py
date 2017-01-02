@@ -206,10 +206,13 @@ class OpenflowSwitch(object):
         self._meter_table = None # not supported yet
         self._action_callbacks = callbacks
 
-    def add_controller(self, host, port):
+    def add_controller(self, host, port, usetls=True):
         log_debug("Switch connecting to controller {}:{}".format(host, port))
-        sock = socket.socket()  # ssl.wrap_socket(socket.socket())
-        sock.settimeout(5.0)
+        if usetls:
+            sock = ssl.wrap_socket(socket.socket())
+        else:
+            sock = socket.socket()
+        sock.settimeout(1.0)
         sock.connect((host, port))
         t = Thread(target=self._controller_thread, args=(sock,))
         self._controller_connections.append((t,sock))
@@ -410,12 +413,7 @@ class OpenflowSwitch(object):
                 _send_removal_notification(entries)
 
         while True:
-            pkt = None
-            try:
-                pkt = self._receive_openflow_message_internal(sock)
-            except socket.timeout:
-                pass
-
+            pkt = self._receive_openflow_message_internal(sock)
             _expire_table_entries()
 
             if pkt is not None:
@@ -482,7 +480,7 @@ class OpenflowSwitch(object):
         log_debug("datapath loop: READY to receive")
         while True:
             try:
-                inport, packet = self._switchyard_net.recv_packet(timeout=1.0)
+                timestamp, inport, packet = self._switchyard_net.recv_packet(timeout=1.0)
             except Shutdown:
                 break
             except NoPackets:
@@ -547,10 +545,10 @@ class SwitchActionCallbacks(object):
     def afterTableEntryMod(self, table, entry):
         pass
 
-def main(net, host='localhost', port=6633, switchid=b'\xc0\xde' + EthAddr("6a:7e:c0:ff:ee:00").raw):
+def main(net, host='localhost', port=6653, usetls=False, switchid=b'\xc0\xde' + EthAddr("6a:7e:c0:ff:ee:00").raw):
     callbacks = SwitchActionCallbacks()
     switch = OpenflowSwitch(net, switchid, callbacks)
-    switch.add_controller('localhost', 6633)
+    switch.add_controller(host, port, usetls)
     switch.datapath_loop()
     switch.shutdown()
     net.shutdown()

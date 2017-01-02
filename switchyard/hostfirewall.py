@@ -163,8 +163,11 @@ class LinuxFirewall(AbstractFirewall):
 
     def _parse_rule(self, rule):
         cmds = []
-        if rule.strip() == 'all':
-            cmds.append('/sbin/iptables -t raw -P PREROUTING DROP') 
+        if rule.strip() == 'none':
+            pass
+        elif rule.strip() == 'all':
+            for intf in self._intf:
+                cmds.append('/sbin/iptables -t raw -A PREROUTING -j DROP -i {}'.format(intf)) 
         else:    
             proto,port = self._interp_rule(rule)
             if port is not None:
@@ -222,7 +225,9 @@ class MacOSFirewall(AbstractFirewall):
 
     def _parse_rule(self, rule):
         cmds = []
-        if rule == 'all':
+        if rule.strip() == 'none':
+            pass
+        elif rule.strip() == 'all':
             rulestr = 'block drop on {} all'
         else:
             proto, port = self._interp_rule(rule)

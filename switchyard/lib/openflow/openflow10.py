@@ -2,6 +2,7 @@ from enum import IntEnum
 import struct
 from math import ceil
 from ipaddress import ip_network, ip_address
+from socket import timeout as socktimeout
 
 from ..packet import PacketHeaderBase, Packet, IPProtocol, \
     EtherType, Ethernet, Vlan, IPv6, IPv4, ICMP, ICMPv6, TCP, UDP, Arp
@@ -3375,11 +3376,17 @@ def send_openflow_message(sock, pkt):
 
 def receive_openflow_message(sock):
     ofheader = OpenflowHeader()
-    data = sock.recv(ofheader.size())
+    try:
+        data = sock.recv(ofheader.size())
+    except socktimeout:
+        log_debug("Timeout waiting on receipt of OF message")
+        return None
+    if len(data) == 0:
+        return None
     ofheader.from_bytes(data)
+
     log_debug("Attempting to receive Openflow message (header: {}) ({} bytes)".format(
         ofheader, ofheader.length))
-
     remain = ofheader.length - ofheader.size()
     while remain > 0:
         more = sock.recv(remain)

@@ -121,7 +121,7 @@ Firewall options
 
 As noted above, Switchyard's default behavior is to prevent the host operating system from receiving any traffic while Switchyard is running.  This may be undesirable in certain situations, and the ``-f`` or ``--firewall`` options to ``swyard`` are available to change this behavior.
 
-The ``-f`` and ``--firewall`` options accept a single rule as a parameter (which in many cases needs to be quoted in the shell).  The rule syntax is ``proto[:port]``, where the ``[:port]`` part is optional and ``proto`` may be one of ``tcp``, ``udp``, ``icmp``, or ``all``.  If ``all`` is specified, the port part should not be included.  Here are some examples:
+The ``-f`` and ``--firewall`` options accept a single rule as a parameter (which in many cases needs to be quoted in the shell).  The rule syntax is ``proto[:port]``, where the ``[:port]`` part is optional and ``proto`` may be one of ``tcp``, ``udp``, ``icmp``, ``none`` or ``all``.  If ``all`` is specified, the port part should not be included; ``all`` will block *all* traffic on the interfaces used by Switchyard.  If ``none`` is specified, again, no port should be specified; ``none`` will cause *no rules to be installed* to block traffic.  Here are some examples:
 
 ``tcp``
   Block the host from receiving all TCP traffic
@@ -131,6 +131,8 @@ The ``-f`` and ``--firewall`` options accept a single rule as a parameter (which
   Block the host from receiving all ICMP traffic
 ``udp:4567``
   Block the host from receiving UDP traffic on port 4567
+``none``
+  Do not block any traffic.
 ``all``
   Block the host from receiving all traffic.  This is the default behavior.
 
