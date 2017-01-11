@@ -443,6 +443,10 @@ s.close()
             print(args)
         def testfn3(net, *args, **kwargs):
             print(args, kwargs)
+        def testfn4(net, arg1):
+            print(arg1)
+        def testfn5(net, arg1, *args, **kwargs):
+            print(arg1, args, kwargs)
         with redirectio() as xio:
             with self.assertLogs(level='WARNING') as cm:
                 _start_usercode(testfn1, None, _parse_codeargs('abc'))
@@ -455,6 +459,15 @@ s.close()
         with redirectio() as xio:
             with self.assertLogs(level='WARNING') as cm:
                 _start_usercode(testfn2, None, _parse_codeargs('efg=13'))
+        with redirectio() as xio:
+            with self.assertLogs(level='WARNING') as cm:
+                _start_usercode(testfn4, None, _parse_codeargs('abc def'))
+        with self.assertRaises(RuntimeError):
+            _start_usercode(testfn4, None, _parse_codeargs(''))
+        with redirectio() as xio:
+            _start_usercode(testfn5, None, _parse_codeargs('arg1 stararg1 stararg2 x=1 y=2'))
+        self.assertEqual(xio.contents, "arg1 ('stararg1', 'stararg2') {'x': '1', 'y': '2'}\n")
+
         with redirectio() as xio:
             _start_usercode(testfn2, None, _parse_codeargs('efg'))
         self.assertIn('efg', xio.contents)

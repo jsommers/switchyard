@@ -16,14 +16,23 @@ def _start_usercode(entryfunction, netobj, codeargdict):
     accept them.
     '''
     # p22, python3 lang ref
-    takenet = entryfunction.__code__.co_argcount >= 1
-    takeargs = entryfunction.__code__.co_flags & 0x04 == 0x04
+    numargs = entryfunction.__code__.co_argcount
+    takenet = numargs >= 1
+    takeposargs = numargs - 1 # number of positional args fn takes, less the net obj
+    takestarargs = entryfunction.__code__.co_flags & 0x04 == 0x04
     takekw = entryfunction.__code__.co_flags & 0x08 == 0x08
 
+    posargs = []
     args = codeargdict['args']
     kwargs = codeargdict['kwargs']
 
-    if args and not takeargs:
+    if takeposargs > 0:
+        if len(args) < takeposargs and not takestarargs:
+            raise RuntimeError("Your code requires {} arguments in addition to the net object, but you've passed {} arguments via the -g command-line option.".format(takeposargs, len(args)))
+        posargs = args[:takeposargs]
+        args = args[takeposargs:]
+
+    if args and not takestarargs:
         log_warn("User code arguments passed on command line, "
             "but the user code doesn't take arguments")
     if kwargs and not takekw:
@@ -33,11 +42,20 @@ def _start_usercode(entryfunction, netobj, codeargdict):
     if not takenet:
         raise RuntimeError("Your code does not appear to accept at "
             "least one parameter for the net object")
-    if takeargs:
-        if takekw:
-            entryfunction(netobj, *args, **kwargs)
-        else:
-            entryfunction(netobj, *args)
+
+    # omg, this sucks.
+    if takeposargs and takestarargs and takekw:
+        entryfunction(netobj, *posargs, *args, **kwargs)
+    elif takeposargs and takestarargs:
+        entryfunction(netobj, *posargs, *args)
+    elif takeposargs:
+        entryfunction(netobj, *posargs)
+    elif takestarargs and takekw:
+        entryfunction(netobj, *args, **kwargs)
+    elif takestarargs:
+        entryfunction(netobj, *args)
+    elif takekw:
+        entryfunction(netobj, **kwargs)
     else:
         entryfunction(netobj)
 
