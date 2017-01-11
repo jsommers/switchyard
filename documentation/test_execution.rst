@@ -337,3 +337,28 @@ If we run the above program, we will stop at the line *after* the call to ``debu
 
 
 As noted above, if there is a runtime error in your code, Switchyard will automatically dump you into the Python debugger (pdb) to see exactly where the program crashed and what may have caused it.  You can use any Python commands to inspect variables, and try to understand the state of the program at the time of the crash.
+
+Checking code coverage
+----------------------
+
+If you want to check which lines of code are *covered* by one or more test scenarios, you can install and use the ``coverage`` package.  This can be helpful for seeing which lines of your code are *not* being exercised by tests, and how you might focus additional testing effort.
+
+To install:
+
+.. code-block:: none
+
+    $ pip3 install coverage
+
+To gather code coverage information, you can invoke ``swyard`` using ``coverage``.  ``coverage`` appears to work best if you give the full path name of ``swyard``, which is what the following command line will do (using backtick-substitution for the ``which swyard`` command).  You can use command-line options to ``swyard`` as you normally would:
+
+.. code-block:: none
+
+    $ coverage run `which swyard` -v -d -t testscenario.py yourcode.py 
+
+Once you've created the coverage information you can display a report.  The html report will nicely show exactly which lines of your code were executed during a test and which weren't.  To avoid seeing coverage information for irrelevant files, you should explicitly tell ``coverage`` which files you want to include in the report.
+
+.. code-block:: none
+    
+    $ coverage html --include yourcode.py 
+
+After running the above command, you can open the file ``index.html`` within the ``htmlcov`` folder.  Clicking on a file name will show detailed coverage information.
