@@ -13,8 +13,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-thisversion = '2017.01.3'
-
+thisversion = '2017.01.4'
 
 import sys
 import os
