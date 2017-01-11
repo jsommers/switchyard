@@ -21,7 +21,7 @@ class RIPRouteEntry(object):
     _PACKFMT = '!HHIIII'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, address=SpecialIPv4Addr.IP_ANY.value, mask='255.255.255.255', nexthop='255.255.255.255', metric=16, tag=0):
+    def __init__(self, address=SpecialIPv4Addr.IP_ANY.value, mask='0.0.0.0', nexthop='0.0.0.0', metric=16, tag=0):
         self._family = 2
         self._tag = tag
         self._addr = IPv4Network("{}/{}".format(address,mask), strict=False)
@@ -33,11 +33,15 @@ class RIPRouteEntry(object):
         return RIPRouteEntry._MINLEN
 
     def __str__(self):
-        return "{} -> {} {}".format(self._addr, self._nexthop, self._metric)
+        s = "{} ({})".format(self._addr, self._metric)
+        if self._nexthop != SpecialIPv4Addr.IP_ANY.value:
+            s += " -> {}".format(self._nexthop)
+        return s
 
     def to_bytes(self):
         return struct.pack(RIPRouteEntry._PACKFMT, self._family, self.tag,
-                           int(self._addr.network_address), int(self._addr.netmask), int(self.nexthop),
+                           int(self._addr.network_address), 
+                           int(self._addr.netmask), int(self.nexthop),
                            self.metric)
 
     @staticmethod
@@ -50,7 +54,8 @@ class RIPRouteEntry(object):
         entry._tag = int(fields[1])
         xaddr = IPv4Address(fields[2]) 
         xmask = IPv4Address(fields[3]) 
-        entry._addr = IPv4Network("{}/{}".format(str(xaddr), str(xmask)), strict=False)
+        entry._addr = IPv4Network("{}/{}".format(str(xaddr), 
+            str(xmask)), strict=False)
         entry._nexthop = IPv4Address(fields[4])
         entry._metric = int(fields[5])
         return entry
@@ -58,6 +63,10 @@ class RIPRouteEntry(object):
     @property 
     def tag(self):
         return self._tag
+
+    @property
+    def network(self):
+        return self._addr
 
     @property 
     def address(self):
@@ -81,13 +90,12 @@ class RIPRouteEntry(object):
 
 
 class RIPv2(PacketHeaderBase):
-    __slots__ = ('_command','_domain','_routes')
-    _PACKFMT = '!BBH'
+    __slots__ = ('_command','_routes')
+    _PACKFMT = '!BBxx'
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self, raw=None, **kwargs):
         self.command = RIPCommand.Request
-        self.domain = 0
         self._routes = []
         if raw:
             self.from_bytes(raw)
@@ -100,7 +108,7 @@ class RIPv2(PacketHeaderBase):
         '''
         Return packed byte representation of the UDP header.
         '''
-        hdr = struct.pack(RIPv2._PACKFMT, self.command.value, self.version, self.domain)
+        hdr = struct.pack(RIPv2._PACKFMT, self.command.value, 2)
         routes = b''.join([r.to_bytes() for r in self._routes])
         return hdr + routes
 
@@ -111,7 +119,9 @@ class RIPv2(PacketHeaderBase):
             raise NotEnoughDataError("Not enough bytes to reconstruct RIPv2 header")
         fields = struct.unpack(RIPv2._PACKFMT, raw[:RIPv2._MINLEN])
         self.command = fields[0]
-        self.domain = fields[2]
+        version = int(fields[1])
+        if version != 2:
+            raise ValueError("Unexpected RIP version {}".format(version))
         remain = raw[RIPv2._MINLEN:]
         esize = RIPRouteEntry.size()
         numroutes = len(remain) // esize
@@ -167,14 +177,6 @@ class RIPv2(PacketHeaderBase):
     @property
     def version(self):
         return 2
-
-    @property 
-    def domain(self):
-        return self._domain
-
-    @domain.setter
-    def domain(self, value):
-        self._domain = int(value)
 
     def next_header_class(self):
         return None
