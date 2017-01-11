@@ -339,7 +339,7 @@ If we run the above program, we will stop at the line *after* the call to ``debu
 As noted above, if there is a runtime error in your code, Switchyard will automatically dump you into the Python debugger (pdb) to see exactly where the program crashed and what may have caused it.  You can use any Python commands to inspect variables, and try to understand the state of the program at the time of the crash.
 
 Checking code coverage
-----------------------
+^^^^^^^^^^^^^^^^^^^^^^
 
 If you want to check which lines of code are *covered* by one or more test scenarios, you can install and use the ``coverage`` package.  This can be helpful for seeing which lines of your code are *not* being exercised by tests, and how you might focus additional testing effort.
 
