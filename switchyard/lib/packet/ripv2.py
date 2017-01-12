@@ -12,6 +12,8 @@ References:
     IETF RFC 2453
 '''
 
+RIP_INFINITY = 16
+
 class RIPCommand(IntEnum):
     Request = 1
     Reply = 2
@@ -21,8 +23,8 @@ class RIPRouteEntry(object):
     _PACKFMT = '!HHIIII'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, address=SpecialIPv4Addr.IP_ANY.value, mask='0.0.0.0', nexthop='0.0.0.0', metric=16, tag=0):
-        self._family = 2
+    def __init__(self, address=SpecialIPv4Addr.IP_ANY.value, mask='0.0.0.0', nexthop='0.0.0.0', family=2, metric=RIP_INFINITY, tag=0):
+        self._family = family
         self._tag = tag
         self._addr = IPv4Network("{}/{}".format(address,mask), strict=False)
         self._nexthop = IPv4Address(nexthop)
@@ -63,6 +65,10 @@ class RIPRouteEntry(object):
     @property 
     def tag(self):
         return self._tag
+
+    @property
+    def family(self):
+        return self._family
 
     @property
     def network(self):
@@ -136,8 +142,6 @@ class RIPv2(PacketHeaderBase):
 
     def __str__(self):
         rdata = ' ({} routes: {})'.format(len(self._routes), ', '.join([str(r) for r in self._routes]))
-        if self.command == RIPCommand.Request:
-            rdata = ''
         return "{} {}{}".format(self.__class__.__name__, self.command.name, rdata)
 
     def __len__(self):
