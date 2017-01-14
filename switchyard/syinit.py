@@ -38,7 +38,7 @@ def _parse_codeargs(argstr):
 
 def start_framework(args):
     global _netobj, _setup_ok
-    setup_logging(args.debug)
+    setup_logging(args.debug, args.logfile)
 
     # assume testmode if compile flag is set
     testmode = False

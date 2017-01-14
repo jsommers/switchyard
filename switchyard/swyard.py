@@ -32,7 +32,7 @@ def main():
     parser.add_argument("-g", "--codearg", metavar="YOURCODE_ARGS", 
         type=str, default='', 
         help='Arguments to pass to your code (if multiple args, they need to be '
-             ' quoted in the shell)')
+             ' quoted in the shell).')
     parser.add_argument("-c", "--compile", 
         help="Compile test scenario to binary format for distribution.", 
         dest="compile", action="append", metavar="TEST_SCENARIO")
@@ -49,22 +49,25 @@ def main():
              dest="verbose", action="count", default=0)
     parser.add_argument("-d", "--debug", help="Turn on debug logging output.", 
         dest="debug", action="store_true", default=False)
+    parser.add_argument("-l", "--logfile", help="Specify the name of a file to send"
+        " log entries to (default is to send log to stdout/stderr).", 
+        dest="logfile", default=None, type=str)
     parser.add_argument("--nopdb", help="Don't enter pdb on crash.", 
         dest="nopdb", action="store_true", default=False)
     parser.add_argument("-f", "--firewall", 
-        help="Specify host firewall rules (for real/live mode only)", 
+        help="Specify host firewall rules (for real/live mode only).", 
         dest="fwconfig", action="append")
     parser.add_argument("-a", "--app", 
-        help="Specify application layer (socket-based) program to start", 
+        help="Specify application layer (socket-based) program to start.", 
         dest="app", default=None, metavar="SOCKET_APP")
     parser.add_argument("-e", "--nohandle", 
         help="Don't trap exceptions.  Use of this option is helpful if you want"
-             " to use Switchyard with a different symbolic debugger than pdb", 
+             " to use Switchyard with a different symbolic debugger than pdb.", 
              dest="nohandle", action="store_true", default=False)
     parser.add_argument("--cli", help="Enter switchyard simulation command-line (EXPERIMENTAL!)", 
         dest="cli", action="store_true", default=False)
     parser.add_argument("--topology", help="Specify topology to use for simulation"
-        " (only used if --cli is specified)",
+        " (only used if --cli is specified).",
         dest="topology", type=str, default=None)
     args = parser.parse_args()
     if args.usercode is None and not args.compile:

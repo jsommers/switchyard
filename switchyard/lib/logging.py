@@ -3,7 +3,7 @@ import logging
 from ..textcolor import *
 from .debugging import debugger
 
-def setup_logging(debug):
+def setup_logging(debug, logfile=None):
     '''
     Setup logging format and log level.
     '''
@@ -11,7 +11,10 @@ def setup_logging(debug):
         level = logging.DEBUG
     else:
         level = logging.INFO
-    logging.basicConfig(format="%(asctime)s %(levelname)8s %(message)s", datefmt="%H:%M:%S %Y/%m/%d", level=level)
+    if logfile is not None:
+        logging.basicConfig(format="%(asctime)s %(levelname)8s %(message)s", datefmt="%H:%M:%S %Y/%m/%d", level=level, filename=logfile)
+    else:
+        logging.basicConfig(format="%(asctime)s %(levelname)8s %(message)s", datefmt="%H:%M:%S %Y/%m/%d", level=level)
 
 def log_failure(s):
     '''Convenience function for failure message.'''
