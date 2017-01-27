@@ -389,6 +389,7 @@ s.close()
         o.intf = kwargs.get('intf', None)
         o.topology = kwargs.get('topology', None)
         o.codearg = _parse_codeargs(kwargs.get('codearg', ''))
+        o.logfile = _parse_codeargs(kwargs.get('logfile', None))
         return o
 
     @classmethod

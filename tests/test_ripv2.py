@@ -65,7 +65,7 @@ class RIPv2PacketTests(unittest.TestCase):
         self.assertEqual(lastentry.address, IPv4Address("192.168.0.0"))
         self.assertEqual(lastentry.netmask, IPv4Address("255.255.0.0"))
         self.assertEqual(lastentry.nexthop, IPv4Address("192.168.42.5"))
-        self.assertEqual(lastentry.metric, 15)
+        self.assertEqual(lastentry.metric, RIP_INFINITY)
 
         re = RIPRouteEntry('192.168.100.0','255.255.252.0','192.168.100.254',3)
         re2 = RIPRouteEntry.from_bytes(re.to_bytes())
