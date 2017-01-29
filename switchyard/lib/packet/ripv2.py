@@ -23,10 +23,10 @@ class RIPRouteEntry(object):
     _PACKFMT = '!HHIIII'
     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, address=SpecialIPv4Addr.IP_ANY.value, mask='0.0.0.0', nexthop='0.0.0.0', family=2, metric=RIP_INFINITY, tag=0):
+    def __init__(self, address=SpecialIPv4Addr.IP_ANY.value, netmask='0.0.0.0', nexthop='0.0.0.0', family=2, metric=RIP_INFINITY, tag=0):
         self._family = family
         self._tag = tag
-        self._addr = IPv4Network("{}/{}".format(address,mask), strict=False)
+        self._addr = IPv4Network("{}/{}".format(address,netmask), strict=False)
         self._nexthop = IPv4Address(nexthop)
         self._metric = int(metric)
 
