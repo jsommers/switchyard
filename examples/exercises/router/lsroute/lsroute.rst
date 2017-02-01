@@ -251,9 +251,11 @@ There are several ways in which this exercise could be expanded, if desired:
 
 2.  Other OSPFv2 aspects are also not implemented, such as areas and filling in the checksum in the header.  To have an LS router speak to an OSPFv2 router, say in Mininet, these would need to be addressed.
 
-3. This exercise does not contain any Mininet tests (yet), and an interesting way to expand it would be have multiple Switchyard routers, speaking a OSPFv2 variant, to communicate among themselves within Mininet.  The packets should be able to be interpreted correctly using Wireshark, since the same packet structure is used as in OSPFv2.
+3. An equal-cost multipath-type of routing could be implemented.  
 
-4. Some capability could be added to provide controls over whether certain routes are redistributed in LS, e.g., some static routes may only be advertised to certain neighbors.  You might also add various LS counters, of the number of Hello messages, LSUpdates, to query the topology database, etc.  It would be possible also to create a little CLI to query and configure a live router.  You'd need to send log output to a file (easy with a ``swyard`` command-line option) and start the CLI in a separate Python thread (also relatively easy).
+4. This exercise does not contain any Mininet tests (yet), and an interesting way to expand it would be have multiple Switchyard routers, speaking a OSPFv2 variant, to communicate among themselves within Mininet.  The packets should be able to be interpreted correctly using Wireshark, since the same packet structure is used as in OSPFv2.
+
+5. Some capability could be added to provide controls over whether certain routes are redistributed in LS, e.g., some static routes may only be advertised to certain neighbors.  You might also add various LS counters, of the number of Hello messages, LSUpdates, to query the topology database, etc.  It would be possible also to create a little CLI to query and configure a live router.  You'd need to send log output to a file (easy with a ``swyard`` command-line option) and start the CLI in a separate Python thread (also relatively easy).
 
 
 .. rubric:: Footnotes
