@@ -9,24 +9,16 @@ a project description and various support files.  Note: if you're viewing this s
 An overview of existing and in-the-works exercises is as follows:
 
 Learning switch
-	Build a simple Ethernet learning switch.  This is a nice starter
-	exercise for getting accustomed to the APIs and workflow in Switchyard.
-        Some extensions and variants to this exercise are included in the description, such as a spanning-tree protocol-like capability.
+	Build a simple Ethernet learning switch.  This is a nice starter exercise for getting accustomed to the APIs and workflow in Switchyard.  Some extensions and variants to this exercise are included in the description, such as a spanning-tree protocol-like capability.
 
 IP router
-	This is really a set of 3 projects designed to gradually built up
-	capabilities to implement an IPv4 router that uses a static forwarding
-	table (i.e., it has no dynamic routing capabilities).   Descriptions of  extensions and variants are also included.
+	This is really a set of 3 projects designed to gradually built up capabilities to implement an IPv4 router that uses a static forwarding table.  Descriptions of extensions and variants such as dynamic routing are included.
 
 Firewall
-	In this exercise, build a stand-alone firewall device with token bucket
-	rate-limiting capability.
+	In this exercise, build a stand-alone firewall device with token bucket rate-limiting capability.
 
 UDP network stack + application
-	This exercise is an introduction to using Switchyard's socket 
-	API emulation capabilities.  The goal is to build the Ethernet/IP/UDP
-	layers to support a UDP-based application, along with a simple
-        notion of transport reliability.
+	This exercise is an introduction to using Switchyard's socket API emulation capabilities.  The goal is to build the Ethernet/IP/UDP layers to support a UDP-based application, along with a basic windowed form of transport reliability.
 
 License
 -------
