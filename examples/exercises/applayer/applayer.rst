@@ -1,6 +1,8 @@
 ﻿Application layer
 -----------------
 
+Note: these exercises are a work in progress and some details may not be clear or correctly included yet.  
+
 This exercise has three parts. In the first part, the goal is to create a Python socket-based client for a "message board" application.  The server with this the client should communicate is already written; only the client needs to be created.  This part of the project does *not* require any use of Switchyard --- only the built-in Python ``socket`` module is used.  UDP is used as as the transport protocol.
 
 The goal of the second part of the exercise is to create a UDP-based network stack, which can be used by the client created in part 1 (and also by the server).  The network stack will implement a static window-based form of reliable transport.
@@ -14,6 +16,7 @@ The three parts of this exercise are described in detail in three separate docum
  * ``msgboardstack.rst``
 
  * ``msgboardmiddlebox.rst``
+
 
 
 License
