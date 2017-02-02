@@ -82,6 +82,11 @@ The same window size should be used for each direction of packet flow.  The defa
 
 The default timeout value should be set to 0.1 seconds (100 milliseconds).  This can be a static value; you do not need to estimate a timeout value by computing round-trip time.
 
+Acknowledgment
+--------------
+
+This description is based on a writeup created by Ceyhun Alp at the University of Wisconsin.
+
 License
 -------
 
