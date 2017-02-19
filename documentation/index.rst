@@ -35,3 +35,10 @@ I gratefully acknowledge support from the NSF.  The materials here are based upo
 Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author and do not necessarily reflect the views of the National Science Foundation.
 
 .. todolist::
+
+License
+=======
+
+The Switchyard software is distributed under terms of the GNU General Public License, version 3.  
+
+Switchyard's documentation is distributed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License: http://creativecommons.org/licenses/by-nc-sa/4.0/.

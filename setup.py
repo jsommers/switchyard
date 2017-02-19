@@ -38,5 +38,9 @@ Switchyard is a library and framework for creating networked systems in Python. 
 Documentation is available at http://cs.colgate.edu/~jsommers/switchyard
 Documentation is written using the Python Sphinx package; doc sources are
 available in the documentation directory.
+
+The Switchyard software is distributed under terms of the GNU General Public License, version 3. 
+
+Switchyard's documentation is distributed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License: http://creativecommons.org/licenses/by-nc-sa/4.0/.
 '''
 )
