@@ -271,10 +271,10 @@ class OpenflowSwitch(object):
                 log_debug("Sending flow removal notification: {}".format(removed))
                 self._send_openflow_message_internal(sock, header + removed)
 
-        def _send_error(errorcode):
-            header = self._oflib.OpenflowHeader(self._oflib.OpenflowType.Error, xid=self.xid)
+        def _send_error(errortype, errorcode, xid=self.xid):
+            header = self._oflib.OpenflowHeader(self._oflib.OpenflowType.Error, xid=xid)
             err = self._oflib.OpenflowError() 
-            err.errortype = self._oflib.OpenflowErrorType.FlowModFailed
+            err.errortype = errortype
             err.errorcode = errorcode
             log_debug("Sending error message: {}".format(err))
             self._send_openflow_message_internal(sock, header + err)
@@ -310,7 +310,7 @@ class OpenflowSwitch(object):
                 log_debug("Flow mod add")
                 rv = self._table.add(fmod)
                 if rv:
-                    _send_error(rv)
+                    _send_error(OpenflowErrorType.FlowModFailed, rv)
                 elif pkt[1].buffer_id != 2**32-1:
                     pp = self._buffer_manager.pop(pkt[1].buffer_id)
                     self._datapath_action(*pp)
@@ -375,8 +375,10 @@ class OpenflowSwitch(object):
         def _echo_request_handler(pkt):
             log_debug("Echo request: {}".format(str(pkt)))
             reply = self._oflib.OpenflowHeader(self._oflib.OpenflowType.EchoReply, xid=pkt[self._oflib.OpenflowHeader].xid)
+            reply[OpenflowEchoReply].data = pkt[OpenflowEchoRequest].data
             self._send_openflow_message_internal(sock, reply)
 
+        # fixme: once oftest testing is sorted out, need to eliminate this ugly dup
         _handler_map_10 = {
             of10.OpenflowType.Hello: _hello_handler,
             of10.OpenflowType.FeaturesRequest: _features_request_handler,
@@ -403,7 +405,8 @@ class OpenflowSwitch(object):
         _handler_map = _handler_map_13
 
         def _unknown_type_handler(pkt):
-            log_debug("Unknown OF message type: {}".format(pkt[OpenflowHeader].type))
+            log_debug("Unknown OF message type: {}".format(pkt[self._oflib.OpenflowHeader].type))
+            _send_error(self._oflib.OpenflowErrorType.BadRequest, self._oflib.OpenflowBadRequestCode.BadType, xid=pkt[self._oflib.OpenflowHeader].xid)
 
         def _expire_table_entries():
             entries = []
@@ -574,6 +577,7 @@ def receive_openflow_message(sock):
         more = sock.recv(remain)
         data += more
         remain -= len(more)
+
     p = Packet.from_bytes(data, of10.OpenflowHeader)
     return p
 
