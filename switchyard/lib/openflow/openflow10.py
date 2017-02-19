@@ -3234,6 +3234,19 @@ class OpenflowFlowRemoved(OpenflowStruct):
         self._byte_count = int(value)
 
 
+class InvalidOpenflowType(object):
+    def __init__(self, i):
+        self._value = i
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def name(self):
+        return "InvalidOpenflowType {}".format(self._value)
+
+
 class OpenflowHeader(PacketHeaderBase):
 
     '''
@@ -3274,7 +3287,7 @@ class OpenflowHeader(PacketHeaderBase):
         ofp_header struct from Openflow v1.0.0 spec.
         '''
         self._version = version
-        self._type = xtype
+        self.type = xtype
         self._length = OpenflowHeader._MINLEN
         self._xid = xid
         self._subtype = None
@@ -3305,9 +3318,17 @@ class OpenflowHeader(PacketHeaderBase):
     def type(self):
         return self._type
 
+    @staticmethod
+    def _isvalidtype(value):
+        return int(value) in OpenflowType.__members__.values()
+
     @type.setter
     def type(self, value):
-        self._type = OpenflowType(value)
+        self._type = int(value)
+        if self._isvalidtype(value):
+            self._type = OpenflowType(value)
+        else:
+            self._type = InvalidOpenflowType(value)
 
     @property
     def length(self):
