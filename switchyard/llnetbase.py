@@ -17,8 +17,11 @@ def _start_usercode(entryfunction, netobj, codeargdict):
     '''
     # p22, python3 lang ref
     numargs = entryfunction.__code__.co_argcount
+    defaults = 0 if entryfunction.__defaults__ is None else len(entryfunction.__defaults__)
+
     takenet = numargs >= 1
-    takeposargs = numargs - 1 # number of positional args fn takes, less the net obj
+    takeposargs = numargs - defaults - 1 # number of positional args fn takes, 
+                    # less the net obj and any args for which there are defaults
     takestarargs = entryfunction.__code__.co_flags & 0x04 == 0x04
     takekw = entryfunction.__code__.co_flags & 0x08 == 0x08
 
