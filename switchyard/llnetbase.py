@@ -17,23 +17,12 @@ def _start_usercode(entryfunction, netobj, codeargdict):
     '''
     # p22, python3 lang ref
     numargs = entryfunction.__code__.co_argcount
-    defaults = 0 if entryfunction.__defaults__ is None else len(entryfunction.__defaults__)
-
     takenet = numargs >= 1
-    takeposargs = numargs - defaults - 1 # number of positional args fn takes, 
-                    # less the net obj and any args for which there are defaults
     takestarargs = entryfunction.__code__.co_flags & 0x04 == 0x04
     takekw = entryfunction.__code__.co_flags & 0x08 == 0x08
 
-    posargs = []
     args = codeargdict['args']
     kwargs = codeargdict['kwargs']
-
-    if takeposargs > 0:
-        if len(args) < takeposargs and not takestarargs:
-            raise RuntimeError("Your code requires {} arguments in addition to the net object, but you've passed {} arguments via the -g command-line option.".format(takeposargs, len(args)))
-        posargs = args[:takeposargs]
-        args = args[takeposargs:]
 
     if args and not takestarargs:
         log_warn("User code arguments passed on command line, "
@@ -47,13 +36,7 @@ def _start_usercode(entryfunction, netobj, codeargdict):
             "least one parameter for the net object")
 
     # omg, this sucks.
-    if takeposargs and takestarargs and takekw:
-        entryfunction(netobj, *posargs, *args, **kwargs)
-    elif takeposargs and takestarargs:
-        entryfunction(netobj, *posargs, *args)
-    elif takeposargs:
-        entryfunction(netobj, *posargs)
-    elif takestarargs and takekw:
+    if takestarargs and takekw:
         entryfunction(netobj, *args, **kwargs)
     elif takestarargs:
         entryfunction(netobj, *args)
