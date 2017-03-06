@@ -67,8 +67,8 @@ class SwitchUnitTests(unittest.TestCase):
         self.net = NetConnection()
         self.cb = SwitchActionCallbacks()
 
-    def _setup_switch(self, pkt):
-        self.switch = OpenflowSwitch(self.net, "abcdef00", self.cb)
+    def _setup_switch(self, pkt, version):
+        self.switch = OpenflowSwitch(self.net, "abcdef00", self.cb, version)
         self.lastrecv = []
         self.switch._send_openflow_message_internal = self._receiver
         self.switch._running = False
@@ -76,7 +76,7 @@ class SwitchUnitTests(unittest.TestCase):
 
     def testHello10(self):
         hellopkt = of10.OpenflowHeader.build(of10.OpenflowType.Hello, xid=42)
-        self._setup_switch(hellopkt)
+        self._setup_switch(hellopkt, 0x01)
         self.switch._controller_thread(MagicMock())
 
         self.assertEqual(len(self.lastrecv), 1)
@@ -87,7 +87,7 @@ class SwitchUnitTests(unittest.TestCase):
 
     def testHello13(self):
         hellopkt = of13.OpenflowHeader.build(of13.OpenflowType.Hello, xid=42)
-        self._setup_switch(hellopkt)
+        self._setup_switch(hellopkt, 0x04)
         self.switch._controller_thread(MagicMock())
 
         self.assertEqual(len(self.lastrecv), 1)
@@ -98,7 +98,7 @@ class SwitchUnitTests(unittest.TestCase):
 
     def testBarrier10(self):
         barrier = of10.OpenflowHeader.build(of10.OpenflowType.BarrierRequest, xid=42)
-        self._setup_switch(barrier)
+        self._setup_switch(barrier, 0x01)
         self.switch._controller_thread(MagicMock())
 
         pkt = self.lastrecv.pop()[0]
@@ -108,7 +108,7 @@ class SwitchUnitTests(unittest.TestCase):
 
     def testBarrier13(self):
         barrier = of13.OpenflowHeader.build(of13.OpenflowType.BarrierRequest, xid=42)
-        self._setup_switch(barrier)
+        self._setup_switch(barrier, 0x04)
         self.switch._controller_thread(MagicMock())
 
         pkt = self.lastrecv.pop()[0]
@@ -118,7 +118,7 @@ class SwitchUnitTests(unittest.TestCase):
 
     def testFeaturesRequest10(self):
         request = of10.OpenflowHeader.build(of10.OpenflowType.FeaturesRequest, xid=42)
-        self._setup_switch(request)
+        self._setup_switch(request, 0x01)
         self.switch._controller_thread(MagicMock())
 
         self.assertEqual(len(self.lastrecv), 1)
@@ -126,12 +126,13 @@ class SwitchUnitTests(unittest.TestCase):
         print(pkt)
 
     def testData1(self):
-        self.switch = OpenflowSwitch(self.net, "abcdef00", self.cb)
+        self.switch = OpenflowSwitch(self.net, "abcdef00", self.cb, 0x01)
+        self.assertEqual(self.switch._version, 0x01)
         self.switch._send_openflow_message_internal = self._receiver
         self.switch._running = False
 
         self.switch._handle_datapath("eth0", Ethernet() + IPv4() + ICMP())
-
+        self.assertTrue(self.lastrecv) # check that it's non-empty
 
 
     # def testTable1(self):
