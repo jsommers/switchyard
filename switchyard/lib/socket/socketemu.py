@@ -46,7 +46,7 @@ def _gather_ports():
         if len(fields) < 5:
             continue
         ports = fields[3].strip()
-        mobj = re.search('[\.:](\d+|\*)$', ports)
+        mobj = re.search(r'[\.:](\d+|\*)$', ports)
         if mobj:
             port = (mobj.groups()[0])
             if port != '*':
