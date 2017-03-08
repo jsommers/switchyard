@@ -20,7 +20,8 @@ dontimport = ('setdefaulttimeout', 'getdefaulttimeout', 'has_ipv6',
     'socket', 'socketpair', 'fromfd', 'dup', 'create_connection', 'CMSG_LEN',
     'CMSG_SPACE')
 for name in dontimport:
-    implist.remove(name)
+    if name in implist:
+        implist.remove(name)
 
 explist = ['socket', 'ApplicationLayer', 'getdefaulttimeout', 'setdefaulttimeout', 'has_ipv6']
 explist.extend(implist)
