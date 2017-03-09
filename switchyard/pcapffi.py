@@ -188,9 +188,10 @@ class _PcapFfi(object):
             isup = (tmp.flags & 0x2) == 0x2
             isrunning = (tmp.flags & 0x4) == 0x4
 
-            xif = PcapInterface(ext_name, xname, xdesc, isloop, isup, isrunning)
+            if isup and isrunning:
+                xif = PcapInterface(ext_name, xname, xdesc, isloop, isup, isrunning)
+                self._interfaces.append(xif)
 
-            self._interfaces.append(xif)
             tmp = tmp.next
         self._libpcap.pcap_freealldevs(pintf)
 

@@ -106,19 +106,18 @@ class LLNetReal(LLNetBase):
         devinfo = {}
 
         # beautiful/ugly regular expressions
-        ethaddr_match = '([0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})'
-        hwaddr = re.compile("HWaddr {}".format(ethaddr_match))
-        ether = re.compile("ether {}".format(ethaddr_match))
-
-        ipaddr_match = '(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
-        ipmasklinux = re.compile("inet addr:{0}\s+Bcast:{0}\s+Mask:{0}".format(ipaddr_match))
-        ipmaskosx_pat = "inet {}".format(ipaddr_match)
-        ipmaskosx_pat += "\s+netmask (0x[0-9a-f]\{8\})"
-        ipmaskosx = re.compile(ipmaskosx_pat)
-
-        ip6addr_match = "(?P<ip6addr>[0-9a-f:]+[0-9a-f]{1,4})(%[a-f0-9]+)?"
-        ip6maskosx = re.compile("inet6\s+{} netmask (?P<masklen>\d+) scopeid (?P<scope>0x[0-9a-f]+)".format(ip6addr_match))
-        ip6masklinux = re.compile("inet6 addr:\s*{}/(?P<masklen>\d+)\s+Scope:(?P<scope>\w+)".format(ip6addr_match))
+        ethaddr_match = r'([0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5})'
+        if sys.platform == 'linux':
+            etherpat = re.compile("HWaddr\s+{}".format(ethaddr_match), re.MULTILINE)
+            ip4pat = re.compile(r'inet addr:(?P<ipaddr>\d{1,3}(\.\d{1,3}){3})', re.MULTILINE)
+            ip4maskpat = re.compile(r'Mask:(?P<mask>\d{1,3}(\.\d{1,3}){3})', re.MULTILINE)
+        elif sys.platform == 'darwin':
+            etherpat = re.compile("ether\s+{}".format(ethaddr_match), re.MULTILINE)
+            osxip = r'inet\s+(?P<ipaddr>\d{1,3}(\.\d{1,3}){3})'
+            ip4pat = re.compile(osxip, re.MULTILINE)
+            ip4maskpat = re.compile(r'netmask\s+(?P<mask>0x[0-9a-f]{8})', re.MULTILINE)
+        else:
+            raise NotImplementedError("Unsupported platform {}".format(sys.platform))
 
         devtype = {}
         for p in pcap_devices():
@@ -137,51 +136,29 @@ class LLNetReal(LLNetBase):
                     devtype[p.name] = InterfaceType.Unknown
 
         for devname in self._devs:
-            macaddr = None
-            ipaddr = None
-            mask = None
-            ip6addr = None
-            ip6mask = None
-            ip6scope = None
-            st,output = subprocess.getstatusoutput(["ifconfig", devname])
+            macaddr = ipaddr = mask = None
+
+            st,output = subprocess.getstatusoutput("ifconfig {}".format(devname))
 
             if isinstance(output, bytes):
                 output = output.decode('ascii','')
-            for line in output.split('\n'):
-                mobj = hwaddr.search(line)
-                if mobj:
-                    macaddr = EthAddr(mobj.groups()[0])
-                    continue
+
+            mobj = etherpat.search(output)
+            if mobj:
+                macaddr = EthAddr(mobj.groups()[0])
+            mobj = ip4pat.search(output)
+            if mobj:
+                ipaddr = IPv4Address(mobj.group('ipaddr'))
+            mobj = ip4maskpat.search(output)
+            if mobj:
+                mask = mobj.group('mask')
+                if mask.startswith('0x'):
+                    mask = IPv4Address(int(mask, base=16))
                 else:
-                    mobj = ether.search(line)
-                    if mobj:
-                        macaddr = EthAddr(mobj.groups()[0])
-                        continue
-                mobj = ipmasklinux.search(line)
-                if mobj:
-                    ipaddr = IPAddr(mobj.groups()[0])
-                    mask = IPAddr(mobj.groups()[2])
-                    continue
-                else:
-                    mobj = ipmaskosx.search(line)
-                    if mobj:
-                        ipaddr = IPAddr(mobj.groups()[0])
-                        mask = IPAddr(int(mobj.groups()[1], base=16))
-                        continue
-                mobj = ip6masklinux.search(line)
-                if mobj:
-                    gd = mobj.groupdict()
-                    ip6addr = gd['ip6addr']
-                    ip6mask = gd['masklen']
-                    ip6scope = gd['scope']
-                else:
-                    mobj = ip6maskosx.search(line)
-                    if mobj:
-                        ip6addr = gd['ip6addr']
-                        ip6mask = gd['masklen']
-                        ip6scope = gd['scope']
-                        continue
+                    mask = IPv4Address(mask)
             ifnum = socket.if_nametoindex(devname)
+            if macaddr is None:
+                continue
             devinfo[devname] = Interface(devname, macaddr, ipaddr, netmask=mask, ifnum=ifnum, iftype=devtype[devname])
         return devinfo
 

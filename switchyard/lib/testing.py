@@ -610,7 +610,7 @@ class TestScenario(object):
         self._teardown = None
         self._lastout = None
         self._tproc = None
-        if sys.origplatform.startswith('win'):
+        if hasattr(sys, "origplatform") and sys.origplatform.startswith('win'):
             self._sigrecv = signal.SIGBREAK
             self._sigsend = signal.CTRL_BREAK_EVENT
         else:
