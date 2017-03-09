@@ -35,6 +35,8 @@ scenario = s
     def setUp(self):
         importlib.invalidate_caches()
         self.writeScenario1('stest.py', SrpyCompileTest.CONTENTS1)
+        setattr(sys, "origplatform", sys.platform)
+        setattr(sys, "platform", "test")
     
     def tearDown(self):
         self.removeScenario('stest')

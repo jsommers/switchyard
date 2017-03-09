@@ -16,6 +16,7 @@ from copy import deepcopy
 import textwrap
 from collections import namedtuple, defaultdict
 from abc import ABCMeta, abstractmethod
+from multiprocessing import Process
 
 from .packet import *
 from .address import *
@@ -608,6 +609,13 @@ class TestScenario(object):
         self._setup = None
         self._teardown = None
         self._lastout = None
+        self._tproc = None
+        if sys.origplatform.startswith('win'):
+            self._sigrecv = signal.SIGBREAK
+            self._sigsend = signal.CTRL_BREAK_EVENT
+        else:
+            self._sigrecv = signal.SIGALRM
+            self._sigsend = signal.SIGALRM
 
     @property  
     def name(self):
@@ -736,9 +744,15 @@ class TestScenario(object):
 
     def cancel_timer(self):
         '''
-        Don't let any pending SIGALRM interrupt things.
+        Don't let any pending signal interrupt things.
         '''
         self._timer=False
+        if sys.origplatform.startswith('win') and self._tproc is not None:
+            self._tproc.terminate()
+            self._tproc.join()
+            self._tproc = None
+        else:
+            signal.alarm(0)
 
     def testpass(self):
         '''
@@ -748,7 +762,7 @@ class TestScenario(object):
         Move current event (head of pending list) to completed list and disable
         any timers that may have been started.
         '''
-        self._timer = False
+        self.cancel_timer()
         ev = self._pending_events.pop(0)
         log_debug("Test pass: {} - {}".format(ev.description, str(ev.event)))
         self._completed_events.append(ev)
@@ -763,8 +777,16 @@ class TestScenario(object):
         # or so to check that we actually receive a packet.
         if isinstance(self._pending_events[0].event, PacketOutputEvent):
             log_debug("Setting timer for next PacketOutputEvent")
-            signal.alarm(self.timeout)
-            signal.signal(signal.SIGALRM, self._timer_expiry)
+
+            signal.signal(self._sigrecv, self._timer_expiry)
+            if sys.origplatform.startswith('win'):
+                if self._tproc is not None:
+                    self._tproc.terminate()
+                    self._tproc.join()
+                self._tproc = Process(target=timerfn, args=(os.getpid(), self.timeout, self._sigsend))
+                self._tproc.start()
+            else:
+                signal.alarm(self.timeout)
             self._timer = True
 
         log_debug("Next event expected: "+str(self._pending_events[0].event))
@@ -902,6 +924,11 @@ class TestScenario(object):
                 log_warn("Unrecognized event type in scenario event list: {}".format(str(type(ev.event))))
                 nowarnings = False
         return nowarnings
+
+def timerfn(pid, tmo, sig):
+    signal.signal(signal.SIGBREAK, signal.SIG_IGN)
+    time.sleep(tmo)
+    os.kill(pid, sig)
 
 def compile_scenario(scenario_file, output_filename=None):
     '''

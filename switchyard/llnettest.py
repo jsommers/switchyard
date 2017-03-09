@@ -1,7 +1,6 @@
 import sys
 import argparse
 import os
-import signal
 import re
 import subprocess
 import time
@@ -184,9 +183,9 @@ def run_tests(scenario_names, usercode_entry_point, options):
 
         sobj.do_teardown()
 
-        # there may be a pending SIGALRM for ensuring test completion;
+        # there may be a pending signal for ensuring test completion;
         # turn it off.
-        signal.signal(signal.SIGALRM, signal.SIG_IGN)
+        # signal.signal(self._sigrecv, signal.SIG_IGN)
 
         sobj.print_summary()
 

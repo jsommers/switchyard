@@ -19,6 +19,8 @@ from switchyard.outputfmt import VerboseOutput
 _setup_ok = False
 _netobj = None
 
+platform = sys.platform
+
 def _parse_codeargs(argstr):
     '''
     Parse and clean up argument to user code; separate *args from
@@ -88,6 +90,9 @@ def start_framework(args):
             if not args.usercode:
                 log_failure("In test mode, but not user code supplied.")
                 return
+            global platform
+            platform = sys.platform
+            setattr(sys, "origplatform", platform)
             setattr(sys, "platform", "test")
             with Firewall([], args.fwconfig):
                 _setup_ok = True

@@ -2,6 +2,7 @@
 OF switch unit tests.
 '''
 
+import sys
 import unittest
 from unittest.mock import Mock, MagicMock
 
@@ -47,6 +48,11 @@ class LLNetDevTests(unittest.TestCase):
         self.real._fix_devinfo(self.devs)
         self.real._pcaps = Mock()
         self.real._pcaps.get = Mock(return_value=Mock())
+
+    @classmethod
+    def setUpClass(cls):
+        setattr(sys, "origplatform", sys.platform)
+        # setattr(sys, "platform", "test")
 
     def testFakeSendDevName(self):
         p = Packet()

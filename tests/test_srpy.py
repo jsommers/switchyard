@@ -340,6 +340,8 @@ s.close()
     def setUp(self):
         importlib.invalidate_caches()
         Firewall._instance = None
+        setattr(sys, "origplatform", sys.platform)
+
 
     @classmethod
     def setUpClass(cls):
