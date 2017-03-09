@@ -31,6 +31,7 @@ setup(name="switchyard",
               "Environment :: Console",
               "Intended Audience :: Education",
               "Intended Audience :: Science/Research",
+              "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
       ],
       long_description='''
 Switchyard is a library and framework for creating networked systems in Python.  It is primarily intended for educational use and supports creating devices from layer 2 (Ethernet) all the way through the application layer.
