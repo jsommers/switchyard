@@ -188,9 +188,14 @@ class _PcapFfi(object):
             isup = (tmp.flags & 0x2) == 0x2
             isrunning = (tmp.flags & 0x4) == 0x4
 
-            if isup and isrunning:
-                xif = PcapInterface(ext_name, xname, xdesc, isloop, isup, isrunning)
-                self._interfaces.append(xif)
+            # JS: I've observed that the isup and isrunning flags
+            # are patently false on some systems.  As a result, we
+            # blindly include all interfaces, regardless of their
+            # reported status (though we still include status flags
+            # in the interface object).
+            # if isup and isrunning:
+            xif = PcapInterface(ext_name, xname, xdesc, isloop, isup, isrunning)
+            self._interfaces.append(xif)
 
             tmp = tmp.next
         self._libpcap.pcap_freealldevs(pintf)
