@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-thisversion = '2017.01.6'
+thisversion = '2017.01.7'
 
 setup(name="switchyard", 
       version=thisversion,
