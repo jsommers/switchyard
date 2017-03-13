@@ -373,7 +373,7 @@ class PcapLiveDevice(object):
     '''
     _OpenDevices = {}
     _lock = Lock()
-    __slots__ = ['_pcapffi','_pcapdev','_devname']
+    __slots__ = ['_pcapffi','_pcapdev','_devname','_fd']
 
     def __init__(self, device, snaplen=65535, promisc=1, to_ms=100, filterstr=None):
         self._pcapffi = _PcapFfi.instance()
@@ -383,6 +383,7 @@ class PcapLiveDevice(object):
             PcapLiveDevice._OpenDevices[self._devname] = self._pcapdev
         if filterstr is not None:
             self._pcapffi.set_filter(self._pcapdev, filterstr)
+        self._fd = self._pcapffi.get_select_fd(self._pcapdev.pcap)
 
     @staticmethod
     def set_bpf_filter_on_all_devices(filterstr):
@@ -398,14 +399,24 @@ class PcapLiveDevice(object):
     def dlt(self):
         return self._pcapdev.dlt
 
+    @property
+    def fd(self):
+        return self._pcapffi.get_select_fd(self._pcapdev.pcap)
+
+    @property
+    def name(self):
+        return self._devname
+
+    def recv_packet_or_none(self):
+        return self._pcapffi.recv_packet(self._pcapdev.pcap)
+
     def recv_packet(self, timeout):
         if timeout is None or timeout < 0:
             timeout = None
 
-        fd = self._pcapffi.get_select_fd(self._pcapdev.pcap)
-        if fd >= 0:
+        if self._fd >= 0:
             try:
-                xread,xwrite,xerr = select([fd], [], [fd], timeout)
+                xread,xwrite,xerr = select([self._fd], [], [self._fd], timeout)
             except:
                 return None
             if xread:  
