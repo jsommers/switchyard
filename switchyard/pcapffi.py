@@ -2,7 +2,7 @@ from __future__ import print_function
 import sys
 from cffi import FFI
 from collections import namedtuple
-from enum import Enum
+from enum import Enum,IntEnum
 from time import time,sleep
 from select import select
 from threading import Lock
@@ -12,8 +12,10 @@ PcapStats = namedtuple('PcapStats', ['ps_recv','ps_drop','ps_ifdrop'])
 PcapPacket = namedtuple('PcapPacket', ['timestamp', 'capture_length', 'length', 'raw'])
 PcapDev = namedtuple('PcapDev', ['dlt','nonblock','snaplen','version','pcap'])
 
+
 class PcapException(Exception):
     pass
+
 
 class Dlt(Enum):
     '''
@@ -33,6 +35,13 @@ class Dlt(Enum):
     DLT_FDDI        = 10
     DLT_RAW         = 12
     DLT_LINUX_SLL   = 113
+
+
+class PcapDirection(IntEnum):
+    InOut = 0
+    In = 1
+    Out = 2
+
 
 class _PcapFfi(object):
     '''
@@ -108,6 +117,7 @@ class _PcapFfi(object):
         int pcap_snapshot(pcap_t *);
         int pcap_set_promisc(pcap_t *, int); // 0 on success
         int pcap_set_buffer_size(pcap_t *, int); // 0 on success
+        int pcap_setdirection(pcap_t *, int); // 0 on success
         int pcap_datalink(pcap_t *);
         int pcap_setnonblock(pcap_t *, int, char *); // 0 on success
         int pcap_getnonblock(pcap_t *, char *); 
@@ -331,8 +341,18 @@ class _PcapFfi(object):
             s = self._ffi.string(self._libpcap.pcap_geterr(xpcap))
             raise PcapException("Error getting stats: {}".format(s))
 
+    def set_direction(self, xpcap, xdirection):
+        rv = self._libpcap.pcap_setdirection(xpcap, int(xdirection))
+        if rv == 0:
+            return 
+        else:
+            s = self._ffi.string(self._libpcap.pcap_geterr(xpcap))
+            raise PcapException("Error getting stats: {}".format(s))
+
+
 def pcap_devices():
     return _PcapFfi.instance().devices
+
 
 class PcapDumper(object):
     __slots__ = ['_pcapffi','_dumper']
@@ -458,6 +478,10 @@ class PcapLiveDevice(object):
 
     def set_filter(self, filterstr):
         self._pcapffi.set_filter(self._pcapdev, filterstr)
+
+    def set_direction(self, xdir):
+        self._pcapffi.set_direction(self._pcapdev.pcap, xdir)
+
 
 _PcapFfi() # instantiate singleton
 
