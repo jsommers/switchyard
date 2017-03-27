@@ -43,6 +43,25 @@ class PcapDirection(IntEnum):
     Out = 2
 
 
+class PcapTstampType(IntEnum):
+    Host = 0
+    HostLowPrec = 1
+    HostHighPrec = 2
+    Adapter = 3
+    AdapterUnsync = 4
+
+
+class PcapTstampPrecision(IntEnum):
+    Micro = 0
+    Nano = 1
+
+
+class PcapWarning(IntEnum):
+    Generic = 1
+    PromiscNotSupported = 2
+    TstampTypeNotSupported = 3
+
+
 class _PcapFfi(object):
     '''
     This class represents the low-level interface to the libpcap library.
@@ -110,17 +129,27 @@ class _PcapFfi(object):
         void pcap_dump(pcap_dumper_t *, struct pcap_pkthdr *, unsigned char *);
 
         // live capture
-        pcap_t *pcap_create(const char *, char *); // source, errbuf
+        pcap_t *pcap_create(const char *, char *); 
         pcap_t *pcap_open_live(const char *, int, int, int, char *);
         pcap_t *pcap_open_offline(const char *fname, char *errbuf);
-        int pcap_set_snaplen(pcap_t *, int); // 0 on success
+        int pcap_set_snaplen(pcap_t *, int);
         int pcap_snapshot(pcap_t *);
-        int pcap_set_promisc(pcap_t *, int); // 0 on success
-        int pcap_set_buffer_size(pcap_t *, int); // 0 on success
-        int pcap_setdirection(pcap_t *, int); // 0 on success
+        int pcap_set_promisc(pcap_t *, int);
+
+        int pcap_set_timeout(pcap_t *, int);
+        int pcap_set_buffer_size(pcap_t *, int);
+
+        int pcap_set_tstamp_precision(pcap_t *, int);
+        int pcap_get_tstamp_precision(pcap_t *);
+        int pcap_set_tstamp_type(pcap_t *, int);
+        int pcap_list_tstamp_types(pcap_t *, int **);
+        void pcap_free_tstamp_types(int *);
+
+        int pcap_setdirection(pcap_t *, int); 
         int pcap_datalink(pcap_t *);
-        int pcap_setnonblock(pcap_t *, int, char *); // 0 on success
+        int pcap_setnonblock(pcap_t *, int, char *); 
         int pcap_getnonblock(pcap_t *, char *); 
+        int pcap_set_immediate_mode(pcap_t *, int);
         int pcap_next_ex(pcap_t *, struct pcap_pkthdr **, const unsigned char **);
         int pcap_activate(pcap_t *);
         void pcap_close(pcap_t *);
@@ -214,18 +243,71 @@ class _PcapFfi(object):
     def devices(self):
         return self._interfaces
 
-    def open_dumper(self, outfile, dltype=Dlt.DLT_EN10MB, snaplen=65535):
+    @property
+    def lib(self):
+        return self._libpcap
+
+    @property
+    def ffi(self):
+        return self._ffi
+
+    def _recv_packet(self, xdev):
+        phdr = self._ffi.new("struct pcap_pkthdr **")
+        pdata = self._ffi.new("unsigned char **")
+        rv = self._libpcap.pcap_next_ex(xdev, phdr, pdata)
+        if rv == 1:
+            rawpkt = bytes(self._ffi.buffer(pdata[0], phdr[0].caplen))
+            ts = float("{}.{}".format(phdr[0].tv_sec, phdr[0].tv_usec))
+            return PcapPacket(ts, phdr[0].caplen, phdr[0].len, rawpkt)
+        elif rv == 0:
+            # timeout; nothing to return
+            return None
+        elif rv == -1:
+            # error on receive; raise an exception
+            s = self._ffi.string(self._libpcap.pcap_geterr(xpcap))
+            raise PcapException("Error receiving packet: {}".format(s)) 
+        elif rv == -2:
+            # reading from savefile, but none left
+            return None
+
+    def _set_filter(self, xdev, filterstr):
+        bpf = self._ffi.new("struct bpf_program *")
+        cfilter = self._ffi.new("char []", bytes(filterstr, 'ascii'))
+        compile_result = self._libpcap.pcap_compile(xdev, bpf, cfilter, 0, 0xffffffff)
+        if compile_result < 0:
+            # get error, raise exception
+            s = self._ffi.string(self._libpcap.pcap_geterr(xdev))
+            raise PcapException("Error compiling filter expression: {}".format(s)) 
+
+        sf_result = self._libpcap.pcap_setfilter(xdev, bpf)
+        if sf_result < 0:
+            # get error, raise exception
+            s = self._ffi.string(self._libpcap.pcap_geterr(xdev))
+            raise PcapException("Error setting filter on pcap handle: {}".format(s)) 
+        self._libpcap.pcap_freecode(bpf)
+
+
+def pcap_devices():
+    return _PcapFfi.instance().devices
+
+
+class PcapDumper(object):
+    __slots__ = ['_ffi','_libpcap','_base','_dumper']
+
+    def __init__(self, outfile, dltype=Dlt.DLT_EN10MB, snaplen=65535):
+        self._base = _PcapFfi.instance()
+        self._ffi = self._base.ffi
+        self._libpcap = self._base.lib
         pcap = self._libpcap.pcap_open_dead(dltype.value, snaplen)
         xoutfile = self._ffi.new("char []", bytes(outfile, 'ascii'))
         pcapdump = self._libpcap.pcap_dump_open(pcap, xoutfile) 
         dl = self._libpcap.pcap_datalink(pcap)
         snaplen = self._libpcap.pcap_snapshot(pcap)
-        return PcapDev(Dlt(dl), 0, snaplen, self.version, pcapdump)
+        self._dumper = PcapDev(Dlt(dl), 0, snaplen, _PcapFfi.instance().version, pcapdump)
 
-    def close_dumper(self, pcapdump):
-        self._libpcap.pcap_dump_close(pcapdump)
-
-    def write_packet(self, dumper, pkt, ts=None):
+    def write_packet(self, pkt, ts=None):
+        if not isinstance(pkt, bytes):
+            raise PcapException("Packet to be written needs to be a Python bytes object")
         pkthdr = self._ffi.new("struct pcap_pkthdr *")
         if not ts:
             ts = time()
@@ -234,9 +316,23 @@ class _PcapFfi(object):
         pkthdr.caplen = len(pkt)
         pkthdr.len = len(pkt)
         xpkt = self._ffi.new("unsigned char []", pkt)
-        self._libpcap.pcap_dump(dumper, pkthdr, xpkt)
+        self._libpcap.pcap_dump(self._dumper.pcap, pkthdr, xpkt)
 
-    def open_pcap_file(self, filename):
+    def close(self):
+        self._libpcap.pcap_dump_close(self._dumper.pcap)
+
+
+class PcapReader(object):
+    '''
+    Class the represents a reader of an existing pcap capture file.
+    '''
+    __slots__ = ['_ffi','_libpcap','_base','_pcapdev']
+
+    def __init__(self, filename, filterstr=None):
+        self._base = _PcapFfi.instance()
+        self._ffi = self._base.ffi
+        self._libpcap = self._base.lib
+
         errbuf = self._ffi.new("char []", 128)
         pcap = self._libpcap.pcap_open_offline(bytes(filename, 'ascii'), errbuf)
         if pcap == self._ffi.NULL:
@@ -247,17 +343,55 @@ class _PcapFfi(object):
             dl = Dlt(dl)
         except ValueError as e:
             raise PcapException("Don't know how to handle datalink type {}".format(dl))
-        return PcapDev(dl, 0, 0, self.version, pcap)
+        self._pcapdev = PcapDev(dl, 0, 0, _PcapFfi.instance().version, pcap)
 
-    def open_live(self, device, snaplen=65535, promisc=1, to_ms=100, nonblock=True):
+        if filterstr is not None:
+            self._base._set_filter(pcap, filterstr)
+
+    def close(self):
+        self._libpcap.pcap_close(self._pcapdev.pcap)
+
+    def recv_packet(self):
+        return self._base._recv_packet(self._pcapdev.pcap)
+
+    def set_filter(self, filterstr):
+        self._base._set_filter(self._pcapdev.pcap, filterstr)
+
+
+class PcapLiveDevice(object):
+    '''
+    Class the represents a live pcap capture/injection device.
+    '''
+    _OpenDevices = {} # objectid -> low-level pcap dev
+    _lock = Lock()
+    __slots__ = ['_ffi','_libpcap','_base','_pcapdev','_devname','_fd']
+
+    def __init__(self, device, snaplen=65535, promisc=1, to_ms=100, 
+                 filterstr=None, nonblock=True, only_create=False):
+        self._base = _PcapFfi.instance()
+        self._ffi = self._base.ffi
+        self._libpcap = self._base.lib
+        self._fd = None
+
         errbuf = self._ffi.new("char []", 128)
         internal_name = None
-        for dev in self._interfaces:
+        for dev in self._base._interfaces:
             if dev.name == device:
                 internal_name = dev.internal_name
                 break
         if internal_name is None:
             raise Exception("No such device {} exists.".format(device))
+        self._devname = device
+        self._pcapdev = None
+
+        if only_create:
+            pcap = self._libpcap.pcap_create(bytes(internal_name, 'ascii'), errbuf)
+            self._pcapdev = PcapDev(0, 0, 0, _PcapFfi.instance().version, pcap)
+            with PcapLiveDevice._lock:
+                PcapLiveDevice._OpenDevices[id(self)] = pcap
+            if pcap == self._ffi.NULL:
+                raise PcapException("Failed to open live device {}: {}".format(internal_name, self._ffi.string(errbuf)))
+            return
 
         pcap = self._libpcap.pcap_open_live(bytes(internal_name, 'ascii'), snaplen, promisc, to_ms, errbuf)
         if pcap == self._ffi.NULL:
@@ -276,134 +410,121 @@ class _PcapFfi(object):
             dl = Dlt(dl)
         except ValueError as e:
             raise PcapException("Don't know how to handle datalink type {}".format(dl))
-        return PcapDev(dl, nblock, snaplen, self.version, pcap)
 
-    def close_live(self, pcap):
-        self._libpcap.pcap_close(pcap)
+        self._pcapdev = PcapDev(dl, nblock, snaplen, _PcapFfi.instance().version, pcap)
+        self._fd = self._libpcap.pcap_get_selectable_fd(self._pcapdev.pcap)
 
-    def get_select_fd(self, xpcap):
-        try:
-            return self._libpcap.pcap_get_selectable_fd(xpcap)
-        except:
-            return -1
-
-    def send_packet(self, xpcap, xbuffer):
-        if not isinstance(xbuffer, bytes):
-            raise PcapException("Packets to be sent via libpcap must be serialized as a bytes object")
-        xlen = len(xbuffer)
-        rv = self._libpcap.pcap_sendpacket(xpcap, xbuffer, xlen)
-        if rv == 0:
-            return True
-        s = self._ffi.string(self._libpcap.pcap_geterr(xpcap))
-        raise PcapException("Error sending packet: {}".format(s))
-
-    def recv_packet(self, xpcap):
-        phdr = self._ffi.new("struct pcap_pkthdr **")
-        pdata = self._ffi.new("unsigned char **")
-        rv = self._libpcap.pcap_next_ex(xpcap, phdr, pdata)
-        if rv == 1:
-            rawpkt = bytes(self._ffi.buffer(pdata[0], phdr[0].caplen))
-            ts = float("{}.{}".format(phdr[0].tv_sec, phdr[0].tv_usec))
-            return PcapPacket(ts, phdr[0].caplen, phdr[0].len, rawpkt)
-        elif rv == 0:
-            # timeout; nothing to return
-            return None
-        elif rv == -1:
-            # error on receive; raise an exception
-            s = self._ffi.string(self._libpcap.pcap_geterr(xpcap))
-            raise PcapException("Error receiving packet: {}".format(s)) 
-        elif rv == -2:
-            # reading from savefile, but none left
-            return None
-
-    def set_filter(self, xpcap, filterstr):
-        bpf = self._ffi.new("struct bpf_program *")
-        cfilter = self._ffi.new("char []", bytes(filterstr, 'ascii'))
-        compile_result = self._libpcap.pcap_compile(xpcap.pcap, bpf, cfilter, 0, 0xffffffff)
-        if compile_result < 0:
-            # get error, raise exception
-            s = self._ffi.string(self._libpcap.pcap_geterr(xpcap.pcap))
-            raise PcapException("Error compiling filter expression: {}".format(s)) 
-
-        sf_result = self._libpcap.pcap_setfilter(xpcap.pcap, bpf)
-        if sf_result < 0:
-            # get error, raise exception
-            s = self._ffi.string(self._libpcap.pcap_geterr(xpcap.pcap))
-            raise PcapException("Error setting filter on pcap handle: {}".format(s)) 
-        self._libpcap.pcap_freecode(bpf)
-
-    def stats(self, xpcap):
-        pstat = self._ffi.new("struct pcap_stat *")
-        rv = self._libpcap.pcap_stats(xpcap, pstat)
-        if rv == 0:
-            return PcapStats(pstat.recv,pstat.drop,pstat.ifdrop)
-        else:
-            s = self._ffi.string(self._libpcap.pcap_geterr(xpcap))
-            raise PcapException("Error getting stats: {}".format(s))
-
-    def set_direction(self, xpcap, xdirection):
-        rv = self._libpcap.pcap_setdirection(xpcap, int(xdirection))
-        if rv == 0:
-            return 
-        else:
-            s = self._ffi.string(self._libpcap.pcap_geterr(xpcap))
-            raise PcapException("Error getting stats: {}".format(s))
-
-
-def pcap_devices():
-    return _PcapFfi.instance().devices
-
-
-class PcapDumper(object):
-    __slots__ = ['_pcapffi','_dumper']
-    def __init__(self, outfile):
-        self._pcapffi = _PcapFfi.instance()
-        self._dumper = self._pcapffi.open_dumper(outfile)
-        # print ("Got pcap dump device: {}".format(self._dumper))
-
-    def write_packet(self, pkt, ts=None):
-        if not isinstance(pkt, bytes):
-            raise PcapException("Packet to be written needs to be a Python bytes object")
-        self._pcapffi.write_packet(self._dumper.pcap, pkt, ts=ts)
-
-    def close(self):
-        self._pcapffi.close_dumper(self._dumper.pcap)
-
-class PcapReader(object):
-    '''
-    Class the represents a reader of an existing pcap capture file.
-    '''
-    __slots__ = ['_pcapffi','_pcapdev']
-
-    def __init__(self, filename, filterstr=None):
-        self._pcapffi = _PcapFfi.instance()
-        self._pcapdev = self._pcapffi.open_pcap_file(filename)
-        if filterstr is not None:
-            self._pcapffi.set_filter(self._pcapdev, filterstr)
-
-    def close(self):
-        self._pcapffi.close_live(self._pcapdev.pcap)
-
-    def recv_packet(self):
-        return self._pcapffi.recv_packet(self._pcapdev.pcap)
-
-class PcapLiveDevice(object):
-    '''
-    Class the represents a live pcap capture/injection device.
-    '''
-    _OpenDevices = {}
-    _lock = Lock()
-    __slots__ = ['_pcapffi','_pcapdev','_devname','_fd']
-
-    def __init__(self, device, snaplen=65535, promisc=1, to_ms=100, filterstr=None):
-        self._pcapffi = _PcapFfi.instance()
-        self._pcapdev = self._pcapffi.open_live(device)
-        self._devname = device
         with PcapLiveDevice._lock:
-            PcapLiveDevice._OpenDevices[self._devname] = self._pcapdev
+            PcapLiveDevice._OpenDevices[id(self)] = self._pcapdev.pcap
+
         if filterstr is not None:
-            self._pcapffi.set_filter(self._pcapdev, filterstr)
-        self._fd = self._pcapffi.get_select_fd(self._pcapdev.pcap)
+            self.set_filter(filterstr)
+
+    @staticmethod
+    def create(device):
+        return PcapLiveDevice(device, only_create=True)
+
+    def activate(self):
+        rv = self._libpcap.pcap_activate(self._pcapdev.pcap) 
+        if rv < 0:
+            s = self._ffi.string(self._libpcap.pcap_geterr(self._pcapdev.pcap))
+            raise PcapException("Error activating: {} {}".format(rv, s))
+
+        warning = 0
+        if rv > 0:
+            warning = PcapWarning(rv)
+
+        self._pcapdev = PcapDev(self.dlt, self.blocking, self.snaplen, 
+                _PcapFfi.instance().version, self._pcapdev.pcap)
+        return warning
+
+    @property
+    def blocking(self):
+        errbuf = self._ffi.new("char []", 128)
+        rv = self._libpcap.pcap_getnonblock(self._pcapdev.pcap, errbuf)
+        if rv != 0:
+            raise PcapException("Error getting nonblock state: {}".format(self._ffi.string(errbuf)))
+        return bool(rv)
+
+    @blocking.setter
+    def blocking(self, value):
+        errbuf = self._ffi.new("char []", 128)
+        rv = self._libpcap.pcap_setnonblock(self._pcapdev.pcap, int(value), errbuf)
+        if rv != 0:
+            raise PcapException("Error setting nonblock state: {}".format(self._ffi.string(errbuf)))
+
+    @property
+    def snaplen(self):
+        return self._libpcap.pcap_snapshot(self._pcapdev.pcap)
+
+    @snaplen.setter
+    def snaplen(self, value):
+        rv = self._libpcap.pcap_set_snaplen(self._pcapdev.pcap, int(value))
+        if rv != 0:
+            s = self._ffi.string(self._libpcap.pcap_geterr(self._pcapdev.pcap))
+            raise PcapException("Error setting snaplen: {}".format(s))
+
+    def set_promiscuous(self, value):
+        rv = self._libpcap.pcap_set_promisc(self._pcapdev.pcap, int(value))
+        if rv != 0:
+            s = self._ffi.string(self._libpcap.pcap_geterr(self._pcapdev.pcap))
+            raise PcapException("Error setting promiscuous mode: {}".format(s))
+
+    def set_timeout(self, value): 
+        rv = self._libpcap.pcap_set_timeout(self._pcapdev.pcap, int(value))
+        if rv != 0:
+            s = self._ffi.string(self._libpcap.pcap_geterr(self._pcapdev.pcap))
+            raise PcapException("Error setting timeout value: {}".format(s))
+
+    def set_buffer_size(self, value): 
+        rv = self._libpcap.pcap_set_buffer_size(self._pcapdev.pcap, int(value))
+        if rv != 0:
+            s = self._ffi.string(self._libpcap.pcap_geterr(self._pcapdev.pcap))
+            raise PcapException("Error setting timeout value: {}".format(s))
+
+    def set_immediate_mode(self, value):
+        rv = self._libpcap.pcap_set_immediate_mode(self._pcapdev.pcap, int(value))
+        if rv != 0:
+            s = self._ffi.string(self._libpcap.pcap_geterr(self._pcapdev.pcap))
+            raise PcapException("Error setting immediate mode: {}".format(s))
+
+    def list_tstamp_types(self):
+        errbuf = self._ffi.new("char []", 128)
+        ppint = self._ffi.new("int * *")
+        rv = self._libpcap.pcap_list_tstamp_types(self._pcapdev.pcap, ppint)
+        if rv < 0:
+            raise PcapException("Error getting tstamp type list: {}".format(self._ffi.string(errbuf)))
+
+        xints = ppint[0]
+        tstamptypes = []
+        for i in range(rv):
+            tstamptypes.append(PcapTstampType(xints[i]))
+
+        self._libpcap.pcap_free_tstamp_types(xints)
+        return tstamptypes
+
+    def set_tstamp_type(self, value): 
+        value = PcapTstampType(value)
+        valid_types = self.list_tstamp_types()
+        if value not in valid_types:
+            raise PcapException("Not a valid tstamp type for this device (see list_tstamp_types)")
+        rv = self._libpcap.pcap_set_tstamp_type(self._pcapdev.pcap, int(value))
+        if rv != 0:
+            s = self._ffi.string(self._libpcap.pcap_geterr(self._pcapdev.pcap))
+            raise PcapException("Error setting timestamp type: {}".format(s))
+
+    @property
+    def tstamp_precision(self):
+        val = self._libpcap.pcap_get_tstamp_precision(self._pcapdev.pcap)
+        return PcapTstampPrecision(val)
+
+    @tstamp_precision.setter
+    def tstamp_precision(self, value):
+        value = PcapTstampPrecision(value)
+        rv = self._libpcap.pcap_set_tstamp_precision(self._pcapdev.pcap, int(value))
+        if rv != 0:
+            s = self._ffi.string(self._libpcap.pcap_geterr(self._pcapdev.pcap))
+            raise PcapException("Error setting timestamp precision: {}".format(s))
 
     @staticmethod
     def set_bpf_filter_on_all_devices(filterstr):
@@ -413,24 +534,48 @@ class PcapLiveDevice(object):
         '''
         with PcapLiveDevice._lock:
             for dev in PcapLiveDevice._OpenDevices.values():
-                _PcapFfi.instance().set_filter(dev, filterstr)
+                _PcapFfi.instance()._set_filter(dev, filterstr)
 
     @property
     def dlt(self):
-        return self._pcapdev.dlt
+        dl = self._libpcap.pcap_datalink(self._pcapdev.pcap)
+        try:
+            rv = Dlt(dl)
+            return rv
+        except:
+            raise PcapException("Don't know how to handle datalink type {}".format(dl))
 
     @property
     def fd(self):
-        return self._pcapffi.get_select_fd(self._pcapdev.pcap)
+        if self._fd is not None:
+            return self._fd
+        try:
+            fd = self._libpcap.pcap_get_selectable_fd(self._pcapdev.pcap)
+            self._fd = fd
+            return fd
+        except:
+            s = self._ffi.string(self._libpcap.pcap_geterr(xpcap))
+            raise PcapException("Error getting select fd: {}".format(s))
 
     @property
     def name(self):
         return self._devname
 
+    def send_packet(self, xbuffer):
+        if not isinstance(xbuffer, bytes):
+            raise PcapException("Packets to be sent via libpcap must be serialized as a bytes object")
+        xlen = len(xbuffer)
+        rv = self._libpcap.pcap_sendpacket(self._pcapdev.pcap, xbuffer, xlen)
+        if rv == 0:
+            return True
+        s = self._ffi.string(self._libpcap.pcap_geterr(xpcap))
+        raise PcapException("Error sending packet: {}".format(s))
+
     def recv_packet_or_none(self):
-        return self._pcapffi.recv_packet(self._pcapdev.pcap)
+        return self._base._recv_packet(self._pcapdev.pcap)
 
     def recv_packet(self, timeout):
+        # FIXME: ugly and long
         if timeout is None or timeout < 0:
             timeout = None
 
@@ -440,7 +585,7 @@ class PcapLiveDevice(object):
             except:
                 return None
             if xread:  
-                return self._pcapffi.recv_packet(self._pcapdev.pcap)
+                return self._base._recv_packet(self._pcapdev.pcap)
             # timeout; return nothing
             return None
         elif self._pcapdev.nonblock:
@@ -452,35 +597,43 @@ class PcapLiveDevice(object):
                 expiry = now + timeout
                 while now < expiry:
                     sleep(timeout/10)
-                    pkt = self._pcapffi.recv_packet(self._pcapdev.pcap)
+                    pkt = self._base._recv_packet(self._pcapdev.pcap)
                     if pkt:
                         return pkt
                     now = time()
                 # after all that, still got nothing.
                 return None
             else:
-                return self._pcapffi.recv_packet(self._pcapdev.pcap)
+                return self._base._recv_packet(self._pcapdev.pcap)
         else:
             # no select, no non-blocking mode.  block away, my friend.
-            return self._pcapffi.recv_packet(self._pcapdev.pcap)
-
-    def send_packet(self, packet):
-        self._pcapffi.send_packet(self._pcapdev.pcap, packet)
+            return self._base._recv_packet(self._pcapdev.pcap)
 
     def close(self):
         with PcapLiveDevice._lock:
-            # print("In close; existing devs: {}".format(list(PcapLiveDevice._OpenDevices.keys())))
-            del PcapLiveDevice._OpenDevices[self._devname]
-        self._pcapffi.close_live(self._pcapdev.pcap)
+            xid = id(self)
+            del PcapLiveDevice._OpenDevices[xid]
+        self._libpcap.pcap_close(self._pcapdev.pcap)
 
     def stats(self):
-        return self._pcapffi.stats(self._pcapdev.pcap)
+        pstat = self._ffi.new("struct pcap_stat *")
+        rv = self._libpcap.pcap_stats(self._pcapdev.pcap, pstat)
+        if rv == 0:
+            return PcapStats(pstat.recv,pstat.drop,pstat.ifdrop)
+        else:
+            s = self._ffi.string(self._libpcap.pcap_geterr(xpcap))
+            raise PcapException("Error getting stats: {}".format(s))
 
     def set_filter(self, filterstr):
-        self._pcapffi.set_filter(self._pcapdev, filterstr)
+        self._base._set_filter(self._pcapdev.pcap, filterstr)
 
-    def set_direction(self, xdir):
-        self._pcapffi.set_direction(self._pcapdev.pcap, xdir)
+    def set_direction(self, direction):
+        rv = self._libpcap.pcap_setdirection(self._pcapdev.pcap, int(direction))
+        if rv == 0:
+            return 
+        else:
+            s = self._ffi.string(self._libpcap.pcap_geterr(self._pcapdev.pcap))
+            raise PcapException("Error setting direction: {}".format(s))
 
 
 _PcapFfi() # instantiate singleton

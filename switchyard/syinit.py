@@ -38,9 +38,23 @@ def _parse_codeargs(argstr):
     rd = {'args':args, 'kwargs':kwargs}
     return rd
 
+def _assemble_device_list(args):
+    if args.exclude is None:
+        args.exclude = []
+    if args.intf is None:
+        args.intf = []
+    devlist = make_device_list(includes=args.intf, excludes=args.exclude)
+    return devlist
+
 def start_framework(args):
     global _netobj, _setup_ok
     setup_logging(args.debug, args.logfile)
+
+    if args.listif:
+        devlist = _assemble_device_list(args)
+        dlist = [ str(d) for d in devlist ]
+        log_info("Devices found: {}".format(','.join(dlist)))
+        return
 
     # assume testmode if compile flag is set
     testmode = False
@@ -103,12 +117,9 @@ def start_framework(args):
             log_warn("You're running in real mode, but not as root.  "
                 "You should expect errors, but I'm going to "
                 "continue anyway.")
-        if args.exclude is None:
-            args.exclude = []
-        if args.intf is None:
-            args.intf = []
 
-        devlist = make_device_list(includes=args.intf, excludes=args.exclude)
+        devlist = _assemble_device_list(args)
+
         if not devlist:
             log_failure("There are no network interfaces I can use after "
                         "processing include/exclude lists")

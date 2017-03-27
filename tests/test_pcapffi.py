@@ -7,78 +7,93 @@ from switchyard.lib.packet import *
 import switchyard.pcapffi as pf
 
 class PcapFfiTests(unittest.TestCase):
-    def testWriteRead(self):
+    def testWriteRead1(self):
         dump = pf.PcapDumper("testXX.pcap")
-        pkt = Ethernet() + IPv6() + ICMPv6()
-        pkt[0].ethertype = EtherType.IPv6
-        pkt[1].nextheader = IPProtocol.ICMPv6
+        pkt = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00E\x00\x00\x1c\x00\x00\x00\x00\x00\x01\xba\xe2\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\xf7\xff\x00\x00\x00\x00'
+        dump.write_packet(pkt)
         with self.assertRaises(pf.PcapException):
-            dump.write_packet(pkt)
-        dump.write_packet(pkt.to_bytes())
+            dump.write_packet("hello, world")
         dump.close()
 
         reader = pf.PcapReader("testXX.pcap")
-        count = 0
+        reader.set_filter("icmp")
+        pkts = []
         while True:
             p = reader.recv_packet()
-            if not p:
+            if p is None:
                 break
-            count += 1
-            if count == 1:
-                rpkt = Packet(raw=p.raw)
-                self.assertEqual(pkt, rpkt)
+            pkts.append(p)
         reader.close()
-        self.assertEqual(count, 1)
+        self.assertEqual(len(pkts), 1)
+        self.assertEqual(pkts[0].capture_length, len(pkt))
+        self.assertEqual(pkts[0].length, len(pkt))
+        self.assertEqual(pkts[0].raw, pkt)
         os.unlink("testXX.pcap")
 
-    def testLowLevel(self):
+    def testWriteRead2(self):
+        dump = pf.PcapDumper("testXX.pcap")
+        pkt = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00E\x00\x00\x1c\x00\x00\x00\x00\x00\x01\xba\xe2\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\xf7\xff\x00\x00\x00\x00'
+        dump.write_packet(pkt)
+        with self.assertRaises(pf.PcapException):
+            dump.write_packet("hello, world")
+        dump.close()
+
+        reader = pf.PcapReader("testXX.pcap")
+        reader.set_filter("tcp")
+        pkts = []
+        while True:
+            p = reader.recv_packet()
+            if p is None:
+                break
+            pkts.append(p)
+        reader.close()
+        self.assertEqual(len(pkts), 0)
+        os.unlink("testXX.pcap")
+
+    def testAnotherInstance(self):
         with self.assertRaises(Exception):
             pf._PcapFfi()
-        xffi = pf._PcapFfi._instance._ffi
-        xlibpcap = pf._PcapFfi._instance._libpcap
-        pf._PcapFfi._instance._ffi = Mock()
-        pf._PcapFfi._instance._libpcap = Mock()
-        pf._PcapFfi._instance._libpcap.pcap_setnonblock = Mock(return_value=0)
-        pf._PcapFfi._instance._libpcap.pcap_getnonblock = Mock(return_value=1)
-        pf._PcapFfi._instance._libpcap.pcap_snapshot = Mock(return_value=1972)
-        pf._PcapFfi._instance._libpcap.pcap_datalink = Mock(return_value=13)
 
         with self.assertRaises(Exception):
             pf._PcapFfi._instance.discoverdevs()
 
+    def testCreate(self):
         devs = pf.pcap_devices()
-        if len(devs):
-            self.assertIsInstance(devs[0], pf.PcapInterface)
-            xname = devs[0].name
-            with self.assertRaises(pf.PcapException):
-                pf._PcapFfi._instance.open_live(xname)
-            pf._PcapFfi._instance._libpcap.pcap_datalink = Mock(return_value=0)
-            pcapx = pf._PcapFfi._instance.open_live(xname)
-            self.assertEqual(pcapx.dlt, pf.Dlt.DLT_NULL)
-            self.assertEqual(pcapx.snaplen, 1972)
-            self.assertEqual(pcapx.nonblock, 1)
-
-            pf._PcapFfi._instance._libpcap.pcap_sendpacket = Mock(return_value=0)
-            with self.assertRaises(pf.PcapException):
-                pf._PcapFfi._instance.send_packet(pcapx, Packet())
-            rv = pf._PcapFfi._instance.send_packet(pcapx, b'\xbe\xef')
-            self.assertTrue(rv)
-            pf._PcapFfi._instance._libpcap.pcap_geterr = Mock(return_value="fake error")
-            pf._PcapFfi._instance._libpcap.pcap_sendpacket = Mock(return_value=-1)
-            with self.assertRaises(pf.PcapException):
-                rv = pf._PcapFfi._instance.send_packet(pcapx, b'\xbe\xef')
-                
-        livedev = pf.PcapLiveDevice("en0")
-        self.assertEqual(len(pf.PcapLiveDevice._OpenDevices), 1)
-        self.assertIn("en0", pf.PcapLiveDevice._OpenDevices)
-        pf._PcapFfi._instance._libpcap.pcap_sendpacket = Mock(return_value=0)
-        self.assertIsNone(livedev.send_packet(b'\x00'))
-
-        livedev.close()
-        self.assertEqual(len(pf.PcapLiveDevice._OpenDevices), 0)
-
-        pf._PcapFfi._instance._ffi = xffi
-        pf._PcapFfi._instance._libpcap = xlibpcap
+        xname = devs[0].name
+        px = pf.PcapLiveDevice.create(xname)
+        px.snaplen = 80
+        px.set_promiscuous(True)
+        px.set_timeout(0)
+        px.set_immediate_mode(True)
+        px.set_buffer_size(4096) 
+        try:
+            px.set_tstamp_type(PcapTstampType.Host)
+        except:
+            pass
+        self.assertEqual(px.tstamp_precision, pf.PcapTstampPrecision.Micro)
+        xlist = px.list_tstamp_types()
+        self.assertIsInstance(xlist, list)
+        try:
+            px.tstamp_precision = PcapTstampPrecision.Nano
+            self.assertEqual(px.tstamp_precision, pf.PcapTstampPrecision.Nano)
+        except:
+            self.assertEqual(px.tstamp_precision, pf.PcapTstampPrecision.Micro)
+        with self.assertRaises(pf.PcapException):
+            px.blocking
+        with self.assertRaises(pf.PcapException):
+            px.blocking = True
+        with self.assertRaises(pf.PcapException):            
+            x = px.dlt # exc because not activated
+        self.assertEqual(px.fd, -1)     
+        with self.assertRaises(pf.PcapException):
+            px.send_packet("hello, world") # not bytes
+        self.assertIsNone(px.recv_packet(0))
+        self.assertIsNone(px.recv_packet_or_none())
+        with self.assertRaises(pf.PcapException):
+            px.set_direction(pf.PcapDirection.InOut) # not active
+        with self.assertRaises(pf.PcapException):
+            px.set_filter("icmp") # not active
+        px.close()
 
 if __name__ == '__main__':
     unittest.main()

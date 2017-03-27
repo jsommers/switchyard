@@ -157,7 +157,10 @@ class LLNetReal(LLNetBase):
                 else:
                     mask = IPv4Address(mask)
             ifnum = socket.if_nametoindex(devname)
-            if macaddr is None:
+            if macaddr is None and ipaddr is not None:
+                # likely the loopback 
+                macaddr = "00:00:00:00:00:00"
+            else:
                 continue
             devinfo[devname] = Interface(devname, macaddr, ipaddr, netmask=mask, ifnum=ifnum, iftype=devtype[devname])
         return devinfo
@@ -171,7 +174,7 @@ class LLNetReal(LLNetBase):
         self._pcaps = {}
         for devname,intf in self._devinfo.items():
             if intf.iftype == InterfaceType.Loopback:
-                senddev = _RawSocket(devname)
+                senddev = _RawSocket(devname, protocol=IPProtocol.UDP)
                 self._localsend[devname] = senddev
             pdev = PcapLiveDevice(devname) 
             self._pcaps[devname] = pdev
@@ -322,10 +325,9 @@ class _RawSocket(object):
     We implement the same set of methods as PcapLiveDevice (in .pcapffi)
     to make it quack like all other interfaces.
     '''
-    def __init__(self, name):
+    def __init__(self, name, protocol=IPProtocol.ICMP):
         self._name = name
-        # restrict to UDP?
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, IPProtocol.UDP)
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, protocol)
         self._sock.setsockopt(socket.SOL_IP, socket.IP_HDRINCL, 1)
         self._sock.setblocking(True)
         self._sent = self._recv = 0
@@ -358,7 +360,7 @@ class _RawSocket(object):
         if n == 0:
             raise PcapException("{}: packet doesn't have any headers".format(self._name))
         first = packet[0]
-        if isinstance(first, Null):
+        if isinstance(first, (Null,Ethernet)):
             del packet[0]
             n -= 1
             if n == 0:
@@ -368,7 +370,10 @@ class _RawSocket(object):
             raise PcapException("{}: first header must be IPv4 or IPv6".format(self._name))
 
         raw = packet.to_bytes()
-        addr = (str(packet[0].dst), packet.get_header(UDP).dst)
+        port = 0
+        if packet.has_header(UDP):
+            port = packet[UDP].dst
+        addr = (str(packet[0].dst), port)
 
         # everything in raw is in *network* byte order, but raw socket on
         # macos expects offset and length in *host* byte order.  yup, it's

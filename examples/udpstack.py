@@ -4,6 +4,7 @@ from switchyard.lib.userlib import *
 
 def main(net):
     intf = None
+    
     for i in net.interfaces():
         if i.iftype == InterfaceType.Loopback:
             intf = i

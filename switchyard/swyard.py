@@ -69,8 +69,11 @@ def main():
     parser.add_argument("--topology", help="Specify topology to use for simulation"
         " (only used if --cli is specified).",
         dest="topology", type=str, default=None)
+    parser.add_argument("--listif", help="List available interfaces (then exit)",
+        dest="listif", action="store_true", default=False)
     args = parser.parse_args()
-    if args.usercode is None and not args.compile:
+
+    if (args.usercode is None and not args.compile) and not args.listif:
         parser.print_usage()
         return -1
     start_framework(args)
