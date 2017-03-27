@@ -342,7 +342,6 @@ s.close()
         Firewall._instance = None
         setattr(sys, "origplatform", sys.platform)
 
-
     @classmethod
     def setUpClass(cls):
         def writeFile(name, contents):
@@ -392,6 +391,7 @@ s.close()
         o.topology = kwargs.get('topology', None)
         o.codearg = _parse_codeargs(kwargs.get('codearg', ''))
         o.logfile = _parse_codeargs(kwargs.get('logfile', None))
+        o.listif = kwargs.get('listif', False)
         return o
 
     @classmethod
@@ -614,7 +614,7 @@ s.close()
 
     def testCompileWithCode(self):
         from switchyard.syinit import start_framework
-        o = self._makeOptions(debug=True, app=None,compile=['stest3'], usercode='ucode13')
+        o = self._makeOptions(debug=True, app=None, compile=['stest3'], usercode='ucode13')
         with redirectio() as xio:
             with self.assertLogs(level='DEBUG') as cm:
                 start_framework(o)
@@ -648,7 +648,7 @@ s.close()
         netmock = Mock(return_value=Mock())
         import switchyard.syinit
         setattr(switchyard.syinit, "main_real", mrmock)
-        setattr(switchyard.syinit, "make_device_list", mrmock)
+        setattr(switchyard.syinit, "make_device_list", mdlmock)
         setattr(switchyard.syinit, "LLNetReal", netmock)
 
         with redirectio() as xio:
@@ -666,7 +666,7 @@ s.close()
         netmock = Mock(return_value=Mock())
         import switchyard.syinit
         setattr(switchyard.syinit, "main_real", mrmock)
-        setattr(switchyard.syinit, "make_device_list", mdlmock)
+        setattr(switchyard.syinit, "_assemble_device_list", mdlmock)
         setattr(switchyard.syinit, "LLNetReal", netmock)
 
         with redirectio() as xio:
@@ -686,7 +686,7 @@ s.close()
         netmock = Mock(return_value=Mock())
         import switchyard.syinit
         setattr(switchyard.syinit, "LLNetReal", netmock)
-        setattr(switchyard.syinit, "make_device_list", mdlmock)
+        setattr(switchyard.syinit, "_assemble_device_list", mdlmock)
 
         with redirectio() as xio:
             with self.assertLogs(level='DEBUG') as cm:

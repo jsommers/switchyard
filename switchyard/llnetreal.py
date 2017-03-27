@@ -39,27 +39,27 @@ class LLNetReal(LLNetBase):
         signal.signal(signal.SIGUSR2, self._sig_handler)
 
         self._devs = devlist 
-        self._devinfo = self.__assemble_devinfo()
+        self._devinfo = self._assemble_devinfo()
         self._pcaps = {}
         self._localsend = {}
-        self._pktqueue = None
-        self._threads = None
-        self.__make_pcaps()
+        self._pktqueue = Queue()
+        self._threads = []
+        self._make_pcaps()
         log_info("Using network devices: {}".format(' '.join(self._devs)))
         for devname, intf in self._devinfo.items():
             log_debug("{}: {}".format(devname, str(intf)))
 
         LLNetReal.running = True
-        self.__spawn_threads()
+        self._spawn_threads()
 
         if name:
-            self.__name = name
+            self._name = name
         else:
-            self.__name = socket.gethostname()
+            self._name = socket.gethostname()
 
     @property
     def name(self):
-        return self.__name
+        return self._name
 
     @property
     def testmode(self):
@@ -85,19 +85,17 @@ class LLNetReal(LLNetBase):
             rdev.close()
         log_debug("Done cleaning up")
 
-    def __spawn_threads(self):
+    def _spawn_threads(self):
         '''
         Internal method.  Creates threads to handle low-level
         network receive.
         '''
-        self._threads = []
-        self._pktqueue = Queue()
         for devname,pdev in self._pcaps.items():
-            t = threading.Thread(target=LLNetReal.__low_level_dispatch, args=(pdev, devname, self._pktqueue))
+            t = threading.Thread(target=LLNetReal._low_level_dispatch, args=(pdev, devname, self._pktqueue))
             t.start()
             self._threads.append(t)
 
-    def __assemble_devinfo(self):
+    def _assemble_devinfo(self):
         '''
         Internal method.  Assemble information on each interface/
         device that we know about, i.e., its MAC address and configured
@@ -165,7 +163,7 @@ class LLNetReal(LLNetBase):
             devinfo[devname] = Interface(devname, macaddr, ipaddr, netmask=mask, ifnum=ifnum, iftype=devtype[devname])
         return devinfo
 
-    def __make_pcaps(self):
+    def _make_pcaps(self):
         '''
         Internal method.  Create libpcap devices
         for every network interface we care about and
@@ -192,7 +190,7 @@ class LLNetReal(LLNetBase):
                 self._pktqueue.put( (None,None,None) )
 
     @staticmethod
-    def __low_level_dispatch(pcapdev, devname, pktqueue):
+    def _low_level_dispatch(pcapdev, devname, pktqueue):
         '''
         Thread entrypoint for doing low-level receive and dispatch
         for a single pcap device.

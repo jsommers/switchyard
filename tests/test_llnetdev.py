@@ -1,14 +1,10 @@
-'''
-OF switch unit tests.
-'''
-
 import sys
 import unittest
 from unittest.mock import Mock, MagicMock
 
 from switchyard.lib.address import *
 from switchyard.lib.packet import *
-from switchyard.lib.interface import Interface, make_device_list
+from switchyard.lib.interface import Interface, make_device_list, InterfaceType
 from switchyard.lib.testing import TestScenario, SwitchyardTestEvent
 from switchyard.lib.exceptions import *
 from switchyard.llnettest import LLNetTest, _prepare_debugger
@@ -163,13 +159,15 @@ class LLNetDevTests(unittest.TestCase):
         si = signal.SIGINT
         setattr(signal, "signal", Mock())
 
-        mdev = Mock(return_value=[])
-        setattr(LLNetReal, "__assemble_dev_info", mdev)
+        devdict = {'en0': Interface("en0", "0:0:0:0:0:0", "1.2.3.4", "255.255.255.255",
+                          1, InterfaceType.Wired)}
+        mdev = Mock(return_value=devdict)
+        setattr(LLNetReal, "_assemble_devinfo", mdev)
 
         mock_pcap = MagicMock()
         setattr(llreal, "PcapLiveDevice", mock_pcap)
         mthreads = Mock()
-        setattr(LLNetReal, "__spawn_threads", mthreads)
+        setattr(LLNetReal, "_spawn_threads", mthreads)
 
         lr = LLNetReal(['en0'], "testy") 
         self.assertEqual(lr.name, "testy")
@@ -184,8 +182,8 @@ class LLNetDevTests(unittest.TestCase):
         lr.shutdown()
         self.assertIn('en0', lr._pcaps)
 
-        mdev.assert_not_called()
-        mthreads.assert_not_called()
+        mdev.assert_called_once_with()
+        mthreads.assert_called_once_with()
         mock_pcap.assert_called_with('en0')
         self.assertFalse(lr._pktqueue.empty())
         with self.assertRaises(Shutdown):
