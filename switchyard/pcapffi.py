@@ -170,14 +170,20 @@ class _PcapFfi(object):
         void pcap_freecode(struct bpf_program *);
         ''')
         if sys.platform == 'darwin':
-            self._libpcap = self._ffi.dlopen('libpcap.dylib') # standard libpcap
-        elif sys.platform == 'linux':
-            self._libpcap = self._ffi.dlopen('libpcap.so') # standard libpcap
+            libname = 'libpcap.dylib'
         elif sys.platform == 'win32':
-            self._libpcap = self._ffi.dlopen('wpcap.dll') # winpcap
+            libname = 'wpcap.dll' # winpcap
             self._windoze = True
         else:
-            raise PcapException("Don't know how to locate libpcap on this platform: {}".format(sys.platform))
+            # if not macOS (darwin) or windows, assume we're on
+            # some unix-based system and try for libpcap.so
+            libname = 'libpcap.so'
+
+        try:
+            self._libpcap = self._ffi.dlopen(libname)
+        except Exception as e:
+            raise PcapException("Error opening libpcap: {}".format(e))
+
         self._interfaces = []
         self.discoverdevs()
 
