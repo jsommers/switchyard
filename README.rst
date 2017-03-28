@@ -15,12 +15,12 @@ The version of Switchyard on the master branch is a major revision of the code a
 Installation
 ------------
 
-Prequisites: on Ubuntu and Fedora systems, you'll also likely need to install additional packages (do this before using pip to install the Python libraries).  The list of libraries below is for recent versions of Ubuntu (14.04 and later) and Fedora (20 and later):
+Prequisites: you'll also likely need to install additional packages (do this before using pip to install the Python libraries) on different operating systems:
 
- * Ubuntu: ``sudo apt-get install libffi-dev libpcap-dev python3-dev python3-pip python3-venv``
- * Fedora: ``sudo yum install libffi-devel libpcap-devel python3-devel python3-pip python3-virtualenv``
-
-On macOS, you'll likely need to install two libraries through mac Homebrew (https://brew.sh): ``libffi`` and ``libpcap``.  
+ * Fedora (20 and later): ``sudo yum install libffi-devel libpcap-devel python3-devel python3-pip python3-virtualenv``
+ * FreeBSD (10.3): ``pkg install libffi libpcap``
+ * macOS: install libffi and libpcap through mac Homebrew (https://brew.sh)
+ * Ubuntu (14.04 and later): ``sudo apt-get install libffi-dev libpcap-dev python3-dev python3-pip python3-venv``
 
 You can install Switchyard and the necessary related packages in an isolated Python virtual environment ("venv"), which is the recommended path, or in the system directories, which is often less desirable. The venv route is highly suggested, since it makes all installation "local" and can easily destroyed, cleaned up, and recreated.
 
