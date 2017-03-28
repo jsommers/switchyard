@@ -1,0 +1,28 @@
+language: python
+python:
+  - "3.6"
+install:
+  - pip install -r requirements.txt
+script:
+  - python tests/test_addr.py
+  - python tests/test_ipv6.py
+  - python tests/test_ripv2.py
+  - python tests/test_addr.py
+  - python tests/test_llnetdev.py
+  - python tests/test_rwimg.py
+  - python tests/test_arp.py
+  - python tests/test_matcher.py
+  - python tests/test_scenarios.py
+  - python tests/test_null.py
+  - python tests/test_socket.py
+  - python tests/test_ethernet.py
+  - python tests/test_srpy.py
+  - python tests/test_hostfirewall.py
+  - python tests/test_tcp.py
+  - python tests/test_icmp.py
+  - python tests/test_topo.py
+  - python tests/test_importer.py
+  - python tests/test_packet.py
+  - python tests/test_udp.py
+  - python tests/test_ipv4.py
+  - python tests/test_pcapffi.py

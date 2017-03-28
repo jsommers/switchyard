@@ -6,3 +6,4 @@ networkx >=1.8.1
 matplotlib >=1.5.3
 Pygments >=1.6
 Sphinx >=1.2.3
+psutil >=5.2.0
