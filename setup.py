@@ -15,7 +15,7 @@ setup(name="switchyard",
       python_requires='>=3.4', 
       package_data={ '': ['*.txt', '*.rst'], },
       exclude_package_data={'': ['README.rst','README.md']},
-      install_requires=["cffi >=1.6.0","colorama >=0.3.3","networkx >=1.8.1"],
+      install_requires=["cffi >=1.6.0","colorama >=0.3.3","networkx >=1.8.1", "psutil >=5.2.0"],
       tests_require=['coverage >=3.7.1'],
       entry_points= {
         'console_scripts': [ 'swyard = switchyard.swyard:main' ],

@@ -10,6 +10,8 @@ import textwrap
 from queue import Queue,Empty
 import socket
 
+from psutil import net_if_addrs
+
 from .lib.address import *
 from .lib.packet import *
 from .lib.exceptions import Shutdown, NoPackets
@@ -101,22 +103,6 @@ class LLNetReal(LLNetBase):
         device that we know about, i.e., its MAC address and configured
         IP address and prefix.
         '''
-        devinfo = {}
-
-        # beautiful/ugly regular expressions
-        ethaddr_match = r'([0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5})'
-        if sys.platform == 'linux':
-            etherpat = re.compile("HWaddr\s+{}".format(ethaddr_match), re.MULTILINE)
-            ip4pat = re.compile(r'inet addr:(?P<ipaddr>\d{1,3}(\.\d{1,3}){3})', re.MULTILINE)
-            ip4maskpat = re.compile(r'Mask:(?P<mask>\d{1,3}(\.\d{1,3}){3})', re.MULTILINE)
-        elif sys.platform == 'darwin':
-            etherpat = re.compile("ether\s+{}".format(ethaddr_match), re.MULTILINE)
-            osxip = r'inet\s+(?P<ipaddr>\d{1,3}(\.\d{1,3}){3})'
-            ip4pat = re.compile(osxip, re.MULTILINE)
-            ip4maskpat = re.compile(r'netmask\s+(?P<mask>0x[0-9a-f]{8})', re.MULTILINE)
-        else:
-            raise NotImplementedError("Unsupported platform {}".format(sys.platform))
-
         devtype = {}
         for p in pcap_devices():
             if p.isloop:
@@ -133,33 +119,30 @@ class LLNetReal(LLNetBase):
                 else:
                     devtype[p.name] = InterfaceType.Unknown
 
+        devinfo = {}
+        ifinfo = net_if_addrs()
         for devname in self._devs:
-            macaddr = ipaddr = mask = None
+            ifaddrs = ifinfo.get(devname, None)
+            if ifaddrs is None:
+                log_warn("Address info for interface {} not found! (skipping)".format(devname))
 
-            st,output = subprocess.getstatusoutput("ifconfig {}".format(devname))
-
-            if isinstance(output, bytes):
-                output = output.decode('ascii','')
-
-            mobj = etherpat.search(output)
-            if mobj:
-                macaddr = EthAddr(mobj.groups()[0])
-            mobj = ip4pat.search(output)
-            if mobj:
-                ipaddr = IPv4Address(mobj.group('ipaddr'))
-            mobj = ip4maskpat.search(output)
-            if mobj:
-                mask = mobj.group('mask')
-                if mask.startswith('0x'):
-                    mask = IPv4Address(int(mask, base=16))
-                else:
-                    mask = IPv4Address(mask)
-            ifnum = socket.if_nametoindex(devname)
-            if macaddr is None and ipaddr is not None:
-                # likely the loopback 
-                macaddr = "00:00:00:00:00:00"
+            if sys.platform == 'darwin':
+                layer2addrfam = socket.AddressFamily.AF_LINK
+            elif sys.platform == 'linux':
+                layer2addrfam = socket.AddressFamily.AF_PACKET
             else:
-                continue
+                raise RuntimeException("Platform not supported")
+
+            macaddr = "00:00:00:00:00:00"
+            ipaddr = mask = "0.0.0.0"
+            for addrinfo in ifaddrs:
+                if addrinfo.family == socket.AddressFamily.AF_INET:
+                    ipaddr = IPv4Address(addrinfo.address)
+                    mask = IPv4Address(addrinfo.netmask)
+                elif addrinfo.family == layer2addrfam:
+                    macaddr = EthAddr(addrinfo.address)
+
+            ifnum = socket.if_nametoindex(devname)
             devinfo[devname] = Interface(devname, macaddr, ipaddr, netmask=mask, ifnum=ifnum, iftype=devtype[devname])
         return devinfo
 

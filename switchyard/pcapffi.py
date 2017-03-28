@@ -641,4 +641,4 @@ _PcapFfi() # instantiate singleton
 if __name__ == '__main__':
     print ("Found devices: ")
     for dev in pcap_devices():
-        print(str(dev))
+        print(str(dev)) 
