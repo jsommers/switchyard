@@ -41,6 +41,12 @@ Finally, install Switchyard.  All the required additional libraries should be au
     $ python3 -m pip install switchyard
 
 
+Results of tests run in Travis (on Ubuntu):
+
+.. image:: https://travis-ci.org/jsommers/switchyard.svg?branch=master
+    :target: https://travis-ci.org/jsommers/switchyard
+
+
 Documentation and Exercises
 ---------------------------
  
