@@ -12,7 +12,6 @@ script:
   - python tests/test_ripv2.py
   - python tests/test_addr.py
   - python tests/test_llnetdev.py
-  - python tests/test_rwimg.py
   - python tests/test_arp.py
   - python tests/test_matcher.py
   - python tests/test_scenarios.py
@@ -28,4 +27,3 @@ script:
   - python tests/test_packet.py
   - python tests/test_udp.py
   - python tests/test_ipv4.py
-  - python tests/test_pcapffi.py
