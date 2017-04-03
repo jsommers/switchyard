@@ -96,4 +96,4 @@ class PcapFfiTests(unittest.TestCase):
         px.close()
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(verbosity=9)

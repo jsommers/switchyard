@@ -263,7 +263,7 @@ class _PcapFfi(object):
         rv = self._libpcap.pcap_next_ex(xdev, phdr, pdata)
         if rv == 1:
             rawpkt = bytes(self._ffi.buffer(pdata[0], phdr[0].caplen))
-            ts = float("{}.{}".format(phdr[0].tv_sec, phdr[0].tv_usec))
+            ts = float("{}.{:06d}".format(phdr[0].tv_sec, phdr[0].tv_usec))
             return PcapPacket(ts, phdr[0].caplen, phdr[0].len, rawpkt)
         elif rv == 0:
             # timeout; nothing to return
