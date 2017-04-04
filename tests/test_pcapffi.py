@@ -91,9 +91,9 @@ class PcapFfiTests(unittest.TestCase):
         self.assertIsNone(px.recv_packet_or_none())
         with self.assertRaises(pf.PcapException):
             px.set_direction(pf.PcapDirection.InOut) # not active
-        with self.assertRaises(pf.PcapException):
-            px.set_filter("icmp") # not active
+        #with self.assertRaises(pf.PcapException):
+        #    px.set_filter("icmp") # not active
         px.close()
 
 if __name__ == '__main__':
-    unittest.main(verbosity=9)
+    unittest.main(verbosity=1)
