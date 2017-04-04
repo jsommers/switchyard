@@ -574,7 +574,7 @@ class PcapLiveDevice(object):
         rv = self._libpcap.pcap_sendpacket(self._pcapdev.pcap, xbuffer, xlen)
         if rv == 0:
             return True
-        s = self._ffi.string(self._libpcap.pcap_geterr(xpcap))
+        s = self._ffi.string(self._libpcap.pcap_geterr(self._pcapdev.pcap))
         raise PcapException("Error sending packet: {}".format(s))
 
     def recv_packet_or_none(self):
