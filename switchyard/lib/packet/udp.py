@@ -70,6 +70,10 @@ class UDP(PacketHeaderBase):
     def checksum(self):
         return self._checksum
 
+    @property
+    def length(self):
+        return self._len
+
     def __str__(self):
         return '{} {}->{}'.format(self.__class__.__name__, self.src, self.dst)
 
