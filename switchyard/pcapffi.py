@@ -486,7 +486,7 @@ class PcapLiveDevice(object):
         rv = self._libpcap.pcap_set_buffer_size(self._pcapdev.pcap, int(value))
         if rv != 0:
             s = self._ffi.string(self._libpcap.pcap_geterr(self._pcapdev.pcap))
-            raise PcapException("Error setting timeout value: {}".format(s))
+            raise PcapException("Error setting buffer size: {}".format(s))
 
     def set_immediate_mode(self, value):
         rv = self._libpcap.pcap_set_immediate_mode(self._pcapdev.pcap, int(value))
