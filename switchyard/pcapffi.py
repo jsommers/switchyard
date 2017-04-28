@@ -4,6 +4,7 @@ from cffi import FFI
 from collections import namedtuple
 from enum import Enum,IntEnum
 from time import time,sleep
+from datetime import datetime
 from select import select
 from threading import Lock
 
@@ -111,8 +112,8 @@ class _PcapFfi(object):
         void pcap_freealldevs(pcap_if_t *);
 
         struct pcap_pkthdr {
-            unsigned long tv_sec;
-            unsigned long tv_usec;
+            long tv_sec;
+            long tv_usec;
             unsigned int caplen;
             unsigned int len;
         };
@@ -270,7 +271,10 @@ class _PcapFfi(object):
         rv = self._libpcap.pcap_next_ex(xdev, phdr, pdata)
         if rv == 1:
             rawpkt = bytes(self._ffi.buffer(pdata[0], phdr[0].caplen))
-            ts = float("{}.{:06d}".format(phdr[0].tv_sec, phdr[0].tv_usec))
+            #dt = datetime.fromtimestamp(phdr[0].tv_sec)
+            usec = int(xffi.cast("int", phdr[0].tv_usec))
+            #ts = dt.replace(microsecond=usec)
+            ts = float("{:d}.{:06d}".format(phdr[0].tv_sec, usec))
             return PcapPacket(ts, phdr[0].caplen, phdr[0].len, rawpkt)
         elif rv == 0:
             # timeout; nothing to return
@@ -324,8 +328,10 @@ class PcapDumper(object):
         pkthdr = self._ffi.new("struct pcap_pkthdr *")
         if not ts:
             ts = time()
+
         pkthdr.tv_sec = int(ts)
         pkthdr.tv_usec = int(1000000*(ts-int(ts)))
+
         pkthdr.caplen = len(pkt)
         pkthdr.len = len(pkt)
         xpkt = self._ffi.new("unsigned char []", pkt)
@@ -339,12 +345,13 @@ class PcapReader(object):
     '''
     Class the represents a reader of an existing pcap capture file.
     '''
-    __slots__ = ['_ffi','_libpcap','_base','_pcapdev']
+    __slots__ = ['_ffi','_libpcap','_base','_pcapdev','_user_callback']
 
     def __init__(self, filename, filterstr=None):
         self._base = _PcapFfi.instance()
         self._ffi = self._base.ffi
         self._libpcap = self._base.lib
+        self._user_callback = None
 
         errbuf = self._ffi.new("char []", 128)
         pcap = self._libpcap.pcap_open_offline(bytes(filename, 'ascii'), errbuf)
@@ -369,6 +376,23 @@ class PcapReader(object):
 
     def set_filter(self, filterstr):
         self._base._set_filter(self._pcapdev.pcap, filterstr)
+
+    def dispatch(self, callback, count=-1):
+        self._user_callback = callback
+        handle = self._ffi.new_handle(self)
+        rv = self._libpcap.pcap_dispatch(self._pcapdev.pcap, count, _pcap_callback, handle)
+        return rv
+
+    def loop(self, callback, count=-1):
+        self._user_callback = callback
+        handle = self._ffi.new_handle(self)
+        rv = self._libpcap.pcap_loop(self._pcapdev.pcap, count, _pcap_callback, handle)
+
+    def _callback(self, pkt):
+        self._user_callback(pkt)
+
+    def breakloop(self):
+        self._libpcap.pcap_breakloop(self._pcapdev.pcap)
 
 
 class PcapLiveDevice(object):
@@ -675,7 +699,10 @@ def _pcap_callback(handle, phdr, pdata):
     xhandle = xffi.cast("void *", handle)
     pcapobj = xffi.from_handle(xhandle)
     rawpkt = bytes(xffi.buffer(pdata, phdr[0].caplen))
-    ts = float("{}.{:06d}".format(phdr[0].tv_sec, phdr[0].tv_usec))
+    # dt = datetime.fromtimestamp(phdr[0].tv_sec)
+    usec = int(xffi.cast("int", phdr[0].tv_usec))
+    # ts = dt.replace(microsecond=usec)
+    ts = float("{}.{:06d}".format(phdr[0].tv_sec, usec))
     pkt = PcapPacket(ts, phdr[0].caplen, phdr[0].len, rawpkt)
     pcapobj._callback(pkt)
 
