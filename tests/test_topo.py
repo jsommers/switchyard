@@ -172,7 +172,7 @@ class TopologyTests(unittest.TestCase):
         # removal of central switch should remove both incident links
         t1.removeNode('s1')
         self.assertListEqual(sorted(t1.nodes), sorted(['h1','h2']))
-        self.assertListEqual(t1.links, [])
+        self.assertListEqual(list(t1.links), [])
 
     def test_serunser(self):
         t = Topology()
