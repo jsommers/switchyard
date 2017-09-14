@@ -22,7 +22,7 @@ script:
   - python tests/test_hostfirewall.py
   - python tests/test_tcp.py
   - python tests/test_icmp.py
-  - python tests/test_topo.py
+    #  - python tests/test_topo.py
   - python tests/test_importer.py
   - python tests/test_packet.py
   - python tests/test_udp.py
