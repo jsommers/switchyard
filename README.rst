@@ -10,7 +10,7 @@ Switchyard can run in a standalone test harness mode or can also use "live" netw
 Some history
 ^^^^^^^^^^^^
 
-The version of Switchyard on the master branch is a major revision of the code as of the end of 2016.  This is the second major overhaul.  The earliest working version of Switchyard (from late 2013) can be found on the v1 branch, and the subsequent rewrite (through the end of 2016) can be found on the v2 branch.  Beware that the current version of Switchyard is *backward incompatible* with previous versions and many parts of the code are under active development.  As with the last major version of Switchyard, this one requires Python 3.4, at minimum.
+The version of Switchyard on the master branch is a major revision of the code as of the beginning of 2017.  This is the second major overhaul.  The earliest working version of Switchyard (from late 2013) can be found on the v1 branch, and the subsequent rewrite (through the end of 2016) can be found on the v2 branch.  Beware that the current version of Switchyard is *backward incompatible* with previous versions and many parts of the code are under active development.  As with the last major version of Switchyard, this one requires Python 3.4, at minimum.
 
 Installation
 ------------
