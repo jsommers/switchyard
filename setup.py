@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-thisversion = '2017.01.16'
+thisversion = '2017.01.17'
 
 setup(name="switchyard", 
       version=thisversion,
@@ -8,7 +8,7 @@ setup(name="switchyard",
       author="Joel Sommers",
       author_email="jsommers@colgate.edu",
       url="https://github.com/jsommers/switchyard",
-      download_url="http://cs.colgate.edu/~jsommers/downloads/switchyard-{}.tar.gz".format(thisversion),
+      download_url="https://clab.colgate.edu/~jsommers/downloads/switchyard-{}.tar.gz".format(thisversion),
       keywords=['education', 'networked systems',],
       zip_safe=True,
       packages=find_packages(),
@@ -36,7 +36,7 @@ setup(name="switchyard",
       long_description='''
 Switchyard is a library and framework for creating networked systems in Python.  It is primarily intended for educational use and supports creating devices from layer 2 (Ethernet) all the way through the application layer.
 
-Documentation is available at http://cs.colgate.edu/~jsommers/switchyard
+Documentation is available at http://jsommers.github.io/switchyard
 Documentation is written using the Python Sphinx package; doc sources are
 available in the documentation directory.
 

@@ -3,7 +3,7 @@ Switchyard
 
 Switchyard is a library and framework for implementing software-based networked systems in Python such as Ethernet switches, IP routers, middleboxes, and end-host protocol stacks.  It is primarily intended for educational use and supports creating devices from layer 2 (link layer) all the way through the application layer.
 
-Documentation is available at http://cs.colgate.edu/~jsommers/switchyard.  Documentation is written using the Python Sphinx package; doc sources are available in the documentation directory.
+Documentation is available at https://jsommers.github.io/switchyard.  Documentation is written using the Python Sphinx package; doc sources are available in the documentation directory.
 
 Switchyard can run in a standalone test harness mode or can also use "live" network interfaces on a Linux or macOS host.  It works nicely within Mininet and other virtual host environments, too.
 
@@ -50,7 +50,7 @@ Results of tests run in Travis (on Ubuntu):
 Documentation and Exercises
 ---------------------------
  
- * Documentation sources can be found in the documentation directory.  See http://cs.colgate.edu/~jsommers/switchyard for compiled/built docs in HTML.
+ * Documentation sources can be found in the documentation directory.  See http://jsommers.github.io/switchyard for compiled/built docs in HTML.
 
  * Sample exercises (in ReStructuredText format) can be found in the examples/exercises directory.  The examples are *not* included with the Switchyard package that is installed through
 
