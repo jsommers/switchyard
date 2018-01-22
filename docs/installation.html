@@ -1,0 +1,182 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Installing Switchyard &#8212; Switchyard 2017.01.5 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2017.01.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Reference" href="reference.html" />
+    <link rel="prev" title="Advanced API topics" href="advanced_api.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="reference.html" title="API Reference"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="advanced_api.html" title="Advanced API topics"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Switchyard 2017.01.5 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Installing Switchyard</a><ul>
+<li><a class="reference internal" href="#operating-system-specific-instructions">Operating system-specific instructions</a><ul>
+<li><a class="reference internal" href="#macos-x">MacOS X</a></li>
+<li><a class="reference internal" href="#ubuntu">Ubuntu</a></li>
+<li><a class="reference internal" href="#fedora-redhat">Fedora/RedHat</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="advanced_api.html"
+                        title="previous chapter">Advanced API topics</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="reference.html"
+                        title="next chapter">API Reference</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/installation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="installing-switchyard">
+<span id="install"></span><h1>Installing Switchyard<a class="headerlink" href="#installing-switchyard" title="Permalink to this headline">¶</a></h1>
+<p>Switchyard has been tested and developed on the following operating systems:</p>
+<blockquote>
+<div><ul class="simple">
+<li>macOS 10.10 and later</li>
+<li>Ubuntu LTS releases from 14.04 and later</li>
+<li>Fedora 21</li>
+</ul>
+</div></blockquote>
+<p>Note that these are all Unix-based systems.  Switchyard may be enhanced in the future to support Windows-based systems.  Ubuntu (current LTS) and macOS receive the most testing of Unix-based operating systems.</p>
+<p>&#8212;</p>
+<p>The steps for getting Switchyard up and running are as follows:</p>
+<blockquote>
+<div><ol class="arabic simple" start="0">
+<li>Install Python 3.4 or later, if you don&#8217;t already have it.</li>
+<li>Install any necessary libraries for your operating system.</li>
+<li>Create an Python &#8220;virtual environment&#8221; for installing Python modules (or install the modules to your system Python)</li>
+<li>Install Switchyard.</li>
+</ol>
+</div></blockquote>
+<p>For step 0, you&#8217;re on your own.  Go to <a class="reference external" href="https://www.python.org/downloads/">https://www.python.org/downloads/</a>, or install packages via your OS&#8217;es package system, or use homebrew if you&#8217;re on a Mac.  Have fun.</p>
+<p>The specific libraries necessary for different OSes (step 1) are described below, but steps 2 and 3 are the same for all operating systems and are covered next.</p>
+<p>The recommended install procedure is to create a Python virtual environment for installing Switchyard and other required Python modules.  One way to create a new virtual environment is to execute the following at a command line (in the folder in which you want to create the virtual environment):</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python3 -m venv syenv
+</pre></div>
+</div>
+<p>This command will create a new virtual environment called <code class="docutils literal"><span class="pre">syenv</span></code>.  Once that&#8217;s done, you can &#8220;activate&#8221; that environment and install Switchyard as follows:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ source ./syenv/bin/activate
+(syenv)$ python3 -m pip install switchyard
+</pre></div>
+</div>
+<p>That&#8217;s it.  Once you&#8217;ve done that, the <code class="docutils literal"><span class="pre">swyard</span></code> program should be on your <code class="docutils literal"><span class="pre">PATH</span></code> (you can check by typing <code class="docutils literal"><span class="pre">which</span> <span class="pre">swyard</span></code>).  If you no longer want to use the Python virtual environment you&#8217;ve created, you can just type <code class="docutils literal"><span class="pre">deactivate</span></code>.</p>
+<div class="section" id="operating-system-specific-instructions">
+<h2>Operating system-specific instructions<a class="headerlink" href="#operating-system-specific-instructions" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="macos-x">
+<h3>MacOS X<a class="headerlink" href="#macos-x" title="Permalink to this headline">¶</a></h3>
+<p>The easiest way to get Switchyard running in macOS is to install homebrew.  You can use <code class="docutils literal"><span class="pre">brew</span></code> to install Python 3.  You should also <code class="docutils literal"><span class="pre">brew</span></code> to install the <code class="docutils literal"><span class="pre">libpcap</span></code> package.  That should be all that is necessary.</p>
+</div>
+<div class="section" id="ubuntu">
+<h3>Ubuntu<a class="headerlink" href="#ubuntu" title="Permalink to this headline">¶</a></h3>
+<p>For Ubuntu systems, you&#8217;ll need to use <code class="docutils literal"><span class="pre">apt-get</span></code> or something similar to install the following packages:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">libffi</span><span class="o">-</span><span class="n">dev</span> <span class="n">libpcap</span><span class="o">-</span><span class="n">dev</span> <span class="n">python3</span><span class="o">-</span><span class="n">dev</span> <span class="n">python3</span><span class="o">-</span><span class="n">pip</span> <span class="n">python3</span><span class="o">-</span><span class="n">venv</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="fedora-redhat">
+<h3>Fedora/RedHat<a class="headerlink" href="#fedora-redhat" title="Permalink to this headline">¶</a></h3>
+<p>For Fedora and RedHat-based systems, you&#8217;ll need to use <code class="docutils literal"><span class="pre">yum</span></code> or something similar to install a similar set of packages as with Ubuntu (but with the right name changes for the way packages are identified on Fedora):</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">libffi</span><span class="o">-</span><span class="n">devel</span> <span class="n">libpcap</span><span class="o">-</span><span class="n">devel</span> <span class="n">python3</span><span class="o">-</span><span class="n">devel</span> <span class="n">python3</span><span class="o">-</span><span class="n">pip</span> <span class="n">python3</span><span class="o">-</span><span class="n">virtualenv</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="reference.html" title="API Reference"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="advanced_api.html" title="Advanced API topics"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Switchyard 2017.01.5 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2017, Joel Sommers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+    </div>
+  </body>
+</html>

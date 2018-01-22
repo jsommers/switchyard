@@ -1,0 +1,283 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>switchyard.llnetbase &#8212; Switchyard 2017.01.5 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2017.01.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for switchyard.llnetbase</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">abc</span> <span class="k">import</span> <span class="n">ABCMeta</span><span class="p">,</span><span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">namedtuple</span>
+
+<span class="kn">from</span> <span class="nn">.pcapffi</span> <span class="k">import</span> <span class="n">pcap_devices</span>
+<span class="kn">from</span> <span class="nn">.lib.logging</span> <span class="k">import</span> <span class="n">log_debug</span><span class="p">,</span> <span class="n">log_warn</span>
+<span class="kn">from</span> <span class="nn">.lib.exceptions</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.lib.address</span> <span class="k">import</span> <span class="o">*</span>
+
+<span class="n">ReceivedPacket</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;ReceivedPacket&#39;</span><span class="p">,</span> 
+    <span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">,</span> <span class="s1">&#39;input_port&#39;</span><span class="p">,</span> <span class="s1">&#39;packet&#39;</span><span class="p">])</span>
+
+<span class="k">def</span> <span class="nf">_start_usercode</span><span class="p">(</span><span class="n">entryfunction</span><span class="p">,</span> <span class="n">netobj</span><span class="p">,</span> <span class="n">codeargdict</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    figure out how to correctly start the user code.  warn if</span>
+<span class="sd">    args are passed on the command line, but the code doesn&#39;t </span>
+<span class="sd">    accept them.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c1"># p22, python3 lang ref</span>
+    <span class="n">numargs</span> <span class="o">=</span> <span class="n">entryfunction</span><span class="o">.</span><span class="n">__code__</span><span class="o">.</span><span class="n">co_argcount</span>
+    <span class="n">takenet</span> <span class="o">=</span> <span class="n">numargs</span> <span class="o">&gt;=</span> <span class="mi">1</span>
+    <span class="n">takestarargs</span> <span class="o">=</span> <span class="n">entryfunction</span><span class="o">.</span><span class="n">__code__</span><span class="o">.</span><span class="n">co_flags</span> <span class="o">&amp;</span> <span class="mh">0x04</span> <span class="o">==</span> <span class="mh">0x04</span>
+    <span class="n">takekw</span> <span class="o">=</span> <span class="n">entryfunction</span><span class="o">.</span><span class="n">__code__</span><span class="o">.</span><span class="n">co_flags</span> <span class="o">&amp;</span> <span class="mh">0x08</span> <span class="o">==</span> <span class="mh">0x08</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="n">codeargdict</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="n">codeargdict</span><span class="p">[</span><span class="s1">&#39;kwargs&#39;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">args</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">takestarargs</span><span class="p">:</span>
+        <span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;User code arguments passed on command line, &quot;</span>
+            <span class="s2">&quot;but the user code doesn&#39;t take arguments&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">kwargs</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">takekw</span><span class="p">:</span>
+        <span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;User code keyword args passed on command line, &quot;</span>
+            <span class="s2">&quot;but the user code doesn&#39;t take kwargs&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">takenet</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Your code does not appear to accept at &quot;</span>
+            <span class="s2">&quot;least one parameter for the net object&quot;</span><span class="p">)</span>
+
+    <span class="c1"># omg, this sucks.</span>
+    <span class="k">if</span> <span class="n">takestarargs</span> <span class="ow">and</span> <span class="n">takekw</span><span class="p">:</span>
+        <span class="n">entryfunction</span><span class="p">(</span><span class="n">netobj</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">takestarargs</span><span class="p">:</span>
+        <span class="n">entryfunction</span><span class="p">(</span><span class="n">netobj</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">takekw</span><span class="p">:</span>
+        <span class="n">entryfunction</span><span class="p">(</span><span class="n">netobj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">entryfunction</span><span class="p">(</span><span class="n">netobj</span><span class="p">)</span>
+
+<div class="viewcode-block" id="LLNetBase"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase">[docs]</a><span class="k">class</span> <span class="nc">LLNetBase</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Base class for the low-level networking library in Python.</span>
+<span class="sd">    &quot;net&quot; objects are constructed from classes derived from this</span>
+<span class="sd">    class.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_devupdown_callback</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_devinfo</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># dict(str -&gt; Interface)</span>
+
+    <span class="k">def</span> <span class="nf">set_devupdown_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Set the callback function to be invoked when</span>
+<span class="sd">        an interface goes up or down.  The arguments to the</span>
+<span class="sd">        callback are: Interface (object representing the interface</span>
+<span class="sd">        that has changed status), string (either &#39;up&#39; or &#39;down&#39;).</span>
+
+<span class="sd">        (function) -&gt; None</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_devupdown_callback</span> <span class="o">=</span> <span class="n">callback</span>
+
+    <span class="k">def</span> <span class="nf">intf_down</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Can be called when an interface goes down.</span>
+<span class="sd">        FIXME: doesn&#39;t really do anything at this point.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">intf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_devinfo</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">interface</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">intf</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_devupdown_callback</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_devupdown_callback</span><span class="p">(</span><span class="n">intf</span><span class="p">,</span> <span class="s1">&#39;down&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">intf_up</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Can be called when an interface is put in service.</span>
+<span class="sd">        FIXME: not currently used; more needs to be done to</span>
+<span class="sd">        correctly put a new intf into service.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">interface</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_devinfo</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_devinfo</span><span class="p">[</span><span class="n">interface</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">interface</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_devupdown_callback</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_devupdown_callback</span><span class="p">(</span><span class="n">interface</span><span class="p">,</span> <span class="s1">&#39;up&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Interface already registered&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="LLNetBase.interfaces"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.interfaces">[docs]</a>    <span class="k">def</span> <span class="nf">interfaces</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Return a list of interfaces incident on this node/router.</span>
+<span class="sd">        Each item in the list is an Interface object, each of which includes</span>
+<span class="sd">        name, ethaddr, ipaddr, and netmask attributes.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_devinfo</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="LLNetBase.ports"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.ports">[docs]</a>    <span class="k">def</span> <span class="nf">ports</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Alias for interfaces() method.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">interfaces</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="LLNetBase.interface_by_name"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.interface_by_name">[docs]</a>    <span class="k">def</span> <span class="nf">interface_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Given a device name, return the corresponding interface object</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_devinfo</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_devinfo</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;No device named </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="LLNetBase.port_by_name"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.port_by_name">[docs]</a>    <span class="k">def</span> <span class="nf">port_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Alias for interface_by_name</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">interface_by_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LLNetBase.interface_by_ipaddr"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.interface_by_ipaddr">[docs]</a>    <span class="k">def</span> <span class="nf">interface_by_ipaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ipaddr</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Given an IP address, return the interface that &#39;owns&#39; this address</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">ipaddr</span> <span class="o">=</span> <span class="n">IPAddr</span><span class="p">(</span><span class="n">ipaddr</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">devname</span><span class="p">,</span><span class="n">iface</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_devinfo</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">iface</span><span class="o">.</span><span class="n">ipaddr</span> <span class="o">==</span> <span class="n">ipaddr</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">iface</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;No device has IP address </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ipaddr</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="LLNetBase.port_by_ipaddr"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.port_by_ipaddr">[docs]</a>    <span class="k">def</span> <span class="nf">port_by_ipaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ipaddr</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Alias for interface_by_ipaddr</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">interface_by_ipaddr</span><span class="p">(</span><span class="n">ipaddr</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LLNetBase.interface_by_macaddr"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.interface_by_macaddr">[docs]</a>    <span class="k">def</span> <span class="nf">interface_by_macaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">macaddr</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Given a MAC address, return the interface that &#39;owns&#39; this address</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">macaddr</span> <span class="o">=</span> <span class="n">EthAddr</span><span class="p">(</span><span class="n">macaddr</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">devname</span><span class="p">,</span><span class="n">iface</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_devinfo</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">iface</span><span class="o">.</span><span class="n">ethaddr</span> <span class="o">==</span> <span class="n">macaddr</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">iface</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;No device has MAC address </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">macaddr</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="LLNetBase.port_by_macaddr"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.port_by_macaddr">[docs]</a>    <span class="k">def</span> <span class="nf">port_by_macaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">macaddr</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Alias for interface_by_macaddr</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">interface_by_macaddr</span><span class="p">(</span><span class="n">macaddr</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">testmode</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Returns True if running in test mode and False if running in</span>
+<span class="sd">        live/real mode.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;This property must be overridden by derived classes&quot;</span><span class="p">)</span>
+
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="LLNetBase.recv_packet"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.recv_packet">[docs]</a>    <span class="k">def</span> <span class="nf">recv_packet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Receive a packet on any port/interface.</span>
+<span class="sd">        If a non-None timeout is given, the method will block for up</span>
+<span class="sd">        to timeout seconds.  If no packet is available, the exception</span>
+<span class="sd">        NoPackets will be raised.  If the Switchyard framework is being</span>
+<span class="sd">        shut down, the Shutdown exception will be raised.</span>
+<span class="sd">        If a packet is available, the ReceivedPacket named tuple </span>
+<span class="sd">        (timestamp, input_port, packet) will be returned.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">raise</span> <span class="n">NoPackets</span><span class="p">()</span></div>
+
+    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="LLNetBase.send_packet"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.send_packet">[docs]</a>    <span class="k">def</span> <span class="nf">send_packet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_port</span><span class="p">,</span> <span class="n">packet</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Send a packet out the given output port/interface.  </span>
+<span class="sd">        Returns None.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">pass</span></div>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">shutdown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_lookup_devname</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ifnum</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">devname</span><span class="p">,</span><span class="n">iface</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_devinfo</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">iface</span><span class="o">.</span><span class="n">ifnum</span> <span class="o">==</span> <span class="n">ifnum</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">devname</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;No device has ifnum </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ifnum</span><span class="p">))</span> </div>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2017, Joel Sommers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+    </div>
+  </body>
+</html>

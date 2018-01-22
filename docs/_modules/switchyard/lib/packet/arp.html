@@ -1,0 +1,223 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>switchyard.lib.packet.arp &#8212; Switchyard 2017.01.5 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '2017.01.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for switchyard.lib.packet.arp</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">.packet</span> <span class="k">import</span> <span class="n">PacketHeaderBase</span><span class="p">,</span><span class="n">Packet</span>
+<span class="kn">from</span> <span class="nn">..address</span> <span class="k">import</span> <span class="n">EthAddr</span><span class="p">,</span><span class="n">IPAddr</span><span class="p">,</span><span class="n">SpecialIPv4Addr</span><span class="p">,</span><span class="n">SpecialEthAddr</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">from</span> <span class="nn">.common</span> <span class="k">import</span> <span class="n">EtherType</span><span class="p">,</span> <span class="n">ArpHwType</span><span class="p">,</span> <span class="n">ArpOperation</span>
+<span class="kn">from</span> <span class="nn">..exceptions</span> <span class="k">import</span> <span class="o">*</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">References:</span>
+<span class="sd">    Plummer. </span>
+<span class="sd">        &quot;RFC826&quot;, An Ethernet Address Resolution Protocol.</span>
+<span class="sd">    Finlayson, Mann, Mogul, and Theimer. </span>
+<span class="sd">        &quot;RFC903&quot;, A Reverse Address Resolution Protocol.</span>
+<span class="sd">    http://en.wikipedia.org/wiki/Address_Resolution_Protocol</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="Arp"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Arp">[docs]</a><span class="k">class</span> <span class="nc">Arp</span><span class="p">(</span><span class="n">PacketHeaderBase</span><span class="p">):</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_hwtype&#39;</span><span class="p">,</span><span class="s1">&#39;_prototype&#39;</span><span class="p">,</span><span class="s1">&#39;_hwaddrlen&#39;</span><span class="p">,</span><span class="s1">&#39;_protoaddrlen&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;_operation&#39;</span><span class="p">,</span><span class="s1">&#39;_senderhwaddr&#39;</span><span class="p">,</span><span class="s1">&#39;_senderprotoaddr&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;_targethwaddr&#39;</span><span class="p">,</span><span class="s1">&#39;_targetprotoaddr&#39;</span><span class="p">]</span>
+    <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s1">&#39;!HHBBH6s4s6s4s&#39;</span>
+    <span class="n">_MINLEN</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">_PACKFMT</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hwtype</span> <span class="o">=</span> <span class="n">ArpHwType</span><span class="o">.</span><span class="n">Ethernet</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prototype</span> <span class="o">=</span> <span class="n">EtherType</span><span class="o">.</span><span class="n">IP</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hwaddrlen</span> <span class="o">=</span> <span class="mi">6</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_protoaddrlen</span> <span class="o">=</span> <span class="mi">4</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">operation</span> <span class="o">=</span> <span class="n">ArpOperation</span><span class="o">.</span><span class="n">Request</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">senderhwaddr</span> <span class="o">=</span> <span class="n">SpecialEthAddr</span><span class="o">.</span><span class="n">ETHER_ANY</span><span class="o">.</span><span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">senderprotoaddr</span> <span class="o">=</span> <span class="n">SpecialIPv4Addr</span><span class="o">.</span><span class="n">IP_ANY</span><span class="o">.</span><span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">targethwaddr</span> <span class="o">=</span> <span class="n">SpecialEthAddr</span><span class="o">.</span><span class="n">ETHER_BROADCAST</span><span class="o">.</span><span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">targetprotoaddr</span> <span class="o">=</span> <span class="n">SpecialIPv4Addr</span><span class="o">.</span><span class="n">IP_ANY</span><span class="o">.</span><span class="n">value</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">Arp</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">pre_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">pkt</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Return packed byte representation of the ARP header.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">Arp</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hwtype</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prototype</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hwaddrlen</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_protoaddrlen</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_operation</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_senderhwaddr</span><span class="o">.</span><span class="n">packed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_senderprotoaddr</span><span class="o">.</span><span class="n">packed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targethwaddr</span><span class="o">.</span><span class="n">packed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targetprotoaddr</span><span class="o">.</span><span class="n">packed</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Return an Ethernet object reconstructed from raw bytes, or an</span>
+<span class="sd">           Exception if we can&#39;t resurrect the packet.&#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">Arp</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotEnoughDataError</span><span class="p">(</span><span class="s2">&quot;Not enough bytes (</span><span class="si">{}</span><span class="s2">) to reconstruct an Arp object&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)))</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">Arp</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> <span class="n">raw</span><span class="p">[:</span><span class="n">Arp</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">])</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hwtype</span> <span class="o">=</span> <span class="n">ArpHwType</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_prototype</span> <span class="o">=</span> <span class="n">EtherType</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hwaddrlen</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_protoaddrlen</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">operation</span> <span class="o">=</span> <span class="n">ArpOperation</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">senderhwaddr</span> <span class="o">=</span> <span class="n">EthAddr</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">5</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">senderprotoaddr</span> <span class="o">=</span> <span class="n">IPAddr</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">6</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">targethwaddr</span> <span class="o">=</span> <span class="n">EthAddr</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">7</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">targetprotoaddr</span> <span class="o">=</span> <span class="n">IPAddr</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">8</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Error constructing Arp packet object from raw bytes: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="n">raw</span><span class="p">[</span><span class="n">Arp</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:]</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hardwaretype</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">hardwaretype</span> <span class="ow">and</span> \
+               <span class="bp">self</span><span class="o">.</span><span class="n">protocoltype</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">protocoltype</span> <span class="ow">and</span> \
+               <span class="bp">self</span><span class="o">.</span><span class="n">operation</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">operation</span> <span class="ow">and</span> \
+               <span class="bp">self</span><span class="o">.</span><span class="n">senderhwaddr</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">senderhwaddr</span> <span class="ow">and</span> \
+               <span class="bp">self</span><span class="o">.</span><span class="n">senderprotoaddr</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">senderprotoaddr</span> <span class="ow">and</span> \
+               <span class="bp">self</span><span class="o">.</span><span class="n">targethwaddr</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">targethwaddr</span> <span class="ow">and</span> \
+               <span class="bp">self</span><span class="o">.</span><span class="n">targetprotoaddr</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">targetprotoaddr</span> 
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">hardwaretype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hwtype</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">protocoltype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prototype</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">operation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_operation</span>
+
+    <span class="nd">@operation</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">operation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_operation</span> <span class="o">=</span> <span class="n">ArpOperation</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">senderhwaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_senderhwaddr</span>
+
+    <span class="nd">@senderhwaddr</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">senderhwaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_senderhwaddr</span> <span class="o">=</span> <span class="n">EthAddr</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">senderprotoaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_senderprotoaddr</span>
+
+    <span class="nd">@senderprotoaddr</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">senderprotoaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_senderprotoaddr</span> <span class="o">=</span> <span class="n">IPAddr</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">targethwaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targethwaddr</span>
+
+    <span class="nd">@targethwaddr</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">targethwaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_targethwaddr</span> <span class="o">=</span> <span class="n">EthAddr</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">targetprotoaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targetprotoaddr</span>
+
+    <span class="nd">@targetprotoaddr</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">targetprotoaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_targetprotoaddr</span> <span class="o">=</span> <span class="n">IPAddr</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">next_header_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        No other headers should follow ARP.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">:</span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">:</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">senderhwaddr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">senderprotoaddr</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">targethwaddr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">targetprotoaddr</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2017, Joel Sommers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+    </div>
+  </body>
+</html>

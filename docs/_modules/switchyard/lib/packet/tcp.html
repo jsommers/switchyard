@@ -1,0 +1,397 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>switchyard.lib.packet.tcp &#8212; Switchyard 2017.01.5 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '2017.01.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for switchyard.lib.packet.tcp</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="k">import</span> <span class="n">IntEnum</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="k">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
+
+<span class="kn">from</span> <span class="nn">.packet</span> <span class="k">import</span> <span class="n">PacketHeaderBase</span><span class="p">,</span><span class="n">Packet</span>
+<span class="kn">from</span> <span class="nn">.common</span> <span class="k">import</span> <span class="n">checksum</span>
+<span class="kn">from</span> <span class="nn">..exceptions</span> <span class="k">import</span> <span class="o">*</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">References:</span>
+<span class="sd">    IETF RFCs 675, 793, 1122, 2581, 3540, 5681</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="k">class</span> <span class="nc">TCPOption</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<span class="c1"># EndOfOptions, Padding, MaxSegmentSize, WindowScaling, SACK, Timestamp, AltChecksum</span>
+
+<span class="k">class</span> <span class="nc">TCPOptions</span><span class="p">(</span><span class="n">PacketHeaderBase</span><span class="p">):</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_optlist&#39;</span><span class="p">]</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optlist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">next_header_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">pre_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">pkt</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">size</span><span class="p">():</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span>  <span class="c1"># FIXME</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">b</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">opt</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span> <span class="k">for</span> <span class="n">opt</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optlist</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="c1"># FIXME</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+<span class="k">class</span> <span class="nc">TCPFlags</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">FIN</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">SYN</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">RST</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">PSH</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">ACK</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">URG</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">ECE</span> <span class="o">=</span> <span class="mi">6</span> <span class="c1"># ECN-echo RFC 3168</span>
+    <span class="n">CWR</span> <span class="o">=</span> <span class="mi">7</span> <span class="c1"># Congestion-window reduced RFC 3168</span>
+    <span class="n">NS</span> <span class="o">=</span>  <span class="mi">8</span> <span class="c1"># ECN-nonce concealment protection RFC 3540</span>
+
+<div class="viewcode-block" id="TCP"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.TCP">[docs]</a><span class="k">class</span> <span class="nc">TCP</span><span class="p">(</span><span class="n">PacketHeaderBase</span><span class="p">):</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_src&#39;</span><span class="p">,</span><span class="s1">&#39;_dst&#39;</span><span class="p">,</span><span class="s1">&#39;_seq&#39;</span><span class="p">,</span><span class="s1">&#39;_ack&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;_flags&#39;</span><span class="p">,</span><span class="s1">&#39;_window&#39;</span><span class="p">,</span><span class="s1">&#39;_urg&#39;</span><span class="p">,</span><span class="s1">&#39;_options&#39;</span><span class="p">,</span><span class="s1">&#39;_len&#39;</span><span class="p">,</span> <span class="s1">&#39;_checksum&#39;</span><span class="p">]</span>
+    <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s1">&#39;!HHIIHHHH&#39;</span>
+    <span class="n">_MINLEN</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">_PACKFMT</span><span class="p">)</span>
+    <span class="n">_next_header_map</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">_next_header_class_key</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dst</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ack</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="mh">0x000</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">urgent_pointer</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="n">TCPOptions</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_checksum</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_len</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">TCP</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute_checksum_ipv4</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ip4</span><span class="p">,</span> <span class="n">xdata</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ip4</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="n">phdr</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;!IIxBH&#39;</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">ip4</span><span class="o">.</span><span class="n">src</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">ip4</span><span class="o">.</span><span class="n">dst</span><span class="p">),</span> 
+            <span class="n">ip4</span><span class="o">.</span><span class="n">protocol</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_len</span><span class="p">)</span>
+        <span class="n">tcphdr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_header</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">checksum</span><span class="p">(</span><span class="n">phdr</span> <span class="o">+</span> <span class="n">tcphdr</span> <span class="o">+</span> <span class="n">xdata</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">pre_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">pkt</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+        <span class="c1"># checksum calc currently assumes we&#39;re only dealing with ipv4.</span>
+        <span class="c1"># will need to be modified for ipv6 support...</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_checksum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_checksum_ipv4</span><span class="p">(</span><span class="n">pkt</span><span class="o">.</span><span class="n">get_header_by_name</span><span class="p">(</span><span class="s1">&#39;IPv4&#39;</span><span class="p">),</span> <span class="n">raw</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_make_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">csum</span><span class="p">):</span>
+        <span class="n">offset_flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">TCP</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">src</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dst</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ack</span><span class="p">,</span> <span class="n">offset_flags</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span>
+            <span class="n">csum</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">urgent_pointer</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">header</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Return packed byte representation of the TCP header.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_checksum</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">header</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Return an Ethernet object reconstructed from raw bytes, or an</span>
+<span class="sd">           Exception if we can&#39;t resurrect the packet.&#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">TCP</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotEnoughDataError</span><span class="p">(</span><span class="s2">&quot;Not enough bytes (</span><span class="si">{}</span><span class="s2">) to reconstruct an TCP object&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)))</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">TCP</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> <span class="n">raw</span><span class="p">[:</span><span class="n">TCP</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_src</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_seq</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ack</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">&gt;&gt;</span> <span class="mi">12</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mh">0x01ff</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_window</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+        <span class="n">csum</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_urg</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span>
+        <span class="n">headerlen</span> <span class="o">=</span> <span class="n">offset</span> <span class="o">*</span> <span class="mi">4</span>
+        <span class="n">optlen</span> <span class="o">=</span> <span class="n">headerlen</span> <span class="o">-</span> <span class="n">TCP</span><span class="o">.</span><span class="n">_MINLEN</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">raw</span><span class="p">[</span><span class="n">TCP</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:</span><span class="n">headerlen</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">raw</span><span class="p">[</span><span class="n">headerlen</span><span class="p">:]</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">src</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">src</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">dst</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">dst</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">seq</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">seq</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">ack</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">ack</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">offset</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">flags</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">window</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">urgent_pointer</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">urgent_pointer</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">options</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">offset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">TCP</span><span class="o">.</span><span class="n">_MINLEN</span> <span class="o">//</span> <span class="mi">4</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">())</span> <span class="o">//</span> <span class="mi">4</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">src</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_src</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dst</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span>
+
+    <span class="nd">@src</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">src</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_src</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@dst</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">dst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">-&gt;</span><span class="si">{}</span><span class="s1"> (</span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">:</span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">src</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dst</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flagstr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ack</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">seq</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_seq</span>
+
+    <span class="nd">@seq</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">seq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_seq</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ack</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ack</span>
+
+    <span class="nd">@ack</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">ack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ack</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">window</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_window</span>
+
+    <span class="nd">@window</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">window</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_window</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_checksum</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">flags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">flagstr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">flist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">9</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isset</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+                <span class="n">flist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">TCPFlags</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">flist</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">urgent_pointer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_urg</span>
+
+    <span class="nd">@urgent_pointer</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">urgent_pointer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_urg</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span>
+
+    <span class="k">def</span> <span class="nf">_isset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">flag</span> <span class="o">=</span> <span class="n">TCPFlags</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="mh">0x01</span> <span class="o">&lt;&lt;</span> <span class="n">flag</span><span class="o">.</span><span class="n">value</span> 
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">&amp;</span> <span class="n">mask</span><span class="p">)</span> <span class="o">==</span> <span class="n">mask</span>
+
+    <span class="k">def</span> <span class="nf">_setflag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="mh">0x01</span> <span class="o">&lt;&lt;</span> <span class="n">flag</span><span class="o">.</span><span class="n">value</span> 
+        <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">|</span> <span class="n">mask</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flags</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">mask</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">NS</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isset</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">NS</span><span class="p">)</span>
+
+    <span class="nd">@NS</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">NS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setflag</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">NS</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">CWR</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isset</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">CWR</span><span class="p">)</span>
+
+    <span class="nd">@CWR</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">CWR</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setflag</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">CWR</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ECE</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isset</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">ECE</span><span class="p">)</span>
+
+    <span class="nd">@ECE</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">ECE</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setflag</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">ECE</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">URG</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isset</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">URG</span><span class="p">)</span>
+
+    <span class="nd">@URG</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">URG</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setflag</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">URG</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ACK</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isset</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">ACK</span><span class="p">)</span>
+
+    <span class="nd">@ACK</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">ACK</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setflag</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">ACK</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">PSH</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isset</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">PSH</span><span class="p">)</span>
+
+    <span class="nd">@PSH</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">PSH</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setflag</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">PSH</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">RST</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isset</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">RST</span><span class="p">)</span>
+
+    <span class="nd">@RST</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">RST</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setflag</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">RST</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">SYN</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isset</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">SYN</span><span class="p">)</span>
+
+    <span class="nd">@SYN</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">SYN</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setflag</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">SYN</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">FIN</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isset</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">FIN</span><span class="p">)</span>
+
+    <span class="nd">@FIN</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">FIN</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setflag</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">FIN</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2017, Joel Sommers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,1083 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>switchyard.lib.testing &#8212; Switchyard 2017.01.5 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2017.01.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for switchyard.lib.testing</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">signal</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">queue</span> <span class="k">import</span> <span class="n">Queue</span><span class="p">,</span><span class="n">Empty</span>
+<span class="kn">import</span> <span class="nn">importlib</span>
+<span class="kn">import</span> <span class="nn">bz2</span>
+<span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">base64</span>
+<span class="kn">import</span> <span class="nn">fnmatch</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span>
+<span class="kn">import</span> <span class="nn">textwrap</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">namedtuple</span><span class="p">,</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="k">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="k">import</span> <span class="n">Process</span>
+
+<span class="kn">from</span> <span class="nn">.packet</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.address</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.interface</span> <span class="k">import</span> <span class="n">Interface</span>
+<span class="kn">from</span> <span class="nn">.exceptions</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.logging</span> <span class="k">import</span> <span class="n">log_debug</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">debugging</span> <span class="k">as</span> <span class="n">sdebug</span>
+<span class="kn">from</span> <span class="nn">..textcolor</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">..importcode</span> <span class="k">import</span> <span class="n">import_or_die</span>
+<span class="kn">from</span> <span class="nn">..llnetbase</span> <span class="k">import</span> <span class="n">ReceivedPacket</span>
+<span class="kn">from</span> <span class="nn">..outputfmt</span> <span class="k">import</span> <span class="n">VerboseOutput</span>
+
+
+<span class="k">class</span> <span class="nc">TestScenarioFailure</span><span class="p">(</span><span class="n">SwitchyardException</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;An exception that is raised when a TestScenario expectation</span>
+<span class="sd">    is not met.&#39;&#39;&#39;</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">_PacketMatcher</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Class whose job it is to define a packet template against which</span>
+<span class="sd">    some other packet is matched, particularly for PacketOutputEvents,</span>
+<span class="sd">    where we want to verify that a packet emitted by Switchyard app code</span>
+<span class="sd">    conforms to some expectation.  </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">packet</span><span class="p">,</span> <span class="n">predicates</span><span class="o">=</span><span class="p">[],</span> <span class="n">wildcards</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Instantiate the matcher delegate.  template is expected</span>
+<span class="sd">        to be a Packet object.</span>
+
+<span class="sd">        An arbitrary number of predicate functions can also be</span>
+<span class="sd">        passed as a list to the kwarg predicates.  Each predicate </span>
+<span class="sd">        function must be defined as a string with a single lambda.  </span>
+<span class="sd">        Each lambda must take a single arg (a Packet object) and </span>
+<span class="sd">        return bool.</span>
+
+<span class="sd">        wildcards is a list (or tuple) of either (1) strings that refer</span>
+<span class="sd">        to particular header attributes that should not be compared (the</span>
+<span class="sd">        strings are borrowed from the Openflow 1.0 spec), or (2) a 2-tuple</span>
+<span class="sd">        or 2-list composed of a header class name and an attribute.  </span>
+<span class="sd">        The second method of wildcarding is preferred and the first is</span>
+<span class="sd">        deprecated.  The ability to specify Openflow-like attributes</span>
+<span class="sd">        to wildcard will be removed from a future version.</span>
+
+<span class="sd">        Recognized kwargs: exact.</span>
+<span class="sd">          exact determines whether a byte-by-byte comparison is done</span>
+<span class="sd">          against a reference packet, or a more limited set of attributes</span>
+<span class="sd">          is used for comparison.  </span>
+
+<span class="sd">          The default is exact=True, i.e., all attributes are compared.</span>
+
+<span class="sd">        NB: both wildcards and exact can be reasonably used together.</span>
+<span class="sd">        exact=False simply means that fewer attributes are used by default</span>
+<span class="sd">        (e.g., addresses, protocol numbers, etc.).  Wildcarding can be used</span>
+<span class="sd">        to compare against even fewer fields.  If exact=True, *all* attributes</span>
+<span class="sd">        are compared except for those that are explicitly wildcarded.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_exact</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;exact&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reference_packet</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wildcards</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_wildcards</span><span class="p">(</span><span class="n">wildcards</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_predicates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_predicates</span><span class="p">(</span><span class="n">predicates</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compute_comparison_attrs</span><span class="p">(</span><span class="n">packet</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exact</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wildcards</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;Ignoring unrecognized keyword arguments for building output packet matcher: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_first_header</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_reference_packet</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_first_header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reference_packet</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">__class__</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lastresults</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">packet</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reference_packet</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_check_predicates</span><span class="p">(</span><span class="n">predicates</span><span class="p">):</span>
+        <span class="n">pred</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">predicates</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">boguslambda</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">predicates</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">predicates</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Predicates used for matching packets must be strings (in the form of a lambda definition)&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">fn</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">predicates</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="k">except</span> <span class="ne">SyntaxError</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">SyntaxError</span><span class="p">(</span><span class="s2">&quot;Predicate strings must conform to Python lambda syntax&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">boguslambda</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">type</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>                    
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Predicate was not a lambda expression: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">predicate</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+                <span class="n">pred</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">predicates</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">pred</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_check_wildcards</span><span class="p">(</span><span class="n">wildcards</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">wildcards</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;wildcards must be in a list&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">wc</span> <span class="ow">in</span> <span class="n">wildcards</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">wc</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">))</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">wc</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Each wildcard must be a list or tuple of length 2&quot;</span><span class="p">)</span>
+            <span class="n">wcklass</span><span class="p">,</span><span class="n">wcattr</span> <span class="o">=</span> <span class="n">wc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">wc</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">wcklass</span><span class="p">,</span> <span class="n">PacketHeaderBase</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;First element in a wildcard must be the name of a packet header class&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">wcattr</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">wcklass</span><span class="p">,</span> <span class="n">wcattr</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Wildcard pair must be a valid packet header class and attribute on that class&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">wildcards</span>
+
+    <span class="k">def</span> <span class="nf">_compute_comparison_attrs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pkt</span><span class="p">,</span> <span class="n">exact</span><span class="p">,</span> <span class="n">wildcards</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">_collect_header_attrs</span><span class="p">(</span><span class="n">pkthdr</span><span class="p">):</span>
+            <span class="n">attrlist</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">pkthdr</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">attr</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">attr</span> <span class="o">==</span> <span class="s1">&#39;checksum&#39;</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">aval</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">pkthdr</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="n">aval</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="n">attrlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">attrlist</span>
+
+        <span class="k">def</span> <span class="nf">_collect_all_attrs</span><span class="p">(</span><span class="n">pkt</span><span class="p">):</span>
+            <span class="n">attrhash</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">hdr</span> <span class="ow">in</span> <span class="n">pkt</span><span class="p">:</span>
+                <span class="n">hdrcls</span> <span class="o">=</span> <span class="n">hdr</span><span class="o">.</span><span class="n">__class__</span>
+                <span class="n">attrhash</span><span class="p">[</span><span class="n">hdrcls</span><span class="p">]</span> <span class="o">=</span> <span class="n">_collect_header_attrs</span><span class="p">(</span><span class="n">hdr</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">attrhash</span>
+
+        <span class="k">def</span> <span class="nf">_compute_inexact</span><span class="p">(</span><span class="n">pkt</span><span class="p">):</span>
+            <span class="n">_inexact_comparison_attributes</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">Ethernet</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;src&#39;</span><span class="p">,</span> <span class="s1">&#39;dst&#39;</span><span class="p">,</span> <span class="s1">&#39;ethertype&#39;</span><span class="p">],</span>
+                <span class="n">Arp</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;targetprotoaddr&#39;</span><span class="p">,</span> <span class="s1">&#39;senderprotoaddr&#39;</span><span class="p">,</span> <span class="s1">&#39;targethwaddr&#39;</span><span class="p">,</span> <span class="s1">&#39;senderhwaddr&#39;</span><span class="p">],</span>
+                <span class="n">IPv4</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;src&#39;</span><span class="p">,</span> <span class="s1">&#39;dst&#39;</span><span class="p">,</span> <span class="s1">&#39;protocol&#39;</span><span class="p">],</span>
+                <span class="n">IPv6</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;src&#39;</span><span class="p">,</span> <span class="s1">&#39;dst&#39;</span><span class="p">,</span> <span class="s1">&#39;nextheader&#39;</span><span class="p">],</span>
+                <span class="n">TCP</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;src&#39;</span><span class="p">,</span> <span class="s1">&#39;dst&#39;</span><span class="p">],</span>
+                <span class="n">UDP</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;src&#39;</span><span class="p">,</span> <span class="s1">&#39;dst&#39;</span><span class="p">],</span>
+                <span class="n">ICMP</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;icmptype&#39;</span><span class="p">,</span> <span class="s1">&#39;icmpcode&#39;</span><span class="p">],</span>
+                <span class="n">ICMPv6</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;icmptype&#39;</span><span class="p">,</span> <span class="s1">&#39;icmpcode&#39;</span><span class="p">],</span>
+                <span class="n">Vlan</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;vlanid&#39;</span><span class="p">,</span> <span class="s1">&#39;ethertype&#39;</span><span class="p">],</span>
+            <span class="p">}</span>
+            <span class="n">attrhash</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">_inexact_comparison_attributes</span><span class="p">)</span>
+            <span class="n">foundclasses</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span> <span class="n">hdr</span><span class="o">.</span><span class="n">__class__</span> <span class="k">for</span> <span class="n">hdr</span> <span class="ow">in</span> <span class="n">pkt</span> <span class="p">])</span>
+            <span class="c1"># remove classes/keys from attrhash if there aren&#39;t </span>
+            <span class="c1"># corresponding headers in the pkt</span>
+            <span class="k">for</span> <span class="n">hdrcls</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">_inexact_comparison_attributes</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="k">if</span> <span class="n">hdrcls</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">foundclasses</span><span class="p">:</span>
+                    <span class="k">del</span> <span class="n">attrhash</span><span class="p">[</span><span class="n">hdrcls</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">attrhash</span>
+
+        <span class="k">def</span> <span class="nf">_filter_wildcards</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">klass</span><span class="p">,</span><span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wildcards</span><span class="p">:</span>
+                <span class="n">attrlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_comparison_attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">klass</span><span class="p">,</span> <span class="p">[])</span>
+                <span class="k">if</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">attrlist</span><span class="p">:</span>
+                    <span class="n">attrlist</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">exact</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_comparison_attrs</span> <span class="o">=</span> <span class="n">_collect_all_attrs</span><span class="p">(</span><span class="n">pkt</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_comparison_attrs</span> <span class="o">=</span> <span class="n">_compute_inexact</span><span class="p">(</span><span class="n">pkt</span><span class="p">)</span>
+        <span class="n">_filter_wildcards</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_compare_packet_against_reference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">packet</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">_compare_header_types</span><span class="p">(</span><span class="n">packet</span><span class="p">):</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">packet</span><span class="o">.</span><span class="n">num_headers</span><span class="p">()</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reference_packet</span><span class="o">.</span><span class="n">num_headers</span><span class="p">():</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reference_packet</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">__class__</span> <span class="o">!=</span> <span class="n">packet</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">__class__</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_comparison_diagnosis</span> <span class="o">=</span> \
+                        <span class="s2">&quot;Packet header type is wrong at index </span><span class="si">{}</span><span class="s2">: expecting </span><span class="si">{}</span><span class="s2"> but found </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                            <span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reference_packet</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> 
+                            <span class="n">packet</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">packet</span><span class="o">.</span><span class="n">num_headers</span><span class="p">():</span>
+                <span class="n">extras</span> <span class="o">=</span> <span class="s1">&#39; | &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">packet</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">packet</span><span class="o">.</span><span class="n">num_headers</span><span class="p">())])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_comparison_diagnosis</span> <span class="o">=</span> <span class="s2">&quot;Extra headers found in your packet: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">extras</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reference_packet</span><span class="o">.</span><span class="n">num_headers</span><span class="p">():</span>
+                <span class="n">missing</span> <span class="o">=</span> <span class="s1">&#39; | &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_reference_packet</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reference_packet</span><span class="o">.</span><span class="n">num_headers</span><span class="p">())])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_comparison_diagnosis</span> <span class="o">=</span> <span class="s2">&quot;Missing headers in your packet: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">def</span> <span class="nf">_compare_header_attrs</span><span class="p">(</span><span class="n">packet</span><span class="p">):</span>
+            <span class="n">differences</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">hdr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_reference_packet</span><span class="p">):</span>
+                <span class="n">attrlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_comparison_attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">hdr</span><span class="o">.</span><span class="n">__class__</span><span class="p">,</span> <span class="p">[])</span>
+                <span class="n">diffs</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">attrlist</span><span class="p">:</span>
+                    <span class="n">refattr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+                    <span class="n">curattr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">packet</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">attr</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">refattr</span> <span class="o">!=</span> <span class="n">curattr</span><span class="p">:</span>
+                        <span class="n">diffs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> is wrong (is </span><span class="si">{}</span><span class="s2"> but should be </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">curattr</span><span class="p">,</span> <span class="n">refattr</span><span class="p">))</span>
+
+                <span class="k">if</span> <span class="n">diffs</span><span class="p">:</span>
+                    <span class="n">diffstr</span> <span class="o">=</span> <span class="s1">&#39;; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">diffs</span><span class="p">)</span>
+                    <span class="n">differences</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;In the </span><span class="si">{}</span><span class="s2"> header, </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hdr</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="n">diffstr</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">differences</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_comparison_diagnosis</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">differences</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">differences</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+            
+        <span class="k">return</span> <span class="n">_compare_header_types</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span> <span class="ow">and</span> <span class="n">_compare_header_attrs</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_showpkt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pkt</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">star_out_attr</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+            <span class="n">attrpriv</span> <span class="o">=</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">attr</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+                <span class="k">return</span>
+            <span class="n">oldattr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+            <span class="n">newattr</span> <span class="o">=</span> <span class="s1">&#39;*&#39;</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">oldattr</span><span class="p">,</span> <span class="n">IPv4Address</span><span class="p">):</span>
+                <span class="n">newattr</span> <span class="o">=</span> <span class="s1">&#39;*.*.*.*&#39;</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">oldattr</span><span class="p">,</span> <span class="n">IPv6Address</span><span class="p">):</span>
+                <span class="n">newattr</span> <span class="o">=</span> <span class="s1">&#39;*::*&#39;</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">oldattr</span><span class="p">,</span> <span class="n">EthAddr</span><span class="p">):</span>
+                <span class="n">newattr</span> <span class="o">=</span> <span class="s1">&#39;**:**:**:**:**:**&#39;</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">attrpriv</span><span class="p">,</span> <span class="n">newattr</span><span class="p">)</span>
+
+        <span class="n">pktcopy</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">pkt</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">klass</span><span class="p">,</span><span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wildcards</span><span class="p">:</span>
+            <span class="n">header</span> <span class="o">=</span> <span class="n">pktcopy</span><span class="o">.</span><span class="n">get_header</span><span class="p">(</span><span class="n">klass</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">header</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">star_out_attr</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">pktcopy</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">fail_reason</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">packet</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Construct/return a string that describes why a packet doesn&#39;t</span>
+<span class="sd">        match this matcher.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lastresults</span>
+        <span class="n">firstmatch</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">xtype</span> <span class="o">=</span> <span class="s2">&quot;exact&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exact</span> <span class="k">else</span> <span class="s2">&quot;inexact&quot;</span>
+        <span class="n">wc</span> <span class="o">=</span> <span class="s2">&quot;with wildcards &quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wildcards</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span> 
+        <span class="n">aan</span> <span class="o">=</span> <span class="s1">&#39;an&#39;</span> <span class="k">if</span> <span class="n">xtype</span> <span class="o">==</span> <span class="s1">&#39;exact&#39;</span> <span class="k">else</span> <span class="s1">&#39;a&#39;</span>
+        <span class="n">xresults</span> <span class="o">=</span> <span class="s2">&quot;passed&quot;</span> <span class="k">if</span> <span class="n">firstmatch</span> <span class="k">else</span> <span class="s2">&quot;failed&quot;</span>
+        <span class="n">conjunction</span> <span class="o">=</span> <span class="s1">&#39;, but&#39;</span> <span class="k">if</span> <span class="n">firstmatch</span> <span class="k">else</span> <span class="s1">&#39;. &#39;</span>
+        <span class="n">diagnosis</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2"> match </span><span class="si">{}</span><span class="s2">of packet contents </span><span class="si">{}{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">aan</span><span class="p">,</span> <span class="n">xtype</span><span class="p">,</span> <span class="n">wc</span><span class="p">,</span> <span class="n">xresults</span><span class="p">,</span> <span class="n">conjunction</span><span class="p">)]</span>
+
+        <span class="c1"># are there predicates that were tested?  </span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
+            <span class="n">diagnosis</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;when comparing the packet you sent versus what I expected,&quot;</span><span class="p">]</span>
+            <span class="c1"># if previous statement ended with sentence, cap the last</span>
+            <span class="c1"># statement added.</span>
+            <span class="k">if</span> <span class="n">diagnosis</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">):</span>
+                <span class="n">diagnosis</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">diagnosis</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span>
+
+            <span class="c1"># go through each predicate</span>
+            <span class="k">for</span> <span class="n">pidx</span><span class="p">,</span><span class="n">preresult</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
+                <span class="n">xresults</span> <span class="o">=</span> <span class="s2">&quot;passed&quot;</span> <span class="k">if</span> <span class="n">preresult</span> <span class="k">else</span> <span class="s2">&quot;failed&quot;</span>
+                <span class="n">xname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predicates</span><span class="p">[</span><span class="n">pidx</span><span class="p">]</span>
+                <span class="n">conjunction</span> <span class="o">=</span> <span class="s1">&#39;and&#39;</span> <span class="k">if</span> <span class="n">pidx</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+                <span class="n">diagnosis</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> the predicate (</span><span class="si">{}</span><span class="s2">) </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">conjunction</span><span class="p">,</span> <span class="n">xname</span><span class="p">,</span> <span class="n">xresults</span><span class="p">)]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">conjunction</span><span class="p">:</span>
+                    <span class="n">diagnosis</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;,&#39;</span>
+            <span class="n">diagnosis</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;.&#39;</span>
+
+        <span class="k">if</span> <span class="n">firstmatch</span><span class="p">:</span> 
+            <span class="c1"># headers match, but predicate(s) failed</span>
+            <span class="n">diagnosis</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Packet field comparisons matched correctly: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_showpkt</span><span class="p">(</span><span class="n">packet</span><span class="p">))]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">diagnosis</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_comparison_diagnosis</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">VerboseOutput</span><span class="o">.</span><span class="n">enabled</span><span class="p">():</span>
+                <span class="n">diagnosis</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;.&#39;</span>
+                <span class="c1"># packet header match failed</span>
+                <span class="n">diagnosis</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Details: here is the packet that failed the check: </span><span class="si">{}</span><span class="s2">,&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">packet</span><span class="p">)]</span>
+                <span class="n">diagnosis</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">and here is what I expected to match: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_showpkt</span><span class="p">(</span><span class="n">packet</span><span class="p">))]</span>
+        <span class="k">return</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">diagnosis</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">match</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">packet</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Determine whether packet matches our expectation.</span>
+<span class="sd">        The packet is only a match if it meets WildcardMatch</span>
+<span class="sd">        criteria, and all predicates return True.</span>
+<span class="sd">        If no match, then construct a &quot;nice&quot; description</span>
+<span class="sd">            of what doesn&#39;t match, and throw an exception.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c1"># we don&#39;t need the binary representation, but we do need to ensure</span>
+        <span class="c1"># that any pre_serialization triggers have been executed to fill in</span>
+        <span class="c1"># various headers correctly.</span>
+        <span class="n">packet</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reference_packet</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lastresults</span> <span class="o">=</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compare_packet_against_reference</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span> <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lastresults</span> <span class="o">+=</span> <span class="p">[</span> <span class="nb">eval</span><span class="p">(</span><span class="n">fn</span><span class="p">)(</span><span class="n">packet</span><span class="p">)</span> <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predicates</span> <span class="p">]</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lastresults</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">rv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">rv</span><span class="p">[</span><span class="s1">&#39;_reference_packet&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rv</span><span class="p">[</span><span class="s1">&#39;_reference_packet&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">rv</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xdict</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">xdict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reference_packet</span> <span class="o">=</span> <span class="n">Packet</span><span class="p">(</span><span class="n">raw</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_reference_packet</span><span class="p">,</span> <span class="n">first_header</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_first_header</span><span class="p">)</span>
+
+
+
+<span class="k">class</span> <span class="nc">SwitchyardTestEvent</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="n">MATCH_FAIL</span> <span class="o">=</span> <span class="mh">0x00</span>
+    <span class="n">MATCH_SUCCESS</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">MATCH_PARTIAL</span> <span class="o">=</span> <span class="mh">0x02</span>
+
+    <span class="n">EVENT_INPUT</span> <span class="o">=</span> <span class="mh">0x10</span>
+    <span class="n">EVENT_OUTPUT</span> <span class="o">=</span> <span class="mh">0x20</span>
+
+    <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">ABCMeta</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">match</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">evtype</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Abstract method that must be overridden in input/output</span>
+<span class="sd">        events.  Default for base class is to return failed match.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">SwitchyardTestEvent</span><span class="o">.</span><span class="n">MATCH_FAIL</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">fail_reason</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">format_pkt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pkt</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Return a string representation of a packet.  If display_class is a known</span>
+<span class="sd">        header type, just show the string repr of that header.  Otherwise, dump</span>
+<span class="sd">        the whole thing.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">cls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_display</span>
+        <span class="k">if</span> <span class="n">VerboseOutput</span><span class="o">.</span><span class="n">enabled</span><span class="p">():</span>
+            <span class="n">cls</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># no special header highlighted with display kw; just return the entire thing</span>
+        <span class="k">if</span> <span class="n">cls</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">pkt</span><span class="p">)</span>
+
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">pkt</span><span class="o">.</span><span class="n">get_header_index</span><span class="p">(</span><span class="n">cls</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;Tried to find non-existent header for output formatting </span><span class="si">{}</span><span class="s2">&quot;</span>
+                <span class="s2">&quot; (test scenario probably needs fixing)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">cls</span><span class="p">)))</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">pkt</span><span class="p">)</span>
+        <span class="n">hdrs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pkt</span><span class="o">.</span><span class="n">num_headers</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">idx</span><span class="p">:</span>
+                <span class="n">hdrs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">pkt</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">hdrs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pkt</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span>
+        <span class="k">return</span> <span class="s1">&#39; | &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">hdrs</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="PacketInputTimeoutEvent"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.testing.PacketInputTimeoutEvent">[docs]</a><span class="k">class</span> <span class="nc">PacketInputTimeoutEvent</span><span class="p">(</span><span class="n">SwitchyardTestEvent</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Test event that models a timeout when trying to receive</span>
+<span class="sd">    a packet.  No packet arrives, so the switchy app should</span>
+<span class="sd">    handle a NoPackets exception and continue</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span> <span class="o">=</span> <span class="n">timeout</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xdict</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">xdict</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">PacketInputTimeoutEvent</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_timeout</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;Timeout after </span><span class="si">{}</span><span class="s2">s on a call to recv_packet&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PacketInputTimeoutEvent.match"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.testing.PacketInputTimeoutEvent.match">[docs]</a>    <span class="k">def</span> <span class="nf">match</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">evtype</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Does event type match me?  PacketInputEvent currently ignores</span>
+<span class="sd">        any additional arguments.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">evtype</span> <span class="o">==</span> <span class="n">SwitchyardTestEvent</span><span class="o">.</span><span class="n">EVENT_INPUT</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SwitchyardTestEvent</span><span class="o">.</span><span class="n">MATCH_SUCCESS</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SwitchyardTestEvent</span><span class="o">.</span><span class="n">MATCH_FAIL</span></div>
+
+    <span class="k">def</span> <span class="nf">generate_packet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">,</span> <span class="n">scenario</span><span class="p">):</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">NoPackets</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">fail_reason</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;Your code did not time out on a call to recv_packet&quot;</span></div>
+
+
+<div class="viewcode-block" id="PacketInputEvent"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.testing.PacketInputEvent">[docs]</a><span class="k">class</span> <span class="nc">PacketInputEvent</span><span class="p">(</span><span class="n">SwitchyardTestEvent</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Test event that models a packet arriving at a router/switch</span>
+<span class="sd">    (e.g., a packet that we generate).</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">packet</span><span class="p">,</span> <span class="n">display</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">copyfromlastout</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_device</span> <span class="o">=</span> <span class="n">device</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_packet</span> <span class="o">=</span> <span class="n">packet</span>
+        <span class="k">if</span> <span class="n">packet</span><span class="o">.</span><span class="n">num_headers</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_first_header</span> <span class="o">=</span> <span class="n">packet</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">__class__</span> 
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_first_header</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span> <span class="o">=</span> <span class="n">display</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_copyfromlastout</span> <span class="o">=</span> <span class="n">copyfromlastout</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">copyfromlastout</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span><span class="nb">list</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">copyfromlastout</span><span class="p">)</span> <span class="o">==</span> <span class="mi">5</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">copyfromlastout</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_copyfromlastout</span> <span class="o">=</span> <span class="p">[</span> <span class="n">copyfromlastout</span> <span class="p">]</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">copyfromlastout</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span><span class="nb">list</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_copyfromlastout</span> <span class="o">=</span> <span class="n">copyfromlastout</span>
+        <span class="k">elif</span> <span class="n">copyfromlastout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;An argument to copyfromlastout must be a list or tuple, or None&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">rv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">rv</span><span class="p">[</span><span class="s1">&#39;_packet&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_packet</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">rv</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xdict</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">xdict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_packet</span> <span class="o">=</span> <span class="n">Packet</span><span class="p">(</span><span class="n">raw</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_packet</span><span class="p">,</span> <span class="n">first_header</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_first_header</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">PacketInputEvent</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">_device</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_device</span> <span class="ow">and</span> \
+            <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_packet</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">_packet</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;recv_packet </span><span class="si">{}</span><span class="s2"> on </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">format_pkt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_packet</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_device</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PacketInputEvent.match"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.testing.PacketInputEvent.match">[docs]</a>    <span class="k">def</span> <span class="nf">match</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">evtype</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Does event type match me?  PacketInputEvent currently ignores</span>
+<span class="sd">        any additional arguments.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">evtype</span> <span class="o">==</span> <span class="n">SwitchyardTestEvent</span><span class="o">.</span><span class="n">EVENT_INPUT</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SwitchyardTestEvent</span><span class="o">.</span><span class="n">MATCH_SUCCESS</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SwitchyardTestEvent</span><span class="o">.</span><span class="n">MATCH_FAIL</span></div>
+
+    <span class="k">def</span> <span class="nf">generate_packet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">,</span> <span class="n">scenario</span><span class="p">):</span>
+        <span class="c1"># ensure that the packet is fully parsed before</span>
+        <span class="c1"># delivering it.  cost is immaterial since this</span>
+        <span class="c1"># is just testing code!</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_packet</span> <span class="o">=</span> <span class="n">Packet</span><span class="p">(</span><span class="n">raw</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_packet</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(),</span> <span class="n">first_header</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_first_header</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_device</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">scenario</span><span class="o">.</span><span class="n">interfaces</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">TestScenarioFailure</span><span class="p">(</span><span class="s2">&quot;Test scenario problem: input event refers to an interface (</span><span class="si">{}</span><span class="s2">) that is not configured in the scenario (these are the interfaces configured: </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_device</span><span class="p">,</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">scenario</span><span class="o">.</span><span class="n">interfaces</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_copyfromlastout</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_copyfromlastout</span><span class="p">)):</span>
+                <span class="n">intf</span><span class="p">,</span><span class="n">outcls</span><span class="p">,</span><span class="n">outprop</span><span class="p">,</span><span class="n">incls</span><span class="p">,</span><span class="n">inprop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_copyfromlastout</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">hdrval</span> <span class="o">=</span> <span class="n">scenario</span><span class="o">.</span><span class="n">lastout</span><span class="p">(</span><span class="n">intf</span><span class="p">,</span> <span class="n">outcls</span><span class="p">,</span> <span class="n">outprop</span><span class="p">)</span>
+                <span class="n">hdr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_packet</span><span class="o">.</span><span class="n">get_header</span><span class="p">(</span><span class="n">incls</span><span class="p">)</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">inprop</span><span class="p">,</span> <span class="n">hdrval</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ReceivedPacket</span><span class="p">(</span><span class="n">timestamp</span><span class="o">=</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">input_port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_device</span><span class="p">,</span> <span class="n">packet</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_packet</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">fail_reason</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;Your code did not call recv_packet&quot;</span></div>
+
+
+<div class="viewcode-block" id="PacketOutputEvent"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.testing.PacketOutputEvent">[docs]</a><span class="k">class</span> <span class="nc">PacketOutputEvent</span><span class="p">(</span><span class="n">SwitchyardTestEvent</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Test event that models a packet that should be emitted by</span>
+<span class="sd">    a router/switch.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_matches</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_device_packet_map</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="s1">&#39;display&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_display</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;display&#39;</span><span class="p">)</span>
+
+        <span class="n">predicates</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="s1">&#39;predicates&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">pval</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;predicates&#39;</span><span class="p">)</span>
+            <span class="n">predicates</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">pval</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;predicate&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">pval</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;predicate&#39;</span><span class="p">)</span>
+            <span class="n">predicates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pval</span><span class="p">)</span>
+
+        <span class="n">wildcards</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="s1">&#39;wildcards&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">wc</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;wildcards&#39;</span><span class="p">)</span>
+            <span class="n">wildcards</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">wc</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;wildcard&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">wc</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;wildcard&#39;</span><span class="p">)</span>
+            <span class="n">wildcards</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wc</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;PacketOutputEvent expects a list of device1, pkt1, device2, pkt2, etc., but no arguments were given.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Arg list length to PacketOutputEvent must be even (device1, pkt1, device2, pkt2, etc.)&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">),</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="n">matcher</span> <span class="o">=</span> <span class="n">_PacketMatcher</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">predicates</span><span class="o">=</span><span class="n">predicates</span><span class="p">,</span> <span class="n">wildcards</span><span class="o">=</span><span class="n">wildcards</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_device_packet_map</span><span class="p">[</span><span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">matcher</span>
+
+<div class="viewcode-block" id="PacketOutputEvent.match"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.testing.PacketOutputEvent.match">[docs]</a>    <span class="k">def</span> <span class="nf">match</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">evtype</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Does event type match me?  PacketOutputEvent requires</span>
+<span class="sd">        two additional keyword args: device (str) and packet (packet object).</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">evtype</span> <span class="o">!=</span> <span class="n">SwitchyardTestEvent</span><span class="o">.</span><span class="n">EVENT_OUTPUT</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SwitchyardTestEvent</span><span class="o">.</span><span class="n">MATCH_FAIL</span>
+        <span class="k">if</span> <span class="s1">&#39;device&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">or</span> <span class="s1">&#39;packet&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SwitchyardTestEvent</span><span class="o">.</span><span class="n">MATCH_FAIL</span>
+        <span class="n">device</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;device&#39;</span><span class="p">]</span>
+        <span class="n">pkt</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;packet&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">device</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_device_packet_map</span><span class="p">:</span>
+            <span class="n">matcher</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_device_packet_map</span><span class="p">[</span><span class="n">device</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">matcher</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">pkt</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_matches</span><span class="p">[</span><span class="n">device</span><span class="p">]</span> <span class="o">=</span> <span class="n">pkt</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_device_packet_map</span><span class="p">[</span><span class="n">device</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_device_packet_map</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">SwitchyardTestEvent</span><span class="o">.</span><span class="n">MATCH_SUCCESS</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">SwitchyardTestEvent</span><span class="o">.</span><span class="n">MATCH_PARTIAL</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">TestScenarioFailure</span><span class="p">(</span><span class="s2">&quot;You called send_packet and while the output port </span><span class="si">{}</span><span class="s2"> is ok, </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">device</span><span class="p">,</span> <span class="n">matcher</span><span class="o">.</span><span class="n">fail_reason</span><span class="p">(</span><span class="n">pkt</span><span class="p">)))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">TestScenarioFailure</span><span class="p">(</span><span class="s2">&quot;You called send_packet with an unexpected output port </span><span class="si">{}</span><span class="s2">.  Here is what Switchyard expected: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">device</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)))</span></div>
+
+    <span class="k">def</span> <span class="nf">fail_reason</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_matches</span><span class="p">):</span>
+            <span class="n">plural</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_matches</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;s&quot;</span>
+            <span class="n">message</span> <span class="o">+=</span> <span class="s2">&quot;your code has sent a packet on port</span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">plural</span><span class="p">,</span>
+                <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_matches</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_device_packet_map</span><span class="p">):</span>
+                <span class="n">message</span> <span class="o">+=</span> <span class="s2">&quot;, but &quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_device_packet_map</span><span class="p">):</span>
+            <span class="n">plural</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_device_packet_map</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;s&quot;</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_matches</span><span class="p">):</span>
+                <span class="n">message</span> <span class="o">+=</span> <span class="s2">&quot;not &quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">message</span> <span class="o">+=</span> <span class="s2">&quot;your code did not send packet</span><span class="si">{0}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">plural</span><span class="p">)</span>
+            <span class="n">message</span> <span class="o">+=</span> <span class="s2">&quot;on port</span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">plural</span><span class="p">,</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_device_packet_map</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+        <span class="k">return</span> <span class="n">message</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">matches</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_matches</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;send_packet(s) &quot;</span>
+        <span class="c1"># in device_packet_map, values are Match objects</span>
+        <span class="n">devlist</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> out </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">format_pkt</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">packet</span><span class="p">),</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_device_packet_map</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="p">]</span>
+        <span class="c1"># in matches, values are packets</span>
+        <span class="n">devlist</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> out </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">format_pkt</span><span class="p">(</span><span class="n">v</span><span class="p">),</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_matches</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="p">]</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s1">&#39; and &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">devlist</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">s</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">rv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">dev</span> <span class="ow">in</span> <span class="n">rv</span><span class="p">[</span><span class="s1">&#39;_matches&#39;</span><span class="p">]:</span>
+            <span class="n">pkt</span> <span class="o">=</span> <span class="n">rv</span><span class="p">[</span><span class="s1">&#39;_matches&#39;</span><span class="p">][</span><span class="n">dev</span><span class="p">]</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
+            <span class="n">rv</span><span class="p">[</span><span class="s1">&#39;_matches&#39;</span><span class="p">][</span><span class="n">dev</span><span class="p">]</span> <span class="o">=</span> <span class="n">pkt</span>
+        <span class="k">return</span> <span class="n">rv</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xdict</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">xdict</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">dev</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_matches</span><span class="p">:</span>
+            <span class="n">raw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_matches</span><span class="p">[</span><span class="n">dev</span><span class="p">]</span>
+            <span class="n">pkt</span> <span class="o">=</span> <span class="n">Packet</span><span class="p">(</span><span class="n">raw</span><span class="o">=</span><span class="n">raw</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_matches</span><span class="p">[</span><span class="n">dev</span><span class="p">]</span> <span class="o">=</span> <span class="n">pkt</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">PacketOutputEvent</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></div>
+
+
+<span class="n">TestScenarioEvent</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;TestScenarioEvent&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;event&#39;</span><span class="p">,</span><span class="s1">&#39;description&#39;</span><span class="p">,</span><span class="s1">&#39;timestamp&#39;</span><span class="p">])</span>
+
+<div class="viewcode-block" id="TestScenario"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.testing.TestScenario">[docs]</a><span class="k">class</span> <span class="nc">TestScenario</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Test scenario definition.  Given a list of packetio event objects,</span>
+<span class="sd">    generates input events and tests/verifies output events.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_interface_map</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_completed_events</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timer</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next_timestamp</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timeoutval</span> <span class="o">=</span> <span class="mi">60</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_support_files</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setup</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_teardown</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lastout</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tproc</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">sys</span><span class="p">,</span> <span class="s2">&quot;origplatform&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">sys</span><span class="o">.</span><span class="n">origplatform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;win&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sigrecv</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIGBREAK</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sigsend</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">CTRL_BREAK_EVENT</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sigrecv</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIGALRM</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sigsend</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIGALRM</span>
+
+    <span class="nd">@property</span>  
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timeoutval</span>
+
+    <span class="nd">@timeout</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timeoutval</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">lastout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">intf</span><span class="p">,</span> <span class="n">header</span><span class="p">,</span> <span class="nb">property</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lastout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pkt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lastout</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">intf</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pkt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">hdr</span> <span class="o">=</span> <span class="n">pkt</span><span class="o">.</span><span class="n">get_header</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+                <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="nb">property</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TestScenario.add_file"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.testing.TestScenario.add_file">[docs]</a>    <span class="k">def</span> <span class="nf">add_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_support_files</span><span class="p">[</span><span class="n">fname</span><span class="p">]</span> <span class="o">=</span> <span class="n">text</span></div>
+
+    <span class="k">def</span> <span class="nf">write_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">fname</span><span class="p">,</span> <span class="n">text</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_support_files</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+                <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_setup</span> 
+
+    <span class="nd">@setup</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setup</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">do_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_setup</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_setup</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">teardown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_teardown</span>
+
+    <span class="nd">@teardown</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">teardown</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_teardown</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">do_teardown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_teardown</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_teardown</span><span class="p">()</span>
+
+<div class="viewcode-block" id="TestScenario.add_interface"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.testing.TestScenario.add_interface">[docs]</a>    <span class="k">def</span> <span class="nf">add_interface</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface_name</span><span class="p">,</span> <span class="n">macaddr</span><span class="p">,</span> <span class="n">ipaddr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">netmask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Add an interface to the test scenario.</span>
+
+<span class="sd">        (str, str/EthAddr, str/IPAddr, str/IPAddr) -&gt; None</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="s1">&#39;ifnum&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;ifnum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_interface_map</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ipaddr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;ipaddr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ipaddr</span>
+        <span class="k">if</span> <span class="n">netmask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;netmask&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">netmask</span>
+        <span class="n">intf</span> <span class="o">=</span> <span class="n">Interface</span><span class="p">(</span><span class="n">interface_name</span><span class="p">,</span> <span class="n">macaddr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_interface_map</span><span class="p">[</span><span class="n">interface_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">intf</span></div>
+
+<div class="viewcode-block" id="TestScenario.interfaces"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.testing.TestScenario.interfaces">[docs]</a>    <span class="k">def</span> <span class="nf">interfaces</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interface_map</span></div>
+
+<div class="viewcode-block" id="TestScenario.ports"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.testing.TestScenario.ports">[docs]</a>    <span class="k">def</span> <span class="nf">ports</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Alias for interfaces() method.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">interfaces</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="TestScenario.expect"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.testing.TestScenario.expect">[docs]</a>    <span class="k">def</span> <span class="nf">expect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">description</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Add a new event and description to the expected set of events</span>
+<span class="sd">        to occur for this test scenario.</span>
+
+<span class="sd">        (Event object, str) -&gt; None</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">TestScenarioEvent</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_next_timestamp</span><span class="p">)</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next_timestamp</span> <span class="o">+=</span> <span class="mf">1.0</span></div>
+
+    <span class="k">def</span> <span class="nf">get_failed_test</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Return the head of the pending_events queue.  In the case of failure,</span>
+<span class="sd">        this is the expectation that wasn&#39;t met.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Return the next expected event to happen.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">TestScenarioFailure</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;An internal error appears to have happened. </span>
+<span class="s1">                next() was called on scenario &#39;</span><span class="si">{}</span><span class="s1">&#39; to obtain the next expected event, </span>
+<span class="s1">                but Switchyard isn&#39;t expecting anything else for this scenario&#39;&#39;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">event</span>
+
+    <span class="k">def</span> <span class="nf">failed_test_reason</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">fail_reason</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_timer_expiry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signum</span><span class="p">,</span> <span class="n">stackframe</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Callback method for ensuring that send_packet gets called appropriately</span>
+<span class="sd">        from user code (i.e., code getting tested).</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">sdebug</span><span class="o">.</span><span class="n">in_debugger</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_timer</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timer</span><span class="p">:</span>
+            <span class="n">log_debug</span><span class="p">(</span><span class="s2">&quot;Timer expiration while expecting PacketOutputEvent&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">TestScenarioFailure</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;Switchyard expected your program to call send_packet in </span>
+<span class="s1">                order to match </span><span class="si">{}</span><span class="s1"> in scenario </span><span class="si">{}</span><span class="s1">, but it wasn&#39;t called.  After </span><span class="si">{}</span><span class="s1"> seconds,</span>
+<span class="s1">                Switchyard gave up.&#39;&#39;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">log_debug</span><span class="p">(</span><span class="s2">&quot;Ignoring timer expiry with timer=False&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">cancel_timer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Don&#39;t let any pending signal interrupt things.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timer</span><span class="o">=</span><span class="kc">False</span>
+        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">origplatform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;win&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tproc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tproc</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tproc</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tproc</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">signal</span><span class="o">.</span><span class="n">alarm</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">testpass</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Method to call if the current expected event occurs, i.e., an event</span>
+<span class="sd">        expectation has been met.</span>
+
+<span class="sd">        Move current event (head of pending list) to completed list and disable</span>
+<span class="sd">        any timers that may have been started.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cancel_timer</span><span class="p">()</span>
+        <span class="n">ev</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">log_debug</span><span class="p">(</span><span class="s2">&quot;Test pass: </span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">description</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_completed_events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ev</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">PacketOutputEvent</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_lastout</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">matches</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="p">):</span>
+            <span class="k">return</span>
+
+        <span class="c1"># if head of expected is pktout, set alarm for 1 sec</span>
+        <span class="c1"># or so to check that we actually receive a packet.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">PacketOutputEvent</span><span class="p">):</span>
+            <span class="n">log_debug</span><span class="p">(</span><span class="s2">&quot;Setting timer for next PacketOutputEvent&quot;</span><span class="p">)</span>
+
+            <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sigrecv</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timer_expiry</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">origplatform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;win&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tproc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_tproc</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_tproc</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tproc</span> <span class="o">=</span> <span class="n">Process</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">timerfn</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sigsend</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tproc</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">signal</span><span class="o">.</span><span class="n">alarm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timeout</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_timer</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">log_debug</span><span class="p">(</span><span class="s2">&quot;Next event expected: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">event</span><span class="p">))</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">wrapevent</span><span class="p">(</span><span class="n">description</span><span class="p">,</span> <span class="n">expected_event</span><span class="p">,</span> <span class="n">show_details</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Create a &quot;pretty&quot; version of an event description and expectation for output.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">baseindent</span> <span class="o">=</span> <span class="mi">4</span>
+        <span class="n">wraplen</span> <span class="o">=</span> <span class="mi">60</span>
+        <span class="n">expected_event</span> <span class="o">=</span> <span class="s2">&quot;Expected event: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">expected_event</span><span class="p">)</span>
+
+        <span class="n">outstr</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39; &#39;</span> <span class="o">*</span> <span class="n">baseindent</span> <span class="o">+</span> <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">description</span><span class="p">,</span> <span class="n">wraplen</span><span class="p">)])</span>
+        <span class="k">if</span> <span class="n">show_details</span><span class="p">:</span>
+            <span class="n">outstr</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="n">outstr</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39; &#39;</span> <span class="o">*</span> <span class="p">(</span><span class="n">baseindent</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">expected_event</span><span class="p">,</span> <span class="n">wraplen</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="n">outstr</span>
+
+    <span class="k">def</span> <span class="nf">print_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Print a semi-nice summary of the test scenario: what passed, what</span>
+<span class="sd">        failed, and test components that haven&#39;t been checked yet due to</span>
+<span class="sd">        a prior failure.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">with</span> <span class="n">blue</span><span class="p">():</span>
+            <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Results for test scenario </span><span class="si">{}</span><span class="s2">:&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+            <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> passed, </span><span class="si">{}</span><span class="s2"> failed, </span><span class="si">{}</span><span class="s2"> pending&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_completed_events</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="p">)),</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_completed_events</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">green</span><span class="p">():</span>
+                <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Passed:&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">idx</span><span class="p">,</span><span class="n">ev</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_completed_events</span><span class="p">):</span>
+                    <span class="n">idxstr</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">{}{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idxstr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wrapevent</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">description</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="p">),</span> <span class="n">VerboseOutput</span><span class="o">.</span><span class="n">enabled</span><span class="p">())[</span><span class="nb">len</span><span class="p">(</span><span class="n">idxstr</span><span class="p">):]))</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">red</span><span class="p">():</span>
+                <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Failed:&quot;</span><span class="p">)</span>
+                <span class="n">failed_event</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wrapevent</span><span class="p">(</span><span class="n">failed_event</span><span class="o">.</span><span class="n">description</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">failed_event</span><span class="o">.</span><span class="n">event</span><span class="p">))))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">yellow</span><span class="p">():</span>
+                    <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Pending (couldn&#39;t test because of prior failure):&quot;</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span><span class="n">ev</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+                        <span class="n">idxstr</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+                        <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">{}{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idxstr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wrapevent</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">description</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="p">),</span> <span class="n">VerboseOutput</span><span class="o">.</span><span class="n">enabled</span><span class="p">())[</span><span class="nb">len</span><span class="p">(</span><span class="n">idxstr</span><span class="p">):]))</span>
+        <span class="nb">print</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">done</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Boolean method that tests whether the test scenario</span>
+<span class="sd">        is done or not.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;scenario </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">odict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">del</span> <span class="n">odict</span><span class="p">[</span><span class="s1">&#39;_timer&#39;</span><span class="p">]</span>
+        <span class="n">odict</span><span class="p">[</span><span class="s1">&#39;_events&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">odict</span><span class="p">[</span><span class="s1">&#39;_pending_events&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">odict</span><span class="p">[</span><span class="s1">&#39;_completed_events&#39;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">odict</span><span class="p">[</span><span class="s1">&#39;_pending_events&#39;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">odict</span><span class="p">[</span><span class="s1">&#39;_completed_events&#39;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">odict</span><span class="p">[</span><span class="s1">&#39;_setup&#39;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">odict</span><span class="p">[</span><span class="s1">&#39;_teardown&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">odict</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xdict</span><span class="p">):</span>
+        <span class="n">xdict</span><span class="p">[</span><span class="s1">&#39;_pending_events&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xdict</span><span class="p">[</span><span class="s1">&#39;_events&#39;</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">xdict</span><span class="p">[</span><span class="s1">&#39;_events&#39;</span><span class="p">]</span>
+        <span class="n">xdict</span><span class="p">[</span><span class="s1">&#39;_timer&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">xdict</span><span class="p">[</span><span class="s1">&#39;_completed_events&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">xdict</span><span class="p">[</span><span class="s1">&#39;_setup&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">xdict</span><span class="p">[</span><span class="s1">&#39;_teardown&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">xdict</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">TestScenario</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_next_timestamp</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">_next_timestamp</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">selfev</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_completed_events</span>
+        <span class="n">otherev</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">_pending_events</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">_completed_events</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">selfev</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">otherev</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">selfev</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">selfev</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">otherev</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">scenario_sanity_check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Perform some basic sanity checks on a test scenario object:</span>
+<span class="sd">        - make sure that events refer to devices that are registered</span>
+<span class="sd">        - check that there are both input/output events</span>
+
+<span class="sd">        Just carp warnings if anything looks incorrect, but don&#39;t</span>
+<span class="sd">        fail: punt the problem to the user.</span>
+
+<span class="sd">        Returns bool (True if no warnings, False if there are warnings)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">nowarnings</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">log_debug</span><span class="p">(</span><span class="s2">&quot;Doing sanity check on test scenario </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">ev</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_events</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">PacketInputEvent</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">_device</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interface_map</span><span class="p">:</span>
+                    <span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;PacketInputEvent (</span><span class="si">{}</span><span class="s2">) refers to a device not part of scenario interface map&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="p">)))</span>
+                    <span class="n">nowarnings</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">_packet</span><span class="p">,</span> <span class="n">Packet</span><span class="p">):</span>
+                    <span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;PacketInputEvent (</span><span class="si">{}</span><span class="s2">) refers to a non-packet object (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="p">),</span> <span class="nb">type</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">_packet</span><span class="p">)))</span>
+                    <span class="n">nowarnings</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">PacketOutputEvent</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">_device_packet_map</span><span class="p">):</span>
+                    <span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;PacketOutputEvent (</span><span class="si">{}</span><span class="s2">) doesn&#39;t have any output devices included&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="p">))</span>
+                    <span class="n">nowarnings</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">for</span> <span class="n">dev</span><span class="p">,</span><span class="n">pkt</span> <span class="ow">in</span> <span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">_device_packet_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">dev</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interface_map</span><span class="p">:</span>
+                        <span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;PacketOutputEvent () refers to a device not part of test scenario&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="p">)))</span>
+                        <span class="n">nowarnings</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pkt</span><span class="p">,</span> <span class="n">_PacketMatcher</span><span class="p">):</span>
+                        <span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;PacketOutputEvent (</span><span class="si">{}</span><span class="s2">) refers to a non-PacketMatcher object (</span><span class="si">{}</span><span class="s2">).  This is probably an internal error.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="p">),</span> <span class="nb">type</span><span class="p">(</span><span class="n">pkt</span><span class="p">)))</span>
+                        <span class="n">nowarnings</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">if</span> <span class="n">pkt</span><span class="o">.</span><span class="n">_predicates</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">pkt</span><span class="o">.</span><span class="n">_predicates</span><span class="p">:</span>
+                            <span class="k">try</span><span class="p">:</span>
+                                <span class="n">xfn</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
+                            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                                <span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;Couldn&#39;t eval the predicate (</span><span class="si">{}</span><span class="s2">): </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+                                <span class="n">nowarnings</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="p">,</span> <span class="n">PacketInputTimeoutEvent</span><span class="p">):</span>
+                <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;Unrecognized event type in scenario event list: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">ev</span><span class="o">.</span><span class="n">event</span><span class="p">))))</span>
+                <span class="n">nowarnings</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">nowarnings</span></div>
+
+<span class="k">def</span> <span class="nf">timerfn</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">tmo</span><span class="p">,</span> <span class="n">sig</span><span class="p">):</span>
+    <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGBREAK</span><span class="p">,</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIG_IGN</span><span class="p">)</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">tmo</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">kill</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">sig</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">compile_scenario</span><span class="p">(</span><span class="n">scenario_file</span><span class="p">,</span> <span class="n">output_filename</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Compile a Switchy test scenario object to a serialized representation</span>
+<span class="sd">    in a file for distribution.  Assumes that the input file is a .py</span>
+<span class="sd">    module with a &#39;scenario&#39; variable that refers to some Scenario object.</span>
+
+<span class="sd">    (str/filename) -&gt; str/filename</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">sobj</span> <span class="o">=</span> <span class="n">import_or_die</span><span class="p">(</span><span class="n">scenario_file</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;scenario&#39;</span><span class="p">,))</span>
+    <span class="n">sobj</span><span class="o">.</span><span class="n">scenario_sanity_check</span><span class="p">()</span>
+    <span class="n">outname</span> <span class="o">=</span> <span class="n">scenario_file</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;.py&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.srpy&#39;</span>
+    <span class="n">pickle_repr</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">sobj</span><span class="p">,</span> <span class="n">pickle</span><span class="o">.</span><span class="n">HIGHEST_PROTOCOL</span><span class="p">)</span>
+    <span class="n">dig</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha512</span><span class="p">()</span>
+    <span class="n">dig</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">pickle_repr</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">output_filename</span><span class="p">:</span>
+        <span class="n">outname</span> <span class="o">=</span> <span class="n">output_filename</span>
+    <span class="n">xfile</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">outname</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
+    <span class="n">outstr</span> <span class="o">=</span> <span class="n">dig</span><span class="o">.</span><span class="n">digest</span><span class="p">()</span> <span class="o">+</span> <span class="n">pickle_repr</span>
+    <span class="n">xfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">bz2</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">outstr</span><span class="p">))</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">))</span>
+    <span class="n">xfile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">outname</span>
+
+<span class="k">def</span> <span class="nf">uncompile_scenario</span><span class="p">(</span><span class="n">scenario_file</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Takes a serialized Scenario object stored in scenario_file and returns</span>
+<span class="sd">    the resurrected Scenario object.  Compares the sha512 hash embedded</span>
+<span class="sd">    in the serialized object file with a newly computed hash to insure that</span>
+<span class="sd">    the contents haven&#39;t been modified.</span>
+
+<span class="sd">    (str/filename) -&gt; Scenario object</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">scenario_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">infile</span><span class="p">:</span>
+        <span class="n">indata</span> <span class="o">=</span> <span class="n">infile</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="n">indata</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">indata</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+    <span class="n">indata</span> <span class="o">=</span> <span class="n">bz2</span><span class="o">.</span><span class="n">decompress</span><span class="p">(</span><span class="n">indata</span><span class="p">)</span>
+    <span class="n">dig</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha512</span><span class="p">()</span>
+    <span class="n">digest</span> <span class="o">=</span> <span class="n">indata</span><span class="p">[:</span><span class="n">dig</span><span class="o">.</span><span class="n">digest_size</span><span class="p">]</span>
+    <span class="n">objrepr</span> <span class="o">=</span> <span class="n">indata</span><span class="p">[</span><span class="n">dig</span><span class="o">.</span><span class="n">digest_size</span><span class="p">:]</span>
+    <span class="n">dig</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">objrepr</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dig</span><span class="o">.</span><span class="n">digest</span><span class="p">()</span> <span class="o">!=</span> <span class="n">digest</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Couldn&#39;t load scenario file (hash digest doesn&#39;t match)&quot;</span><span class="p">)</span>
+    <span class="n">sobj</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">objrepr</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sobj</span>
+
+<span class="k">def</span> <span class="nf">get_test_scenario_from_file</span><span class="p">(</span><span class="n">sfile</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Takes a file name as a parameter, which contains a</span>
+<span class="sd">    scenario object either in a .py module form, or serialized</span>
+<span class="sd">    in a .srpy form.</span>
+
+<span class="sd">    (str/filename) -&gt; Scenario object</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">sobj</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">fnmatch</span><span class="o">.</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="s2">&quot;*.py&quot;</span><span class="p">):</span>
+        <span class="n">sobj</span> <span class="o">=</span> <span class="n">import_or_die</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;scenario&#39;</span><span class="p">,))</span>
+        <span class="n">sobj</span><span class="o">.</span><span class="n">scenario_sanity_check</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">fnmatch</span><span class="o">.</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="s2">&quot;*.srpy&quot;</span><span class="p">):</span>
+        <span class="n">sobj</span> <span class="o">=</span> <span class="n">uncompile_scenario</span><span class="p">(</span><span class="n">sfile</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">sobj</span> <span class="o">=</span> <span class="n">import_or_die</span><span class="p">(</span><span class="n">sfile</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;scenario&#39;</span><span class="p">,))</span>
+    <span class="k">return</span> <span class="n">sobj</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2017, Joel Sommers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+    </div>
+  </body>
+</html>

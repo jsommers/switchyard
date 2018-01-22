@@ -1,0 +1,472 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Advanced API topics &#8212; Switchyard 2017.01.5 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2017.01.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installing Switchyard" href="installation.html" />
+    <link rel="prev" title="Running in a “live” environment" href="live_execution.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="Installing Switchyard"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="live_execution.html" title="Running in a “live” environment"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Switchyard 2017.01.5 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Advanced API topics</a><ul>
+<li><a class="reference internal" href="#creating-new-packet-header-types">Creating new packet header types</a><ul>
+<li><a class="reference internal" href="#creating-a-new-packet-header-class">Creating a new packet header class</a></li>
+<li><a class="reference internal" href="#configuring-the-lower-layer-header-class">Configuring the lower-layer header class</a></li>
+<li><a class="reference internal" href="#one-more-example">One more example</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#application-layer-socket-emulation-and-creating-full-protocol-stacks">Application layer socket emulation and creating full protocol stacks</a><ul>
+<li><a class="reference internal" href="#api-calls-for-delivering-receiving-messages-to-from-applications">API calls for delivering/receiving messages to/from applications</a></li>
+<li><a class="reference internal" href="#switchyard-s-socket-emulation-library">Switchyard&#8217;s socket emulation library</a></li>
+<li><a class="reference internal" href="#starting-socket-applications-with-swyard">Starting socket applications with <code class="docutils literal"><span class="pre">swyard</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="live_execution.html"
+                        title="previous chapter">Running in a &#8220;live&#8221; environment</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="installation.html"
+                        title="next chapter">Installing Switchyard</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/advanced_api.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="advanced-api-topics">
+<span id="advanced"></span><h1>Advanced API topics<a class="headerlink" href="#advanced-api-topics" title="Permalink to this headline">¶</a></h1>
+<p>This section introduces two additional, and slightly advanced topics related to Switchyard APIs: creating new packet header types and using Switchyard&#8217;s application-layer socket emulation capabilities.</p>
+<div class="section" id="creating-new-packet-header-types">
+<span id="new-packet-header-types"></span><span id="index-0"></span><h2>Creating new packet header types<a class="headerlink" href="#creating-new-packet-header-types" title="Permalink to this headline">¶</a></h2>
+<p>For some Switchyard programs, it can be useful to create new packet header types.  For example, say you want to implement a simplified dynamic routing protocol within an IP router.  You might want to be able to create a new packet header for your routing protocol, and have those packet headers integrate well with the existing Switchyard <code class="docutils literal"><span class="pre">Packet</span></code> class.  Similarly, say you want to implement a simplified Ethernet spanning tree protocol: being able to create a new packet header for carrying spanning tree information would be helpful.</p>
+<p>Before discussing how to create a new packet header class that integrates well with the rest of Switchyard, it is important to note that it is not strictly <em>required</em> to create a new packet header class for either of the above example projects.  Instead, you could use the existing <code class="docutils literal"><span class="pre">RawPacketContents</span></code> header, which has one attribute (<code class="docutils literal"><span class="pre">data</span></code>), a <code class="docutils literal"><span class="pre">bytes</span></code> object.  To use a <code class="docutils literal"><span class="pre">RawPacketContents</span></code> header, you would need to handle all <em>packing</em> (&#8220;serialization&#8221;) and <em>unpacking</em> (&#8220;deserialization&#8221;) of header fields to and from the bytes object explicitly in your code.  While this approach &#8220;works&#8221;, it leads to a less cohesive and encapsulated design and to code that may be a bit more difficult to debug because it is not well-integrated into Switchyard.</p>
+<p>If you want to work with Switchyard&#8217;s packet header and packet classes, there are two main steps to take:</p>
+<blockquote>
+<div><ul class="simple">
+<li>First, create a new class that derives from <code class="docutils literal"><span class="pre">PacketHeaderBase</span></code>.  There are two required methods (<code class="docutils literal"><span class="pre">to_bytes()</span></code> and <code class="docutils literal"><span class="pre">from_bytes()</span></code>) that you&#8217;ll need to write, and some other things to be aware of when writing this class.</li>
+<li>Second, some configuration to the packet header class that appears <em>before</em> your header in a normal packet needs to be done.  This is just a matter of a couple method calls to do the configuration.</li>
+</ul>
+</div></blockquote>
+<p>These steps are described below along with short examples and a longer (full) example follows.</p>
+<div class="section" id="creating-a-new-packet-header-class">
+<h3>Creating a new packet header class<a class="headerlink" href="#creating-a-new-packet-header-class" title="Permalink to this headline">¶</a></h3>
+<p>As mentioned above, to create a new packet header class you must create a class that derives from <code class="docutils literal"><span class="pre">PacketHeaderBase</span></code>.  There are two required methods to implement:</p>
+<dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">to_bytes()</span></code></dt>
+<dd>This method returns a serialized packet header in the form of a <code class="docutils literal"><span class="pre">bytes</span></code> object.  One of the easiest ways to &#8220;pack&#8221; a set of values into a <code class="docutils literal"><span class="pre">bytes</span></code> object is to use Python&#8217;s <code class="docutils literal"><span class="pre">struct</span></code> module (refer to the Python library documentation for details).  The examples in this section use <code class="docutils literal"><span class="pre">struct</span></code>.</dd>
+<dt><code class="docutils literal"><span class="pre">from_bytes(raw)</span></code></dt>
+<dd>This method accepts a bytes object as a parameter and returns a <code class="docutils literal"><span class="pre">bytes</span></code> object.  It populates attributes in the packet header by unpacking the <code class="docutils literal"><span class="pre">bytes</span></code> object.  The method should raise an exception if there aren&#8217;t enough bytes to fully reconstruct the packet header.  Any part of the <code class="docutils literal"><span class="pre">bytes</span></code> object passed as a parameter that <em>aren&#8217;t</em> used (i.e., there are more bytes passed in to the method than are necessary to reconstruct the header) should be returned by the method.  As with the <code class="docutils literal"><span class="pre">to_bytes()</span></code> method, Python&#8217;s <code class="docutils literal"><span class="pre">struct</span></code> module is useful for performing the unpacking.</dd>
+</dl>
+<p>There is one restriction when implementing a new packet header class:</p>
+<blockquote>
+<div><ul class="simple">
+<li>The <code class="docutils literal"><span class="pre">__init__</span></code> method should only take <em>optional</em> parameters.  Switchyard assumes that a packet header object can be constructed which assigns attributes to reasonable default values, thus no explicit initialization parameters can be required by the constructor (<code class="docutils literal"><span class="pre">__init__</span></code>). Moreover, for compatibility with keyword-style attribute assignment in packet header classes, a <code class="docutils literal"><span class="pre">kwargs</span></code> parameter should be included and passed to the base class initialization method call and this call to the base class must come <strong>last</strong> in the <code class="docutils literal"><span class="pre">__init__</span></code> method.</li>
+</ul>
+</div></blockquote>
+<p>Below is an example of a new packet header called <code class="docutils literal"><span class="pre">UDPPing</span></code> that contains a single attribute: <code class="docutils literal"><span class="pre">sequence</span></code>.  This packet header is designed to be included in a packet following a <code class="docutils literal"><span class="pre">UDP</span></code> header.  Besides implementing an <code class="docutils literal"><span class="pre">__init__</span></code> method (which optionally accepts an initial sequence value) and the two required methods, there are property getter and setter methods for <code class="docutils literal"><span class="pre">sequence</span></code> and a string conversion magic method.  Note that we&#8217;ve decided to store the sequence value as a network-byte-order (big endian) unsigned 16 bit value (this is what the <code class="docutils literal"><span class="pre">!H</span></code> signifies for <code class="docutils literal"><span class="pre">_PACKFMT</span></code>: refer to the <code class="docutils literal"><span class="pre">struct</span></code> Python library documentation):</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switchyard.lib.userlib</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+
+<span class="k">class</span> <span class="nc">UDPPing</span><span class="p">(</span><span class="n">PacketHeaderBase</span><span class="p">):</span>
+    <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s2">&quot;!H&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sequence</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span>
+        <span class="n">PacketHeaderBase</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sequence</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">raw</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="n">packsize</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">packsize</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Not enough bytes to unpack UDPPing&quot;</span><span class="p">)</span>
+        <span class="n">attrs</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> <span class="n">raw</span><span class="p">[:</span><span class="n">packsize</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">raw</span><span class="p">[</span><span class="n">packsize</span><span class="p">:]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sequence</span>
+
+    <span class="nd">@sequence.setter</span>
+    <span class="k">def</span> <span class="nf">sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sequence</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;{} seq: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Given the way the <code class="docutils literal"><span class="pre">UDPPing</span></code> packet header class has been defined, we can either set the <code class="docutils literal"><span class="pre">sequence</span></code> explicitly with the property setter, pass a value into the <code class="docutils literal"><span class="pre">__init__</span></code> method, or use keyword syntax:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>&gt;&gt;&gt; up1 = UDPPing()
+&gt;&gt;&gt; print(up1)
+UDPPing seq: 0
+&gt;&gt;&gt; up2 = UDPPing()
+&gt;&gt;&gt; up2.sequence = 13
+&gt;&gt;&gt; print(up2)
+UDPPing seq: 13
+&gt;&gt;&gt; up3 = UDPPing(sequence=42)
+&gt;&gt;&gt; print(up3)
+UDPPing seq: 0
+</pre></div>
+</div>
+<p>If we now create a full <code class="docutils literal"><span class="pre">Packet</span></code> object, we might do something like the following.  Note that our code both <em>serializes</em> and <em>deserializes</em> the packet.  We do this to test (at least in a limited way) that our <code class="docutils literal"><span class="pre">to_bytes()</span></code> and <code class="docutils literal"><span class="pre">from_bytes()</span></code> methods work as expected.  Here is the code:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">UDP_PING_PORT</span> <span class="o">=</span> <span class="mi">12345</span>
+<span class="n">pkt</span> <span class="o">=</span> <span class="n">Ethernet</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="s2">&quot;11:22:11:22:11:22&quot;</span><span class="p">,</span> 
+               <span class="n">dst</span><span class="o">=</span><span class="s2">&quot;22:33:22:33:22:33&quot;</span><span class="p">)</span> <span class="o">+</span> \
+      <span class="n">IPv4</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="s2">&quot;1.2.3.4&quot;</span><span class="p">,</span> <span class="n">dst</span><span class="o">=</span><span class="s2">&quot;5.6.7.8&quot;</span><span class="p">,</span> 
+           <span class="n">protocol</span><span class="o">=</span><span class="n">IPProtocol</span><span class="o">.</span><span class="n">UDP</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span> <span class="o">+</span> \
+      <span class="n">UDP</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="mi">55555</span><span class="p">,</span> <span class="n">dst</span><span class="o">=</span><span class="n">UDP_PING_PORT</span><span class="p">)</span> <span class="o">+</span> \
+      <span class="n">UDPPing</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">&quot;Before serialize/deserialize:&quot;</span><span class="p">,</span> <span class="n">pkt</span><span class="p">)</span>
+<span class="n">xbytes</span> <span class="o">=</span> <span class="n">pkt</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
+<span class="n">reanimated_pkt</span> <span class="o">=</span> <span class="n">Packet</span><span class="p">(</span><span class="n">raw</span><span class="o">=</span><span class="n">xbytes</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">&quot;After deserialization:&quot;</span><span class="p">,</span> <span class="n">reanimated_pkt</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And here is the output:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>Before serialize/deserialize: Ethernet 11:22:11:22:11:22-&gt;22:33:22:33:22:33 IP | IPv4 1.2.3.4-&gt;5.6.7.8 UDP | UDP 55555-&gt;12345 | UDPPing seq: 42
+After deserialization: Ethernet 11:22:11:22:11:22-&gt;22:33:22:33:22:33 IP | IPv4 1.2.3.4-&gt;5.6.7.8 UDP | UDP 55555-&gt;12345 | RawPacketContents (2 bytes) b&#39;\x00*&#39;
+</pre></div>
+</div>
+<p>Notice that the first line of output shows the full packet as we expect, including the final <code class="docutils literal"><span class="pre">UDPPing</span></code> header.  The next line to follow, however, shows that the packet has been reconstructed with the final header as <code class="docutils literal"><span class="pre">RawPacketContents</span></code>, not <code class="docutils literal"><span class="pre">UDPPing</span></code>.  What happened?</p>
+</div>
+<div class="section" id="configuring-the-lower-layer-header-class">
+<h3>Configuring the lower-layer header class<a class="headerlink" href="#configuring-the-lower-layer-header-class" title="Permalink to this headline">¶</a></h3>
+<p>What happened in the above example is that Switchyard does not have enough information to know that the bytes that follow the UDP header should be interpreted as the contents of a <code class="docutils literal"><span class="pre">UDPPing</span></code> packet.  It is possible, however, to give this information to Switchyard.</p>
+<p>Switchyard assumes that there exists one attribute in a packet header that can be used to determine how to map <em>values</em> of that attribute to a <em>packet header class</em>.  Not surprisingly, these mappings are stored in the form of a Python dictionary.  For example, by default the <code class="docutils literal"><span class="pre">Ethernet</span></code> class is configured to use the value of the <code class="docutils literal"><span class="pre">ethertype</span></code> attribute as a lookup <em>key</em> to determine the type of the packet header that follows.  It contains a few initial mappings, including a mapping from <code class="docutils literal"><span class="pre">EtherType.IP</span></code> to <code class="docutils literal"><span class="pre">IPv4</span></code>.  Similarly, the <code class="docutils literal"><span class="pre">IPv4</span></code> class uses values in the <code class="docutils literal"><span class="pre">protocol</span></code> attribute as keys to look up the packet header type that should come next.</p>
+<p>Switchyard contains methods to make it possible to change the <em>attribute</em> on which lookups are performed, to <em>add</em> new mappings from a value on the mapped attribute to a packet header class, and to <em>completely (re)initialize</em> the mappings from attribute values to packet header classes.  Noting that one should, of course, use care when modifying any existing mappings or when modifying the attribute on which mappings are performed, here are the three <em>class</em> methods available on <code class="docutils literal"><span class="pre">PacketHeaderBase</span></code>-derived classes:</p>
+<dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">set_next_header_class_key(attr)</span></code></dt>
+<dd>This method is used to specify the <em>attribute</em> on which lookups to determine the next header class should be performed.  Switchyard-provided header classes contain sensible defaults for this value.  For example, with <code class="docutils literal"><span class="pre">Ethernet</span></code> and <code class="docutils literal"><span class="pre">Vlan</span></code> this attribute is preconfigured as <code class="docutils literal"><span class="pre">ethertype</span></code>, for <code class="docutils literal"><span class="pre">IPv4</span></code> this attribute is configured as <code class="docutils literal"><span class="pre">protocol</span></code>, and for <code class="docutils literal"><span class="pre">IPv6</span></code> it is <code class="docutils literal"><span class="pre">nextheader</span></code>.  There is no default configuration set for <code class="docutils literal"><span class="pre">UDP</span></code> or <code class="docutils literal"><span class="pre">TCP</span></code>, but the natural choice would be <code class="docutils literal"><span class="pre">dst</span></code> (i.e., to use the destination port as the key).  Most other headers are configured with the empty string, indicating that no &#8220;next header&#8221; is assumed by Switchyard.  In that case, Switchyard will construct a <code class="docutils literal"><span class="pre">RawPacketHeader</span></code> object containing the remaining bytes.</dd>
+<dt><code class="docutils literal"><span class="pre">add_next_header_class(attr,</span> <span class="pre">hdrcls)</span></code></dt>
+<dd>This method is used to add a new attribute value-header class mapping to the next header mapping dictionary.</dd>
+<dt><code class="docutils literal"><span class="pre">set_next_header_map(mapdict)</span></code></dt>
+<dd>This method can be used to replace any previous dictionary with a new one.  Switchyard-provided header classes are configured with sensible defaults.  Use with care, since a replacement of a next header class mapping in a highly dependend-upon header class (e.g, <code class="docutils literal"><span class="pre">IPv4</span></code>) will likely break lots of things.</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">A key limitation of Switchyard, currently, is that arbitrary values for core protocol number enumerations (in particular, <code class="docutils literal"><span class="pre">EtherType</span></code> and <code class="docutils literal"><span class="pre">IPProtocol</span></code>) cannot be dynamically added and/or modified because Python&#8217;s <code class="docutils literal"><span class="pre">enum</span></code> types are constant once created.  This makes it impossible, at present, to use <em>arbitrary</em> protocol numbers for new layer 3 or 4 protocols and packet header types.  This will be changed in a future version of Switchyard.  In the meantime, a workaround is to use an existing protocol number which is not used in the next header map.  For example, if you are implementing a routing protocol on top of IPv4, you could use <code class="docutils literal"><span class="pre">IPProtocol.OSPF</span></code> as the protocol number for your (non-OSPF) protocol since Switchyard does not have any current mapping between that protocol number and a packet header class.</p>
+</div>
+<p>Building on the previous example with <code class="docutils literal"><span class="pre">UDPPing</span></code>, if we add <em>two</em> lines of code to specify that the destination port should be used as a key to look up the correct next header in a packet, and to <em>register</em> a particular UDP destination port as being associated with the <code class="docutils literal"><span class="pre">UDPPing</span></code> protocol, the final couple bytes can get properly interpreted and deserialized into the right packet header (notice the first two lines of code, which are the <em>only</em> differences with the previous example):</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">UDP</span><span class="o">.</span><span class="n">add_next_header_class</span><span class="p">(</span><span class="n">UDP_PING_PORT</span><span class="p">,</span> <span class="n">UDPPing</span><span class="p">)</span>
+<span class="n">UDP</span><span class="o">.</span><span class="n">set_next_header_class_key</span><span class="p">(</span><span class="s1">&#39;dst&#39;</span><span class="p">)</span>
+<span class="n">pkt</span> <span class="o">=</span> <span class="n">Ethernet</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="s2">&quot;11:22:11:22:11:22&quot;</span><span class="p">,</span> 
+               <span class="n">dst</span><span class="o">=</span><span class="s2">&quot;22:33:22:33:22:33&quot;</span><span class="p">)</span> <span class="o">+</span> \
+      <span class="n">IPv4</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="s2">&quot;1.2.3.4&quot;</span><span class="p">,</span> <span class="n">dst</span><span class="o">=</span><span class="s2">&quot;5.6.7.8&quot;</span><span class="p">,</span> 
+           <span class="n">protocol</span><span class="o">=</span><span class="n">IPProtocol</span><span class="o">.</span><span class="n">UDP</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span> <span class="o">+</span> \
+      <span class="n">UDP</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="mi">55555</span><span class="p">,</span> <span class="n">dst</span><span class="o">=</span><span class="n">UDP_PING_PORT</span><span class="p">)</span> <span class="o">+</span> \
+      <span class="n">UDPPing</span><span class="p">(</span><span class="n">sequence</span><span class="o">=</span><span class="mi">13</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">&quot;Before serialize/deserialize:&quot;</span><span class="p">,</span> <span class="n">pkt</span><span class="p">)</span>
+<span class="n">xbytes</span> <span class="o">=</span> <span class="n">pkt</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
+<span class="n">reanimated_pkt</span> <span class="o">=</span> <span class="n">Packet</span><span class="p">(</span><span class="n">raw</span><span class="o">=</span><span class="n">xbytes</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">&quot;After deserialization:&quot;</span><span class="p">,</span> <span class="n">reanimated_pkt</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here is the output, showing</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>Before serialize/deserialize: Ethernet 11:22:11:22:11:22-&gt;22:33:22:33:22:33 IP | IPv4 1.2.3.4-&gt;5.6.7.8 UDP | UDP 55555-&gt;12345 | UDPPing seq: 13
+After deserialization: Ethernet 11:22:11:22:11:22-&gt;22:33:22:33:22:33 IP | IPv4 1.2.3.4-&gt;5.6.7.8 UDP | UDP 55555-&gt;12345 | UDPPing seq: 13
+</pre></div>
+</div>
+</div>
+<div class="section" id="one-more-example">
+<h3>One more example<a class="headerlink" href="#one-more-example" title="Permalink to this headline">¶</a></h3>
+<p>Here is one additional example.  Say that we want to implement a simplified Ethernet spanning tree protocol and want to create a packet header that includes an identifier for the root note and an integer value which indicates the number of hops to the root.  We could do the following:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switchyard.lib.userlib</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+
+<span class="k">class</span> <span class="nc">SpanningTreeMessage</span><span class="p">(</span><span class="n">PacketHeaderBase</span><span class="p">):</span>
+    <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s2">&quot;6sxB&quot;</span> 
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="s2">&quot;00:00:00:00:00:00&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_root</span> <span class="o">=</span> <span class="n">EthAddr</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hops_to_root</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">PacketHeaderBase</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="o">.</span><span class="n">raw</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hops_to_root</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">raw</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="n">packsize</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">packsize</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Not enough bytes to unpack SpanningTreeMessage&quot;</span><span class="p">)</span>
+        <span class="n">xroot</span><span class="p">,</span><span class="n">xhops</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> <span class="n">raw</span><span class="p">[:</span><span class="n">packsize</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_root</span> <span class="o">=</span> <span class="n">EthAddr</span><span class="p">(</span><span class="n">xroot</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hops_to_root</span> <span class="o">=</span> <span class="n">xhops</span>
+        <span class="k">return</span> <span class="n">raw</span><span class="p">[</span><span class="n">packsize</span><span class="p">:]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">hops_to_root</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hops_to_root</span>
+
+    <span class="nd">@hops_to_root.setter</span>
+    <span class="k">def</span> <span class="nf">hops_to_root</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hops_to_root</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">root</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;{} (root: {}, hops-to-root: {})&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hops_to_root</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here is some example code for how we might use this class.  Note that since we are creating a protocol header that should follow the <code class="docutils literal"><span class="pre">Ethernet</span></code> header, we must (due to a current limitation with Switchyard) use an existing <code class="docutils literal"><span class="pre">ethertype</span></code> value.  We are reusing the value <code class="docutils literal"><span class="pre">EtherType.SLOW</span></code> for no particular reason other than it is presently unused by Switchyard:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">spm</span> <span class="o">=</span> <span class="n">SpanningTreeMessage</span><span class="p">(</span><span class="s2">&quot;00:11:22:33:44:55&quot;</span><span class="p">,</span> <span class="n">hops_to_root</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">spm</span><span class="p">)</span>
+
+<span class="n">Ethernet</span><span class="o">.</span><span class="n">add_next_header_class</span><span class="p">(</span><span class="n">EtherType</span><span class="o">.</span><span class="n">SLOW</span><span class="p">,</span> <span class="n">SpanningTreeMessage</span><span class="p">)</span>
+<span class="n">pkt</span> <span class="o">=</span> <span class="n">Ethernet</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="s2">&quot;11:22:11:22:11:22&quot;</span><span class="p">,</span> 
+               <span class="n">dst</span><span class="o">=</span><span class="s2">&quot;22:33:22:33:22:33&quot;</span><span class="p">,</span>
+               <span class="n">ethertype</span><span class="o">=</span><span class="n">EtherType</span><span class="o">.</span><span class="n">SLOW</span><span class="p">)</span> <span class="o">+</span> <span class="n">spm</span>
+<span class="k">print</span><span class="p">(</span><span class="n">pkt</span><span class="p">)</span>
+<span class="n">xbytes</span> <span class="o">=</span> <span class="n">pkt</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">Packet</span><span class="p">(</span><span class="n">raw</span><span class="o">=</span><span class="n">xbytes</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+</pre></div>
+</div>
+<span class="target" id="app-layer"></span></div>
+</div>
+<div class="section" id="application-layer-socket-emulation-and-creating-full-protocol-stacks">
+<span id="index-1"></span><h2>Application layer socket emulation and creating full protocol stacks<a class="headerlink" href="#application-layer-socket-emulation-and-creating-full-protocol-stacks" title="Permalink to this headline">¶</a></h2>
+<p>It is possible within Switchyard to implement a program that resembles a full end-host protocol stack.  The protocol stack can be used along with Switchyard&#8217;s socket <em>emulation</em> library to execute nearly unmodified Python UDP socket programs.  In this section, we discuss (1) additional API calls used to receive messages &#8220;down&#8221; from socket applications as well as deliver messages &#8220;up&#8221; to socket applications, (2) usage of and limitations with Switchyard&#8217;s socket emulation library, and (3) additional command-line options with <code class="docutils literal"><span class="pre">swyard</span></code> for executing a socket application along with a protocol stack program.</p>
+<p>A general picture of using Switchyard to execute a protocol stack <em>and</em> a socket application is shown below.  Note that the figure shows two components that are provided (or controlled) by Switchyard, and two components that must be written or provided by a user of Switchyard.</p>
+<div class="figure align-center" style="width: 80%">
+<img alt="_images/applayer.png" src="_images/applayer.png" />
+</div>
+<div class="section" id="api-calls-for-delivering-receiving-messages-to-from-applications">
+<h3>API calls for delivering/receiving messages to/from applications<a class="headerlink" href="#api-calls-for-delivering-receiving-messages-to-from-applications" title="Permalink to this headline">¶</a></h3>
+<p>To deliver messages to or receive messages from a socket application, a Switchyard user must use two static methods on the <code class="docutils literal"><span class="pre">ApplicationLayer</span></code> class.  These methods are similar in many ways to the two methods on the <em>net</em> object used to send and receive packets.  The application-related methods are:</p>
+<dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">ApplicationLayer.send_to_app(proto,</span> <span class="pre">local_addr,</span> <span class="pre">remote_addr,</span> <span class="pre">data)</span></code></dt>
+<dd><p class="first">This method is used to pass a message received on the network up to an application.  The <code class="docutils literal"><span class="pre">proto</span></code> parameter is the IP protocol number of the packet from which the data was received.  <code class="docutils literal"><span class="pre">local_addr</span></code> and <code class="docutils literal"><span class="pre">remote_addr</span></code> are 2-tuples consisting of an IP address and port.   This method returns a boolean value: if there is a socket associated with the address information given, True is returned.  Otherwise, False is returned.</p>
+<p class="last">Note that if there is no socket associated with the address information given, a log warning is also emitted.</p>
+</dd>
+<dt><code class="docutils literal"><span class="pre">ApplicationLayer.recv_from_app(timeout=None)</span></code></dt>
+<dd><p class="first">This method is used to receive an application message to be sent on the network.  It takes an optional timeout argument which indicates the number of seconds to wait until giving up and raising a <code class="docutils literal"><span class="pre">NoPackets</span></code> exception.  This exception is a bit of a misnomer here, but it is used for consistency with <code class="docutils literal"><span class="pre">net.recv_packet()</span></code>.  If <code class="docutils literal"><span class="pre">None</span></code> is passed as a timeout value, this method will block until a message is available.</p>
+<p>If a message is available, this method returns two items in the form of a tuple: a <em>flow address</em> and the data to be sent.  The <em>flow address</em> consists of 5 items in the form of a tuple: the IP protocol value, a remote IP address and port, and the local IP address and port.</p>
+<p class="last">Note: if an application socket is <em>unbound</em>, the local IP address will be <code class="docutils literal"><span class="pre">0.0.0.0</span></code>.  The protocol stack implementation is responsible for using a valid IP address in any outgoing packet (specifically, it should use the address assigned to the interface out which the packet is emitted).</p>
+</dd>
+</dl>
+<p>In sum, there are 4 API calls that must be used to move packets and data through a protocol stack implementation, as shown in the figure below.</p>
+<div class="figure align-center" style="width: 80%">
+<img alt="_images/applayer_detail.png" src="_images/applayer_detail.png" />
+</div>
+<p>Using a similar pattern as with a &#8220;regular&#8221; Switchyard program, it is possible to service both of the incoming data channels (i.e., either packets received from a network port, or messages received from an application), as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switchyard.lib.userlib</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="k">class</span> <span class="nc">ProtocolStack</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">net</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_net</span> <span class="o">=</span> <span class="n">net</span>
+
+    <span class="k">def</span> <span class="nf">handle_app_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">appdata</span><span class="p">):</span>
+        <span class="c1"># do something to handle application data here, likely</span>
+        <span class="c1"># resulting in an eventual call to self._net.send_packet()</span>
+
+    <span class="k">def</span> <span class="nf">handle_network_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">netdata</span><span class="p">):</span>
+        <span class="c1"># do something with network data here, likely resulting</span>
+        <span class="c1"># in an eventual call to ApplicationLayer.send_to_app()</span>
+
+    <span class="k">def</span> <span class="nf">main_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">appdata</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">appdata</span> <span class="o">=</span> <span class="n">ApplicationLayer</span><span class="o">.</span><span class="n">recv_from_app</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">NoPackets</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="k">except</span> <span class="n">Shutdown</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">if</span> <span class="n">appdata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">handle_app_data</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">intf</span><span class="p">,</span> <span class="n">appdata</span><span class="p">)</span>
+
+            <span class="n">netdata</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">netdata</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">recv_packet</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">NoPackets</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="k">except</span> <span class="n">Shutdown</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">if</span> <span class="n">netdata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">handle_network_data</span><span class="p">(</span><span class="n">netdata</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">net</span><span class="p">):</span>
+    <span class="n">stack</span> <span class="o">=</span> <span class="n">ProtocolStack</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+    <span class="n">stack</span><span class="o">.</span><span class="n">main_loop</span><span class="p">()</span>
+    <span class="n">net</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Although the protocol stack example above uses a single Python thread to service both the from-network and from-application queues, it is possible to use multiple Python threads.  The socket emulation library (discussed next) is threadsafe, as is the library code that handles sending/receiving packets on network ports.</p>
+</div>
+</div>
+<div class="section" id="switchyard-s-socket-emulation-library">
+<h3>Switchyard&#8217;s socket emulation library<a class="headerlink" href="#switchyard-s-socket-emulation-library" title="Permalink to this headline">¶</a></h3>
+<p>Switchyard provides a module similar to Python&#8217;s built-in <code class="docutils literal"><span class="pre">socket</span></code> module that contains clones of many of the methods, functions and other items in the built-in module.  We refer to the Switchyard socket module as an <em>emulation</em> module since it emulates the semantics of methods in the built-in module. The only line of code required to take advantage of Switchyard&#8217;s socket emulation module is the import line.  Instead of using importing a module named <code class="docutils literal"><span class="pre">socket</span></code>, you must import a module named <code class="docutils literal"><span class="pre">switchyard.lib.socket</span></code>.  The <code class="docutils literal"><span class="pre">from</span> <span class="pre">...</span> <span class="pre">import</span> <span class="pre">*</span></code> idiom is generally discouraged in Python, and a way to avoid this while isolating the change in a socket application to a single line is to do the following:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="c1"># instead of:</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+
+<span class="c1"># to use Switchyard&#39;s socket emulation module, do:</span>
+<span class="kn">import</span> <span class="nn">switchyard.lib.socket</span> <span class="kn">as</span> <span class="nn">socket</span>
+</pre></div>
+</div>
+<p>When using the suggested modification above, any use of attributes within the socket module (either built-in or emulated) can just be prefixed with <code class="docutils literal"><span class="pre">socket.</span></code> as normal.  Note that in the code below, bytes objects are sent and received using <code class="docutils literal"><span class="pre">sendto</span></code> and <code class="docutils literal"><span class="pre">recvfrom</span></code>.  (This same code is available in the <code class="docutils literal"><span class="pre">examples</span></code> folder in the Switchyard github repo.)</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python3 </span>
+
+<span class="c1"># import socket</span>
+<span class="kn">import</span> <span class="nn">switchyard.lib.socket</span> <span class="kn">as</span> <span class="nn">socket</span>
+
+<span class="n">HOST</span> <span class="o">=</span> <span class="s1">&#39;127.0.0.1&#39;</span>
+<span class="n">PORT</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_DGRAM</span><span class="p">)</span>
+<span class="n">s</span><span class="o">.</span><span class="n">settimeout</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s2">&quot;Sending message to server at {},{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">HOST</span><span class="p">,</span><span class="n">PORT</span><span class="p">))</span>
+<span class="n">s</span><span class="o">.</span><span class="n">sendto</span><span class="p">(</span><span class="n">b</span><span class="s1">&#39;Hello, stack&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">HOST</span><span class="p">,</span><span class="n">PORT</span><span class="p">))</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">data</span><span class="p">,</span><span class="n">addr</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">recvfrom</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;Client socket application received message from {}: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">addr</span><span class="p">),</span><span class="n">data</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf8&#39;</span><span class="p">)))</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Timeout&quot;</span><span class="p">)</span>
+
+<span class="n">s</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>There are some key limitations and other issues to be aware of with Switchyard&#8217;s socket emulation component:</p>
+<blockquote>
+<div><ul class="simple">
+<li>The most important limitation is that <strong>only UDP sockets are supported</strong>.  Attempting to create any other type of socket will result in failure.  Other socket types and support for using arbitrary protocol numbers may be supported in the future.  As a result, there are a few socket object method calls that are not supported, such as <code class="docutils literal"><span class="pre">listen</span></code> and <code class="docutils literal"><span class="pre">accept</span></code>.</li>
+<li>The <code class="docutils literal"><span class="pre">create_connection</span></code> and <code class="docutils literal"><span class="pre">socketpair</span></code> calls are not available.</li>
+<li>The <code class="docutils literal"><span class="pre">getsockopt</span></code> and <code class="docutils literal"><span class="pre">setsockopt</span></code> calls are not currently supported, but may be in a future version.</li>
+<li>The various DNS-related calls in the socket module (e.g., <code class="docutils literal"><span class="pre">gethostbyname</span></code>, etc.) are available and simply handed off to the built-in <code class="docutils literal"><span class="pre">socket</span></code> module.  Switchyard does not implement any DNS capability directly.  Same for the byte-ordering calls (e.g., <code class="docutils literal"><span class="pre">ntohs</span></code>, <code class="docutils literal"><span class="pre">ntohl</span></code>, etc.)</li>
+<li>Switchyard attempts to be careful about choosing a local (ephemeral) port number for use, but its approach isn&#8217;t fool-proof.  There may be problems that arise due to a host OS using a local port that was already being used by Switchyard, but these situations should be rare in occurrence.</li>
+</ul>
+</div></blockquote>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Switchyard implements the socket layer by attempting to mirror, as closely as possible, the same constants, classes, and functions in the built-in socket module.  It maintains a shared (threadsafe) queue that handles all data passed <em>down</em> from a socket application, and creates a separate queue for each socket for handling data being passed <em>up</em> to an application.  As a result, Switchyard can support an application using <em>multiple</em> sockets at the same time (as long as they&#8217;re all UDP!).</p>
+</div>
+</div>
+<div class="section" id="starting-socket-applications-with-swyard">
+<h3>Starting socket applications with <code class="docutils literal"><span class="pre">swyard</span></code><a class="headerlink" href="#starting-socket-applications-with-swyard" title="Permalink to this headline">¶</a></h3>
+<p>There is one additional command-line option for <code class="docutils literal"><span class="pre">swyard</span></code> when using a socket emulation application.  The <code class="docutils literal"><span class="pre">-a</span></code> is used to specify the name of a file that contains the application-layer socket program.</p>
+<p>The <code class="docutils literal"><span class="pre">-a</span></code> option can be used in conjunction with a Switchyard test scenario.  If you want to test that a socket application emits a packet, then receives a packet from some &#8220;remote&#8221; host, you could create an expectation that a packet is emitted and an expectation that some other packet is received.  You may need to use the <code class="docutils literal"><span class="pre">copyfromlastout</span></code> argument when creating the <code class="docutils literal"><span class="pre">PacketInputEvent</span></code>, since the test scenario may not actually know what local port is being used by an application (among other things).</p>
+<p>For example, to run a particular test scenario as well as an application program, the command line might look like the following:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ swyard -a clientapp_udpstackex.py -t udpstack_tests.py udpstack.py
+</pre></div>
+</div>
+<p>Note that the Python files used in the command line above are available in the <code class="docutils literal"><span class="pre">examples</span></code> folder of the Switchyard github repo.</p>
+<p>To run in <em>live</em> mode, simply remove the <code class="docutils literal"><span class="pre">-t</span></code> option.  Note that there is a server program in the <code class="docutils literal"><span class="pre">examples</span></code> folder that can be run with this code in live mode: you can see that the Switchyard-based UDP stack and associated client-side program can interact correctly with a &#8220;regular&#8221; Python UDP-based server program.</p>
+<p>One final limitation to be aware of: only one socket application can be started by Switchyard at a time.  This limitation may change in a future version.</p>
+<p>Finally, note that Switchyard currently does not have any capabilities for testing the behavior of an application-layer socket program.  The application code could use calls to <code class="docutils literal"><span class="pre">assert()</span></code> to verify that certain things happen as expected within the application, but there are no specific Switchyard features to help with this.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>When using Switchyard to create a protocol stack and run a socket-based application on a standard commodity operating system (e.g., a desktop/laptop Linux or macOS system), you may need to be careful about configuring the host firewall settings when starting Switchyard in real/live mode.  In particular, any packets that you want Switchyard to handle should be explicitly <em>blocked</em> from the host operating system (or the host OS may respond in addition to Switchyard responding).  It may also be helpful to explicitly bind your application socket to a particular port in order to limit the number of protocols and/or ports that need to be blocked from the host OS.</p>
+<p>Note that when Switchyard is started with the <code class="docutils literal"><span class="pre">-a</span></code> flag and is thus starting an application-layer socket program, its default behavior with respect to the firewall is different.  Normally, Switchyard blocks the host OS from receiving <em>any</em> traffic, but when executing an application-layer program <em>no</em> traffic is blocked, by default.</p>
+<p class="last">Refer to the section on <a class="reference internal" href="live_execution.html#firewall"><span class="std std-ref">Firewall options</span></a> for command-line options to <code class="docutils literal"><span class="pre">swyard</span></code> to ensure that you block the correct traffic.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="Installing Switchyard"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="live_execution.html" title="Running in a “live” environment"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Switchyard 2017.01.5 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2017, Joel Sommers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+    </div>
+  </body>
+</html>

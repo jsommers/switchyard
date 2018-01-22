@@ -1,0 +1,484 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Running in the test environment &#8212; Switchyard 2017.01.5 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2017.01.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Test scenario creation" href="test_scenario_creation.html" />
+    <link rel="prev" title="Writing a Switchyard program" href="writing_a_program.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="test_scenario_creation.html" title="Test scenario creation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="writing_a_program.html" title="Writing a Switchyard program"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Switchyard 2017.01.5 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Running in the test environment</a><ul>
+<li><a class="reference internal" href="#test-output">Test output</a></li>
+<li><a class="reference internal" href="#verbose-test-output">Verbose test output</a></li>
+<li><a class="reference internal" href="#when-a-test-fails">When a test fails</a></li>
+<li><a class="reference internal" href="#another-example">Another example</a></li>
+<li><a class="reference internal" href="#even-more-verbose-output">Even more verbose output</a></li>
+<li><a class="reference internal" href="#if-you-don-t-like-pdb">If you don&#8217;t like pdb</a><ul>
+<li><a class="reference internal" href="#debugging-switchyard-code">Debugging Switchyard code</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#checking-code-coverage">Checking code coverage</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="writing_a_program.html"
+                        title="previous chapter">Writing a Switchyard program</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="test_scenario_creation.html"
+                        title="next chapter">Test scenario creation</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/test_execution.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="running-in-the-test-environment">
+<span id="runtest"></span><h1>Running in the test environment<a class="headerlink" href="#running-in-the-test-environment" title="Permalink to this headline">¶</a></h1>
+<p>To run Switchyard in test mode, a <em>test scenario</em> file is needed.  This file includes specifications of various events (sending particularly crafted packets, receiving packets, etc.) that a Switchyard program is expected to do if it behaves correctly.  Also needed, of course, is the Switchyard program you wish to test.  The test scenario files may be regular Python (<code class="docutils literal"><span class="pre">.py</span></code>) files, but they may alternatively have an extension <code class="docutils literal"><span class="pre">.srpy</span></code> if they have been <em>compiled</em>.  For details on creating and compiling test scenarios, see <a class="reference internal" href="test_scenario_creation.html#test-scenario-creation"><span class="std std-ref">Test scenario creation</span></a>.</p>
+<p>Let&#8217;s say your program is named <code class="docutils literal"><span class="pre">myhub.py</span></code>.  To invoke Switchyard in test mode and subject your program to a set of tests, at minimum you would invoke <code class="docutils literal"><span class="pre">swyard</span></code> as follows:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ swyard -t hubtests.srpy myhub
+</pre></div>
+</div>
+<p>Note that the <code class="docutils literal"><span class="pre">-t</span></code> option puts <code class="docutils literal"><span class="pre">swyard</span></code> in test mode.  The argument to the <code class="docutils literal"><span class="pre">-t</span></code> option should be the name of the test scenario to be executed, and the final argument is the name of your code.  It doesn&#8217;t matter whether you include the <code class="docutils literal"><span class="pre">.py</span></code> extension on the end of your program name, so:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ swyard -t hubtests.srpy myhub.py
+</pre></div>
+</div>
+<p>would work the same as above.</p>
+<div class="section" id="test-output">
+<h2>Test output<a class="headerlink" href="#test-output" title="Permalink to this headline">¶</a></h2>
+<p>When you run <code class="docutils literal"><span class="pre">swyard</span></code> in test mode and all tests pass, you&#8217;ll see something similar to the following:</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">Abbreviated (normal) test output.</span><a class="headerlink" href="#id1" title="Permalink to this code">¶</a></div>
+<div class="highlight-none"><div class="highlight"><pre><span></span> Results for test scenario hub tests: 8 passed, 0 failed, 0 pending
+
+ Passed:
+ 1   An Ethernet frame with a broadcast destination address
+     should arrive on eth1
+ 2   The Ethernet frame with a broadcast destination address
+     should be forwarded out ports eth0 and eth2
+ 3   An Ethernet frame from 20:00:00:00:00:01 to
+     30:00:00:00:00:02 should arrive on eth0
+ 4   Ethernet frame destined for 30:00:00:00:00:02 should be
+     flooded out eth1 and eth2
+ 5   An Ethernet frame from 30:00:00:00:00:02 to
+     20:00:00:00:00:01 should arrive on eth1
+ 6   Ethernet frame destined to 20:00:00:00:00:01 should be
+     flooded out eth0 and eth2
+ 7   An Ethernet frame should arrive on eth2 with destination
+     address the same as eth2&#39;s MAC address
+ 8   The hub should not do anything in response to a frame
+     arriving with a destination address referring to the hub
+     itself.
+
+ All tests passed!
+</pre></div>
+</div>
+</div>
+<p>Note that the above output is an abbreviated version of test output and is normally shown in colored text when run in a capable terminal.</p>
+</div>
+<div class="section" id="verbose-test-output">
+<h2>Verbose test output<a class="headerlink" href="#verbose-test-output" title="Permalink to this headline">¶</a></h2>
+<p>If you invoke <code class="docutils literal"><span class="pre">swyard</span></code> with the <code class="docutils literal"><span class="pre">-v</span></code> (verbose) option, the test output includes quite a bit more detail:</p>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">Verbose test output.</span><a class="headerlink" href="#id2" title="Permalink to this code">¶</a></div>
+<div class="highlight-none"><div class="highlight"><pre><span></span> Results for test scenario hub tests: 8 passed, 0 failed, 0 pending
+
+ Passed:
+ 1   An Ethernet frame with a broadcast destination address
+     should arrive on eth1
+         Expected event: recv_packet Ethernet
+         30:00:00:00:00:02-&gt;ff:ff:ff:ff:ff:ff IP | IPv4
+         172.16.42.2-&gt;255.255.255.255 ICMP | ICMP EchoRequest 0 0 (0
+         data bytes) on eth1
+ 2   The Ethernet frame with a broadcast destination address
+     should be forwarded out ports eth0 and eth2
+         Expected event: send_packet(s) Ethernet
+         30:00:00:00:00:02-&gt;ff:ff:ff:ff:ff:ff IP | IPv4
+         172.16.42.2-&gt;255.255.255.255 ICMP | ICMP EchoRequest 0 0 (0
+         data bytes) out eth0 and Ethernet
+         30:00:00:00:00:02-&gt;ff:ff:ff:ff:ff:ff IP | IPv4
+         172.16.42.2-&gt;255.255.255.255 ICMP | ICMP EchoRequest 0 0 (0
+         data bytes) out eth2
+ 3   An Ethernet frame from 20:00:00:00:00:01 to
+     30:00:00:00:00:02 should arrive on eth0
+         Expected event: recv_packet Ethernet
+         20:00:00:00:00:01-&gt;30:00:00:00:00:02 IP | IPv4
+         192.168.1.100-&gt;172.16.42.2 ICMP | ICMP EchoRequest 0 0 (0
+         data bytes) on eth0
+
+ ...
+</pre></div>
+</div>
+</div>
+<p>Note that the above output has been truncated &#8212; output would normally be shown for all tests.  When invoked with the <em>verbose</em> option, individual tests show exactly what packets would be expected (either as input to a device or as output from it).</p>
+<p><em>Test scenario</em> descriptions that drive test executions as shown here are composed of a series of test <em>expectations</em>.  Test expectations may be that a packet is received on a particular port, or that a packet is emitted out one or more ports, or that the user code calls <code class="docutils literal"><span class="pre">recv_packet</span></code> but times out (and thus nothing is received).  Both the abbreviated and verbose test output shown above contain brief descriptions of the nature of each test.  In the verbose output, packet details related to each test are also shown.  Reading this information can help to understand what the tests are trying to accomplish, especially when a test expectation fails.</p>
+</div>
+<div class="section" id="when-a-test-fails">
+<h2>When a test fails<a class="headerlink" href="#when-a-test-fails" title="Permalink to this headline">¶</a></h2>
+<p>If some test expectation is not met, then the output indicates that something has gone wrong and, by default, Switchyard gives the user the standard Python pdb debugger prompt.  The motivation for immediately putting the user in pdb is to enable just-in-time debugging.  If the test output is read carefully and can be used to identify a flaw by inspecting code and data at the time of failure, then this should help to facilitate the development/testing/debugging cycle.  At least that&#8217;s the hope.</p>
+<p>Say that we&#8217;ve done something wrong in our code which causes a test expectation to fail.  The output we see might be similar to the following (note that to create the output below, we&#8217;ve used the full set of hub device tests, but the code we&#8217;ve used is the broken code we started with in <a class="reference internal" href="writing_a_program.html#coding"><span class="std std-ref">Writing a Switchyard program</span></a> that sends any packet back out the same port that it arrived on):</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">Normal (abbreviated) test output when one test fails.</span><a class="headerlink" href="#id3" title="Permalink to this code">¶</a></div>
+<div class="highlight-none"><div class="highlight"><pre><span></span> Results for test scenario hub tests: 1 passed, 1 failed, 6 pending
+
+
+ Passed:
+ 1   An Ethernet frame with a broadcast destination address
+     should arrive on eth1
+
+
+ Failed:
+     The Ethernet frame with a broadcast destination address
+     should be forwarded out ports eth0 and eth2
+         Expected event: send_packet(s) Ethernet
+         30:00:00:00:00:02-&gt;ff:ff:ff:ff:ff:ff IP | IPv4 | ICMP out
+         eth0 and Ethernet 30:00:00:00:00:02-&gt;ff:ff:ff:ff:ff:ff IP |
+         IPv4 | ICMP out eth2
+
+
+ Pending (couldn&#39;t test because of prior failure):
+ 1   An Ethernet frame from 20:00:00:00:00:01 to
+     30:00:00:00:00:02 should arrive on eth0
+ 2   Ethernet frame destined for 30:00:00:00:00:02 should be
+     flooded out eth1 and eth2
+ 3   An Ethernet frame from 30:00:00:00:00:02 to
+     20:00:00:00:00:01 should arrive on eth1
+ 4   Ethernet frame destined to 20:00:00:00:00:01 should be
+     flooded out eth0 and eth2
+ 5   An Ethernet frame should arrive on eth2 with destination
+     address the same as eth2&#39;s MAC address
+ 6   The hub should not do anything in response to a frame
+     arriving with a destination address referring to the hub
+     itself.
+
+ ... (output continues)
+</pre></div>
+</div>
+</div>
+<p>Notice in the first line of output that Switchyard shows how many tests pass, how many have
+failed, and how many are <em>pending</em>.  The pending category simply means that tests cannot be run because some earlier test failed.   In the example above, the output from <code class="docutils literal"><span class="pre">swyard</span></code> clearly shows which test fails; when that happens, some additional explanatory text is shown, and a debugger session is started as close as possible to the point of failure.  When not run in verbose mode, Switchyard will show abbreviated test descriptions for any passed tests and any pending tests, but the failed test will show everything.</p>
+<p>Following the overall test results showing passed, failed, and pending tests, some summary information is displayed about the test failure, and a debugging session is started.  By default, Switchyard uses Python&#8217;s built-in <code class="docutils literal"><span class="pre">pdb</span></code> debugger.  At the very end of the output, a stack trace is shown and a debugger prompt is displayed:</p>
+<div class="literal-block-wrapper docutils container" id="id4">
+<div class="code-block-caption"><span class="caption-text">Additional output from a test failure.  Notice the error diagnosis in the output below, as well as how Switchyard invokes the debugger (pdb) at the point of failure.</span><a class="headerlink" href="#id4" title="Permalink to this code">¶</a></div>
+<div class="highlight-none"><div class="highlight"><pre><span></span> ************************************************************
+ Your code didn&#39;t crash, but a test failed.
+ ************************************************************
+
+ This is the Switchyard equivalent of the blue screen of death.
+ As far as I can tell, here&#39;s what happened:
+
+     Expected event:
+         The Ethernet frame with a broadcast destination address
+         should be forwarded out ports eth0 and eth2
+
+     Failure observed:
+         You called send_packet with an unexpected output port eth1.
+         Here is what Switchyard expected: send_packet(s) Ethernet
+         30:00:00:00:00:02-&gt;ff:ff:ff:ff:ff:ff IP | IPv4
+         172.16.42.2-&gt;255.255.255.255 ICMP | ICMP EchoRequest 0 0 (0
+         data bytes) out eth0 and Ethernet
+         30:00:00:00:00:02-&gt;ff:ff:ff:ff:ff:ff IP | IPv4
+         172.16.42.2-&gt;255.255.255.255 ICMP | ICMP EchoRequest 0 0 (0
+         data bytes) out eth2.
+
+ You can rerun with the -v flag to include full dumps of packets that
+ may have caused errors. (By default, only relevant packet context may
+ be shown, not the full contents.)
+
+
+ I&#39;m throwing you into the Python debugger (pdb) at the point of failure.
+ If you don&#39;t want pdb, use the --nopdb flag to avoid this fate.
+
+ &gt; /Users/jsommers/Dropbox/src/switchyard/switchyard/llnettest.py(95)send_packet()
+ -&gt; SwitchyardTestEvent.EVENT_OUTPUT, device=devname, packet=pkt)
+ &gt; /Users/jsommers/Dropbox/src/switchyard/documentation/code/inout1.py(6)main()
+ -&gt; net.send_packet(input_port, packet)
+ (Pdb)
+</pre></div>
+</div>
+</div>
+<p>Again, notice that the last couple lines show a (partial) stack trace.   These lines can help a bit to understand the context of the error, but it is often helpful to show the source code around the failed code in light of the error diagnosis under &#8220;Failure observed&#8221;, which says that we called <code class="docutils literal"><span class="pre">send_packet</span></code> with an unexpected output port. If we keep reading the diagnosis, we see that the packet was expected to be forwarded out two ports (eth0 and eth2), but was instead sent on eth1.  Showing the source code can be accomplished with <code class="docutils literal"><span class="pre">pdb</span></code>&#8216;s <code class="docutils literal"><span class="pre">list</span></code> command:</p>
+<div class="literal-block-wrapper docutils container" id="id5">
+<div class="code-block-caption"><span class="caption-text">Output from pdb when listing the source code at the point of failure.</span><a class="headerlink" href="#id5" title="Permalink to this code">¶</a></div>
+<div class="highlight-none"><div class="highlight"><pre><span></span> (Pdb) list
+   8
+   9         # alternatively, the above line could use indexing, although
+  10         # readability suffers:
+  11         #    recvdata[0], recvdata[2], recvdata[1]))
+  12
+  13  -&gt;     net.send_packet(recvdata.input_port, recvdata.packet)
+  14
+  15         # likewise, the above line could be written using indexing
+  16         # but, again, readability suffers:
+  17         # net.send_packet(recvdata[1], recvdata[2])
+ [EOF]
+ (Pdb)
+</pre></div>
+</div>
+</div>
+<p>Between thinking about the observed failure and viewing the code, we might realize that we have foolishly sent the frame out the same interface on which it arrived.</p>
+</div>
+<div class="section" id="another-example">
+<h2>Another example<a class="headerlink" href="#another-example" title="Permalink to this headline">¶</a></h2>
+<p>To give a slightly different example, let&#8217;s say that we&#8217;re developing the code for a network hub, and because we love sheep, we decide to set every Ethernet source address to <code class="docutils literal"><span class="pre">ba:ba:ba:ba:ba:ba</span></code>.  When we execute Switchyard in test mode (e.g., <code class="docutils literal"><span class="pre">swyard</span> <span class="pre">-t</span> <span class="pre">hubtests.py</span> <span class="pre">baaadhub.py</span></code>), we get the following output:</p>
+<div class="literal-block-wrapper docutils container" id="id6">
+<div class="code-block-caption"><span class="caption-text">Test output for an example in which all Ethernet source addresses have been hijacked by sheep.</span><a class="headerlink" href="#id6" title="Permalink to this code">¶</a></div>
+<div class="highlight-none"><div class="highlight"><pre><span></span> Results for test scenario hub tests: 1 passed, 1 failed, 6 pending
+
+ Passed:
+ 1   An Ethernet frame with a broadcast destination address
+     should arrive on eth1
+
+
+ Failed:
+     The Ethernet frame with a broadcast destination address
+     should be forwarded out ports eth0 and eth2
+         Expected event: send_packet(s) Ethernet
+         30:00:00:00:00:02-&gt;ff:ff:ff:ff:ff:ff IP | IPv4
+         172.16.42.2-&gt;255.255.255.255 ICMP | ICMP EchoRequest 0 0 (0
+         data bytes) out eth0 and Ethernet
+         30:00:00:00:00:02-&gt;ff:ff:ff:ff:ff:ff IP | IPv4
+         172.16.42.2-&gt;255.255.255.255 ICMP | ICMP EchoRequest 0 0 (0
+         data bytes) out eth2
+
+
+ Pending (couldn&#39;t test because of prior failure):
+ 1   An Ethernet frame from 20:00:00:00:00:01 to
+     30:00:00:00:00:02 should arrive on eth0
+ 2   Ethernet frame destined for 30:00:00:00:00:02 should be
+     flooded out eth1 and eth2
+ 3   An Ethernet frame from 30:00:00:00:00:02 to
+     20:00:00:00:00:01 should arrive on eth1
+ 4   Ethernet frame destined to 20:00:00:00:00:01 should be
+     flooded out eth0 and eth2
+ 5   An Ethernet frame should arrive on eth2 with destination
+     address the same as eth2&#39;s MAC address
+ 6   The hub should not do anything in response to a frame
+     arriving with a destination address referring to the hub
+     itself.
+
+
+ ************************************************************
+ Your code didn&#39;t crash, but a test failed.
+ ************************************************************
+
+ This is the Switchyard equivalent of the blue screen of death.
+ As far as I can tell, here&#39;s what happened:
+
+     Expected event:
+         The Ethernet frame with a broadcast destination address
+         should be forwarded out ports eth0 and eth2
+
+     Failure observed:
+         You called send_packet and while the output port eth0 is ok,
+         an exact match of packet contents failed.  In the Ethernet
+         header, src is wrong (is ba:ba:ba:ba:ba:ba but should be
+         30:00:00:00:00:02).
+
+ ... output continues ...
+</pre></div>
+</div>
+</div>
+<p>In this case, we can see that the first section is basically the same as with the other erroneous code, but the failure description is different:  Switchyard tells us that in the Ethernet header, the <code class="docutils literal"><span class="pre">src</span></code> attribute was wrong.  If, at the <code class="docutils literal"><span class="pre">pdb</span></code> prompt, we type <code class="docutils literal"><span class="pre">list</span></code>, we see our wooly problem:</p>
+<div class="literal-block-wrapper docutils container" id="id7">
+<div class="code-block-caption"><span class="caption-text">Pdb source code listing showing the point of test failure.</span><a class="headerlink" href="#id7" title="Permalink to this code">¶</a></div>
+<div class="highlight-none"><div class="highlight"><pre><span></span> (Pdb) list
+  28             else:
+  29                 for intf in my_interfaces:
+  30                     if dev != intf.name:
+  31                         log_info (&quot;Flooding packet {} to {}&quot;.format(packet, intf.name))
+  32                         eth.src = &#39;ba:ba:ba:ba:ba:ba&#39; # sheep!
+  33  -&gt;                     net.send_packet(intf, packet)
+  34         net.shutdown()
+ [EOF]
+ (Pdb)
+</pre></div>
+</div>
+</div>
+<p>So, although the error diagnosis cannot generally state <em>why</em> a problem has happened, it can sometimes be quite specific about <em>what</em> has gone wrong.  That, coupled with showing the source code context, can be very helpful for tracking down bugs.  It might also be helpful to note that at the pdb prompt, you can inspect <em>any</em> variable in order to figure out what&#8217;s happened, walk up and down the call stack and execute arbitrary Python statements in order to try to determine what has happened.  Debuggers can be a little bit daunting, but they&#8217;re incredibly helpful tools.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last">To learn more about pdb and the various commands and capabilities it has, refer to the Python library documentation (there&#8217;s a section specifically on <code class="docutils literal"><span class="pre">pdb</span></code>).  There are other debuggers out there with additional features, but <code class="docutils literal"><span class="pre">pdb</span></code> is <em>always</em> available with any Python distribution so it is worth acquainting yourself with it.</p>
+</div>
+</div>
+<div class="section" id="even-more-verbose-output">
+<h2>Even more verbose output<a class="headerlink" href="#even-more-verbose-output" title="Permalink to this headline">¶</a></h2>
+<p>If you&#8217;d like even more verbose output, you can add the <code class="docutils literal"><span class="pre">-v</span></code> (verbose) and/or <code class="docutils literal"><span class="pre">-d</span></code> (debug) flags to <code class="docutils literal"><span class="pre">swyard</span></code>.  The <code class="docutils literal"><span class="pre">-d</span></code> flag may be more trouble than it&#8217;s worth since it enables all DEBUG-level log messages to be printed to the console.  If you&#8217;re really stuck trying to figure out what&#8217;s going on, however, this may be useful.</p>
+</div>
+<div class="section" id="if-you-don-t-like-pdb">
+<h2>If you don&#8217;t like pdb<a class="headerlink" href="#if-you-don-t-like-pdb" title="Permalink to this headline">¶</a></h2>
+<p>If you don&#8217;t appreciate being dumped into the <code class="docutils literal"><span class="pre">pdb</span></code> debugger when something fails (maybe you&#8217;re a cretin who really just likes <code class="docutils literal"><span class="pre">printf</span></code>-style debugging?), you can add the <code class="docutils literal"><span class="pre">--nopdb</span></code> flag to <code class="docutils literal"><span class="pre">swyard</span></code>.  With the <code class="docutils literal"><span class="pre">--nopdb</span></code> option, Switchyard will print out information about test failure, but you&#8217;ll go straight back to a command-line prompt.</p>
+<p>If you&#8217;d like to use a debugger, but just not <code class="docutils literal"><span class="pre">pdb</span></code>, you can use the <code class="docutils literal"><span class="pre">--nohandle</span></code> (or <code class="docutils literal"><span class="pre">-e</span></code>) option to tell Switchyard not to trap any exceptions, but to let them be raised normally.  You can then catch any exceptions using an alterative debugger.  For example, if you&#8217;d like to use the <code class="docutils literal"><span class="pre">PuDB</span></code> debugger, you could invoke <code class="docutils literal"><span class="pre">swyard</span></code> as follows:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ python3 -m pudb.run swyard --nohandle ...
+</pre></div>
+</div>
+<p>where the ellipsis is replaced with other command-line arguments to <code class="docutils literal"><span class="pre">swyard</span></code>.</p>
+<div class="section" id="debugging-switchyard-code">
+<span id="debugging"></span><h3>Debugging Switchyard code<a class="headerlink" href="#debugging-switchyard-code" title="Permalink to this headline">¶</a></h3>
+<p>When running Switchyard, especially in test mode, it is often very helpful to use the interactive Python debugger as you work out problems and figure things out.  With the <code class="docutils literal"><span class="pre">import</span></code> of <code class="docutils literal"><span class="pre">switchyard.lib.userlib</span></code> you get a function named <code class="docutils literal"><span class="pre">debugger</span></code>.  You can insert calls to the <code class="docutils literal"><span class="pre">debugger</span></code> function where ever you want to have an interactive debugger session start up.   For example, we could create a simple program that starts up a debugger session when ever we receive a packet:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switchyard.lib.userlib</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">net</span><span class="p">):</span>
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">timestamp</span><span class="p">,</span><span class="n">input_port</span><span class="p">,</span><span class="n">packet</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">recv_packet</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">NoPackets</span><span class="p">:</span>
+            <span class="c1"># timeout waiting for packet arrival</span>
+            <span class="k">continue</span>
+        <span class="k">except</span> <span class="n">Shutdown</span><span class="p">:</span>
+            <span class="c1"># we&#39;re done; bail out of while loop</span>
+            <span class="k">break</span>
+
+        <span class="c1"># invoke the debugger every time we get here, which</span>
+        <span class="c1"># should be for every packet we receive!</span>
+        <span class="n">debugger</span><span class="p">()</span>
+        <span class="n">hdrs</span> <span class="o">=</span> <span class="n">packet</span><span class="o">.</span><span class="n">num_headers</span><span class="p">()</span>
+
+    <span class="c1"># before exiting our main function,</span>
+    <span class="c1"># perform shutdown on network</span>
+    <span class="n">net</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If we run the above program, we will stop at the line <em>after</em> the call to <code class="docutils literal"><span class="pre">debugger</span></code>:</p>
+<div class="literal-block-wrapper docutils container" id="id8">
+<div class="code-block-caption"><span class="caption-text">When the debugger() call is added to a Switchyard program, execution is halted at the <em>next</em> line of code.</span><a class="headerlink" href="#id8" title="Permalink to this code">¶</a></div>
+<div class="highlight-none"><div class="highlight"><pre><span></span> &gt; /users/jsommers/dropbox/src/switchyard/documentation/code/enterdebugger.py(17)main()
+ -&gt; hdrs = packet.num_headers()
+ (Pdb) list
+  12                 break
+  13
+  14             # invoke the debugger every time we get here, which
+  15             # should be for every packet we receive!
+  16             debugger()
+  17  -&gt;         hdrs = packet.num_headers()
+  18
+  19         # before exiting our main function,
+  20         # perform shutdown on network
+  21         net.shutdown()
+ [EOF]
+ (Pdb)
+</pre></div>
+</div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There are currently a couple limitations when entering <code class="docutils literal"><span class="pre">pdb</span></code> through a call to <code class="docutils literal"><span class="pre">debugger()</span></code>.  First, if you attempt to exit <code class="docutils literal"><span class="pre">pdb</span></code> while the Switchyard program is still running, an exception from <code class="docutils literal"><span class="pre">pdb</span></code>&#8216;s base class (<code class="docutils literal"><span class="pre">Bdb</span></code>) will get raised.  Thus, it may take a couple invocations of the <code class="docutils literal"><span class="pre">quit</span></code> command to actually exit.  Second, only the <code class="docutils literal"><span class="pre">pdb</span></code> debugger may be invoked through a call to <code class="docutils literal"><span class="pre">debugger</span></code>.</p>
+</div>
+<p>As noted above, if there is a runtime error in your code, Switchyard will automatically dump you into the Python debugger (pdb) to see exactly where the program crashed and what may have caused it.  You can use any Python commands to inspect variables, and try to understand the state of the program at the time of the crash.</p>
+</div>
+</div>
+<div class="section" id="checking-code-coverage">
+<h2>Checking code coverage<a class="headerlink" href="#checking-code-coverage" title="Permalink to this headline">¶</a></h2>
+<p>If you want to check which lines of code are <em>covered</em> by one or more test scenarios, you can install and use the <code class="docutils literal"><span class="pre">coverage</span></code> package.  This can be helpful for seeing which lines of your code are <em>not</em> being exercised by tests, and how you might focus additional testing effort.</p>
+<p>To install:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ pip3 install coverage
+</pre></div>
+</div>
+<p>To gather code coverage information, you can invoke <code class="docutils literal"><span class="pre">swyard</span></code> using <code class="docutils literal"><span class="pre">coverage</span></code>.  <code class="docutils literal"><span class="pre">coverage</span></code> appears to work best if you give the full path name of <code class="docutils literal"><span class="pre">swyard</span></code>, which is what the following command line will do (using backtick-substitution for the <code class="docutils literal"><span class="pre">which</span> <span class="pre">swyard</span></code> command).  You can use command-line options to <code class="docutils literal"><span class="pre">swyard</span></code> as you normally would:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ coverage run `which swyard` -v -d -t testscenario.py yourcode.py
+</pre></div>
+</div>
+<p>Once you&#8217;ve created the coverage information you can display a report.  The html report will nicely show exactly which lines of your code were executed during a test and which weren&#8217;t.  To avoid seeing coverage information for irrelevant files, you should explicitly tell <code class="docutils literal"><span class="pre">coverage</span></code> which files you want to include in the report.</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ coverage html --include yourcode.py
+</pre></div>
+</div>
+<p>After running the above command, you can open the file <code class="docutils literal"><span class="pre">index.html</span></code> within the <code class="docutils literal"><span class="pre">htmlcov</span></code> folder.  Clicking on a file name will show detailed coverage information.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="test_scenario_creation.html" title="Test scenario creation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="writing_a_program.html" title="Writing a Switchyard program"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Switchyard 2017.01.5 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2017, Joel Sommers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+    </div>
+  </body>
+</html>

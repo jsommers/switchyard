@@ -1,0 +1,165 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Release notes &#8212; Switchyard 2017.01.5 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2017.01.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Acknowledgments and thanks" href="thanks.html" />
+    <link rel="prev" title="API Reference" href="reference.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="thanks.html" title="Acknowledgments and thanks"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="reference.html" title="API Reference"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Switchyard 2017.01.5 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Release notes</a><ul>
+<li><a class="reference internal" href="#id1">2017.01.4</a></li>
+<li><a class="reference internal" href="#id2">2017.01.3</a></li>
+<li><a class="reference internal" href="#id3">2017.01.2</a></li>
+<li><a class="reference internal" href="#id4">2017.01.1</a></li>
+<li><a class="reference internal" href="#v2">v2</a></li>
+<li><a class="reference internal" href="#v1">v1</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="reference.html"
+                        title="previous chapter">API Reference</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="thanks.html"
+                        title="next chapter">Acknowledgments and thanks</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/release_notes.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="release-notes">
+<h1>Release notes<a class="headerlink" href="#release-notes" title="Permalink to this headline">¶</a></h1>
+<p>The headings below refer either to branches on Switchyard&#8217;s github repo (v1 and v2) or tags (2017.01.1).</p>
+<div class="section" id="id1">
+<h2>2017.01.4<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<p>More bugfixes.</p>
+</div>
+<div class="section" id="id2">
+<h2>2017.01.3<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<p>Minor bugfixes.</p>
+</div>
+<div class="section" id="id3">
+<h2>2017.01.2<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<p>Add the capability to pass arguments to a Switchyard program via <code class="docutils literal"><span class="pre">-g</span></code> option to <code class="docutils literal"><span class="pre">swyard</span></code>.
+Switchyard parses and assembles <code class="docutils literal"><span class="pre">*args</span></code> and <code class="docutils literal"><span class="pre">**kwargs</span></code> to pass into the user code, being careful to only pass them if the code can accept them.</p>
+</div>
+<div class="section" id="id4">
+<h2>2017.01.1<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
+<p>Major revision; expansion of types of exercises supported (notably application-layer programs via socket emulation) and several non-backward compatible API changes.  Simplified user code import (single import of switchyard.lib.userlib).  Installation via standard setuptools, so easily installed via easy_install or pip.  Major revision of documentation.  Lots of new tests were written, bringing test coverage above 90%.  Expansion of exercises is still in progress.</p>
+<p>Some key API changes to be aware of:</p>
+<blockquote>
+<div><ul class="simple">
+<li>the Scenario class is renamed TestScenario.  The PacketOutputEvent previously allowed Openflow 1.0-like wildcard strings to specify wildcards for matching packets; these strings are no longer supported.  To specify wildcards, a tuple of (classname,attribute) must be used; refer to <a class="reference internal" href="test_scenario_creation.html#test-scenario-creation"><span class="std std-ref">Test scenario creation</span></a>, above.</li>
+<li><code class="docutils literal"><span class="pre">recv_packet</span></code> <em>always</em> returns a timestamp now; it returns a 3-tuple (named tuple) of timestamp, input_port and packet.</li>
+<li>The only import required by user code is switchyard.lib.userlib, although individual imports are still fine (just more verbose).</li>
+<li>Instead of invoking <code class="docutils literal"><span class="pre">srpy.py</span></code>, a <code class="docutils literal"><span class="pre">swyard</span></code> program is installed during the new install process.  <code class="docutils literal"><span class="pre">swyard</span></code> has a few command-line changes compared with <code class="docutils literal"><span class="pre">srpy.py</span></code>.  In particular, the <code class="docutils literal"><span class="pre">-s</span></code> option has gone away; to run Switchyard with a test, just use the <code class="docutils literal"><span class="pre">-t</span></code> option with the scenario file as the argument.</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="v2">
+<h2>v2<a class="headerlink" href="#v2" title="Permalink to this headline">¶</a></h2>
+<p>Complete rewrite of v1.  Moved to Python 3 and created packet parsing libraries, new libpcap interface library (pcapffi).  Redesigned test scenario modules and an expanded of publicly available exercises.  Used at Colgate twice and University of Wisconsin-Madison twice.  Available on the <code class="docutils literal"><span class="pre">v2</span></code> branch on github.</p>
+</div>
+<div class="section" id="v1">
+<h2>v1<a class="headerlink" href="#v1" title="Permalink to this headline">¶</a></h2>
+<p>First version, which used the POX packet parsing libraries and had a variety of limitations.  Implemented in Python 2 and used at Colgate once.  Available on the <code class="docutils literal"><span class="pre">v1</span></code> branch on github, but very much obsolete.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="thanks.html" title="Acknowledgments and thanks"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="reference.html" title="API Reference"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Switchyard 2017.01.5 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2017, Joel Sommers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+    </div>
+  </body>
+</html>

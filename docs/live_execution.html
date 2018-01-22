@@ -1,0 +1,294 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Running in a “live” environment &#8212; Switchyard 2017.01.5 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2017.01.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Advanced API topics" href="advanced_api.html" />
+    <link rel="prev" title="Test scenario creation" href="test_scenario_creation.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="advanced_api.html" title="Advanced API topics"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="test_scenario_creation.html" title="Test scenario creation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Switchyard 2017.01.5 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Running in a &#8220;live&#8221; environment</a><ul>
+<li><a class="reference internal" href="#basic-command-line-recipe">Basic command-line recipe</a></li>
+<li><a class="reference internal" href="#including-or-excluding-particular-interfaces">Including or excluding particular interfaces</a></li>
+<li><a class="reference internal" href="#firewall-options">Firewall options</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="test_scenario_creation.html"
+                        title="previous chapter">Test scenario creation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="advanced_api.html"
+                        title="next chapter">Advanced API topics</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/live_execution.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="running-in-a-live-environment">
+<span id="runlive"></span><h1>Running in a &#8220;live&#8221; environment<a class="headerlink" href="#running-in-a-live-environment" title="Permalink to this headline">¶</a></h1>
+<p>Switchyard programs can be either run in an isolated <a class="reference internal" href="test_execution.html#runtest"><span class="std std-ref">test environment</span></a>, as described above, or on a <em>live</em> host operating system.  Switchyard currently supports Linux and macOS hosts for live execution.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Switchyard uses the <code class="docutils literal"><span class="pre">libpcap</span></code> library for receiving and sending packets, which generally requires <em>root</em> privileges.  Although hosts can be configured so that root isn&#8217;t required for using <code class="docutils literal"><span class="pre">libpcap</span></code>, this documentation does not include instructions on how to do so.  The discussion below assumes that you are gaining root privileges by using the <code class="docutils literal"><span class="pre">sudo</span></code> (i.e., &#8220;do this as superuser&#8221;) program.  Contrary to popular belief, <code class="docutils literal"><span class="pre">sudo</span></code> cannot make you a sandwich.</p>
+</div>
+<div class="section" id="basic-command-line-recipe">
+<h2>Basic command-line recipe<a class="headerlink" href="#basic-command-line-recipe" title="Permalink to this headline">¶</a></h2>
+<p>The basic recipe for running Switchyard on a live host is pretty simple.  If we wanted to run the <code class="docutils literal"><span class="pre">sniff.py</span></code> Switchyard program (available in the <code class="docutils literal"><span class="pre">examples</span></code> folder in the Switchyard github repository) and use <em>all</em> available network interfaces on the system, we could do the following:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ sudo swyard sniff.py
+</pre></div>
+</div>
+<p>Again, note that the above line uses <code class="docutils literal"><span class="pre">sudo</span></code> to gain the necessary privileges to be able to send and receive &#8220;live&#8221; packets on a host.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>If you can an error when attempting to run <code class="docutils literal"><span class="pre">swyard</span></code> with <code class="docutils literal"><span class="pre">sudo</span></code> such as this:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span><span class="p">:</span> <span class="n">swyard</span><span class="p">:</span> <span class="n">command</span> <span class="ow">not</span> <span class="n">found</span>
+</pre></div>
+</div>
+<p class="last">you will need to either create a shell script which activates your Python virtual environment and run that script with <code class="docutils literal"><span class="pre">sudo</span></code>, or run <code class="docutils literal"><span class="pre">swyard</span></code> from a root shell (e.g., by running <code class="docutils literal"><span class="pre">sudo</span> <span class="pre">-s</span></code>.  If doing the latter, you will still need to activate the Python virtual environment once you start the root shell, after which you can run <code class="docutils literal"><span class="pre">swyard</span></code> as normal.  If using Switchyard in Mininet, in any shell you open (e.g., using the <code class="docutils literal"><span class="pre">xterm</span></code> command, which opens a root shell on a virtual host in Mininet) you&#8217;ll need to activate the Python virtual environment prior to running <code class="docutils literal"><span class="pre">swyard</span></code>.</p>
+</div>
+<p>The <code class="docutils literal"><span class="pre">sniff.py</span></code> program will simply print out the contents of any packet received on <em>any</em> interface while the program runs.  To stop the program, type <code class="kbd docutils literal"><span class="pre">Control+c</span></code>.</p>
+<p>Here&#8217;s an example of what output from running <code class="docutils literal"><span class="pre">sniff.py</span></code> might look like.  Note that the following example was run on a macOS host and that the text times/dates have been changed:</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">Example of Switchyard output from running in a live environment on a macOS host.</span><a class="headerlink" href="#id1" title="Permalink to this code">¶</a></div>
+<div class="highlight-none"><div class="highlight"><pre><span></span> 00:00:56 2016/12/00     INFO Enabling pf: No ALTQ support in kernel; ALTQ related functions disabled; pf enabled; Token : 15170097737539790927
+ 00:00:56 2016/12/00     INFO Using network devices: en1 en0 en2
+ 00:00:56 2016/12/00     INFO My interfaces: [&#39;en0&#39;, &#39;en1&#39;, &#39;en2&#39;]
+ 00:00:56 2016/12/00     INFO 1482563936.430: en0 Ethernet a4:71:74:49:e2:e6-&gt;ac:bc:32:c2:b6:59 IP | IPv4 104.84.41.100-&gt;192.168.0.102 TCP | TCP 443-&gt;51094 (A 1772379675:466295739) | RawPacketContents (1448 bytes) b&#39;\x17\x03\x03\x0c-\xc5\xeap\xd1L&#39;...
+ 00:00:56 2016/12/00     INFO 1482563936.430: en0 Ethernet a4:71:74:49:e2:e6-&gt;ac:bc:32:c2:b6:59 IP | IPv4 104.84.41.100-&gt;192.168.0.102 TCP | TCP 443-&gt;51094 (A 1772381123:466295739) | RawPacketContents (1448 bytes) b&#39;\xca5K\xfb\x88\x01\xec\xb4\xf0\x84&#39;...
+ 00:00:56 2016/12/00     INFO 1482563936.430: en0 Ethernet a4:71:74:49:e2:e6-&gt;ac:bc:32:c2:b6:59 IP | IPv4 104.84.41.100-&gt;192.168.0.102 TCP | TCP 443-&gt;51094 (PA 1772382571:466295739) | RawPacketContents (226 bytes) b&#39;\xb1\x9d\xad8g]\xc3\xech\x9e&#39;...
+
+ ... (more packets, removed for this example)
+
+ ^C
+ 00:00:58 2016/12/00     INFO Releasing pf: No ALTQ support in kernel; ALTQ related functions disabled; disable request successful. 1 more pf enable reference(s) remaining, pf still enabled.
+</pre></div>
+</div>
+</div>
+<p>Note in particular a few things about the above example:</p>
+<blockquote>
+<div><ul>
+<li><p class="first">First, when started in a live setting, Switchyard <em>saves</em> then <em>clears</em> any current host firewall settings.  The saved firewall settings are restored when Switchyard exits (see the final log line, above).</p>
+<p>The default behavior of Switchyard is to <em>block all traffic</em>.  This behavior may be undesirable in different situations and can be changed through the <code class="docutils literal"><span class="pre">swyard</span></code> command line option <code class="docutils literal"><span class="pre">-f</span></code> or <code class="docutils literal"><span class="pre">--firewall</span></code>, as described below.</p>
+<p>Switchyard&#8217;s manipulation of the host operating system firewall is intended to prevent the host from receiving any traffic that should be the sole domain of Switchyard.  For example, if you are creating a Switchyard-based IP router, you want Switchyard, not the host, to be responsible for receiving and forwarding traffic.  As another example, if you are implementing a protocol stack for a particular UDP-based application, you will want to prevent the host from receiving any of that UDP traffic.</p>
+<p>Note that on macOS Switchyard configures host firewall settings using <code class="docutils literal"><span class="pre">pfctl</span></code> and on Linux Switchyard uses <code class="docutils literal"><span class="pre">iptables</span></code>.</p>
+</li>
+<li><p class="first">By default, Switchyard finds and uses all interfaces on the host that are (1) determined to be &#8220;up&#8221; (according to libpcap), and (2) <em>not</em> a localhost interface.  In the above example run, Switchyard finds and uses three interfaces (<code class="docutils literal"><span class="pre">en0</span></code>, <code class="docutils literal"><span class="pre">en1</span></code>, and <code class="docutils literal"><span class="pre">en2</span></code>).</p>
+</li>
+<li><p class="first">The above example shows three packets that were observed by Switchyard, each arriving on interface <code class="docutils literal"><span class="pre">en0</span></code>.  Notice that the three packets each contain Ethernet, IPv4 and TCP packet headers, as well as payload (in the form of <code class="docutils literal"><span class="pre">RawPacketContents</span></code> objects at the end of each packet).</p>
+</li>
+</ul>
+</div></blockquote>
+<p>Here is an example of running the Switchyard example <code class="docutils literal"><span class="pre">sniff.py</span></code> program on a Linux host (note again that the text times/dates have been changed):</p>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">Example of Switchyard output from running in a live environment on a Linux host.</span><a class="headerlink" href="#id2" title="Permalink to this code">¶</a></div>
+<div class="highlight-none"><div class="highlight"><pre><span></span> 00:00:11 2016/12/00     INFO Saving iptables state and installing switchyard rules
+ 00:00:11 2016/12/00     INFO Using network devices: enp0s3
+ 00:00:11 2016/12/00     INFO My interfaces: [&#39;enp0s3&#39;]
+ 00:00:15 2016/12/00     INFO 1482564855.115: enp0s3 Ethernet 08:00:27:bb:27:89-&gt;01:00:5e:00:00:fb IP | IPv4 10.0.2.15-&gt;224.0.0.251 UDP | UDP 5353-&gt;5353 | RawPacketContents (45 bytes) b&#39;\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00&#39;...
+ 00:00:16 2016/12/00     INFO 1482564856.172: enp0s3 Ethernet 08:00:27:bb:27:89-&gt;33:33:00:00:00:fb IPv6 | IPv6 fe80::a00:27ff:febb:2789-&gt;ff02::fb UDP | UDP 5353-&gt;5353 | RawPacketContents (45 bytes) b&#39;\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00&#39;...
+
+ ... (more packets, removed for this example)
+
+ ^C
+ 00:00:23 2016/12/00     INFO Restoring saved iptables state
+</pre></div>
+</div>
+</div>
+<p>Comparing the above output to the earlier macOS output, observe that:</p>
+<blockquote>
+<div><ul class="simple">
+<li>The firewall save/restore log lines (first and last) are somewhat different, reflecting the fact that <code class="docutils literal"><span class="pre">iptables</span></code> is used on Linux instead of <code class="docutils literal"><span class="pre">pf</span></code>.</li>
+<li>There is one interface found and used by Switchyard: <code class="docutils literal"><span class="pre">enp0s3</span></code>.</li>
+<li>Two packets are included in the output above: an IPv4 UDP packet and an IPv6 UDP packet.</li>
+</ul>
+</div></blockquote>
+<p>As with running Switchyard in a test environment, you may wish to use the <code class="docutils literal"><span class="pre">-v</span></code> and/or <code class="docutils literal"><span class="pre">-d</span></code> options to increase Switchyard&#8217;s output verbosity or to include debugging messages, respectively.</p>
+</div>
+<div class="section" id="including-or-excluding-particular-interfaces">
+<h2>Including or excluding particular interfaces<a class="headerlink" href="#including-or-excluding-particular-interfaces" title="Permalink to this headline">¶</a></h2>
+<p>When running Switchyard in a virtual machine environment such as on a Mininet container host, it is often the case that you want Switchyard to &#8220;take over&#8221; all available network interfaces on the host.  When running Switchyard in other environments, however, you may want to restrict the interfaces that it uses.  You may even want Switchyard to use the localhost interface (typically named <code class="docutils literal"><span class="pre">lo0</span></code> or <code class="docutils literal"><span class="pre">lo</span></code>).  There are two command-line options that can be used for these purposes.</p>
+<dl class="option">
+<dt id="cmdoption-i">
+<code class="descname">-i</code><code class="descclassname"> &lt;interface-name&gt;</code><a class="headerlink" href="#cmdoption-i" title="Permalink to this definition">¶</a></dt>
+<dd><p>Explicitly <em>include</em> the given interface for use by Switchyard.  This option can be used more than once to include more than one interface.</p>
+<p>If this option is given, <em>only</em> the interfaces specified by <code class="docutils literal"><span class="pre">-i</span></code> options will be used by Switchyard.  If no <code class="docutils literal"><span class="pre">-i</span></code> option is specified, Switchyard uses all available interfaces <em>except</em> the localhost interface.</p>
+<p>To use a localhost interface, you must explicitly include it using this option.  If you explicitly include the localhost interface, you can still explicitly include other interfaces.</p>
+</dd></dl>
+
+<dl class="option">
+<dt id="cmdoption-x">
+<code class="descname">-x</code><code class="descclassname"> &lt;interface-name&gt;</code><a class="headerlink" href="#cmdoption-x" title="Permalink to this definition">¶</a></dt>
+<dd><p>Explicitly <em>exclude</em> the given interface for use by Switchyard.  This option can be used more than once to exclude more than one interface.</p>
+<p>Switchyard&#8217;s behavior with this option is to first discover <em>all</em> interfaces available on the host, then to remove any specified by <code class="docutils literal"><span class="pre">-x</span></code>.</p>
+</dd></dl>
+
+<p>Note that given the semantics described above, it generally makes sense only to specify <em>one</em> of <code class="docutils literal"><span class="pre">-i</span></code> or <code class="docutils literal"><span class="pre">-x</span></code>.</p>
+</div>
+<div class="section" id="firewall-options">
+<span id="firewall"></span><h2>Firewall options<a class="headerlink" href="#firewall-options" title="Permalink to this headline">¶</a></h2>
+<p>As noted above, Switchyard&#8217;s default behavior is to prevent the host operating system from receiving any traffic while Switchyard is running.  This may be undesirable in certain situations, and the <code class="docutils literal"><span class="pre">-f</span></code> or <code class="docutils literal"><span class="pre">--firewall</span></code> options to <code class="docutils literal"><span class="pre">swyard</span></code> are available to change this behavior.</p>
+<p>The <code class="docutils literal"><span class="pre">-f</span></code> and <code class="docutils literal"><span class="pre">--firewall</span></code> options accept a single rule as a parameter (which in many cases needs to be quoted in the shell).  The rule syntax is <code class="docutils literal"><span class="pre">proto[:port]</span></code>, where the <code class="docutils literal"><span class="pre">[:port]</span></code> part is optional and <code class="docutils literal"><span class="pre">proto</span></code> may be one of <code class="docutils literal"><span class="pre">tcp</span></code>, <code class="docutils literal"><span class="pre">udp</span></code>, <code class="docutils literal"><span class="pre">icmp</span></code>, <code class="docutils literal"><span class="pre">none</span></code> or <code class="docutils literal"><span class="pre">all</span></code>.  If <code class="docutils literal"><span class="pre">all</span></code> is specified, the port part should not be included; <code class="docutils literal"><span class="pre">all</span></code> will block <em>all</em> traffic on the interfaces used by Switchyard.  If <code class="docutils literal"><span class="pre">none</span></code> is specified, again, no port should be specified; <code class="docutils literal"><span class="pre">none</span></code> will cause <em>no rules to be installed</em> to block traffic.  Here are some examples:</p>
+<dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">tcp</span></code></dt>
+<dd>Block the host from receiving all TCP traffic</dd>
+<dt><code class="docutils literal"><span class="pre">tcp:8000</span></code></dt>
+<dd>Block the host from receiving TCP traffic on port 8000</dd>
+<dt><code class="docutils literal"><span class="pre">icmp</span></code></dt>
+<dd>Block the host from receiving all ICMP traffic</dd>
+<dt><code class="docutils literal"><span class="pre">udp:4567</span></code></dt>
+<dd>Block the host from receiving UDP traffic on port 4567</dd>
+<dt><code class="docutils literal"><span class="pre">none</span></code></dt>
+<dd>Do not block any traffic.</dd>
+<dt><code class="docutils literal"><span class="pre">all</span></code></dt>
+<dd>Block the host from receiving all traffic.  This is the default behavior.</dd>
+</dl>
+<p>If the <code class="docutils literal"><span class="pre">-v</span></code> (verbose) option is given to <code class="docutils literal"><span class="pre">swyard</span></code>, the host firewall module will print (to the log) firewall settings that have been enabled.  Here are two examples from running <code class="docutils literal"><span class="pre">swyard</span></code> in a live environment (on macOS with the <code class="docutils literal"><span class="pre">pf</span></code> firewall).  First, an example showing Switchyard blocking <em>all</em> traffic on two interfaces:</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">Running Switchyard in a live environment (macOS) with -v flag: notice log line indicating firewall rules installed (2nd line, 2 rules).</span><a class="headerlink" href="#id3" title="Permalink to this code">¶</a></div>
+<div class="highlight-none"><div class="highlight"><pre><span></span> $ sudo swyard -i lo0 -i en0 -v sniff.py
+ 11:39:58 2016/12/00     INFO Enabling pf: No ALTQ support in kernel; ALTQ related functions disabled; pf enabled; Token : 16107925605825483691;
+ 11:39:58 2016/12/00     INFO Rules installed: block drop on en0 all
+ block drop on lo0 all
+ 11:39:58 2016/12/00     INFO Using network devices: en0 lo0
+ 11:39:58 2016/12/00     INFO My interfaces: [&#39;en0&#39;, &#39;lo0&#39;]
+ ^C11:40:00 2016/12/00     INFO Releasing pf: No ALTQ support in kernel; ALTQ related functions disabled; disable request successful. 4 more pf enable reference(s) remaining, pf still enabled.;
+</pre></div>
+</div>
+</div>
+<p>Here is an example showing Switchyard blocking all ICMP, all TCP, and UDP port 8888:</p>
+<div class="literal-block-wrapper docutils container" id="id4">
+<div class="code-block-caption"><span class="caption-text">Running Switchyard in a live environment (macOS) with -v flag: notice log line indicating firewall rules installed (2nd line, 3 rules).</span><a class="headerlink" href="#id4" title="Permalink to this code">¶</a></div>
+<div class="highlight-none"><div class="highlight"><pre><span></span> $ sudo swyard -i lo0 --firewall icmp --firewall tcp --firewall &#39;udp:8888&#39; -v sniff.py
+ 11:43:46 2016/12/00     INFO Enabling pf: No ALTQ support in kernel; ALTQ related functions disabled; pf enabled; Token : 16107925605472991531;
+ 11:43:46 2016/12/00     INFO Rules installed: block drop on lo0 proto icmp all
+ block drop on lo0 proto tcp all
+ block drop on lo0 proto udp from any port = 8888 to any port = 8888
+ 11:43:46 2016/12/00     INFO Using network devices: lo0
+ 11:43:46 2016/12/00     INFO My interfaces: [&#39;lo0&#39;]
+ ^C11:43:48 2016/12/00     INFO Releasing pf: No ALTQ support in kernel; ALTQ related functions disabled; disable request successful. 4 more pf enable reference(s) remaining, pf still enabled.;
+</pre></div>
+</div>
+</div>
+<p>And finally, the same example as previous, but on Linux with iptables:</p>
+<div class="literal-block-wrapper docutils container" id="id5">
+<div class="code-block-caption"><span class="caption-text">Running Switchyard in a live environment (Linux) with -v flag: notice log line indicating firewall rules installed (2nd line, 3 rules).</span><a class="headerlink" href="#id5" title="Permalink to this code">¶</a></div>
+<div class="highlight-none"><div class="highlight"><pre><span></span> # swyard -v sniff.py --firewall icmp --firewall udp:8888 --firewall tcp
+ 19:53:42 2016/12/00     INFO Saving iptables state and installing switchyard rules
+ 19:53:42 2016/12/00     INFO Rules installed: Chain PREROUTING (policy ACCEPT)
+ target     prot opt source               destination
+ DROP       icmp --  0.0.0.0/0            0.0.0.0/0
+ DROP       udp  --  0.0.0.0/0            0.0.0.0/0            udp dpt:8888
+ DROP       tcp  --  0.0.0.0/0            0.0.0.0/0
+
+ Chain OUTPUT (policy ACCEPT)
+ target     prot opt source               destination
+ 19:53:42 2016/12/00     INFO Using network devices: enp0s3
+ 19:53:42 2016/12/00     INFO My interfaces: [&#39;enp0s3&#39;]
+ ^C19:53:45 2016/12/00     INFO Restoring saved iptables state
+</pre></div>
+</div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">When using a loopback interface, there are a couple things to be aware of.  First, while Switchyard normally uses <code class="docutils literal"><span class="pre">libpcap</span></code> for sending and receiving packets, a <em>raw socket</em> is used for sending packets on the localhost interface.  This is done due to limitations on some operating systems, notably Linux.  Receiving packets is still done with <code class="docutils literal"><span class="pre">libpcap</span></code>, though on different operating systems you may observe that packets are encapsulated differently.  In particular, on Linux, an <code class="docutils literal"><span class="pre">Ethernet</span></code> header with zeroed addresses is used, while on macOS the BSD Null header is used, which just consists of a protocol number (i.e., the ethertype value normally found in the Ethernet header).</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="advanced_api.html" title="Advanced API topics"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="test_scenario_creation.html" title="Test scenario creation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Switchyard 2017.01.5 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2017, Joel Sommers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+    </div>
+  </body>
+</html>

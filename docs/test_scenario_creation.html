@@ -1,0 +1,312 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Test scenario creation &#8212; Switchyard 2017.01.5 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2017.01.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Running in a “live” environment" href="live_execution.html" />
+    <link rel="prev" title="Running in the test environment" href="test_execution.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="live_execution.html" title="Running in a “live” environment"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="test_execution.html" title="Running in the test environment"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Switchyard 2017.01.5 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Test scenario creation</a><ul>
+<li><a class="reference internal" href="#test-scenario-examples">Test scenario examples</a></li>
+<li><a class="reference internal" href="#compiling-a-test-scenario">Compiling a test scenario</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="test_execution.html"
+                        title="previous chapter">Running in the test environment</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="live_execution.html"
+                        title="next chapter">Running in a &#8220;live&#8221; environment</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/test_scenario_creation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="test-scenario-creation">
+<span id="id1"></span><h1>Test scenario creation<a class="headerlink" href="#test-scenario-creation" title="Permalink to this headline">¶</a></h1>
+<p>Writing tests to determine whether a piece of code behaves as expected is an important part of the software development process.  With Switchyard, it is possible to create a set of tests that verify whether a program attempts to receive packets when it should and sends the <em>right</em> packet(s) out the <em>right</em> ports.  This section describes how to construct such tests.</p>
+<p>A <em>test scenario</em> is Switchyard&#8217;s term for a series of tests that verify a program&#8217;s behavior.  A test scenario is simply a Python source code file that includes a particular variable name (symbol) called <code class="docutils literal"><span class="pre">scenario</span></code>, which must refer to an instance of the class <code class="docutils literal"><span class="pre">TestScenario</span></code>.  A <code class="docutils literal"><span class="pre">TestScenario</span></code> object contains the basic configuration for an imaginary network device along with an ordered series of <em>test expectations</em>.  These expectations may be one of three types:</p>
+<blockquote>
+<div><ul class="simple">
+<li>that a particular packet should arrive on a particular interface/port,</li>
+<li>that a particular packet should be emitted out one or more ports, and</li>
+<li>that the user program should <em>time out</em> when calling <code class="docutils literal"><span class="pre">recv_packet</span></code> because no packets are available.</li>
+</ul>
+</div></blockquote>
+<p>To start off, here is an example of an <em>empty</em> test scenario:</p>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">An empty test scenario.</span><a class="headerlink" href="#id2" title="Permalink to this code">¶</a></div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switchyard.lib.userlib</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">scenario</span> <span class="o">=</span> <span class="n">TestScenario</span><span class="p">(</span><span class="s2">&quot;test example&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>If we run <code class="docutils literal"><span class="pre">swyard</span></code> in test mode using this test description and <em>any</em> Switchyard program, here&#8217;s the output we should see:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>Results for test scenario test example: 0 passed, 0 failed, 0 pending
+
+
+All tests passed!
+</pre></div>
+</div>
+<p>Notice that in the above example code, we assigned the instance of the <code class="docutils literal"><span class="pre">TestScenario</span></code> class to a variable named <code class="docutils literal"><span class="pre">scenario</span></code>.  An assignment to this variable name is <strong>required</strong>.  If it is not found, you&#8217;ll get an <code class="docutils literal"><span class="pre">ImportError</span></code> exception.  Notice also that there&#8217;s one parameter to <code class="docutils literal"><span class="pre">TestScenario</span></code>: this value can be any meaningful description of the test scenario.</p>
+<p>There are two methods on <code class="docutils literal"><span class="pre">TestScenario</span></code> that are used to configure the test environment:</p>
+<blockquote>
+<div><ul>
+<li><p class="first"><code class="docutils literal"><span class="pre">add_interface(name,</span> <span class="pre">macaddr,</span> <span class="pre">ipaddr=None,</span> <span class="pre">netmask=None,</span> <span class="pre">**kwargs)</span></code></p>
+<p>This method adds an interface/port to an imaginary network device that is the subject of the test scenario.  For example, if you are creating a test for an IP router and you want to verify that a packet received on one port is forwarded out another (different) port on the device, you will need to add <em>at least</em> two interfaces.  Arguments to the <code class="docutils literal"><span class="pre">add_interface</span></code> method are used to specify the interface&#8217;s name (e.g., <code class="docutils literal"><span class="pre">en0</span></code>), its hardware Ethernet (MAC) address, and its (optional) IP address and netmask.</p>
+<p>Two optional keyword arguments can also be given: <code class="docutils literal"><span class="pre">ifnum</span></code> can be used to explicitly specify the number (integer) associated with this interface, and <code class="docutils literal"><span class="pre">iftype</span></code> can be used to explicitly indicate the type of the interface.  A value from the enumeration <code class="docutils literal"><span class="pre">InterfaceType</span></code> must be used, e.g., <code class="docutils literal"><span class="pre">Wired</span></code>, <code class="docutils literal"><span class="pre">Wireless</span></code>, <code class="docutils literal"><span class="pre">Loopback</span></code>, or <code class="docutils literal"><span class="pre">Unknown</span></code>. The type of an interface defaults to <code class="docutils literal"><span class="pre">InterfaceType.Unknown</span></code>.</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">add_file(filename,</span> <span class="pre">text)</span></code></p>
+<p>It is sometimes necessary to make sure that certain text files are available during a test that a user program expects, e.g., a static forwarding table for an IP router.  This method can be used to specify that a file with the name <code class="docutils literal"><span class="pre">filename</span></code> and with contents <code class="docutils literal"><span class="pre">text</span></code> should be written to the current directory when the test scenario is run.</p>
+</li>
+</ul>
+</div></blockquote>
+<p>There is one method that creates a new test expectation in the test scenario:</p>
+<blockquote>
+<div><ul>
+<li><p class="first"><code class="docutils literal"><span class="pre">expect(expectation_object,</span> <span class="pre">description)</span></code></p>
+<p>This method adds a new expected event to the test scenario.  The first parameter must be an object of type <code class="docutils literal"><span class="pre">PacketInputEvent</span></code>, <code class="docutils literal"><span class="pre">PacketInputTimeoutEvent</span></code>, or <code class="docutils literal"><span class="pre">PacketOutputEvent</span></code> (each described below).  The order in which expectations are added to a test scenario is critical: be certain that they&#8217;re added in the right order for the test you want to accomplish!</p>
+<p>The description parameter is a short text description of what this test step is designed to accomplish.  In <code class="docutils literal"><span class="pre">swyard</span></code> test output, this description is what is printed for each step in both the abbreviated and verbose output: make sure it is descriptive enough so that the purpose of the test can be easily understood.  At the same time, try to keep the text short so that it isn&#8217;t overwhelming to a reader.</p>
+</li>
+</ul>
+</div></blockquote>
+<p>The three <em>event</em> classes set up the specific expectations for each test, as described next.</p>
+<blockquote>
+<div><ul>
+<li><p class="first"><code class="docutils literal"><span class="pre">PacketInputEvent(portname,</span> <span class="pre">packet,</span> <span class="pre">display=None,</span> <span class="pre">copyfromlastout=None)</span></code></p>
+<p>Create an expectation that a particular packet will arrive and be received on a port named <code class="docutils literal"><span class="pre">portname</span></code>.  The packet must be an instance of the Switchyard <code class="docutils literal"><span class="pre">Packet</span></code> class.  The <code class="docutils literal"><span class="pre">portname</span></code> is just a string like <code class="docutils literal"><span class="pre">eth0</span></code>.  This port/interface must have previously be configured in the test scenario using the method <code class="docutils literal"><span class="pre">add_interface</span></code> (see above).</p>
+<p>The <code class="docutils literal"><span class="pre">display</span></code> argument indicates whether a particular header in the packet should be emphasized on output when Switchyard shows test output to a user.  By default, all headers are shown.  If a test creator wants to ignore the Ethernet header but emphasize the IPv4 header, he/she could use the argument <code class="docutils literal"><span class="pre">display=IPv4</span></code>.  That is, the argument is just the class name of the packet header to be emphasized.</p>
+<p>The <code class="docutils literal"><span class="pre">copyfromlastout</span></code> argument can be used to address the situation in which a test scenario author wants to construct an incoming packet (that will be received by <code class="docutils literal"><span class="pre">recv_packet</span></code>) which has the same values in some packet header fields as the most recent packet emitted.  For example, when creating a protocol stack, an application (socket) program might emit a packet with a source port number assigned by the socket emulation module.  The destination port number in an arriving packet needs to be the same as the packet that was previously emitted in order for it to be handed to the correct application program.  Thus, the <code class="docutils literal"><span class="pre">copyfromlastout</span></code> can be used to copy one or more packet header attributes from the <em>last</em> emitted packet to header fields in an incoming packet.</p>
+<p><code class="docutils literal"><span class="pre">copyfromlastout</span></code> can take a tuple of 5 elements: the interface/port name out which the packet was sent, a header class name and attribute to copy <em>from</em>, and a header class name and attribute to copy <em>to</em>.  For example, if we wanted to copy the UDP source port value from the last packet emitted out port <code class="docutils literal"><span class="pre">en1</span></code> to the UDP destination port of the packet to be received, we could use the following:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">PacketInputEvent</span><span class="p">(</span><span class="s1">&#39;en1&#39;</span><span class="p">,</span> <span class="n">pkt</span><span class="p">,</span> <span class="n">copyfromlastout</span><span class="p">(</span><span class="s1">&#39;en1&#39;</span><span class="p">,</span> <span class="n">UDP</span><span class="p">,</span> <span class="s1">&#39;src&#39;</span><span class="p">,</span> <span class="n">UDP</span><span class="p">,</span> <span class="s1">&#39;dst&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Note that we would need to have created a <code class="docutils literal"><span class="pre">Packet</span></code> object named <code class="docutils literal"><span class="pre">pkt</span></code> which included a UDP header for this example to work correctly.</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">PacketInputTimeoutEvent(timeout)</span></code></p>
+<p>Create an expectation that the Switchyard user program will call <code class="docutils literal"><span class="pre">recv_packet</span></code> but <em>time out</em> prior to receiving anything.  The timeout value is the number of seconds to wait within the test framework before raising the <code class="docutils literal"><span class="pre">NoPackets</span></code> exception in the user code.  In order for this test expectation to pass, the user code must correctly handle the exception and must not emit a packet.</p>
+<p>To force a <code class="docutils literal"><span class="pre">NoPackets</span></code> exception, the timeout value given to this event must be greater than the timeout value used in a call to <code class="docutils literal"><span class="pre">recv_packet</span></code>.  Note also that the test framework will pause for the <em>entire</em> duration of the given timeout.  If a user program calls <code class="docutils literal"><span class="pre">net.recv_packet(timeout=1.0)</span></code> but the timeout given for a <code class="docutils literal"><span class="pre">PacketInputTimeoutEvent</span></code> is 5 seconds, the call to <code class="docutils literal"><span class="pre">recv_packet</span></code> will appear to have blocked for 5 seconds, not 1.</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">PacketOutputEvent(*args,</span> <span class="pre">display=None,</span> <span class="pre">exact=True,</span> <span class="pre">predicates=[],</span> <span class="pre">wildcard=[])</span></code></p>
+<p>Create an expectation that the user program will emit packets out one or more ports/interfaces. The only required arguments are <code class="docutils literal"><span class="pre">args</span></code>, which must be an <strong>even number</strong> of arguments.  For each pair of arguments given, the first is a port name (e.g., <code class="docutils literal"><span class="pre">en0</span></code>) and the second is a reference to a packet object.  Normally, a test wishes to establish that the <em>same</em> packet has been emitted out multiple interfaces.  To do that, you could simply write:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">p</span> <span class="o">=</span> <span class="n">Packet</span><span class="p">()</span>
+<span class="c1"># fill in some packet headers ...</span>
+<span class="n">PacketOutputEvent</span><span class="p">(</span><span class="s1">&#39;en0&#39;</span><span class="p">,</span> <span class="n">pkt</span><span class="p">,</span> <span class="s1">&#39;en1&#39;</span><span class="p">,</span> <span class="n">pkt</span><span class="p">,</span> <span class="s1">&#39;en2&#39;</span><span class="p">,</span> <span class="n">pkt</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The above code expects that the same packet (named <code class="docutils literal"><span class="pre">pkt</span></code>) will be emitted out three interfaces (<code class="docutils literal"><span class="pre">en0</span></code>, <code class="docutils literal"><span class="pre">en1</span></code>, and <code class="docutils literal"><span class="pre">en2</span></code>).</p>
+<p>By default, the PacketOutputEvent class looks for an <strong>exact</strong> match between the reference packet supplied to PacketOutputEvent and the packet that the user code actually emits.  In some cases, this isn&#8217;t appropriate or even possible.  For example, you may want to verify that packets are forwarded correctly using standard IP (longest prefix match) forwarding rules, but you may not know the payload contents of a packet because another test element may modify them.  As another example, in IP forwarding you know that the TTL (time-to-live) should be decremented by one, but the specific value in an outgoing packet depends on the value on the incoming packet, which the test framework may not know in advance.  To handle these situations, you can supply <code class="docutils literal"><span class="pre">exact</span></code>,  <code class="docutils literal"><span class="pre">wildcard(s)</span></code>, and/or <code class="docutils literal"><span class="pre">predicate(s)</span></code> keyword arguments, as detailed below.</p>
+<ul>
+<li><p class="first"><strong>Exact vs. subset matching</strong>:  Setting <code class="docutils literal"><span class="pre">exact</span></code> to <code class="docutils literal"><span class="pre">True</span></code> or <code class="docutils literal"><span class="pre">False</span></code> determines whether <em>all</em> packet header attributes are compared (<code class="docutils literal"><span class="pre">exact=True</span></code>) or whether a limited subset are compared (<code class="docutils literal"><span class="pre">exact=False</span></code>).</p>
+<p>The set of header fields that are compared when <code class="docutils literal"><span class="pre">exact=False</span></code> is specified are: Ethernet source and destination addresses, Ethernet ethertype field, Vlan vlanid and ethertype field, ARP target and sender protocol and hardware addresses (four fields), IPv4/IPv6 source and destination addresses and protocol, and TCP/UDP src/dst port numbers (or ICMP/ICMPv6 icmptype/icmpcode fields).  Note that in subset matching no packet payloads are compared.</p>
+</li>
+<li><p class="first"><strong>Wildcard fields</strong>:  In addition to specifying the <code class="docutils literal"><span class="pre">exact</span></code> keyword parameter, it is possible to specify that some additional header fields should be <em>wildcarded</em>.  That is, the wildcarded header fields are allowed to contain <em>any</em> value.  Wildcards are specified using a tuple of two elements: a header class name and a field name.</p>
+<p>A single wildcard can be supplied (i.e., one 2-tuple) with the <code class="docutils literal"><span class="pre">wildcard</span></code> keyword parameter, or a <em>list</em> of 2-tuples can be supplied with the <code class="docutils literal"><span class="pre">wildcards</span></code> keyword.  For example, the following line of code uses subset matching (<code class="docutils literal"><span class="pre">exact=False</span></code>) and one wildcard.  For this example, assume that the packet <code class="docutils literal"><span class="pre">pkt</span></code> contains <code class="docutils literal"><span class="pre">Ethernet</span></code>, <code class="docutils literal"><span class="pre">IPv4</span></code>, and <code class="docutils literal"><span class="pre">UDP</span></code> headers:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">PacketOutputEvent</span><span class="p">(</span><span class="s1">&#39;en0&#39;</span><span class="p">,</span> <span class="n">pkt</span><span class="p">,</span> <span class="n">exact</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">wildcard</span><span class="o">=</span><span class="p">(</span><span class="n">IPv4</span><span class="p">,</span> <span class="s1">&#39;src&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Note that for the above example, the only fields compared in the IPv4 header would be the destination address and protocol field (since other fields are already ignored with <code class="docutils literal"><span class="pre">exact=False</span></code>).</p>
+<p>Here is another example that ignores source addresses in the Ethernet, IPv4 and UDP fields, leaving only two fields in the Ethernet header to be compared (dst and ethertype), two fields to be compared in the IPv4 header (dst and protocol) and one field in UDP (dst).  Again, assume that the packet <code class="docutils literal"><span class="pre">pkt</span></code> contains <code class="docutils literal"><span class="pre">Ethernet</span></code>, <code class="docutils literal"><span class="pre">IPv4</span></code>, and <code class="docutils literal"><span class="pre">UDP</span></code> headers:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">PacketOutputEvent</span><span class="p">(</span><span class="s1">&#39;en0&#39;</span><span class="p">,</span> <span class="n">pkt</span><span class="p">,</span> <span class="n">exact</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">wildcards</span><span class="o">=</span><span class="p">[(</span><span class="n">Ethernet</span><span class="p">,</span> <span class="s1">&#39;src&#39;</span><span class="p">),</span> <span class="p">(</span><span class="n">IPv4</span><span class="p">,</span> <span class="s1">&#39;src&#39;</span><span class="p">),</span> <span class="p">(</span><span class="n">UDP</span><span class="p">,</span> <span class="s1">&#39;src&#39;</span><span class="p">)])</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Switchyard previously allowed certain strings (modeled on the Openflow 1.0 specification) to be used to indicate wildcarded fields.  These strings can <em>no longer be used</em> in the current version of Switchyard.  To specify wildcarded fields,  you <strong>must</strong> use the <code class="docutils literal"><span class="pre">(hdrclass,</span> <span class="pre">attribute)</span></code> syntax.</p>
+</div>
+<ul>
+<li><p class="first"><strong>Predicate functions</strong>:  Lastly, predicate functions can be supplied to make <em>arbitrary</em> tests against packets.  The <code class="docutils literal"><span class="pre">predicate</span></code> keyword argument can take a single <code class="docutils literal"><span class="pre">lambda</span></code> function in the form of a string, and the <code class="docutils literal"><span class="pre">predicates</span></code> keyword argument can take a <em>list</em> of <code class="docutils literal"><span class="pre">lambda</span></code> functions, each as strings.  Each lambda given must take a single argument (the packet object to be inspected) and must yield a boolean value.  (Note that internally, each lambda definition is <code class="docutils literal"><span class="pre">eval</span></code>&#8216;ed by Switchyard.)</p>
+<p>Here is one example that checks whether the IPv4 ttl field is between 32 and 34, inclusive.  Note that this line of code contains a <em>single</em> predicate function as a string:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">PacketOutputEvent</span><span class="p">(</span><span class="s1">&#39;en1&#39;</span><span class="p">,</span> <span class="n">pkt</span><span class="p">,</span> <span class="n">exact</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">predicate</span><span class="o">=</span><span class="s1">&#39;&#39;&#39;lambda p: p.has_header(IPv4) and 32 &lt;= p[IPv4].ttl &lt;= 34&#39;&#39;&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To provide multiple predicates, just use the <code class="docutils literal"><span class="pre">predicates</span></code> (plural) keyword and provide a list of lambdas-as-strings.</p>
+</li>
+</ul>
+</li>
+</ul>
+</div></blockquote>
+<div class="section" id="test-scenario-examples">
+<h2>Test scenario examples<a class="headerlink" href="#test-scenario-examples" title="Permalink to this headline">¶</a></h2>
+<p>First, here is an example of a test scenario in which a packet is constructed and is expected to be received on port <code class="docutils literal"><span class="pre">eth1</span></code>, then sent back out the same port, unmodified.  Notice in the example that the name <code class="docutils literal"><span class="pre">scenario</span></code> is <em>required</em>.</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">A test scenario in which a packet is received then sent back out the same port.</span><a class="headerlink" href="#id3" title="Permalink to this code">¶</a></div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switchyard.lib.userlib</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">scenario</span> <span class="o">=</span> <span class="n">TestScenario</span><span class="p">(</span><span class="s2">&quot;in/out test scenario example&quot;</span><span class="p">)</span>
+
+<span class="c1"># only one interface on this imaginary device</span>
+<span class="n">scenario</span><span class="o">.</span><span class="n">add_interface</span><span class="p">(</span><span class="s1">&#39;eth0&#39;</span><span class="p">,</span> <span class="s1">&#39;ab:cd:ef:ab:cd:ef&#39;</span><span class="p">,</span> <span class="s1">&#39;1.2.3.4&#39;</span><span class="p">,</span> <span class="s1">&#39;255.255.0.0&#39;</span><span class="p">,</span> 
+    <span class="n">iftype</span><span class="o">=</span><span class="n">InterfaceType</span><span class="o">.</span><span class="n">Wired</span><span class="p">)</span>
+
+<span class="c1"># construct a packet to be received</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">Ethernet</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="s2">&quot;00:11:22:33:44:55&quot;</span><span class="p">,</span> <span class="n">dst</span><span class="o">=</span><span class="s2">&quot;66:55:44:33:22:11&quot;</span><span class="p">)</span> <span class="o">+</span> \
+    <span class="n">IPv4</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="s2">&quot;1.1.1.1&quot;</span><span class="p">,</span> <span class="n">dst</span><span class="o">=</span><span class="s2">&quot;2.2.2.2&quot;</span><span class="p">,</span> <span class="n">protocol</span><span class="o">=</span><span class="n">IPProtocol</span><span class="o">.</span><span class="n">UDP</span><span class="p">)</span> <span class="o">+</span> \
+    <span class="n">UDP</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="mi">5555</span><span class="p">,</span> <span class="n">dst</span><span class="o">=</span><span class="mi">8888</span><span class="p">)</span> <span class="o">+</span> <span class="n">b</span><span class="s1">&#39;some payload&#39;</span>
+
+<span class="c1"># expect that the packet is received</span>
+<span class="n">scenario</span><span class="o">.</span><span class="n">expect</span><span class="p">(</span><span class="n">PacketInputEvent</span><span class="p">(</span><span class="s1">&#39;eth0&#39;</span><span class="p">,</span> <span class="n">p</span><span class="p">),</span> 
+    <span class="s2">&quot;A udp packet should arrive on eth0&quot;</span><span class="p">)</span>
+
+<span class="c1"># and expect that the packet is sent right back out</span>
+<span class="n">scenario</span><span class="o">.</span><span class="n">expect</span><span class="p">(</span><span class="n">PacketOutputEvent</span><span class="p">(</span><span class="s1">&#39;eth0&#39;</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">exact</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span> 
+    <span class="s2">&quot;The udp packet should be emitted back out eth0&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Here is an additional example with a bit more complexity.  The context for this example might be that we are implementing an IPv4 router.  First, notice that we include in the scenario a static forwarding table file (<code class="docutils literal"><span class="pre">forwarding_table.txt</span></code>) to be written out when the scenario is executed.  We construct a packet destined to a particular IP address and create an expectation that it arrives on port <code class="docutils literal"><span class="pre">eth0</span></code>.  We then construct an expectation that the packet should be forwarded out port <code class="docutils literal"><span class="pre">eth2</span></code> (note that according to the forwarding table, any packets destined to 2.0.0.0/8 should be forwarded out that port).  We also include a predicate function to test that the IPv4 ttl is decremented by 1.  Note that if we did not include this predicate, <em>any</em> ttl value would be accepted since we have specified <code class="docutils literal"><span class="pre">exact=False</span></code>.  Note also that if we had set <code class="docutils literal"><span class="pre">exact=True</span></code> we would almost certainly need to wildcard several fields, e.g., checksums in the IPv4 and UDP headers, and would still need to include a predicate to check that ttl has been properly decremented.  Furthermore, if we were writing a test scenario for an IP router, we would also want to include expectations that the correct ARP messages were sent in order to obtain the hardware address corresponding to the next hop IP address.</p>
+<div class="literal-block-wrapper docutils container" id="id4">
+<div class="code-block-caption"><span class="caption-text">A simplified IP forwarding test scenario.</span><a class="headerlink" href="#id4" title="Permalink to this code">¶</a></div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switchyard.lib.userlib</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">scenario</span> <span class="o">=</span> <span class="n">TestScenario</span><span class="p">(</span><span class="s2">&quot;packet forwarding example&quot;</span><span class="p">)</span>
+
+<span class="c1"># three interfaces on this device</span>
+<span class="n">scenario</span><span class="o">.</span><span class="n">add_interface</span><span class="p">(</span><span class="s1">&#39;eth0&#39;</span><span class="p">,</span> <span class="s1">&#39;ab:cd:ef:ab:cd:ef&#39;</span><span class="p">,</span> <span class="s1">&#39;1.2.3.4&#39;</span><span class="p">,</span> <span class="s1">&#39;255.255.0.0&#39;</span><span class="p">)</span>
+<span class="n">scenario</span><span class="o">.</span><span class="n">add_interface</span><span class="p">(</span><span class="s1">&#39;eth1&#39;</span><span class="p">,</span> <span class="s1">&#39;00:11:22:ab:cd:ef&#39;</span><span class="p">,</span> <span class="s1">&#39;5.6.7.8&#39;</span><span class="p">,</span> <span class="s1">&#39;255.255.0.0&#39;</span><span class="p">)</span>
+<span class="n">scenario</span><span class="o">.</span><span class="n">add_interface</span><span class="p">(</span><span class="s1">&#39;eth2&#39;</span><span class="p">,</span> <span class="s1">&#39;ab:cd:ef:00:11:22&#39;</span><span class="p">,</span> <span class="s1">&#39;9.10.11.12&#39;</span><span class="p">,</span> <span class="s1">&#39;255.255.255.0&#39;</span><span class="p">)</span>
+
+<span class="c1"># add a forwarding table file to be written out when the test </span>
+<span class="c1"># scenario is executed</span>
+<span class="n">scenario</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="s1">&#39;forwarding_table.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1"># network   subnet-mask   next-hop      port</span>
+<span class="s1">2.0.0.0     255.0.0.0     9.10.11.13    eth2</span>
+<span class="s1">3.0.0.0     255.255.0.0   5.6.100.200   eth1</span>
+<span class="s1">&#39;&#39;&#39;</span><span class="p">)</span>
+
+
+<span class="c1"># construct a packet to be received</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">Ethernet</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="s2">&quot;00:11:22:33:44:55&quot;</span><span class="p">,</span> <span class="n">dst</span><span class="o">=</span><span class="s2">&quot;66:55:44:33:22:11&quot;</span><span class="p">)</span> <span class="o">+</span> \
+    <span class="n">IPv4</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="s2">&quot;1.1.1.1&quot;</span><span class="p">,</span> <span class="n">dst</span><span class="o">=</span><span class="s2">&quot;2.2.2.2&quot;</span><span class="p">,</span> <span class="n">protocol</span><span class="o">=</span><span class="n">IPProtocol</span><span class="o">.</span><span class="n">UDP</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">61</span><span class="p">)</span> <span class="o">+</span> \
+    <span class="n">UDP</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="mi">5555</span><span class="p">,</span> <span class="n">dst</span><span class="o">=</span><span class="mi">8888</span><span class="p">)</span> <span class="o">+</span> <span class="n">b</span><span class="s1">&#39;some payload&#39;</span>
+
+<span class="c1"># expect that the packet is received</span>
+<span class="n">scenario</span><span class="o">.</span><span class="n">expect</span><span class="p">(</span><span class="n">PacketInputEvent</span><span class="p">(</span><span class="s1">&#39;eth0&#39;</span><span class="p">,</span> <span class="n">p</span><span class="p">),</span> 
+    <span class="s2">&quot;A udp packet destined to 2.2.2.2 arrives on port eth0&quot;</span><span class="p">)</span>
+
+<span class="c1"># and subsequently forwarded out the correct port; employ </span>
+<span class="c1"># subset (exact=False) matching, along with a check that the</span>
+<span class="c1"># IPv4 TTL was decremented exactly by 1.</span>
+<span class="n">scenario</span><span class="o">.</span><span class="n">expect</span><span class="p">(</span><span class="n">PacketOutputEvent</span><span class="p">(</span><span class="s1">&#39;eth2&#39;</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">exact</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> 
+    <span class="n">predicate</span><span class="o">=</span><span class="s1">&#39;&#39;&#39;lambda pkt: pkt.has_header(IPv4) and pkt[IPv4].ttl == 60&#39;&#39;&#39;</span><span class="p">),</span>
+    <span class="s2">&quot;The udp packet destined to 2.2.2.2 should be forwarded out port eth2, with an appropriately decremented TTL.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="compiling-a-test-scenario">
+<h2>Compiling a test scenario<a class="headerlink" href="#compiling-a-test-scenario" title="Permalink to this headline">¶</a></h2>
+<p>A test scenario can be run <em>directly</em> with <code class="docutils literal"><span class="pre">swyard</span></code> or it can be <em>compiled</em> into a form that can be distributed without giving away the code which was used to construct it.  Compiled test scenario files are, by default, given a <code class="docutils literal"><span class="pre">.srpy</span></code> extension; uncompiled test scenarios should just be regular Python (<code class="docutils literal"><span class="pre">.py</span></code>) files.</p>
+<p>To compile a test scenario, you can simply invoke <code class="docutils literal"><span class="pre">swyard</span></code> with the <code class="docutils literal"><span class="pre">-c</span></code> flag, as follows:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">swyard</span> <span class="o">-</span><span class="n">c</span> <span class="n">code</span><span class="o">/</span><span class="n">testscenario2</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>The output from this command should be a new file named <code class="docutils literal"><span class="pre">code/testscenario2.srpy</span></code> containing the obfuscated test scenario.  This file can be used as the argument to the <code class="docutils literal"><span class="pre">-t</span></code> option when later running a Switchyard program against those tests.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Note that if a scenario is <em>compiled</em> using a different version of Python than the one used to <em>run</em> a test scenario (especially a different major version, e.g., 3.4 vs. 3.5), you may get some mysterious errors.  The errors are due to the fact that serialized representations of Python objects may change from one version to the next; if there are any changes, then the version used to run the test cannot correctly deserialize the various objects stored in the test scenario.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="live_execution.html" title="Running in a “live” environment"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="test_execution.html" title="Running in the test environment"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Switchyard 2017.01.5 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2017, Joel Sommers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+    </div>
+  </body>
+</html>

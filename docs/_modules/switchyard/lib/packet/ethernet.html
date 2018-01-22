@@ -1,0 +1,262 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>switchyard.lib.packet.ethernet &#8212; Switchyard 2017.01.5 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '2017.01.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for switchyard.lib.packet.ethernet</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">from</span> <span class="nn">.packet</span> <span class="k">import</span> <span class="n">PacketHeaderBase</span><span class="p">,</span><span class="n">Packet</span>
+<span class="kn">from</span> <span class="nn">..address</span> <span class="k">import</span> <span class="n">EthAddr</span><span class="p">,</span><span class="n">SpecialEthAddr</span>
+<span class="kn">from</span> <span class="nn">.arp</span> <span class="k">import</span> <span class="n">Arp</span>
+<span class="kn">from</span> <span class="nn">.ipv4</span> <span class="k">import</span> <span class="n">IPv4</span>
+<span class="kn">from</span> <span class="nn">.ipv6</span> <span class="k">import</span> <span class="n">IPv6</span>
+<span class="kn">from</span> <span class="nn">.common</span> <span class="k">import</span> <span class="n">EtherType</span>
+<span class="kn">from</span> <span class="nn">..exceptions</span> <span class="k">import</span> <span class="o">*</span>
+
+
+<span class="k">class</span> <span class="nc">Vlan</span><span class="p">(</span><span class="n">PacketHeaderBase</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Strictly speaking this header doesn&#39;t fully represent the 802.1Q header, </span>
+<span class="sd">    but rather the 2nd half of that header and the &quot;displaced&quot; ethertype</span>
+<span class="sd">    field from the Ethernet header.  The first two bytes of the 802.1Q header</span>
+<span class="sd">    basically get treated as the ethertype field in the Ethernet header,</span>
+<span class="sd">    and that ethertype &quot;points to&quot; this Vlan header for parsing/understanding</span>
+<span class="sd">    the next 4 bytes (or more, depending on whether QinQ or QinQinQ </span>
+<span class="sd">    encapsulation is done).</span>
+
+<span class="sd">    first 16 bits is TCI: tag control information</span>
+<span class="sd">       3 bits: priority code point</span>
+<span class="sd">       1 bit: drop eligible indicator</span>
+<span class="sd">       12 bits: vlan id</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_vlanid&#39;</span><span class="p">,</span> <span class="s1">&#39;_pcp&#39;</span><span class="p">,</span> <span class="s1">&#39;_ethertype&#39;</span><span class="p">]</span>
+    <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s1">&#39;!HH&#39;</span>
+    <span class="n">_MINLEN</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">_PACKFMT</span><span class="p">)</span>
+    <span class="n">_next_header_map</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">EtherType</span><span class="o">.</span><span class="n">IP</span><span class="p">:</span> <span class="n">IPv4</span><span class="p">,</span>
+        <span class="n">EtherType</span><span class="o">.</span><span class="n">ARP</span><span class="p">:</span> <span class="n">Arp</span><span class="p">,</span>
+        <span class="n">EtherType</span><span class="o">.</span><span class="n">IPv6</span><span class="p">:</span> <span class="n">IPv6</span><span class="p">,</span>
+        <span class="n">EtherType</span><span class="o">.</span><span class="n">NoType</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">_next_header_class_key</span> <span class="o">=</span> <span class="s1">&#39;_ethertype&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        VLAN constructor accepts an initial VLAN Id and the EtherType</span>
+<span class="sd">        of the next header.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_vlanid</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pcp</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ethertype</span> <span class="o">=</span> <span class="n">EtherType</span><span class="o">.</span><span class="n">IP</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">vlanid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vlanid</span>
+
+    <span class="nd">@vlanid</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">vlanid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_vlanid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0x0fff</span> <span class="c1"># mask out high-order 4 bits</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">pcp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pcp</span>
+
+    <span class="nd">@pcp</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">pcp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pcp</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">),</span><span class="mi">3</span><span class="p">),</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ethertype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ethertype</span>
+
+    <span class="nd">@ethertype</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">ethertype</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ethertype</span> <span class="o">=</span> <span class="n">EtherType</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">Vlan</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotEnoughDataError</span><span class="p">(</span><span class="s2">&quot;Not enough bytes to unpack Vlan header; need </span><span class="si">{}</span><span class="s2">, &quot;</span>
+                <span class="s2">&quot;only have </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">Vlan</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)))</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">Vlan</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> <span class="n">raw</span><span class="p">[:</span><span class="n">Vlan</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vlanid</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pcp</span> <span class="o">=</span> <span class="p">((</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mh">0xf000</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">12</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ethertype</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">raw</span><span class="p">[</span><span class="n">Vlan</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:]</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">Vlan</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_pcp</span> <span class="o">&lt;&lt;</span> <span class="mi">12</span><span class="p">)</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vlanid</span><span class="p">),</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ethertype</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Vlan</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">vlanid</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">vlanid</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">ethertype</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">ethertype</span>
+
+    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Vlan</span><span class="o">.</span><span class="n">_MINLEN</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">vlanid</span><span class="p">,</span>  <span class="bp">self</span><span class="o">.</span><span class="n">ethertype</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Ethernet"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Ethernet">[docs]</a><span class="k">class</span> <span class="nc">Ethernet</span><span class="p">(</span><span class="n">PacketHeaderBase</span><span class="p">):</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_src&#39;</span><span class="p">,</span><span class="s1">&#39;_dst&#39;</span><span class="p">,</span><span class="s1">&#39;_ethertype&#39;</span><span class="p">]</span>
+    <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s1">&#39;!6s6sH&#39;</span>
+    <span class="n">_MINLEN</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">_PACKFMT</span><span class="p">)</span>
+    <span class="n">_next_header_map</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">EtherType</span><span class="o">.</span><span class="n">IP</span><span class="p">:</span> <span class="n">IPv4</span><span class="p">,</span>
+        <span class="n">EtherType</span><span class="o">.</span><span class="n">ARP</span><span class="p">:</span> <span class="n">Arp</span><span class="p">,</span>
+        <span class="n">EtherType</span><span class="o">.</span><span class="n">IPv6</span><span class="p">:</span> <span class="n">IPv6</span><span class="p">,</span>
+        <span class="n">EtherType</span><span class="o">.</span><span class="n">x8021Q</span><span class="p">:</span> <span class="n">Vlan</span><span class="p">,</span>
+        <span class="n">EtherType</span><span class="o">.</span><span class="n">NoType</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">_next_header_class_key</span> <span class="o">=</span> <span class="s1">&#39;_ethertype&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_src</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span> <span class="o">=</span> <span class="n">EthAddr</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ethertype</span> <span class="o">=</span> <span class="n">EtherType</span><span class="o">.</span><span class="n">IP</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">Ethernet</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">src</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_src</span>
+
+    <span class="nd">@src</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">src</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_src</span> <span class="o">=</span> <span class="n">EthAddr</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dst</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span>
+
+    <span class="nd">@dst</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">dst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span> <span class="o">=</span> <span class="n">EthAddr</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ethertype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ethertype</span>
+
+    <span class="nd">@ethertype</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">ethertype</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ethertype</span> <span class="o">=</span> <span class="n">EtherType</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Return packed byte representation of the Ethernet header.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">Ethernet</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span><span class="o">.</span><span class="n">packed</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">_src</span><span class="o">.</span><span class="n">packed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ethertype</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Return an Ethernet object reconstructed from raw bytes, or an</span>
+<span class="sd">        Exception if we can&#39;t resurrect the packet.&#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">Ethernet</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotEnoughDataError</span><span class="p">(</span><span class="s2">&quot;Not enough bytes (</span><span class="si">{}</span><span class="s2">) to reconstruct an &quot;</span>
+                <span class="s2">&quot;Ethernet object&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)))</span>
+        <span class="n">dst</span><span class="p">,</span><span class="n">src</span><span class="p">,</span><span class="n">ethertype</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">Ethernet</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> 
+            <span class="n">raw</span><span class="p">[:</span><span class="n">Ethernet</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src</span> <span class="o">=</span> <span class="n">src</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dst</span> <span class="o">=</span> <span class="n">dst</span>
+        <span class="k">if</span> <span class="n">ethertype</span> <span class="o">&lt;=</span> <span class="mi">1500</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ethertype</span> <span class="o">=</span> <span class="n">EtherType</span><span class="o">.</span><span class="n">NoType</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ethertype</span> <span class="o">=</span> <span class="n">ethertype</span>
+        <span class="k">return</span> <span class="n">raw</span><span class="p">[</span><span class="n">Ethernet</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:]</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Ethernet</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">src</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">src</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">dst</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">dst</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">ethertype</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">ethertype</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">-&gt;</span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">src</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dst</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ethertype</span><span class="o">.</span><span class="n">name</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2017, Joel Sommers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+    </div>
+  </body>
+</html>
