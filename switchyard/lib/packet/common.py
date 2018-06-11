@@ -3,6 +3,7 @@ import array
 from enum import IntEnum
 from socket import ntohs
 
+
 class EtherType(IntEnum):
     NoType = 0xFFFF
     IP = 0x0800
@@ -19,14 +20,17 @@ class EtherType(IntEnum):
     x8021AH = 0x88e7
     IEEE8023 = 0x05dc
 
+
 class ArpHwType(IntEnum):
     Ethernet = 1
+
 
 class ArpOperation(IntEnum):
     Request = 1
     Reply = 2
     RequestReverse = 3
     ReplyReverse = 4
+
 
 class IPProtocol(IntEnum):
     IPv6HopOption = 0
@@ -56,10 +60,12 @@ class IPProtocol(IntEnum):
     MPLSinIP = 137
     IPv6Shim6 = 140
 
+
 class IPFragmentFlag(IntEnum):
     NoFragments = 0
     DontFragment = 2
     MoreFragments = 4
+
 
 class IPOptionNumber(IntEnum):
     EndOfOptionList = 0
@@ -72,6 +78,7 @@ class IPOptionNumber(IntEnum):
     MTUReply = 12
     RouterAlert = 20
 
+
 class ICMPType(IntEnum):
     EchoReply = 0
     DestinationUnreachable = 3
@@ -81,7 +88,7 @@ class ICMPType(IntEnum):
     RouterAdvertisement = 9
     RouterSolicitation = 10
     TimeExceeded = 11
-    ParameterProblem = 12  
+    ParameterProblem = 12
     Timestamp = 13
     TimestampReply = 14
     InformationRequest = 15
@@ -89,16 +96,18 @@ class ICMPType(IntEnum):
     AddressMaskRequest = 17
     AddressMaskReply = 18
 
+
 class ICMPCodeEchoReply(IntEnum):
     EchoReply = 0
 
+
 class ICMPCodeDestinationUnreachable(IntEnum):
-    NetworkUnreachable = 0 
-    HostUnreachable = 1 
-    ProtocolUnreachable = 2 
-    PortUnreachable = 3 
-    FragmentationRequiredDFSet = 4 
-    SourceRouteFailed = 5 
+    NetworkUnreachable = 0
+    HostUnreachable = 1
+    ProtocolUnreachable = 2
+    PortUnreachable = 3
+    FragmentationRequiredDFSet = 4
+    SourceRouteFailed = 5
     DestinationNetworkUnknown = 6
     DestinationHostUnknown = 7
     SourceHostIsolated = 8
@@ -110,50 +119,64 @@ class ICMPCodeDestinationUnreachable(IntEnum):
     HostPrecedenceViolation = 14
     PrecedenceCutoffInEffect = 15
 
+
 class ICMPCodeSourceQuench(IntEnum):
     SourceQuench = 0
+
 
 class ICMPCodeRedirect(IntEnum):
     RedirectForNetwork = 0
     RedirectForHost = 1
     RedirectForTOSAndNetwork = 2
     RedirectForTOSAndHost = 3
-    
+
+
 class ICMPCodeEchoRequest(IntEnum):
     EchoRequest = 0
+
 
 class ICMPCodeRouterAdvertisement(IntEnum):
     RouterAdvertisement = 0
 
+
 class ICMPCodeRouterSolicitation(IntEnum):
     RouterSolicitation = 0
+
 
 class ICMPCodeTimeExceeded(IntEnum):
     TTLExpired = 0
     FragmentReassemblyTimeExceeded = 1
+
 
 class ICMPCodeParameterProblem(IntEnum):
     PointerIndictatesError = 0
     MissingRequiredOption = 1
     BadLength = 2
 
+
 class ICMPCodeTimestamp(IntEnum):
     Timestamp = 0
+
 
 class ICMPCodeTimestampReply(IntEnum):
     TimestampReply = 0
 
+
 class ICMPCodeInformationRequest(IntEnum):
     InformationRequest = 0
+
 
 class ICMPCodeInformationReply(IntEnum):
     InformationReply = 0
 
+
 class ICMPCodeAddressMaskRequest(IntEnum):
     AddressMaskRequest = 0
 
+
 class ICMPCodeAddressMaskReply(IntEnum):
     AddressMaskReply = 0
+
 
 ICMPTypeCodeMap = {
     ICMPType.EchoReply: ICMPCodeEchoReply,
@@ -172,6 +195,7 @@ ICMPTypeCodeMap = {
     ICMPType.AddressMaskRequest: ICMPCodeAddressMaskRequest,
     ICMPType.AddressMaskReply: ICMPCodeAddressMaskReply
 }
+
 
 class ICMPv6Type(IntEnum):
     DestinationUnreachable = 1
@@ -214,10 +238,60 @@ class ICMPv6Type(IntEnum):
     Privateexperimentation3 = 200
     Privateexperimentation4 = 201
 
+
+class ICMPv6CodeNeighborSolicitation(IntEnum):
+    NeighborSolicitation = 0
+
+
+class ICMPv6CodeNeighborAdvertisement(IntEnum):
+    NeighborAdvertisement = 0
+
+
+class ICMPv6CodeRedirectMessage(IntEnum):
+    RedirectMessage = 0
+
+
+class ICMPv6CodeRouterSolicitation(IntEnum):
+    RouterSolicitation = 0
+
+
+class ICMPv6CodeRouterAdvertisement(IntEnum):
+    RouterAdvertisement = 0
+
+
+class ICMPv6CodeMulticastListenerQuery(IntEnum):
+    MulticastListenerQuery = 0
+
+
+class ICMPv6CodeMulticastListenerReport(IntEnum):
+    MulticastListenerReport = 0
+
+
+class ICMPv6CodeMulticastListenerDone(IntEnum):
+    MulticastListenerDone = 0
+
+
 ICMPv6TypeCodeMap = {
-   ICMPv6Type.EchoRequest: ICMPCodeEchoRequest,
-   ICMPv6Type.EchoReply: ICMPCodeEchoReply
+    ICMPv6Type.EchoRequest: ICMPCodeEchoRequest,
+    ICMPv6Type.EchoReply: ICMPCodeEchoReply,
+    ICMPv6Type.NeighborSolicitation: ICMPv6CodeNeighborSolicitation,
+    ICMPv6Type.NeighborAdvertisement: ICMPv6CodeNeighborAdvertisement,
+    ICMPv6Type.RedirectMessage: ICMPv6CodeRedirectMessage,
+    ICMPv6Type.RouterSolicitation: ICMPv6CodeRouterSolicitation,
+    ICMPv6Type.RouterAdvertisement: ICMPv6CodeRouterAdvertisement,
+    ICMPv6Type.MulticastListenerQuery: ICMPv6CodeMulticastListenerQuery,
+    ICMPv6Type.MulticastListenerReport: ICMPv6CodeMulticastListenerReport,
+    ICMPv6Type.MulticastListenerDone: ICMPv6CodeMulticastListenerDone,
 }
+
+
+class ICMPv6OptionNumber(IntEnum):
+    SourceLinkLayerAddress = 1
+    TargetLinkLayerAddress = 2
+    PrefixInformation = 3
+    RedirectedHeader = 4
+    MTU = 5
+
 
 # the following checksum function was taken from the POX openflow controller
 
@@ -273,4 +347,3 @@ def checksum (data, start = 0, skip_word = None):
   #  start = (start >> 16) + (start & 0xffff)
 
   return ntohs(~start & 0xffff)
-
