@@ -61,9 +61,11 @@
 <li><a class="reference internal" href="#ethernet-header">Ethernet header</a></li>
 <li><a class="reference internal" href="#arp-address-resolution-protocol-header">ARP (address resolution protocol) header</a></li>
 <li><a class="reference internal" href="#ip-version-4-header">IP version 4 header</a></li>
+<li><a class="reference internal" href="#ip-version-6-header">IP version 6 header</a></li>
 <li><a class="reference internal" href="#udp-user-datagram-protocol-header">UDP (user datagram protocol) header</a></li>
 <li><a class="reference internal" href="#tcp-transmission-control-protocol-header">TCP (transmission control protocol) header</a></li>
-<li><a class="reference internal" href="#icmp-internet-control-message-protocol-header">ICMP (Internet control message protocol) header</a></li>
+<li><a class="reference internal" href="#icmp-internet-control-message-protocol-header-v4">ICMP (Internet control message protocol) header (v4)</a></li>
+<li><a class="reference internal" href="#icmp-internet-control-message-protocol-header-v6">ICMP (Internet control message protocol) header (v6)</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#test-scenario-creation">Test scenario creation</a></li>
@@ -916,6 +918,50 @@ and setting various fields is shown below:</p>
 </div>
 </div>
 <hr class="docutils" />
+<div class="section" id="ip-version-6-header">
+<h3>IP version 6 header<a class="headerlink" href="#ip-version-6-header" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="switchyard.lib.packet.IPv6">
+<em class="property">class </em><code class="descclassname">switchyard.lib.packet.</code><code class="descname">IPv6</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/switchyard/lib/packet/ipv6.html#IPv6"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#switchyard.lib.packet.IPv6" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="switchyard.lib.packet.IPv6.dst">
+<code class="descname">dst</code><a class="headerlink" href="#switchyard.lib.packet.IPv6.dst" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="switchyard.lib.packet.IPv6.flowlabel">
+<code class="descname">flowlabel</code><a class="headerlink" href="#switchyard.lib.packet.IPv6.flowlabel" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="switchyard.lib.packet.IPv6.hopcount">
+<code class="descname">hopcount</code><a class="headerlink" href="#switchyard.lib.packet.IPv6.hopcount" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="switchyard.lib.packet.IPv6.nextheader">
+<code class="descname">nextheader</code><a class="headerlink" href="#switchyard.lib.packet.IPv6.nextheader" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="switchyard.lib.packet.IPv6.src">
+<code class="descname">src</code><a class="headerlink" href="#switchyard.lib.packet.IPv6.src" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="switchyard.lib.packet.IPv6.trafficclass">
+<code class="descname">trafficclass</code><a class="headerlink" href="#switchyard.lib.packet.IPv6.trafficclass" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="switchyard.lib.packet.IPv6.ttl">
+<code class="descname">ttl</code><a class="headerlink" href="#switchyard.lib.packet.IPv6.ttl" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<hr class="docutils" />
 <div class="section" id="udp-user-datagram-protocol-header">
 <h3>UDP (user datagram protocol) header<a class="headerlink" href="#udp-user-datagram-protocol-header" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
@@ -1075,8 +1121,8 @@ the flag value:</p>
 </div>
 </div>
 <hr class="docutils" />
-<div class="section" id="icmp-internet-control-message-protocol-header">
-<h3>ICMP (Internet control message protocol) header<a class="headerlink" href="#icmp-internet-control-message-protocol-header" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="icmp-internet-control-message-protocol-header-v4">
+<h3>ICMP (Internet control message protocol) header (v4)<a class="headerlink" href="#icmp-internet-control-message-protocol-header-v4" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
 <dt id="switchyard.lib.packet.ICMP">
 <em class="property">class </em><code class="descclassname">switchyard.lib.packet.</code><code class="descname">ICMP</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/switchyard/lib/packet/icmp.html#ICMP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#switchyard.lib.packet.ICMP" title="Permalink to this definition">¶</a></dt>
@@ -1086,7 +1132,7 @@ given a particular ICMP type.  Just setting the icmptype causes the
 data object to change (the change happens automatically when you
 set the icmptype).  The icmpcode field will also change, but
 it only changes to some valid code given the new icmptype.</p>
-<p>Represents an ICMP packet header.</p>
+<p>Represents an ICMP packet header for IPv4.</p>
 <dl class="attribute">
 <dt id="switchyard.lib.packet.ICMP.icmpcode">
 <code class="descname">icmpcode</code><a class="headerlink" href="#switchyard.lib.packet.ICMP.icmpcode" title="Permalink to this definition">¶</a></dt>
@@ -1326,6 +1372,160 @@ be inspected and/or modified on them.</p>
 
 </dd></dl>
 
+</div>
+<div class="section" id="icmp-internet-control-message-protocol-header-v6">
+<h3>ICMP (Internet control message protocol) header (v6)<a class="headerlink" href="#icmp-internet-control-message-protocol-header-v6" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="switchyard.lib.packet.ICMPv6">
+<em class="property">class </em><code class="descclassname">switchyard.lib.packet.</code><code class="descname">ICMPv6</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/switchyard/lib/packet/icmpv6.html#ICMPv6"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#switchyard.lib.packet.ICMPv6" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents an ICMPv6 packet header.</p>
+</dd></dl>
+
+<p>Additional ICMPv6 headers to support the Network Discovery Protocol, [RFC4861](<a class="reference external" href="http://tools.ietf.org/html/rfc4861">http://tools.ietf.org/html/rfc4861</a>) are also available in Switchyard:</p>
+<blockquote>
+<div><ul class="simple">
+<li>ICMPv6NeighborSolicitation</li>
+<li>ICMPv6NeighborAdvertisement</li>
+<li>ICMPv6RedirectMessage</li>
+</ul>
+</div></blockquote>
+<p>To create an ICMPv6 packet an instance of type <code class="docutils literal"><span class="pre">ICMPv6</span></code> can be created.  You will want (and need) to set its <code class="docutils literal"><span class="pre">icmptype</span></code> appropriately, too.  For example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">icmpv6</span> <span class="o">=</span> <span class="n">ICMPv6</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">icmp</span><span class="o">.</span><span class="n">icmptype</span> <span class="o">=</span> <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">RedirectMessage</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1">## OR Directly when initializing the ICMPv6 header</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># icmpv6 = ICMPv6(icmptype=ICMPv6Type.RedirectMessage)</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">r</span> <span class="o">=</span> <span class="n">ICMPv6RedirectMessage</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># or r = icmpv6.icmpdata if already assigned to ICMPv6 object</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">r</span><span class="o">.</span><span class="n">targetaddr</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span> <span class="s2">&quot;::0&quot;</span> <span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">r</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">ICMPv6OptionRedirectedHeader</span><span class="p">(</span> <span class="n">redirected_packet</span><span class="o">=</span><span class="n">p</span> <span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">r</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">ICMPv6OptionTargetLinkLayerAddress</span><span class="p">(</span> <span class="n">address</span><span class="o">=</span><span class="s2">&quot;00:00:00:00:00:00&quot;</span> <span class="p">)</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">icmpv6</span><span class="o">.</span><span class="n">icmpdata</span> <span class="o">=</span> <span class="n">r</span>
+</pre></div>
+</div>
+<p>There are several ICMPv6 options which can be attached to these:</p>
+<blockquote>
+<div><ul class="simple">
+<li>ICMPv6OptionSourceLinkLayerAddress</li>
+<li>ICMPv6OptionTargetLinkLayerAddress</li>
+<li>ICMPv6OptionRedirectedHeader</li>
+</ul>
+</div></blockquote>
+<dl class="class">
+<dt id="switchyard.lib.packet.ICMPv6NeighborSolicitation">
+<em class="property">class </em><code class="descclassname">switchyard.lib.packet.</code><code class="descname">ICMPv6NeighborSolicitation</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/switchyard/lib/packet/icmpv6.html#ICMPv6NeighborSolicitation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#switchyard.lib.packet.ICMPv6NeighborSolicitation" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="switchyard.lib.packet.ICMPv6NeighborSolicitation.data">
+<code class="descname">data</code><a class="headerlink" href="#switchyard.lib.packet.ICMPv6NeighborSolicitation.data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="switchyard.lib.packet.ICMPv6NeighborSolicitation.options">
+<code class="descname">options</code><a class="headerlink" href="#switchyard.lib.packet.ICMPv6NeighborSolicitation.options" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="switchyard.lib.packet.ICMPv6NeighborSolicitation.targetaddr">
+<code class="descname">targetaddr</code><a class="headerlink" href="#switchyard.lib.packet.ICMPv6NeighborSolicitation.targetaddr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="switchyard.lib.packet.ICMPv6NeighborAdvertisement">
+<em class="property">class </em><code class="descclassname">switchyard.lib.packet.</code><code class="descname">ICMPv6NeighborAdvertisement</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/switchyard/lib/packet/icmpv6.html#ICMPv6NeighborAdvertisement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#switchyard.lib.packet.ICMPv6NeighborAdvertisement" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="switchyard.lib.packet.ICMPv6NeighborAdvertisement.data">
+<code class="descname">data</code><a class="headerlink" href="#switchyard.lib.packet.ICMPv6NeighborAdvertisement.data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="switchyard.lib.packet.ICMPv6NeighborAdvertisement.get_rso_byte">
+<code class="descname">get_rso_byte</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/switchyard/lib/packet/icmpv6.html#ICMPv6NeighborAdvertisement.get_rso_byte"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#switchyard.lib.packet.ICMPv6NeighborAdvertisement.get_rso_byte" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="switchyard.lib.packet.ICMPv6NeighborAdvertisement.get_rso_str">
+<code class="descname">get_rso_str</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/switchyard/lib/packet/icmpv6.html#ICMPv6NeighborAdvertisement.get_rso_str"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#switchyard.lib.packet.ICMPv6NeighborAdvertisement.get_rso_str" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="switchyard.lib.packet.ICMPv6NeighborAdvertisement.options">
+<code class="descname">options</code><a class="headerlink" href="#switchyard.lib.packet.ICMPv6NeighborAdvertisement.options" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="switchyard.lib.packet.ICMPv6NeighborAdvertisement.overrideflag">
+<code class="descname">overrideflag</code><a class="headerlink" href="#switchyard.lib.packet.ICMPv6NeighborAdvertisement.overrideflag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="switchyard.lib.packet.ICMPv6NeighborAdvertisement.routerflag">
+<code class="descname">routerflag</code><a class="headerlink" href="#switchyard.lib.packet.ICMPv6NeighborAdvertisement.routerflag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="switchyard.lib.packet.ICMPv6NeighborAdvertisement.solicitedflag">
+<code class="descname">solicitedflag</code><a class="headerlink" href="#switchyard.lib.packet.ICMPv6NeighborAdvertisement.solicitedflag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="switchyard.lib.packet.ICMPv6NeighborAdvertisement.targetaddr">
+<code class="descname">targetaddr</code><a class="headerlink" href="#switchyard.lib.packet.ICMPv6NeighborAdvertisement.targetaddr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="switchyard.lib.packet.ICMPv6RedirectMessage">
+<em class="property">class </em><code class="descclassname">switchyard.lib.packet.</code><code class="descname">ICMPv6RedirectMessage</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/switchyard/lib/packet/icmpv6.html#ICMPv6RedirectMessage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#switchyard.lib.packet.ICMPv6RedirectMessage" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="switchyard.lib.packet.ICMPv6RedirectMessage.data">
+<code class="descname">data</code><a class="headerlink" href="#switchyard.lib.packet.ICMPv6RedirectMessage.data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="switchyard.lib.packet.ICMPv6RedirectMessage.destinationaddr">
+<code class="descname">destinationaddr</code><a class="headerlink" href="#switchyard.lib.packet.ICMPv6RedirectMessage.destinationaddr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="switchyard.lib.packet.ICMPv6RedirectMessage.options">
+<code class="descname">options</code><a class="headerlink" href="#switchyard.lib.packet.ICMPv6RedirectMessage.options" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="switchyard.lib.packet.ICMPv6RedirectMessage.targetaddr">
+<code class="descname">targetaddr</code><a class="headerlink" href="#switchyard.lib.packet.ICMPv6RedirectMessage.targetaddr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="switchyard.lib.packet.icmpv6.ICMPv6Option">
+<em class="property">class </em><code class="descclassname">switchyard.lib.packet.icmpv6.</code><code class="descname">ICMPv6Option</code><span class="sig-paren">(</span><em>optnum</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/switchyard/lib/packet/icmpv6.html#ICMPv6Option"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#switchyard.lib.packet.icmpv6.ICMPv6Option" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="switchyard.lib.packet.icmpv6.ICMPv6OptionSourceLinkLayerAddress">
+<em class="property">class </em><code class="descclassname">switchyard.lib.packet.icmpv6.</code><code class="descname">ICMPv6OptionSourceLinkLayerAddress</code><span class="sig-paren">(</span><em>address=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/switchyard/lib/packet/icmpv6.html#ICMPv6OptionSourceLinkLayerAddress"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#switchyard.lib.packet.icmpv6.ICMPv6OptionSourceLinkLayerAddress" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="switchyard.lib.packet.icmpv6.ICMPv6OptionTargetLinkLayerAddress">
+<em class="property">class </em><code class="descclassname">switchyard.lib.packet.icmpv6.</code><code class="descname">ICMPv6OptionTargetLinkLayerAddress</code><span class="sig-paren">(</span><em>address=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/switchyard/lib/packet/icmpv6.html#ICMPv6OptionTargetLinkLayerAddress"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#switchyard.lib.packet.icmpv6.ICMPv6OptionTargetLinkLayerAddress" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="switchyard.lib.packet.icmpv6.ICMPv6OptionRedirectedHeader">
+<em class="property">class </em><code class="descclassname">switchyard.lib.packet.icmpv6.</code><code class="descname">ICMPv6OptionRedirectedHeader</code><span class="sig-paren">(</span><em>redirected_packet=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/switchyard/lib/packet/icmpv6.html#ICMPv6OptionRedirectedHeader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#switchyard.lib.packet.icmpv6.ICMPv6OptionRedirectedHeader" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># need to add various ICMPv6 examples</span>
+</pre></div>
+</div>
 </div>
 </div>
 <div class="section" id="test-scenario-creation">

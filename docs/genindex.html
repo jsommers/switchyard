@@ -203,10 +203,18 @@
 </li>
         <li><a href="reference.html#switchyard.lib.packet.ICMPTimeExceeded.data">(switchyard.lib.packet.ICMPTimeExceeded attribute)</a>
 </li>
+        <li><a href="reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement.data">(switchyard.lib.packet.ICMPv6NeighborAdvertisement attribute)</a>
+</li>
+        <li><a href="reference.html#switchyard.lib.packet.ICMPv6NeighborSolicitation.data">(switchyard.lib.packet.ICMPv6NeighborSolicitation attribute)</a>
+</li>
+        <li><a href="reference.html#switchyard.lib.packet.ICMPv6RedirectMessage.data">(switchyard.lib.packet.ICMPv6RedirectMessage attribute)</a>
+</li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference.html#switchyard.lib.debugging.debugger">debugger() (in module switchyard.lib.debugging)</a>
+</li>
+      <li><a href="reference.html#switchyard.lib.packet.ICMPv6RedirectMessage.destinationaddr">destinationaddr (switchyard.lib.packet.ICMPv6RedirectMessage attribute)</a>
 </li>
       <li><a href="reference.html#switchyard.lib.packet.IPv4.dscp">dscp (switchyard.lib.packet.IPv4 attribute)</a>
 </li>
@@ -214,6 +222,8 @@
 
       <ul>
         <li><a href="reference.html#switchyard.lib.packet.IPv4.dst">(switchyard.lib.packet.IPv4 attribute)</a>
+</li>
+        <li><a href="reference.html#switchyard.lib.packet.IPv6.dst">(switchyard.lib.packet.IPv6 attribute)</a>
 </li>
         <li><a href="reference.html#switchyard.lib.packet.TCP.dst">(switchyard.lib.packet.TCP attribute)</a>
 </li>
@@ -266,6 +276,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference.html#switchyard.lib.packet.TCP.flagstr">flagstr (switchyard.lib.packet.TCP attribute)</a>
 </li>
+      <li><a href="reference.html#switchyard.lib.packet.IPv6.flowlabel">flowlabel (switchyard.lib.packet.IPv6 attribute)</a>
+</li>
       <li><a href="reference.html#switchyard.lib.packet.IPv4.fragment_offset">fragment_offset (switchyard.lib.packet.IPv4 attribute)</a>
 </li>
       <li><a href="reference.html#switchyard.lib.packet.Packet.from_bytes">from_bytes() (switchyard.lib.packet.Packet static method)</a>
@@ -286,8 +298,12 @@
 </li>
       <li><a href="reference.html#switchyard.lib.packet.Packet.get_header_index">get_header_index() (switchyard.lib.packet.Packet method)</a>
 </li>
+      <li><a href="reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement.get_rso_byte">get_rso_byte() (switchyard.lib.packet.ICMPv6NeighborAdvertisement method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement.get_rso_str">get_rso_str() (switchyard.lib.packet.ICMPv6NeighborAdvertisement method)</a>
+</li>
       <li><a href="reference.html#switchyard.lib.socket.socket.getpeername">getpeername() (switchyard.lib.socket.socket method)</a>
 </li>
       <li><a href="reference.html#switchyard.lib.socket.socket.getsockname">getsockname() (switchyard.lib.socket.socket method)</a>
@@ -311,6 +327,8 @@
       <li><a href="reference.html#switchyard.lib.packet.Packet.headers">headers() (switchyard.lib.packet.Packet method)</a>
 </li>
       <li><a href="reference.html#switchyard.lib.packet.IPv4.hl">hl (switchyard.lib.packet.IPv4 attribute)</a>
+</li>
+      <li><a href="reference.html#switchyard.lib.packet.IPv6.hopcount">hopcount (switchyard.lib.packet.IPv6 attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -340,6 +358,22 @@
 </li>
       <li><a href="reference.html#switchyard.lib.packet.ICMP.icmptype">icmptype (switchyard.lib.packet.ICMP attribute)</a>
 </li>
+      <li><a href="reference.html#switchyard.lib.packet.ICMPv6">ICMPv6 (class in switchyard.lib.packet)</a>
+</li>
+      <li><a href="reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement">ICMPv6NeighborAdvertisement (class in switchyard.lib.packet)</a>
+</li>
+      <li><a href="reference.html#switchyard.lib.packet.ICMPv6NeighborSolicitation">ICMPv6NeighborSolicitation (class in switchyard.lib.packet)</a>
+</li>
+      <li><a href="reference.html#switchyard.lib.packet.icmpv6.ICMPv6Option">ICMPv6Option (class in switchyard.lib.packet.icmpv6)</a>
+</li>
+      <li><a href="reference.html#switchyard.lib.packet.icmpv6.ICMPv6OptionRedirectedHeader">ICMPv6OptionRedirectedHeader (class in switchyard.lib.packet.icmpv6)</a>
+</li>
+      <li><a href="reference.html#switchyard.lib.packet.icmpv6.ICMPv6OptionSourceLinkLayerAddress">ICMPv6OptionSourceLinkLayerAddress (class in switchyard.lib.packet.icmpv6)</a>
+</li>
+      <li><a href="reference.html#switchyard.lib.packet.icmpv6.ICMPv6OptionTargetLinkLayerAddress">ICMPv6OptionTargetLinkLayerAddress (class in switchyard.lib.packet.icmpv6)</a>
+</li>
+      <li><a href="reference.html#switchyard.lib.packet.ICMPv6RedirectMessage">ICMPv6RedirectMessage (class in switchyard.lib.packet)</a>
+</li>
       <li><a href="reference.html#switchyard.lib.packet.ICMPEchoReply.identifier">identifier (switchyard.lib.packet.ICMPEchoReply attribute)</a>
 
       <ul>
@@ -348,6 +382,8 @@
       </ul></li>
       <li><a href="reference.html#switchyard.lib.interface.Interface.ifnum">ifnum (switchyard.lib.interface.Interface attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference.html#switchyard.lib.interface.Interface.iftype">iftype (switchyard.lib.interface.Interface attribute)</a>
 </li>
       <li><a href="reference.html#switchyard.lib.packet.Packet.insert_header">insert_header() (switchyard.lib.packet.Packet method)</a>
@@ -356,8 +392,6 @@
 </li>
       <li><a href="reference.html#switchyard.llnetbase.LLNetBase.interface_by_ipaddr">interface_by_ipaddr() (switchyard.llnetbase.LLNetBase method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference.html#switchyard.llnetbase.LLNetBase.interface_by_macaddr">interface_by_macaddr() (switchyard.llnetbase.LLNetBase method)</a>
 </li>
       <li><a href="reference.html#switchyard.llnetbase.LLNetBase.interface_by_name">interface_by_name() (switchyard.llnetbase.LLNetBase method)</a>
@@ -379,6 +413,8 @@
       <li><a href="reference.html#switchyard.lib.packet.common.IPProtocol">IPProtocol (class in switchyard.lib.packet.common)</a>
 </li>
       <li><a href="reference.html#switchyard.lib.packet.IPv4">IPv4 (class in switchyard.lib.packet)</a>
+</li>
+      <li><a href="reference.html#switchyard.lib.packet.IPv6">IPv6 (class in switchyard.lib.packet)</a>
 </li>
       <li><a href="reference.html#switchyard.lib.address.EthAddr.is_bridge_filtered">is_bridge_filtered (switchyard.lib.address.EthAddr attribute)</a>
 </li>
@@ -472,6 +508,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="advanced_api.html#index-0">new packet header types</a>
 </li>
+      <li><a href="reference.html#switchyard.lib.packet.IPv6.nextheader">nextheader (switchyard.lib.packet.IPv6 attribute)</a>
+</li>
       <li><a href="reference.html#switchyard.lib.packet.ICMPDestinationUnreachable.nexthopmtu">nexthopmtu (switchyard.lib.packet.ICMPDestinationUnreachable attribute)</a>
 </li>
       <li><a href="reference.html#switchyard.lib.packet.TCP.NS">NS (switchyard.lib.packet.TCP attribute)</a>
@@ -488,9 +526,15 @@
 </li>
       <li><a href="reference.html#switchyard.lib.packet.Arp.operation">operation (switchyard.lib.packet.Arp attribute)</a>
 </li>
-      <li><a href="reference.html#switchyard.lib.packet.IPv4.options">options (switchyard.lib.packet.IPv4 attribute)</a>
+      <li><a href="reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement.options">options (switchyard.lib.packet.ICMPv6NeighborAdvertisement attribute)</a>
 
       <ul>
+        <li><a href="reference.html#switchyard.lib.packet.ICMPv6NeighborSolicitation.options">(switchyard.lib.packet.ICMPv6NeighborSolicitation attribute)</a>
+</li>
+        <li><a href="reference.html#switchyard.lib.packet.ICMPv6RedirectMessage.options">(switchyard.lib.packet.ICMPv6RedirectMessage attribute)</a>
+</li>
+        <li><a href="reference.html#switchyard.lib.packet.IPv4.options">(switchyard.lib.packet.IPv4 attribute)</a>
+</li>
         <li><a href="reference.html#switchyard.lib.packet.TCP.options">(switchyard.lib.packet.TCP attribute)</a>
 </li>
       </ul></li>
@@ -502,6 +546,8 @@
         <li><a href="reference.html#switchyard.lib.packet.ICMPTimeExceeded.origdgramlen">(switchyard.lib.packet.ICMPTimeExceeded attribute)</a>
 </li>
       </ul></li>
+      <li><a href="reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement.overrideflag">overrideflag (switchyard.lib.packet.ICMPv6NeighborAdvertisement attribute)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -572,6 +618,8 @@
 </li>
       <li><a href="reference.html#switchyard.lib.packet.ICMPRedirect.redirectto">redirectto (switchyard.lib.packet.ICMPRedirect attribute)</a>
 </li>
+      <li><a href="reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement.routerflag">routerflag (switchyard.lib.packet.ICMPv6NeighborAdvertisement attribute)</a>
+</li>
       <li><a href="reference.html#switchyard.lib.packet.TCP.RST">RST (switchyard.lib.packet.TCP attribute)</a>
 </li>
   </ul></td>
@@ -614,10 +662,10 @@
 </li>
       <li><a href="reference.html#switchyard.lib.socket.socket.settimeout">settimeout() (switchyard.lib.socket.socket method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference.html#switchyard.lib.socket.socket.shutdown">shutdown() (switchyard.lib.socket.socket method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference.html#switchyard.lib.packet.Packet.size">size() (switchyard.lib.packet.Packet method)</a>
 
       <ul>
@@ -628,6 +676,8 @@
 </li>
       <li><a href="advanced_api.html#index-1">socket emulation</a>
 </li>
+      <li><a href="reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement.solicitedflag">solicitedflag (switchyard.lib.packet.ICMPv6NeighborAdvertisement attribute)</a>
+</li>
       <li><a href="reference.html#switchyard.lib.address.SpecialIPv4Addr">SpecialIPv4Addr (class in switchyard.lib.address)</a>
 </li>
       <li><a href="reference.html#switchyard.lib.address.SpecialIPv6Addr">SpecialIPv6Addr (class in switchyard.lib.address)</a>
@@ -636,6 +686,8 @@
 
       <ul>
         <li><a href="reference.html#switchyard.lib.packet.IPv4.src">(switchyard.lib.packet.IPv4 attribute)</a>
+</li>
+        <li><a href="reference.html#switchyard.lib.packet.IPv6.src">(switchyard.lib.packet.IPv6 attribute)</a>
 </li>
         <li><a href="reference.html#switchyard.lib.packet.TCP.src">(switchyard.lib.packet.TCP attribute)</a>
 </li>
@@ -660,6 +712,14 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement.targetaddr">targetaddr (switchyard.lib.packet.ICMPv6NeighborAdvertisement attribute)</a>
+
+      <ul>
+        <li><a href="reference.html#switchyard.lib.packet.ICMPv6NeighborSolicitation.targetaddr">(switchyard.lib.packet.ICMPv6NeighborSolicitation attribute)</a>
+</li>
+        <li><a href="reference.html#switchyard.lib.packet.ICMPv6RedirectMessage.targetaddr">(switchyard.lib.packet.ICMPv6RedirectMessage attribute)</a>
+</li>
+      </ul></li>
       <li><a href="reference.html#switchyard.lib.packet.Arp.targethwaddr">targethwaddr (switchyard.lib.packet.Arp attribute)</a>
 </li>
       <li><a href="reference.html#switchyard.lib.packet.Arp.targetprotoaddr">targetprotoaddr (switchyard.lib.packet.Arp attribute)</a>
@@ -690,8 +750,14 @@
 </li>
       <li><a href="reference.html#switchyard.lib.address.EthAddr.toTuple">toTuple() (switchyard.lib.address.EthAddr method)</a>
 </li>
-      <li><a href="reference.html#switchyard.lib.packet.IPv4.ttl">ttl (switchyard.lib.packet.IPv4 attribute)</a>
+      <li><a href="reference.html#switchyard.lib.packet.IPv6.trafficclass">trafficclass (switchyard.lib.packet.IPv6 attribute)</a>
 </li>
+      <li><a href="reference.html#switchyard.lib.packet.IPv4.ttl">ttl (switchyard.lib.packet.IPv4 attribute)</a>
+
+      <ul>
+        <li><a href="reference.html#switchyard.lib.packet.IPv6.ttl">(switchyard.lib.packet.IPv6 attribute)</a>
+</li>
+      </ul></li>
       <li><a href="reference.html#switchyard.lib.socket.socket.type">type (switchyard.lib.socket.socket attribute)</a>
 </li>
   </ul></td>

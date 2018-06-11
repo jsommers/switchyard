@@ -1,0 +1,668 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>switchyard.lib.packet.icmpv6 &#8212; Switchyard 2017.01.5 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '2017.01.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for switchyard.lib.packet.icmpv6</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">from</span> <span class="nn">ipaddress</span> <span class="k">import</span> <span class="n">IPv6Address</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="k">import</span> <span class="n">ABCMeta</span>
+
+<span class="kn">from</span> <span class="nn">.icmp</span> <span class="k">import</span> <span class="n">ICMP</span><span class="p">,</span> <span class="n">ICMPData</span><span class="p">,</span> <span class="n">ICMPEchoRequest</span><span class="p">,</span> <span class="n">ICMPEchoReply</span>
+<span class="kn">from</span> <span class="nn">.common</span> <span class="k">import</span> <span class="n">ICMPv6Type</span><span class="p">,</span> <span class="n">ICMPv6TypeCodeMap</span><span class="p">,</span> <span class="n">ICMPv6OptionNumber</span>
+<span class="kn">from</span> <span class="nn">.common</span> <span class="k">import</span> <span class="n">checksum</span> <span class="k">as</span> <span class="n">csum</span>
+<span class="kn">from</span> <span class="nn">..address</span> <span class="k">import</span> <span class="n">EthAddr</span>
+<span class="kn">from</span> <span class="nn">..exceptions</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">sys</span> <span class="k">import</span> <span class="n">byteorder</span>
+
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">References:</span>
+<span class="sd">    http://tools.ietf.org/html/rfc4443  (Neighbor Discovery)</span>
+<span class="sd">    http://tools.ietf.org/html/rfc2710  (Mulicast Listener Discovery)</span>
+<span class="sd">    Stevens, Fall, TCP/IP Illustrated, Vol 1., 2nd Ed.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+
+<div class="viewcode-block" id="ICMPv6"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6</span><span class="p">(</span><span class="n">ICMP</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># Another hacky way to make this thing work.. super should be last..</span>
+        <span class="k">if</span> <span class="s1">&#39;icmptype&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">icmp6type</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;icmptype&#39;</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;icmptype&#39;</span><span class="p">]</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;icmp6type&quot;</span><span class="p">):</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;icmptype&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">icmp6type</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_valid_types</span> <span class="o">=</span> <span class="n">ICMPv6Type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_valid_codes_map</span> <span class="o">=</span> <span class="n">ICMPv6TypeCodeMap</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_classtype_from_icmptype</span> <span class="o">=</span> <span class="n">ICMPv6ClassFromType</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_icmptype_from_classtype</span> <span class="o">=</span> <span class="n">ICMPv6TypeFromClass</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_types</span><span class="o">.</span><span class="n">EchoRequest</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_codes_map</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_type</span><span class="p">]</span><span class="o">.</span><span class="n">EchoRequest</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_icmpdata</span> <span class="o">=</span> <span class="n">ICMPv6ClassFromType</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_type</span><span class="p">)()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_checksum</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># if kwargs are given, must ensure that type gets set</span>
+        <span class="c1"># before code due to dependencies on validity.</span>
+        <span class="k">if</span> <span class="s1">&#39;icmptype&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">icmptype</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;icmptype&#39;</span><span class="p">]</span>
+            <span class="c1"># del kwargs[&#39;icmptype&#39;]</span>
+
+    <span class="k">def</span> <span class="nf">checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_checksum</span>
+
+    <span class="k">def</span> <span class="nf">_compute_checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="n">sep</span> <span class="o">=</span> <span class="n">b</span><span class="s1">&#39;&#39;</span>
+        <span class="n">databytes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_icmpdata</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
+        <span class="n">icmpsize</span> <span class="o">=</span> <span class="n">ICMP</span><span class="o">.</span><span class="n">_MINLEN</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">databytes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_checksum</span> <span class="o">=</span> <span class="n">csum</span><span class="p">(</span><span class="n">sep</span><span class="o">.</span><span class="n">join</span><span class="p">((</span><span class="n">src</span><span class="o">.</span><span class="n">packed</span><span class="p">,</span> <span class="n">dst</span><span class="o">.</span><span class="n">packed</span><span class="p">,</span>
+                                       <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;!I3xBBB&#39;</span><span class="p">,</span>
+                                                   <span class="n">ICMP</span><span class="o">.</span><span class="n">_MINLEN</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">databytes</span><span class="p">),</span>
+                                                   <span class="mi">58</span><span class="p">,</span>
+                                                   <span class="bp">self</span><span class="o">.</span><span class="n">_type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                                                   <span class="bp">self</span><span class="o">.</span><span class="n">_code</span><span class="o">.</span><span class="n">value</span><span class="p">),</span>
+                                       <span class="n">databytes</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="nf">pre_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">pkt</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="n">ip6hdr</span> <span class="o">=</span> <span class="n">pkt</span><span class="o">.</span><span class="n">get_header</span><span class="p">(</span><span class="s1">&#39;IPv6&#39;</span><span class="p">)</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">ip6hdr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compute_checksum</span><span class="p">(</span><span class="n">ip6hdr</span><span class="o">.</span><span class="n">src</span><span class="p">,</span> <span class="n">ip6hdr</span><span class="o">.</span><span class="n">dst</span><span class="p">,</span> <span class="n">raw</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ICMPv6Option"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6Option">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6Option</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s1">&#39;B&#39;</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_optnum&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optnum</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optnum</span> <span class="o">=</span> <span class="n">ICMPv6OptionNumber</span><span class="p">(</span><span class="n">optnum</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">optnum</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optnum</span>
+
+    <span class="k">def</span> <span class="nf">length</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">ICMPv6Option</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">ICMPv6Option</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optnum</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optnum</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_optnum</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span></div>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6OptionLinkLayerAddress</span><span class="p">(</span><span class="n">ICMPv6Option</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ICMPv6OptionType</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_linklayeraddress</span> <span class="o">=</span> <span class="n">EthAddr</span><span class="p">(</span><span class="n">address</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_linklayeraddress</span><span class="o">.</span><span class="n">packed</span>
+        <span class="n">length</span> <span class="o">=</span> <span class="nb">int</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="nb">int</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="mi">8</span><span class="p">),</span> <span class="n">length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                              <span class="n">byteorder</span><span class="o">=</span><span class="n">byteorder</span><span class="p">,</span> <span class="n">signed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">xtype</span> <span class="o">=</span> <span class="nb">int</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ICMPv6OptionType</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                             <span class="n">byteorder</span><span class="o">=</span><span class="n">byteorder</span><span class="p">,</span> <span class="n">signed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">xtype</span><span class="o">+</span><span class="n">length</span><span class="o">+</span><span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="n">type_</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">type_</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ICMPv6OptionType</span>
+        <span class="n">length_</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">8</span>
+        <span class="c1"># length of option header (t + l + v = 2 + length_)</span>
+        <span class="c1"># current implementation supports only Ethernet addresses</span>
+        <span class="k">assert</span> <span class="p">(</span><span class="n">length_</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">EthAddr</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_linklayeraddress</span> <span class="o">=</span> <span class="n">EthAddr</span><span class="p">(</span><span class="n">raw</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="n">length_</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">length_</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__str__</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_linklayeraddress</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ICMPv6OptionSourceLinkLayerAddress"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6OptionSourceLinkLayerAddress">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6OptionSourceLinkLayerAddress</span><span class="p">(</span><span class="n">ICMPv6OptionLinkLayerAddress</span><span class="p">):</span>
+    <span class="n">_ICMPv6OptionType</span> <span class="o">=</span> <span class="n">ICMPv6OptionNumber</span><span class="o">.</span><span class="n">SourceLinkLayerAddress</span></div>
+
+
+<div class="viewcode-block" id="ICMPv6OptionTargetLinkLayerAddress"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6OptionTargetLinkLayerAddress">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6OptionTargetLinkLayerAddress</span><span class="p">(</span><span class="n">ICMPv6OptionLinkLayerAddress</span><span class="p">):</span>
+    <span class="n">_ICMPv6OptionType</span> <span class="o">=</span> <span class="n">ICMPv6OptionNumber</span><span class="o">.</span><span class="n">TargetLinkLayerAddress</span></div>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6OptionPrefixInformation</span><span class="p">(</span><span class="n">ICMPv6Option</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="ICMPv6OptionRedirectedHeader"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6OptionRedirectedHeader">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6OptionRedirectedHeader</span><span class="p">(</span><span class="n">ICMPv6Option</span><span class="p">):</span>
+    <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s2">&quot;!xxxxxx&quot;</span>
+    <span class="n">_reservedbytes</span> <span class="o">=</span> <span class="n">b</span><span class="s1">&#39;</span><span class="se">\x00</span><span class="s1">&#39;</span> <span class="o">*</span> <span class="mi">6</span>
+    <span class="n">_max_pkt_len</span> <span class="o">=</span> <span class="mi">8</span> <span class="o">*</span> <span class="mi">100</span>  <span class="c1"># FIXME: hack: arbitrary length; enough for hdrs</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">redirected_packet</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">redirected_packet</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># FIXME: todo: Truncate frame to path MTU?!</span>
+            <span class="c1"># for now, quick hack to just header and some data</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">redirected_packet</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
+            <span class="n">data_length</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="mi">8</span><span class="p">)</span> <span class="o">*</span> <span class="mi">8</span>
+
+            <span class="k">if</span> <span class="n">data_length</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_pkt_len</span><span class="p">:</span>  <span class="c1"># cut to 200B</span>
+                <span class="n">data_length</span> <span class="o">=</span> <span class="n">data_length</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_pkt_len</span>
+
+            <span class="c1"># data_length - 2,  so option header fits into units on 8 octets</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_packetdata</span> <span class="o">=</span> <span class="n">redirected_packet</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()[:(</span><span class="n">data_length</span><span class="o">-</span><span class="mi">2</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_packetdata</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">ICMPv6OptionRedirectedHeader</span><span class="o">.</span><span class="n">_reservedbytes</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_packetdata</span>
+
+        <span class="c1"># FIXME: truncate to 8 octet group</span>
+        <span class="n">data_length</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="mi">8</span><span class="p">)</span>
+        <span class="n">length</span> <span class="o">=</span> <span class="nb">int</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">data_length</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                              <span class="n">byteorder</span><span class="o">=</span><span class="n">byteorder</span><span class="p">,</span> <span class="n">signed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">xtype</span> <span class="o">=</span> <span class="nb">int</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">ICMPv6OptionNumber</span><span class="o">.</span><span class="n">RedirectedHeader</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                             <span class="n">byteorder</span><span class="o">=</span><span class="n">byteorder</span><span class="p">,</span> <span class="n">signed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">xtype</span><span class="o">+</span><span class="n">length</span><span class="o">+</span><span class="n">value</span><span class="p">[:(</span><span class="n">data_length</span><span class="o">*</span><span class="mi">8</span><span class="p">)</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="n">type_</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">type_</span> <span class="o">==</span> <span class="n">ICMPv6OptionNumber</span><span class="o">.</span><span class="n">RedirectedHeader</span>
+        <span class="n">length_</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">8</span>
+        <span class="c1"># length of option header (t + l + v = 2 + length_)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_packetdata</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="n">length_</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">length_</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> Enclosed packet (</span><span class="si">{}</span><span class="s2"> bytes)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__str__</span><span class="p">(),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_packetdata</span><span class="p">))</span></div>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6OptionMTU</span><span class="p">(</span><span class="n">ICMPv6Option</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="n">ICMPv6OptionClasses</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">ICMPv6OptionNumber</span><span class="o">.</span><span class="n">SourceLinkLayerAddress</span><span class="p">:</span>
+        <span class="n">ICMPv6OptionSourceLinkLayerAddress</span><span class="p">,</span>
+    <span class="n">ICMPv6OptionNumber</span><span class="o">.</span><span class="n">TargetLinkLayerAddress</span><span class="p">:</span>
+        <span class="n">ICMPv6OptionTargetLinkLayerAddress</span><span class="p">,</span>
+    <span class="n">ICMPv6OptionNumber</span><span class="o">.</span><span class="n">PrefixInformation</span><span class="p">:</span> <span class="n">ICMPv6OptionPrefixInformation</span><span class="p">,</span>
+    <span class="n">ICMPv6OptionNumber</span><span class="o">.</span><span class="n">RedirectedHeader</span><span class="p">:</span> <span class="n">ICMPv6OptionRedirectedHeader</span><span class="p">,</span>
+    <span class="n">ICMPv6OptionNumber</span><span class="o">.</span><span class="n">MTU</span><span class="p">:</span> <span class="n">ICMPv6OptionMTU</span>
+<span class="p">}</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6OptionList</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="n">rawbytes</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Takes a byte string as a parameter and returns a list of</span>
+<span class="sd">        ICMPv6Option objects.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">icmpv6popts</span> <span class="o">=</span> <span class="n">ICMPv6OptionList</span><span class="p">()</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">rawbytes</span><span class="p">):</span>
+            <span class="n">opttype</span> <span class="o">=</span> <span class="n">rawbytes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">optnum</span> <span class="o">=</span> <span class="n">ICMPv6OptionNumber</span><span class="p">(</span><span class="n">opttype</span><span class="p">)</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="n">ICMPv6OptionClasses</span><span class="p">[</span><span class="n">optnum</span><span class="p">]()</span>
+            <span class="n">eaten</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">rawbytes</span><span class="p">[</span><span class="n">i</span><span class="p">:])</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="n">eaten</span>
+            <span class="n">icmpv6popts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">icmpv6popts</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Takes a list of ICMPv6Option objects and returns a packed byte string</span>
+<span class="sd">        of options, appropriately padded if necessary.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="n">b</span><span class="s1">&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">raw</span>
+        <span class="k">for</span> <span class="n">icmpv6popt</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">:</span>
+            <span class="n">raw</span> <span class="o">+=</span> <span class="n">icmpv6popt</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
+        <span class="c1"># Padding doesn&#39;t seem necessary?</span>
+        <span class="c1">#   RFC states it should be padded to &#39;natural 64bit boundaries&#39;</span>
+        <span class="c1">#   However, wireshark interprets \x00 as a malformed option field</span>
+        <span class="c1">#   So for now, ignore padding</span>
+        <span class="c1"># padbytes = 4 - (len(raw) % 4)</span>
+        <span class="c1"># raw += b&#39;\x00&#39;*padbytes</span>
+        <span class="k">return</span> <span class="n">raw</span>
+
+    <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">opt</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">opt</span><span class="p">,</span> <span class="n">ICMPv6Option</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">opt</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Option to be added must be an ICMPv6Option &quot;</span> <span class="o">+</span>
+                            <span class="s2">&quot;object ( is </span><span class="si">{}</span><span class="s2"> )&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">opt</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span>
+        <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;Invalid IP option index&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">__class__</span><span class="p">,</span> <span class="n">ICMPv6Option</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Assigned value must be of type ICMPv6Option, &quot;</span> <span class="o">+</span>
+                             <span class="s2">&quot;but </span><span class="si">{}</span><span class="s2"> is not.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span>
+        <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;Invalid IP option index&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span>
+        <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">):</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;Invalid IP option index&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">raw_length</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">ICMPv6OptionList</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">_options</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_options</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span>
+            <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">opt</span><span class="p">)</span> <span class="k">for</span> <span class="n">opt</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">]))</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6Data</span><span class="p">(</span><span class="n">ICMPData</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Hack to make the inheritance chain happy and lead into v6-specific</span>
+<span class="sd">       differences; need to fix...&#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="n">ICMPv6OptionList</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6EchoRequest</span><span class="p">(</span><span class="n">ICMPEchoRequest</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6EchoReply</span><span class="p">(</span><span class="n">ICMPEchoReply</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6HomeAgentAddressDiscoveryRequestMessage</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6HomeAgentAddressDiscoveryReplyMessage</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6MobilePrefixSolicitation</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6MobilePrefixAdvertisement</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6MulticastListenerQuery</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6MulticastListenerReport</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6MulticastListenerDone</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6RouterSolicitation</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6RouterAdvertisement</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="ICMPv6NeighborSolicitation"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6NeighborSolicitation">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6NeighborSolicitation</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_targetaddr&#39;</span><span class="p">]</span>
+    <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s2">&quot;!xxxx16s&quot;</span>
+    <span class="n">_MINLEN</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">_PACKFMT</span><span class="p">)</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        possible options:</span>
+<span class="sd">          * source_link_layer_address: link layer address of sending host</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="s2">&quot;::0&quot;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">b</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">((</span>
+            <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">ICMPv6NeighborSolicitation</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span><span class="o">.</span><span class="n">packed</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(),</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()))</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">ICMPv6NeighborSolicitation</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotEnoughDataError</span><span class="p">(</span><span class="s2">&quot;Not enough bytes to unpack &quot;</span> <span class="o">+</span>
+                                     <span class="s2">&quot;ICMPv6NeighborSolicitation object&quot;</span><span class="p">)</span>
+        <span class="n">optionbytes</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="n">ICMPv6NeighborSolicitation</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:]</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">ICMPv6NeighborSolicitation</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span>
+                               <span class="n">raw</span><span class="p">[:</span><span class="n">ICMPv6NeighborSolicitation</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="n">ICMPv6OptionList</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">optionbytes</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">targetaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span>
+
+    <span class="nd">@targetaddr</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">targetaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;setting target address: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">IPv6Address</span><span class="p">(</span><span class="n">value</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;Target address: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> | </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">s</span></div>
+
+
+<div class="viewcode-block" id="ICMPv6NeighborAdvertisement"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6NeighborAdvertisement</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_R_S_O&#39;</span><span class="p">,</span> <span class="s1">&#39;_targetaddr&#39;</span><span class="p">]</span>
+    <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s2">&quot;!cxxx16s&quot;</span>
+    <span class="n">_MINLEN</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">_PACKFMT</span><span class="p">)</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        possible options:</span>
+<span class="sd">          * source_link_layer_address: link layer address of sending host</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="s2">&quot;::0&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_routerflag</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_solicitedflag</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_overrideflag</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">b</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">((</span>
+            <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">ICMPv6NeighborAdvertisement</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">get_rso_byte</span><span class="p">(),</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span><span class="o">.</span><span class="n">packed</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(),</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()))</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotEnoughDataError</span><span class="p">(</span><span class="s2">&quot;Not enough bytes to unpack &quot;</span> <span class="o">+</span>
+                                     <span class="s2">&quot;ICMPv6NeighborAdvertisement object&quot;</span><span class="p">)</span>
+        <span class="n">optionbytes</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="n">ICMPv6NeighborAdvertisement</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:]</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span>
+            <span class="n">ICMPv6NeighborAdvertisement</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span>
+            <span class="n">raw</span><span class="p">[:</span><span class="n">ICMPv6NeighborAdvertisement</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">])</span>
+        <span class="c1"># print(&#39;fields[0]: {}&#39;.format(fields[0]))</span>
+        <span class="n">rso</span> <span class="o">=</span> <span class="nb">int</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">byteorder</span><span class="o">=</span><span class="n">byteorder</span><span class="p">,</span> <span class="n">signed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_routerflag</span> <span class="o">=</span> <span class="p">(</span><span class="n">rso</span> <span class="o">&amp;</span> <span class="mh">0x80</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">7</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_solicitedflag</span> <span class="o">=</span> <span class="p">(</span><span class="n">rso</span> <span class="o">&amp;</span> <span class="mh">0x40</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">6</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_overrideflag</span> <span class="o">=</span> <span class="p">(</span><span class="n">rso</span> <span class="o">&amp;</span> <span class="mh">0x20</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">5</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="n">ICMPv6OptionList</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">optionbytes</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ICMPv6NeighborAdvertisement.get_rso_byte"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement.get_rso_byte">[docs]</a>    <span class="k">def</span> <span class="nf">get_rso_byte</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">rso</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_routerflag</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span> <span class="o">|</span> \
+              <span class="bp">self</span><span class="o">.</span><span class="n">_solicitedflag</span> <span class="o">&lt;&lt;</span> <span class="mi">6</span> <span class="o">|</span> \
+              <span class="bp">self</span><span class="o">.</span><span class="n">_overrideflag</span> <span class="o">&lt;&lt;</span> <span class="mi">5</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">rso</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">byteorder</span><span class="o">=</span><span class="n">byteorder</span><span class="p">,</span> <span class="n">signed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ICMPv6NeighborAdvertisement.get_rso_str"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement.get_rso_str">[docs]</a>    <span class="k">def</span> <span class="nf">get_rso_str</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">routerflag</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s1">&#39;R&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">solicitedflag</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s1">&#39;S&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">overrideflag</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s1">&#39;O&#39;</span>
+        <span class="k">return</span> <span class="n">s</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">targetaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span>
+
+    <span class="nd">@targetaddr</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">targetaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">routerflag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_routerflag</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">solicitedflag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_solicitedflag</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">overrideflag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_overrideflag</span><span class="p">)</span>
+
+    <span class="nd">@routerflag</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">routerflag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_routerflag</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@solicitedflag</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">solicitedflag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_solicitedflag</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@overrideflag</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">overrideflag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_overrideflag</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;Target address: </span><span class="si">{}</span><span class="s2"> flags: </span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span><span class="p">,</span>
+            <span class="nb">hex</span><span class="p">(</span><span class="nb">int</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_rso_byte</span><span class="p">(),</span>
+                <span class="n">byteorder</span><span class="o">=</span><span class="n">byteorder</span><span class="p">,</span> <span class="n">signed</span><span class="o">=</span><span class="kc">False</span><span class="p">)),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_rso_str</span><span class="p">())</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> | </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">s</span></div>
+
+
+<div class="viewcode-block" id="ICMPv6RedirectMessage"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6RedirectMessage">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6RedirectMessage</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_targetaddr&#39;</span><span class="p">,</span> <span class="s1">&#39;_destinationaddr&#39;</span><span class="p">]</span>
+    <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s2">&quot;!xxxx16s16s&quot;</span>
+    <span class="n">_MINLEN</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">_PACKFMT</span><span class="p">)</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        possible options:</span>
+<span class="sd">          * target_link_layer_address: link layer address of sending host</span>
+<span class="sd">          * redirected_header: link layer address of sending host</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="s2">&quot;::0&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_destinationaddr</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="s2">&quot;::0&quot;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">b</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">((</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span>
+            <span class="n">ICMPv6RedirectMessage</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span><span class="o">.</span><span class="n">packed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_destinationaddr</span><span class="o">.</span><span class="n">packed</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(),</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()))</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotEnoughDataError</span><span class="p">(</span><span class="s2">&quot;Not enough bytes to unpack &quot;</span> <span class="o">+</span>
+                                     <span class="s2">&quot;ICMPv6RedirectMessage object&quot;</span><span class="p">)</span>
+        <span class="n">optionbytes</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:]</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span>
+            <span class="n">ICMPv6RedirectMessage</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span>
+            <span class="n">raw</span><span class="p">[:</span><span class="n">ICMPv6RedirectMessage</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_destinationaddr</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="n">ICMPv6OptionList</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">optionbytes</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">targetaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span>
+
+    <span class="nd">@targetaddr</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">targetaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">destinationaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span>
+
+    <span class="nd">@destinationaddr</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">destinationaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_destinationaddr</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;Target: </span><span class="si">{}</span><span class="s2"> Destination: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> | </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">s</span></div>
+
+
+<span class="k">def</span> <span class="nf">construct_icmpv6_class_map</span><span class="p">():</span>
+    <span class="n">clsmap</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">xtype</span> <span class="ow">in</span> <span class="n">ICMPv6Type</span><span class="p">:</span>
+        <span class="n">clsname</span> <span class="o">=</span> <span class="s2">&quot;ICMPv6</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">xtype</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cls</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">clsname</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">cls</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">clsmap</span><span class="p">[</span><span class="n">xtype</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls</span>
+
+    <span class="k">def</span> <span class="nf">inner</span><span class="p">(</span><span class="n">icmptype</span><span class="p">):</span>
+        <span class="n">icmptype</span> <span class="o">=</span> <span class="n">ICMPv6Type</span><span class="p">(</span><span class="n">icmptype</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">clsmap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">icmptype</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">inner</span>
+
+
+<span class="k">def</span> <span class="nf">construct_icmpv6_type_map</span><span class="p">():</span>
+    <span class="n">typemap</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">xtype</span> <span class="ow">in</span> <span class="n">ICMPv6Type</span><span class="p">:</span>
+        <span class="n">clsname</span> <span class="o">=</span> <span class="s2">&quot;ICMPv6</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">xtype</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cls</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">clsname</span><span class="p">)</span>
+            <span class="n">typemap</span><span class="p">[</span><span class="n">cls</span><span class="p">]</span> <span class="o">=</span> <span class="n">xtype</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">inner</span><span class="p">(</span><span class="n">icmpcls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">typemap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">icmpcls</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">inner</span>
+
+
+<span class="n">ICMPv6ClassFromType</span> <span class="o">=</span> <span class="n">construct_icmpv6_class_map</span><span class="p">()</span>
+<span class="n">ICMPv6TypeFromClass</span> <span class="o">=</span> <span class="n">construct_icmpv6_type_map</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2017, Joel Sommers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+    </div>
+  </body>
+</html>

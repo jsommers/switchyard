@@ -1,16 +1,16 @@
-.. _apiref: 
+.. _apiref:
 
 API Reference
 *************
 
-Before getting into all the details, it is important to note that all the below API features can be imported through the module ``switchyard.lib.userlib``.  
+Before getting into all the details, it is important to note that all the below API features can be imported through the module ``switchyard.lib.userlib``.
 
 .. automodule:: switchyard.lib.userlib
 
 Unless you are concerned about namespace pollution, importing all Switchyard symbols into your program can be done with the following:
 
 .. code-block:: python
-   
+
    from switchyard.lib.userlib import *
 
 
@@ -50,7 +50,7 @@ The ``InterfaceType`` enumeration is referred to by the ``Interface`` class, whi
 The ``Interface`` class is used to encapsulate information about a network interface:
 
 .. autoclass:: switchyard.lib.interface.Interface
-   :members: 
+   :members:
    :undoc-members:
    :member-order: name, ethaddr, ipaddr, netmask, ipinterface, ifnum, iftype
 
@@ -117,7 +117,7 @@ Packet parsing and construction reference
    'Ethernet 00:00:00:00:00:00->00:00:00:00:00:00 IP'
    >>> str(p[Ethernet])
    'Ethernet 00:00:00:00:00:00->00:00:00:00:00:00 IP'
-   >>> 
+   >>>
 
 To delete/remove a header, you can use the ``del`` operator as if the packet
 object is a Python list::
@@ -218,10 +218,10 @@ requests and replies.  The ``hardwaretype`` property defaults to ``Ethernet``,
 so you don't need to set that when an ``Arp`` object is instantiated.  The
 operation can be set using the enumerated type ``ArpOperation``, as indicated
 above.  The remaining fields hold either ``EthAddr`` or ``IPv4Address`` objects,
-and can be initialized using string representations of Ethernet or IPv4 
+and can be initialized using string representations of Ethernet or IPv4
 addresses as appropriate.  Below is an example of creating an ARP request.
 You can assume in the example that the senders Ethernet and IPv4
-addresses are ``srchw`` and ``srcip``, respectively.  You can also 
+addresses are ``srchw`` and ``srcip``, respectively.  You can also
 assume that the IPv4 address for which we are requesting the Ethernet
 address is ``targetip``.
 
@@ -236,7 +236,7 @@ address is ``targetip``.
               senderprotoaddr=srcip,
               targethwaddr='ff:ff:ff:ff:ff:ff',
               targetprotoaddr=targetip)
-    arppacket = ether + arp 
+    arppacket = ether + arp
 
 ------
 
@@ -255,7 +255,7 @@ IP version 4 header
    It is the size of the header in 4-octet quantities.  It is a read-only
    property (cannot be set).
 
-   Note also that some IPv4 header option classes are available in 
+   Note also that some IPv4 header option classes are available in
    Switchyard, but are currently undocumented.
 
 .. autoclass:: switchyard.lib.packet.common.IPProtocol
@@ -265,10 +265,10 @@ IP version 4 header
    .. attribute:: UDP = 17
 
    The IPProtocol class derives from the Python 3-builtin Enumerated
-   class type.  There are other protocol numbers defined.  See 
+   class type.  There are other protocol numbers defined.  See
    :py:mod:`switchyard.lib.packet.common` for all defined values.
 
-A just-constructed IPv4 header defaults to having all zeroes for 
+A just-constructed IPv4 header defaults to having all zeroes for
 the source and destination addresses ('0.0.0.0') and the protocol
 number defaults to ICMP.  An example of creating an IPv4 header
 and setting various fields is shown below:
@@ -281,6 +281,17 @@ and setting various fields is shown below:
 
 ------
 
+
+IP version 6 header
+-------------------
+
+.. autoclass:: switchyard.lib.packet.IPv6
+   :members:
+   :undoc-members:
+   :exclude-members: next_header_class, pre_serialize, size, to_bytes, from_bytes, checksum
+
+------
+
 UDP (user datagram protocol) header
 -----------------------------------
 
@@ -288,7 +299,7 @@ UDP (user datagram protocol) header
    :members:
    :undoc-members:
    :exclude-members: next_header_class, pre_serialize, size, to_bytes, from_bytes, checksum
- 
+
    The UDP header contains just source and destination port fields.
 
 To construct a packet that includes an UDP header as well as some application
@@ -300,7 +311,7 @@ data, the same pattern of packet construction can be followed:
 >>> p += b'These are some application data bytes'
 >>> print (p)
 Ethernet 00:00:00:00:00:00->00:00:00:00:00:00 IP | IPv4 0.0.0.0->0.0.0.0 UDP | UDP 4444->5555 | RawPacketContents (37 bytes) b'These are '...
->>> 
+>>>
 
 Note that we didn't set the IP addresses or Ethernet addresses above, but
 did set the IP protocol to correctly match the next header (UDP).  Adding
@@ -335,15 +346,15 @@ the flag value:
 
 ------
 
-ICMP (Internet control message protocol) header
------------------------------------------------
+ICMP (Internet control message protocol) header (v4)
+----------------------------------------------------
 
 .. autoclass:: switchyard.lib.packet.ICMP
    :members:
    :undoc-members:
    :exclude-members: next_header_class, pre_serialize, size, to_bytes, from_bytes, checksum
 
-   Represents an ICMP packet header.  
+   Represents an ICMP packet header for IPv4.
 
 .. autoclass:: switchyard.lib.packet.common.ICMPType
 
@@ -358,7 +369,7 @@ ICMP (Internet control message protocol) header
 The icmptype and icmpcode header fields
 determine the value stored in the icmpdata property.  When the icmptype
 is set to a new value, the icmpdata field is *automatically* set to
-the correct object.  
+the correct object.
 
 >>> i = ICMP()
 >>> print (i)
@@ -372,7 +383,7 @@ ICMP TimeExceeded:TTLExpired 0 bytes of raw payload (b'') OrigDgramLen: 0
 <switchyard.lib.packet.icmp.ICMPTimeExceeded object at 0x10d3a3308>
 
 Notice above that when the icmptype changes, other contents in the ICMP
-header object change appropriately. 
+header object change appropriately.
 
 To access and/or modify the *payload* (i.e., data) that comes after the ICMP header, use ``icmpdata.data``.  This object is a raw bytes object and can be accessed and or set.  For example, with many ICMP error messages, up to the first 28 bytes of the "dead" packet should be included, starting with the IPv4 header.  To do that, you must set the ``icmpdata.data`` attribute with the byte-level representation of the IP header data you want to include, as follows:
 
@@ -382,7 +393,7 @@ b''
 >>> i.icmpdata.origdgramlen = len(pkt)
 >>> print (i)
 ICMP TimeExceeded:TTLExpired 28 bytes of raw payload (b'E\x00\x00\x14\x00\x00\x00\x00\x00\x01') OrigDgramLen: 42
->>> 
+>>>
 
 In the above code segment, ``pkt`` should be a Packet object that just contains the IPv4 header and any subsequent headers and data.  It must *not* include an Ethernet header.  If you need to strip an Ethernet header, you can get its index (``pkt.get_header_index(Ethernet)``), then remove the header by index (``del pkt[index]``).
 
@@ -390,7 +401,7 @@ Notice that above, the ``to_bytes`` method returns the byte-level representation
 
 To set the icmpcode, a dictionary called ``ICMPTypeCodeMap`` is defined
 in ``switchyard.lib.packet``.  Keys in the dictionary are of type ``ICMPType``, and values for each key is another enumerated type indicating the valid
-codes for the given type.  
+codes for the given type.
 
 >>> from switchyard.lib.packet import *
 >>> ICMPTypeCodeMap[ICMPType.DestinationUnreachable]
@@ -400,21 +411,21 @@ Just getting the dictionary value isn't particularly helpful, but if you
 coerce the enum to a list, you can see all valid values:
 
 >>> list(ICMPTypeCodeMap[ICMPType.DestinationUnreachable])
-[ <DestinationUnreachable.ProtocolUnreachable: 2>, 
-  <DestinationUnreachable.SourceHostIsolated: 8>, 
-  <DestinationUnreachable.FragmentationRequiredDFSet: 4>, 
-  <DestinationUnreachable.HostUnreachable: 1>, 
-  <DestinationUnreachable.DestinationNetworkUnknown: 6>, 
-  <DestinationUnreachable.NetworkUnreachableForTOS: 11>, 
-  <DestinationUnreachable.HostAdministrativelyProhibited: 10>, 
-  <DestinationUnreachable.DestinationHostUnknown: 7>, 
-  <DestinationUnreachable.HostPrecedenceViolation: 14>, 
-  <DestinationUnreachable.PrecedenceCutoffInEffect: 15>, 
-  <DestinationUnreachable.NetworkAdministrativelyProhibited: 9>, 
-  <DestinationUnreachable.NetworkUnreachable: 0>, 
-  <DestinationUnreachable.SourceRouteFailed: 5>, 
-  <DestinationUnreachable.PortUnreachable: 3>, 
-  <DestinationUnreachable.CommunicationAdministrativelyProhibited: 13>, 
+[ <DestinationUnreachable.ProtocolUnreachable: 2>,
+  <DestinationUnreachable.SourceHostIsolated: 8>,
+  <DestinationUnreachable.FragmentationRequiredDFSet: 4>,
+  <DestinationUnreachable.HostUnreachable: 1>,
+  <DestinationUnreachable.DestinationNetworkUnknown: 6>,
+  <DestinationUnreachable.NetworkUnreachableForTOS: 11>,
+  <DestinationUnreachable.HostAdministrativelyProhibited: 10>,
+  <DestinationUnreachable.DestinationHostUnknown: 7>,
+  <DestinationUnreachable.HostPrecedenceViolation: 14>,
+  <DestinationUnreachable.PrecedenceCutoffInEffect: 15>,
+  <DestinationUnreachable.NetworkAdministrativelyProhibited: 9>,
+  <DestinationUnreachable.NetworkUnreachable: 0>,
+  <DestinationUnreachable.SourceRouteFailed: 5>,
+  <DestinationUnreachable.PortUnreachable: 3>,
+  <DestinationUnreachable.CommunicationAdministrativelyProhibited: 13>,
   <DestinationUnreachable.HostUnreachableForTOS: 12> ]
 
 Another example, but with the much simpler EchoRequest:
@@ -482,6 +493,100 @@ be inspected and/or modified on them.
    :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class, set_next_header_class_key, set_next_header_map, add_next_header_class
 
 
+ICMP (Internet control message protocol) header (v6)
+----------------------------------------------------
+
+.. autoclass:: switchyard.lib.packet.ICMPv6
+   :members:
+   :undoc-members:
+   :exclude-members: next_header_class, pre_serialize, size, to_bytes, from_bytes, checksum
+
+   Represents an ICMPv6 packet header.
+
+Additional ICMPv6 headers to support the Network Discovery Protocol, [RFC4861](http://tools.ietf.org/html/rfc4861) are also available in Switchyard:
+
+  * ICMPv6NeighborSolicitation
+  * ICMPv6NeighborAdvertisement
+  * ICMPv6RedirectMessage
+
+To create an ICMPv6 packet an instance of type ``ICMPv6`` can be created.  You will want (and need) to set its ``icmptype`` appropriately, too.  For example:
+
+>>> icmpv6 = ICMPv6()
+>>> icmp.icmptype = ICMPv6Type.RedirectMessage
+>>>
+>>> ## OR Directly when initializing the ICMPv6 header
+>>> # icmpv6 = ICMPv6(icmptype=ICMPv6Type.RedirectMessage)
+>>>
+>>> r = ICMPv6RedirectMessage()
+>>> # or r = icmpv6.icmpdata if already assigned to ICMPv6 object
+>>> r.targetaddr = IPv6Address( "::0" )
+>>> r.options.append( ICMPv6OptionRedirectedHeader( redirected_packet=p ))
+>>> r.options.append( ICMPv6OptionTargetLinkLayerAddress( address="00:00:00:00:00:00" )
+>>>
+>>> icmpv6.icmpdata = r
+
+There are several ICMPv6 options which can be attached to these:
+
+  * ICMPv6OptionSourceLinkLayerAddress
+  * ICMPv6OptionTargetLinkLayerAddress
+  * ICMPv6OptionRedirectedHeader
+
+
+.. autoclass:: switchyard.lib.packet.ICMPv6NeighborSolicitation
+   :members:
+   :inherited-members:
+   :undoc-members:
+   :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class, set_next_header_class_key, set_next_header_map, add_next_header_class
+
+
+.. ### Properties
+.. * targetaddr
+.. * options
+
+
+.. autoclass:: switchyard.lib.packet.ICMPv6NeighborAdvertisement
+   :members:
+   :inherited-members:
+   :undoc-members:
+   :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class, set_next_header_class_key, set_next_header_map, add_next_header_class
+
+.. ICMPv6NeighborAdvertisement
+.. ---------------------------
+..
+.. ### Properties
+.. * targetaddr
+.. * routerflag
+.. * solicitedflag
+.. * overrideflag
+.. * options
+..
+
+.. autoclass:: switchyard.lib.packet.ICMPv6RedirectMessage
+   :members:
+   :inherited-members:
+   :undoc-members:
+   :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class, set_next_header_class_key, set_next_header_map, add_next_header_class
+
+..
+.. ICMPv6RedirectMessage
+.. ---------------------
+..
+.. ### Properties
+.. * targetaddr
+.. * destinationaddr
+.. * options
+
+.. autoclass:: switchyard.lib.packet.icmpv6.ICMPv6Option
+
+.. autoclass:: switchyard.lib.packet.icmpv6.ICMPv6OptionSourceLinkLayerAddress
+
+.. autoclass:: switchyard.lib.packet.icmpv6.ICMPv6OptionTargetLinkLayerAddress
+
+.. autoclass:: switchyard.lib.packet.icmpv6.ICMPv6OptionRedirectedHeader
+
+>>> # need to add various ICMPv6 examples
+
+
 Test scenario creation
 ======================
 
@@ -525,4 +630,3 @@ Utility functions
 .. autofunction:: switchyard.lib.logging.log_debug
 
 .. autofunction:: switchyard.lib.debugging.debugger
-

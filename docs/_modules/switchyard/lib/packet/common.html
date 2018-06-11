@@ -67,6 +67,7 @@
 <span class="kn">from</span> <span class="nn">enum</span> <span class="k">import</span> <span class="n">IntEnum</span>
 <span class="kn">from</span> <span class="nn">socket</span> <span class="k">import</span> <span class="n">ntohs</span>
 
+
 <div class="viewcode-block" id="EtherType"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.common.EtherType">[docs]</a><span class="k">class</span> <span class="nc">EtherType</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">NoType</span> <span class="o">=</span> <span class="mh">0xFFFF</span>
     <span class="n">IP</span> <span class="o">=</span> <span class="mh">0x0800</span>
@@ -83,14 +84,17 @@
     <span class="n">x8021AH</span> <span class="o">=</span> <span class="mh">0x88e7</span>
     <span class="n">IEEE8023</span> <span class="o">=</span> <span class="mh">0x05dc</span></div>
 
+
 <span class="k">class</span> <span class="nc">ArpHwType</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">Ethernet</span> <span class="o">=</span> <span class="mi">1</span>
+
 
 <div class="viewcode-block" id="ArpOperation"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.common.ArpOperation">[docs]</a><span class="k">class</span> <span class="nc">ArpOperation</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">Request</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="n">Reply</span> <span class="o">=</span> <span class="mi">2</span>
     <span class="n">RequestReverse</span> <span class="o">=</span> <span class="mi">3</span>
     <span class="n">ReplyReverse</span> <span class="o">=</span> <span class="mi">4</span></div>
+
 
 <div class="viewcode-block" id="IPProtocol"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.common.IPProtocol">[docs]</a><span class="k">class</span> <span class="nc">IPProtocol</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">IPv6HopOption</span> <span class="o">=</span> <span class="mi">0</span>
@@ -120,10 +124,12 @@
     <span class="n">MPLSinIP</span> <span class="o">=</span> <span class="mi">137</span>
     <span class="n">IPv6Shim6</span> <span class="o">=</span> <span class="mi">140</span></div>
 
+
 <span class="k">class</span> <span class="nc">IPFragmentFlag</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">NoFragments</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">DontFragment</span> <span class="o">=</span> <span class="mi">2</span>
     <span class="n">MoreFragments</span> <span class="o">=</span> <span class="mi">4</span>
+
 
 <span class="k">class</span> <span class="nc">IPOptionNumber</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">EndOfOptionList</span> <span class="o">=</span> <span class="mi">0</span>
@@ -136,6 +142,7 @@
     <span class="n">MTUReply</span> <span class="o">=</span> <span class="mi">12</span>
     <span class="n">RouterAlert</span> <span class="o">=</span> <span class="mi">20</span>
 
+
 <div class="viewcode-block" id="ICMPType"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.common.ICMPType">[docs]</a><span class="k">class</span> <span class="nc">ICMPType</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">EchoReply</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">DestinationUnreachable</span> <span class="o">=</span> <span class="mi">3</span>
@@ -145,7 +152,7 @@
     <span class="n">RouterAdvertisement</span> <span class="o">=</span> <span class="mi">9</span>
     <span class="n">RouterSolicitation</span> <span class="o">=</span> <span class="mi">10</span>
     <span class="n">TimeExceeded</span> <span class="o">=</span> <span class="mi">11</span>
-    <span class="n">ParameterProblem</span> <span class="o">=</span> <span class="mi">12</span>  
+    <span class="n">ParameterProblem</span> <span class="o">=</span> <span class="mi">12</span>
     <span class="n">Timestamp</span> <span class="o">=</span> <span class="mi">13</span>
     <span class="n">TimestampReply</span> <span class="o">=</span> <span class="mi">14</span>
     <span class="n">InformationRequest</span> <span class="o">=</span> <span class="mi">15</span>
@@ -153,16 +160,18 @@
     <span class="n">AddressMaskRequest</span> <span class="o">=</span> <span class="mi">17</span>
     <span class="n">AddressMaskReply</span> <span class="o">=</span> <span class="mi">18</span></div>
 
+
 <span class="k">class</span> <span class="nc">ICMPCodeEchoReply</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">EchoReply</span> <span class="o">=</span> <span class="mi">0</span>
 
+
 <span class="k">class</span> <span class="nc">ICMPCodeDestinationUnreachable</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
-    <span class="n">NetworkUnreachable</span> <span class="o">=</span> <span class="mi">0</span> 
-    <span class="n">HostUnreachable</span> <span class="o">=</span> <span class="mi">1</span> 
-    <span class="n">ProtocolUnreachable</span> <span class="o">=</span> <span class="mi">2</span> 
-    <span class="n">PortUnreachable</span> <span class="o">=</span> <span class="mi">3</span> 
-    <span class="n">FragmentationRequiredDFSet</span> <span class="o">=</span> <span class="mi">4</span> 
-    <span class="n">SourceRouteFailed</span> <span class="o">=</span> <span class="mi">5</span> 
+    <span class="n">NetworkUnreachable</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">HostUnreachable</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">ProtocolUnreachable</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">PortUnreachable</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">FragmentationRequiredDFSet</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">SourceRouteFailed</span> <span class="o">=</span> <span class="mi">5</span>
     <span class="n">DestinationNetworkUnknown</span> <span class="o">=</span> <span class="mi">6</span>
     <span class="n">DestinationHostUnknown</span> <span class="o">=</span> <span class="mi">7</span>
     <span class="n">SourceHostIsolated</span> <span class="o">=</span> <span class="mi">8</span>
@@ -174,50 +183,64 @@
     <span class="n">HostPrecedenceViolation</span> <span class="o">=</span> <span class="mi">14</span>
     <span class="n">PrecedenceCutoffInEffect</span> <span class="o">=</span> <span class="mi">15</span>
 
+
 <span class="k">class</span> <span class="nc">ICMPCodeSourceQuench</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">SourceQuench</span> <span class="o">=</span> <span class="mi">0</span>
+
 
 <span class="k">class</span> <span class="nc">ICMPCodeRedirect</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">RedirectForNetwork</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">RedirectForHost</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="n">RedirectForTOSAndNetwork</span> <span class="o">=</span> <span class="mi">2</span>
     <span class="n">RedirectForTOSAndHost</span> <span class="o">=</span> <span class="mi">3</span>
-    
+
+
 <span class="k">class</span> <span class="nc">ICMPCodeEchoRequest</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">EchoRequest</span> <span class="o">=</span> <span class="mi">0</span>
+
 
 <span class="k">class</span> <span class="nc">ICMPCodeRouterAdvertisement</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">RouterAdvertisement</span> <span class="o">=</span> <span class="mi">0</span>
 
+
 <span class="k">class</span> <span class="nc">ICMPCodeRouterSolicitation</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">RouterSolicitation</span> <span class="o">=</span> <span class="mi">0</span>
+
 
 <span class="k">class</span> <span class="nc">ICMPCodeTimeExceeded</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">TTLExpired</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">FragmentReassemblyTimeExceeded</span> <span class="o">=</span> <span class="mi">1</span>
+
 
 <span class="k">class</span> <span class="nc">ICMPCodeParameterProblem</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">PointerIndictatesError</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">MissingRequiredOption</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="n">BadLength</span> <span class="o">=</span> <span class="mi">2</span>
 
+
 <span class="k">class</span> <span class="nc">ICMPCodeTimestamp</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">Timestamp</span> <span class="o">=</span> <span class="mi">0</span>
+
 
 <span class="k">class</span> <span class="nc">ICMPCodeTimestampReply</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">TimestampReply</span> <span class="o">=</span> <span class="mi">0</span>
 
+
 <span class="k">class</span> <span class="nc">ICMPCodeInformationRequest</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">InformationRequest</span> <span class="o">=</span> <span class="mi">0</span>
+
 
 <span class="k">class</span> <span class="nc">ICMPCodeInformationReply</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">InformationReply</span> <span class="o">=</span> <span class="mi">0</span>
 
+
 <span class="k">class</span> <span class="nc">ICMPCodeAddressMaskRequest</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">AddressMaskRequest</span> <span class="o">=</span> <span class="mi">0</span>
 
+
 <span class="k">class</span> <span class="nc">ICMPCodeAddressMaskReply</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">AddressMaskReply</span> <span class="o">=</span> <span class="mi">0</span>
+
 
 <span class="n">ICMPTypeCodeMap</span> <span class="o">=</span> <span class="p">{</span>
     <span class="n">ICMPType</span><span class="o">.</span><span class="n">EchoReply</span><span class="p">:</span> <span class="n">ICMPCodeEchoReply</span><span class="p">,</span>
@@ -236,6 +259,7 @@
     <span class="n">ICMPType</span><span class="o">.</span><span class="n">AddressMaskRequest</span><span class="p">:</span> <span class="n">ICMPCodeAddressMaskRequest</span><span class="p">,</span>
     <span class="n">ICMPType</span><span class="o">.</span><span class="n">AddressMaskReply</span><span class="p">:</span> <span class="n">ICMPCodeAddressMaskReply</span>
 <span class="p">}</span>
+
 
 <span class="k">class</span> <span class="nc">ICMPv6Type</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">DestinationUnreachable</span> <span class="o">=</span> <span class="mi">1</span>
@@ -278,10 +302,60 @@
     <span class="n">Privateexperimentation3</span> <span class="o">=</span> <span class="mi">200</span>
     <span class="n">Privateexperimentation4</span> <span class="o">=</span> <span class="mi">201</span>
 
+
+<span class="k">class</span> <span class="nc">ICMPv6CodeNeighborSolicitation</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">NeighborSolicitation</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6CodeNeighborAdvertisement</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">NeighborAdvertisement</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6CodeRedirectMessage</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">RedirectMessage</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6CodeRouterSolicitation</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">RouterSolicitation</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6CodeRouterAdvertisement</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">RouterAdvertisement</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6CodeMulticastListenerQuery</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">MulticastListenerQuery</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6CodeMulticastListenerReport</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">MulticastListenerReport</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6CodeMulticastListenerDone</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">MulticastListenerDone</span> <span class="o">=</span> <span class="mi">0</span>
+
+
 <span class="n">ICMPv6TypeCodeMap</span> <span class="o">=</span> <span class="p">{</span>
-   <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">EchoRequest</span><span class="p">:</span> <span class="n">ICMPCodeEchoRequest</span><span class="p">,</span>
-   <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">EchoReply</span><span class="p">:</span> <span class="n">ICMPCodeEchoReply</span>
+    <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">EchoRequest</span><span class="p">:</span> <span class="n">ICMPCodeEchoRequest</span><span class="p">,</span>
+    <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">EchoReply</span><span class="p">:</span> <span class="n">ICMPCodeEchoReply</span><span class="p">,</span>
+    <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">NeighborSolicitation</span><span class="p">:</span> <span class="n">ICMPv6CodeNeighborSolicitation</span><span class="p">,</span>
+    <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">NeighborAdvertisement</span><span class="p">:</span> <span class="n">ICMPv6CodeNeighborAdvertisement</span><span class="p">,</span>
+    <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">RedirectMessage</span><span class="p">:</span> <span class="n">ICMPv6CodeRedirectMessage</span><span class="p">,</span>
+    <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">RouterSolicitation</span><span class="p">:</span> <span class="n">ICMPv6CodeRouterSolicitation</span><span class="p">,</span>
+    <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">RouterAdvertisement</span><span class="p">:</span> <span class="n">ICMPv6CodeRouterAdvertisement</span><span class="p">,</span>
+    <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">MulticastListenerQuery</span><span class="p">:</span> <span class="n">ICMPv6CodeMulticastListenerQuery</span><span class="p">,</span>
+    <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">MulticastListenerReport</span><span class="p">:</span> <span class="n">ICMPv6CodeMulticastListenerReport</span><span class="p">,</span>
+    <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">MulticastListenerDone</span><span class="p">:</span> <span class="n">ICMPv6CodeMulticastListenerDone</span><span class="p">,</span>
 <span class="p">}</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6OptionNumber</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">SourceLinkLayerAddress</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">TargetLinkLayerAddress</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">PrefixInformation</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">RedirectedHeader</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">MTU</span> <span class="o">=</span> <span class="mi">5</span>
+
 
 <span class="c1"># the following checksum function was taken from the POX openflow controller</span>
 
@@ -337,7 +411,6 @@
   <span class="c1">#  start = (start &gt;&gt; 16) + (start &amp; 0xffff)</span>
 
   <span class="k">return</span> <span class="n">ntohs</span><span class="p">(</span><span class="o">~</span><span class="n">start</span> <span class="o">&amp;</span> <span class="mh">0xffff</span><span class="p">)</span>
-
 </pre></div>
 
           </div>

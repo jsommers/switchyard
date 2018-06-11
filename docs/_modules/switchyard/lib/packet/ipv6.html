@@ -1,0 +1,699 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>switchyard.lib.packet.ipv6 &#8212; Switchyard 2017.01.5 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '2017.01.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for switchyard.lib.packet.ipv6</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">from</span> <span class="nn">ipaddress</span> <span class="k">import</span> <span class="n">IPv6Address</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="k">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="k">import</span> <span class="n">IntEnum</span>
+
+<span class="kn">from</span> <span class="nn">..logging</span> <span class="k">import</span> <span class="n">log_warn</span>
+<span class="kn">from</span> <span class="nn">.packet</span> <span class="k">import</span> <span class="n">PacketHeaderBase</span><span class="p">,</span><span class="n">Packet</span>
+<span class="kn">from</span> <span class="nn">..address</span> <span class="k">import</span> <span class="n">EthAddr</span><span class="p">,</span><span class="n">IPAddr</span><span class="p">,</span><span class="n">SpecialIPv6Addr</span><span class="p">,</span><span class="n">SpecialEthAddr</span>
+<span class="kn">from</span> <span class="nn">.common</span> <span class="k">import</span> <span class="n">IPProtocol</span><span class="p">,</span> <span class="n">checksum</span>
+<span class="kn">from</span> <span class="nn">..exceptions</span> <span class="k">import</span> <span class="o">*</span>
+
+<span class="kn">from</span> <span class="nn">.icmpv6</span> <span class="k">import</span> <span class="n">ICMPv6</span>
+<span class="kn">from</span> <span class="nn">.tcp</span> <span class="k">import</span> <span class="n">TCP</span>
+<span class="kn">from</span> <span class="nn">.udp</span> <span class="k">import</span> <span class="n">UDP</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">References:</span>
+<span class="sd">    IETF RFC 2460 http://tools.ietf.org/html/rfc2460 (ipv6)</span>
+<span class="sd">    IETF RFC 2460 http://tools.ietf.org/html/rfc2460 (ipv6)</span>
+<span class="sd">    IETF RFC 6564 http://tools.ietf.org/html/rfc6564 (uniform format for ipv6 extension headers)</span>
+<span class="sd">    IETF RFC 7045 http://tools.ietf.org/html/rfc7045 (transmission and processing of ipv6 extension headers)</span>
+<span class="sd">    IETF RFC 6275 IPv6 mobility</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="k">class</span> <span class="nc">IPv6ExtensionHeader</span><span class="p">(</span><span class="n">PacketHeaderBase</span><span class="p">):</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_nextheader&#39;</span><span class="p">,</span><span class="s1">&#39;_optdatalen&#39;</span><span class="p">,</span><span class="s1">&#39;_optlenmultiplier&#39;</span><span class="p">]</span>
+    <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s1">&#39;!BB&#39;</span>
+    <span class="n">_MINLEN</span> <span class="o">=</span> <span class="mi">2</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optlenmultiplier</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nextheader</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optdatalen</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># number of bytes represented by length field (should be 1 or 8, depending on ext hdr)</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">optlenmultiplier</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optlenmultiplier</span> <span class="o">=</span> <span class="n">optlenmultiplier</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">pre_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">pkt</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optdatalen</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">nextheader</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nextheader</span>
+
+    <span class="nd">@nextheader</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">nextheader</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nextheader</span> <span class="o">=</span> <span class="n">IPProtocol</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">protocol</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nextheader</span>
+
+    <span class="nd">@protocol</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">protocol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nextheader</span> <span class="o">=</span> <span class="n">IPProtocol</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">next_header_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">cls</span> <span class="o">=</span> <span class="n">IPTypeClasses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nextheader</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> 
+        <span class="k">if</span> <span class="n">cls</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">nextheader</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">IPTypeClasses</span><span class="p">:</span>
+            <span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;Warning: no class exists to parse next protocol type: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">protocol</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">cls</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">IPv6ExtensionHeader</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">nextheader</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optdatalen</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">IPv6ExtensionHeader</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotEnoughDataError</span><span class="p">(</span><span class="s2">&quot;Not enough data to unpack IPv6ExtensionHeader&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">nextheader</span> <span class="o">=</span> <span class="n">IPProtocol</span><span class="p">(</span><span class="n">raw</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optdatalen</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">raw</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optdatalen</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optlenmultiplier</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Not enough data to unpack IPv6ExtensionHeader&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">raw</span><span class="p">[</span><span class="n">IPv6ExtensionHeader</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:]</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">IPv6RouteOption</span><span class="p">(</span><span class="n">IPv6ExtensionHeader</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    IPv6 routing option.  Only supports type 2 (single address) option.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_routingtype&#39;</span><span class="p">,</span> <span class="s1">&#39;_segmentsleft&#39;</span><span class="p">,</span><span class="s1">&#39;_address&#39;</span><span class="p">]</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_routingtype</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_segmentsleft</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_address</span> <span class="o">=</span> <span class="n">SpecialIPv6Addr</span><span class="o">.</span><span class="n">UNDEFINED</span><span class="o">.</span><span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optdatalen</span> <span class="o">=</span> <span class="mi">2</span> <span class="c1"># RFC2460: len is number of 8 octet units, not including for 8 octets</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> (type </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_routingtype</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_address</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">address</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_address</span>
+
+    <span class="nd">@address</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">address</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_address</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">common</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;!BBI&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_routingtype</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_segmentsleft</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_address</span><span class="o">.</span><span class="n">packed</span>
+        <span class="k">return</span> <span class="n">common</span> <span class="o">+</span> <span class="n">payload</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="n">remain</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_routingtype</span> <span class="o">=</span> <span class="n">remain</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_segmentsleft</span> <span class="o">=</span> <span class="n">remain</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_routingtype</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">rawaddr</span> <span class="o">=</span> <span class="n">remain</span><span class="p">[</span><span class="mi">6</span><span class="p">:</span><span class="mi">22</span><span class="p">]</span>
+            <span class="n">remain</span> <span class="o">=</span> <span class="n">remain</span><span class="p">[</span><span class="mi">22</span><span class="p">:]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_address</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="n">rawaddr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;IPv6 routing option only supports type 2 (but I got type </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_routingtype</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">remain</span>
+
+<span class="k">class</span> <span class="nc">IPv6Fragment</span><span class="p">(</span><span class="n">IPv6ExtensionHeader</span><span class="p">):</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">,</span><span class="s1">&#39;_offset&#39;</span><span class="p">,</span><span class="s1">&#39;_morefragments&#39;</span><span class="p">]</span>
+    <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s1">&#39;!HI&#39;</span>
+    <span class="n">_MINLEN</span> <span class="o">=</span> <span class="mi">6</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_id</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_offset</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_morefragments</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optdatalen</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_id</span>
+
+    <span class="nd">@id</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">offset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_offset</span>
+
+    <span class="nd">@offset</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">offset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_offset</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">mf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_morefragments</span>
+
+    <span class="nd">@mf</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">mf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_morefragments</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> (id: </span><span class="si">{}</span><span class="s2"> offset: </span><span class="si">{}</span><span class="s2"> mf: </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_offset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_morefragments</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">common</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">IPv6Fragment</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_offset</span> <span class="o">&lt;&lt;</span> <span class="mi">3</span> <span class="o">|</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_morefragments</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">common</span> <span class="o">+</span> <span class="n">payload</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="n">remain</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">remain</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">IPv6Fragment</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotEnoughDataError</span><span class="p">(</span><span class="s2">&quot;Not enough data to unpack IPv6Fragment extension header&quot;</span><span class="p">)</span>
+        <span class="n">offsetfield</span><span class="p">,</span> <span class="n">xid</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">IPv6Fragment</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> <span class="n">remain</span><span class="p">[:</span><span class="n">IPv6Fragment</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_id</span> <span class="o">=</span> <span class="n">xid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_offset</span> <span class="o">=</span> <span class="n">offsetfield</span> <span class="o">&gt;&gt;</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_morefragments</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">offsetfield</span> <span class="o">&amp;</span> <span class="mh">0x1</span><span class="p">)</span>
+        <span class="n">remain</span> <span class="o">=</span> <span class="n">remain</span><span class="p">[</span><span class="n">IPv6Fragment</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="n">remain</span>
+
+<span class="k">class</span> <span class="nc">IPv6Option</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Pad1</span><span class="p">(</span><span class="n">IPv6Option</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">b</span><span class="s1">&#39;</span><span class="se">\x00</span><span class="s1">&#39;</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="n">raw</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Pad1</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">PadN</span><span class="p">(</span><span class="n">IPv6Option</span><span class="p">):</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;_n&#39;</span><span class="p">,)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="o">=</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">2</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;BB&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">)</span> <span class="o">+</span> <span class="n">b</span><span class="s1">&#39;</span><span class="se">\x00</span><span class="s1">&#39;</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span>
+
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">n</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="n">raw</span><span class="p">):</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">PadN</span><span class="p">()</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">_n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">p</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="o">+</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">JumboPayload</span><span class="p">(</span><span class="n">IPv6Option</span><span class="p">):</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;_len&#39;</span><span class="p">,)</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">len</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_len</span> <span class="o">=</span> <span class="nb">len</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;!BBI&#39;</span><span class="p">,</span> <span class="mh">0xc2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_len</span><span class="p">)</span>
+
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">len</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_len</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="n">raw</span><span class="p">):</span>
+        <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;!I&#39;</span><span class="p">,</span> <span class="n">raw</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">JumboPayload</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_len</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">TunnelEncapsulationLimit</span><span class="p">(</span><span class="n">IPv6Option</span><span class="p">):</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;_limit&#39;</span><span class="p">,)</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">limit</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_limit</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">limit</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;BBB&#39;</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_limit</span><span class="p">)</span>
+
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">limit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_limit</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="n">raw</span><span class="p">):</span>
+        <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">TunnelEncapsulationLimit</span><span class="p">(</span><span class="n">raw</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_limit</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">RouterAlert</span><span class="p">(</span><span class="n">IPv6Option</span><span class="p">):</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;_value&#39;</span><span class="p">,)</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;!BBH&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span>
+
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="n">raw</span><span class="p">):</span>
+        <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;!H&#39;</span><span class="p">,</span> <span class="n">raw</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">RouterAlert</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_limit</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">HomeAddress</span><span class="p">(</span><span class="n">IPv6Option</span><span class="p">):</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;_addr&#39;</span><span class="p">,)</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">addr</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_addr</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="n">addr</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;!BB&#39;</span><span class="p">,</span> <span class="mi">201</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_addr</span><span class="o">.</span><span class="n">packed</span>
+
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">address</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_addr</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="n">raw</span><span class="p">):</span>
+        <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">==</span> <span class="mi">16</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">HomeAddress</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">IPv6HopOption</span><span class="p">(</span><span class="n">IPv6ExtensionHeader</span><span class="p">):</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_options&#39;</span><span class="p">]</span>
+    <span class="n">_option_type_dict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="mi">0</span><span class="p">:</span> <span class="n">Pad1</span><span class="p">,</span>
+        <span class="mi">1</span><span class="p">:</span> <span class="n">PadN</span><span class="p">,</span>
+        <span class="mi">194</span><span class="p">:</span> <span class="n">JumboPayload</span><span class="p">,</span>
+        <span class="mi">4</span><span class="p">:</span> <span class="n">TunnelEncapsulationLimit</span><span class="p">,</span>
+        <span class="mi">5</span><span class="p">:</span> <span class="n">RouterAlert</span><span class="p">,</span>
+        <span class="mi">201</span><span class="p">:</span> <span class="n">HomeAddress</span> 
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="s1">&#39; ; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">]))</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">xopt</span> <span class="o">=</span> <span class="n">b</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">o</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">])</span>
+        <span class="n">hdrlen</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span>
+        <span class="k">if</span> <span class="n">hdrlen</span> <span class="o">%</span> <span class="mi">8</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;Number of bytes in </span><span class="si">{}</span><span class="s2"> is not an even multiple of 8 (</span><span class="si">{}</span><span class="s2">); &quot;</span> 
+                     <span class="s2">&quot;padding must be explicitly added to correctly form the packet&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="n">hdrlen</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optdatalen</span> <span class="o">=</span> <span class="n">hdrlen</span> <span class="o">//</span> <span class="mi">8</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">common</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">common</span> <span class="o">+</span> <span class="n">xopt</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">%</span> <span class="mi">8</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;Trying to reconstruct </span><span class="si">{}</span><span class="s2"> that isn&#39;t a multiple of 8. This will end badly.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span>
+        <span class="n">remain</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+        <span class="n">optbytes</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_optdatalen</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="mi">8</span> <span class="o">-</span> <span class="mi">2</span>
+        <span class="n">rawopt</span> <span class="o">=</span> <span class="n">remain</span><span class="p">[:</span><span class="n">optbytes</span><span class="p">]</span>
+        <span class="n">remain</span> <span class="o">=</span> <span class="n">remain</span><span class="p">[</span><span class="n">optbytes</span><span class="p">:]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parseTLVOptions</span><span class="p">(</span><span class="n">rawopt</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">remain</span>
+
+    <span class="k">def</span> <span class="nf">add_option</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optobj</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">optobj</span><span class="o">.</span><span class="n">__class__</span><span class="p">,</span> <span class="n">IPv6Option</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;IPv6 option object isn&#39;t derived from IPv6Option class.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">optobj</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;indexing in IPv6 option requires an int&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;Bad index in IPv6 option access&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_parseTLVOptions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">):</span>
+            <span class="n">xtype</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">xtype</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Pad1</span><span class="p">())</span>
+                <span class="n">raw</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">xlen</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">xlen</span><span class="o">+</span><span class="mi">2</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Not enough data to unpack IPv6 TLV option (have </span><span class="si">{}</span><span class="s2"> bytes, need </span><span class="si">{}</span><span class="s2"> bytes for type </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">),</span> <span class="n">xlen</span><span class="p">,</span> <span class="n">xtype</span><span class="p">))</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="mi">2</span><span class="p">:(</span><span class="mi">2</span><span class="o">+</span><span class="n">xlen</span><span class="p">)]</span>
+                <span class="n">raw</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[(</span><span class="mi">2</span><span class="o">+</span><span class="n">xlen</span><span class="p">):]</span>
+                <span class="n">cls</span> <span class="o">=</span> <span class="n">IPv6HopOption</span><span class="o">.</span><span class="n">_option_type_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">xtype</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">cls</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Bad IPv6 option type </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">xtype</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">raw</span><span class="o">=</span><span class="n">data</span><span class="p">))</span>
+
+<span class="k">class</span> <span class="nc">IPv6DestinationOption</span><span class="p">(</span><span class="n">IPv6HopOption</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="k">class</span> <span class="nc">IPv6MobilityHeaderType</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">BindingRefreshRequest</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">HomeTestInit</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">CareOfTestInit</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">HomeTest</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">CareOfTest</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">BindingUpdate</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">BindingAcknowledgment</span> <span class="o">=</span> <span class="mi">6</span>
+    <span class="n">BindingError</span> <span class="o">=</span> <span class="mi">7</span>
+
+<span class="n">_IPv6MobilityHeaderStruct</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">IPv6MobilityHeaderType</span><span class="o">.</span><span class="n">BindingRefreshRequest</span><span class="p">:</span> <span class="s1">&#39;!H&#39;</span><span class="p">,</span> <span class="c1"># 2 reserved bytes, TLV options</span>
+    <span class="n">IPv6MobilityHeaderType</span><span class="o">.</span><span class="n">HomeTestInit</span><span class="p">:</span> <span class="s1">&#39;!H8s&#39;</span><span class="p">,</span> <span class="c1"># 2 reserved bytes, 8 byte cookie, TLV options</span>
+    <span class="n">IPv6MobilityHeaderType</span><span class="o">.</span><span class="n">CareOfTestInit</span><span class="p">:</span> <span class="s1">&#39;!H8s&#39;</span><span class="p">,</span> <span class="c1"># 2 reserved bytes, 8 byte cookie, TLV options</span>
+    <span class="n">IPv6MobilityHeaderType</span><span class="o">.</span><span class="n">HomeTest</span><span class="p">:</span> <span class="s1">&#39;!H8s8s&#39;</span><span class="p">,</span> <span class="c1"># 2 byte nonce, 8 byte cookie, 8 byte keygen token, TLV options</span>
+    <span class="n">IPv6MobilityHeaderType</span><span class="o">.</span><span class="n">CareOfTest</span><span class="p">:</span> <span class="s1">&#39;!H8s8s&#39;</span><span class="p">,</span> <span class="c1"># 2 byte nonce, 8 byte cookie, 8 byte keygen token, TLV options</span>
+    <span class="n">IPv6MobilityHeaderType</span><span class="o">.</span><span class="n">BindingUpdate</span><span class="p">:</span> <span class="s1">&#39;!H4B&#39;</span><span class="p">,</span> <span class="c1"># 2 byte seq, 4 more bytes (bitfields, etc.), TLV options</span>
+    <span class="n">IPv6MobilityHeaderType</span><span class="o">.</span><span class="n">BindingAcknowledgment</span><span class="p">:</span> <span class="s1">&#39;!2BHH&#39;</span><span class="p">,</span> <span class="c1"># 2 byte status/reserved, 2 byte seq, 2 byte lifetime, TLV options</span>
+    <span class="n">IPv6MobilityHeaderType</span><span class="o">.</span><span class="n">BindingError</span><span class="p">:</span> <span class="s1">&#39;!BB16s&#39;</span><span class="p">,</span> <span class="c1"># status(1), reserved(1), homeaddr(16), TLV options</span>
+<span class="p">}</span>
+
+
+<span class="c1"># Mobility Options: Pad1, PadN, BindingRefreshAdvice (type = 2), Alternate CoA (type = 3),</span>
+<span class="c1"># Nonce Indices (type=4), Binding Authz Data (type=5)</span>
+
+
+<span class="k">class</span> <span class="nc">IPv6Mobility</span><span class="p">(</span><span class="n">IPv6ExtensionHeader</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    IPv6Mobility packet header.</span>
+
+<span class="sd">    This header is incomplete, but *should* sufficiently parse any valid</span>
+<span class="sd">    MIPv6 header.  In particular, there is no special handling of the</span>
+<span class="sd">    header type elements apart from simply making sure that all the data</span>
+<span class="sd">    are encoded/decoded in the right byte sizes (see IPv6MobilityHeaderType </span>
+<span class="sd">    enumeration, above).  </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;_mhtype&#39;</span><span class="p">,</span><span class="s1">&#39;_checksum&#39;</span><span class="p">,</span><span class="s1">&#39;_data&#39;</span><span class="p">,</span><span class="s1">&#39;_src&#39;</span><span class="p">,</span><span class="s1">&#39;_dst&#39;</span><span class="p">)</span>
+    <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s1">&#39;!BBH&#39;</span>
+    <span class="n">_MINLEN</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">_PACKFMT</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nextheader</span> <span class="o">=</span> <span class="n">IPProtocol</span><span class="o">.</span><span class="n">IPv6NoNext</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optdatalen</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1">#FIXME</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mhtype</span> <span class="o">=</span> <span class="n">IPv6MobilityHeaderType</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_src</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span> <span class="o">=</span> <span class="n">SpecialIPv6Addr</span><span class="o">.</span><span class="n">UNDEFINED</span><span class="o">.</span><span class="n">value</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">pre_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">pkt</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="n">ipv6hdr</span> <span class="o">=</span> <span class="n">pkt</span><span class="o">.</span><span class="n">get_header</span><span class="p">(</span><span class="n">IPv6</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_src</span> <span class="o">=</span> <span class="n">ipv6hdr</span><span class="o">.</span><span class="n">src</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span> <span class="o">=</span> <span class="n">ipv6hdr</span><span class="o">.</span><span class="n">dst</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;IPv6Mobility (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mhtype</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_compute_checksum</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># FIXME: computed on IPv6 pseudoheader + full mobility header (starting with ext header)</span>
+        <span class="c1"># pseudoheader: srcaddr(16),dstaddr(16),len of mobility header (4), 000 next header(4)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_checksum</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">exthdr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">computecsum</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_checksum</span> <span class="o">=</span> <span class="n">checksum</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;16s16sIxxxB&#39;</span><span class="p">,</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">_src</span><span class="o">.</span><span class="n">packed</span><span class="p">,</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span><span class="o">.</span><span class="n">packed</span><span class="p">,</span>
+                                  <span class="nb">len</span><span class="p">(</span><span class="n">exthdr</span><span class="p">),</span> <span class="n">IPProtocol</span><span class="o">.</span><span class="n">IPv6Mobility</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="o">+</span>
+            <span class="n">exthdr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_checksum</span>
+
+    <span class="k">def</span> <span class="nf">_parse_tlv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">computecsum</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">computecsum</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_compute_checksum</span><span class="p">()</span>
+        <span class="n">exthdr</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
+        <span class="n">mobhdr</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">IPv6Mobility</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mhtype</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_checksum</span><span class="p">)</span>
+        <span class="n">remain</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">_IPv6MobilityHeaderStruct</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_mhtype</span><span class="p">],</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">exthdr</span> <span class="o">+</span> <span class="n">mobhdr</span> <span class="o">+</span> <span class="n">remain</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+        <span class="n">remain</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">remain</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">IPv6Mobility</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotEnoughDataError</span><span class="p">(</span><span class="s2">&quot;Not enough data to unpack IPv6Mobility header&quot;</span><span class="p">)</span>
+        <span class="n">mhtype</span><span class="p">,</span><span class="n">reserved</span><span class="p">,</span><span class="n">checksum</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">IPv6Mobility</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> 
+                                                 <span class="n">remain</span><span class="p">[:</span><span class="n">IPv6Mobility</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mhtype</span> <span class="o">=</span> <span class="n">IPv6MobilityHeaderType</span><span class="p">(</span><span class="n">mhtype</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_checksum</span> <span class="o">=</span> <span class="n">checksum</span>
+        <span class="n">mobheaderstruct</span> <span class="o">=</span> <span class="n">_IPv6MobilityHeaderStruct</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_mhtype</span><span class="p">]</span>
+        <span class="n">structsize</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">mobheaderstruct</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">mobheaderstruct</span><span class="p">,</span> <span class="n">remain</span><span class="p">[</span><span class="n">IPv6Mobility</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:(</span><span class="n">IPv6Mobility</span><span class="o">.</span><span class="n">_MINLEN</span><span class="o">+</span><span class="n">structsize</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="n">raw</span><span class="p">[(</span><span class="n">IPv6Mobility</span><span class="o">.</span><span class="n">_MINLEN</span> <span class="o">+</span> <span class="n">structsize</span><span class="p">):]</span>
+
+
+<span class="n">IPTypeClasses</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">IPProtocol</span><span class="o">.</span><span class="n">TCP</span><span class="p">:</span> <span class="n">TCP</span><span class="p">,</span>
+    <span class="n">IPProtocol</span><span class="o">.</span><span class="n">UDP</span><span class="p">:</span> <span class="n">UDP</span><span class="p">,</span>
+    <span class="n">IPProtocol</span><span class="o">.</span><span class="n">ICMPv6</span><span class="p">:</span> <span class="n">ICMPv6</span><span class="p">,</span>
+
+    <span class="c1"># IPv6 extension headers</span>
+    <span class="n">IPProtocol</span><span class="o">.</span><span class="n">IPv6HopOption</span><span class="p">:</span> <span class="n">IPv6HopOption</span><span class="p">,</span>
+    <span class="n">IPProtocol</span><span class="o">.</span><span class="n">IPv6RouteOption</span><span class="p">:</span> <span class="n">IPv6RouteOption</span><span class="p">,</span>
+    <span class="n">IPProtocol</span><span class="o">.</span><span class="n">IPv6Fragment</span><span class="p">:</span> <span class="n">IPv6Fragment</span><span class="p">,</span>
+    <span class="n">IPProtocol</span><span class="o">.</span><span class="n">IPv6DestinationOption</span><span class="p">:</span> <span class="n">IPv6DestinationOption</span><span class="p">,</span>
+    <span class="n">IPProtocol</span><span class="o">.</span><span class="n">IPv6NoNext</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">IPProtocol</span><span class="o">.</span><span class="n">IPv6Mobility</span><span class="p">:</span> <span class="n">IPv6Mobility</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="IPv6"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.IPv6">[docs]</a><span class="k">class</span> <span class="nc">IPv6</span><span class="p">(</span><span class="n">PacketHeaderBase</span><span class="p">):</span>
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_trafficclass&#39;</span><span class="p">,</span><span class="s1">&#39;_flowlabel&#39;</span><span class="p">,</span><span class="s1">&#39;_ttl&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;_nextheader&#39;</span><span class="p">,</span><span class="s1">&#39;_payloadlen&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;_src&#39;</span><span class="p">,</span><span class="s1">&#39;_dst&#39;</span><span class="p">,</span><span class="s1">&#39;_extheaders&#39;</span><span class="p">]</span>
+    <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s1">&#39;!BBHHBB16s16s&#39;</span>
+    <span class="n">_MINLEN</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">_PACKFMT</span><span class="p">)</span>
+    <span class="n">_next_header_map</span> <span class="o">=</span> <span class="n">IPTypeClasses</span>
+    <span class="n">_next_header_class_key</span> <span class="o">=</span> <span class="s1">&#39;_nextheader&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trafficclass</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flowlabel</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ttl</span> <span class="o">=</span> <span class="mi">128</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nextheader</span> <span class="o">=</span> <span class="n">IPProtocol</span><span class="o">.</span><span class="n">ICMP</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_payloadlen</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src</span> <span class="o">=</span> <span class="n">SpecialIPv6Addr</span><span class="o">.</span><span class="n">UNDEFINED</span><span class="o">.</span><span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dst</span> <span class="o">=</span> <span class="n">SpecialIPv6Addr</span><span class="o">.</span><span class="n">UNDEFINED</span><span class="o">.</span><span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_extheaders</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">IPv6</span><span class="o">.</span><span class="n">_MINLEN</span> <span class="o">+</span> <span class="mi">0</span> <span class="c1"># FIXME extension headers</span>
+
+    <span class="k">def</span> <span class="nf">pre_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">pkt</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_payloadlen</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">IPv6</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span>
+            <span class="mi">6</span> <span class="o">&lt;&lt;</span> <span class="mi">4</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">trafficclass</span> <span class="o">&gt;&gt;</span> <span class="mi">4</span><span class="p">,</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trafficclass</span> <span class="o">&amp;</span> <span class="mh">0x0f</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">4</span> <span class="o">|</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flowlabel</span> <span class="o">&amp;</span> <span class="mh">0xf0000</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">16</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">flowlabel</span> <span class="o">&amp;</span> <span class="mh">0x0ffff</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_payloadlen</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nextheader</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ttl</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">src</span><span class="o">.</span><span class="n">packed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dst</span><span class="o">.</span><span class="n">packed</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">IPv6</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotEnoughDataError</span><span class="p">(</span><span class="s2">&quot;Not enough data to unpack IPv6 header (only </span><span class="si">{}</span><span class="s2"> bytes)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)))</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">IPv6</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> <span class="n">raw</span><span class="p">[:</span><span class="n">IPv6</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">])</span>
+        <span class="n">ipversion</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;&gt;</span> <span class="mi">4</span>
+        <span class="k">if</span> <span class="n">ipversion</span> <span class="o">!=</span> <span class="mi">6</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Trying to parse IPv6 header, but IP version is not 6! (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ipversion</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trafficclass</span> <span class="o">=</span> <span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mh">0x0f</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">4</span> <span class="o">|</span> <span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;&gt;</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flowlabel</span> <span class="o">=</span> <span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mh">0x0f</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">16</span> <span class="o">|</span> <span class="n">fields</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_payloadlen</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nextheader</span> <span class="o">=</span> <span class="n">IPProtocol</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ttl</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">6</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dst</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">7</span><span class="p">])</span>
+        <span class="c1"># FIXME: extension headers</span>
+        <span class="k">return</span> <span class="n">raw</span><span class="p">[</span><span class="n">IPv6</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:]</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trafficclass</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_trafficclass</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">_flowlabel</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_flowlabel</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ttl</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_ttl</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">_nextheader</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_nextheader</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">_src</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_src</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_dst</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">_extheaders</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_extheaders</span>
+
+    <span class="c1"># accessors and mutators</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">trafficclass</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trafficclass</span>
+
+    <span class="nd">@trafficclass</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">trafficclass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trafficclass</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">flowlabel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flowlabel</span>
+
+    <span class="nd">@flowlabel</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">flowlabel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_flowlabel</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">nextheader</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nextheader</span>
+
+    <span class="nd">@nextheader</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">nextheader</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nextheader</span> <span class="o">=</span> <span class="n">IPProtocol</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ttl</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ttl</span>
+
+    <span class="nd">@ttl</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">ttl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ttl</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span> 
+    <span class="k">def</span> <span class="nf">hopcount</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ttl</span>
+
+    <span class="nd">@hopcount</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">hopcount</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ttl</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">src</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_src</span> 
+
+    <span class="nd">@src</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">src</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_src</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dst</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span>
+
+    <span class="nd">@dst</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">dst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">-&gt;</span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">src</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dst</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nextheader</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> </div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2013-2017, Joel Sommers.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+    </div>
+  </body>
+</html>
