@@ -66,7 +66,7 @@ Any opinions, findings, and conclusions or recommendations expressed in this mat
 License
 -------
 
-Copyright 2015-2017 Joel Sommers.  All rights reserved.
+Copyright 2015-2019 Joel Sommers.  All rights reserved.
 
 The Switchyard software is distributed under terms of the GNU General Public License, version 3.  See below for the standard GNU GPL v3 copying text.
 
