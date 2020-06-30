@@ -97,7 +97,7 @@ class ICMPv6OptionLinkLayerAddress(ICMPv6Option):
 
     def to_bytes(self):
         value = self._linklayeraddress.packed
-        length = int.to_bytes(int((len(v) + 2)/8), length=1,
+        length = int.to_bytes(int((len(value) + 2)/8), length=1,
                               byteorder=byteorder, signed=False)
         xtype = int.to_bytes(self._ICMPv6OptionType, length=1,
                              byteorder=byteorder, signed=False)

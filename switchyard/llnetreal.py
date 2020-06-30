@@ -9,6 +9,7 @@ import threading
 import textwrap
 from queue import Queue,Empty
 import socket
+from ipaddress import IPv4Address, IPv6Address, IPv4Interface, IPv6Interface
 
 from psutil import net_if_addrs
 
@@ -125,6 +126,7 @@ class LLNetReal(LLNetBase):
             ifaddrs = ifinfo.get(devname, None)
             if ifaddrs is None:
                 log_warn("Address info for interface {} not found! (skipping)".format(devname))
+                continue
 
             if sys.platform == 'darwin':
                 layer2addrfam = socket.AddressFamily.AF_LINK
@@ -144,13 +146,17 @@ class LLNetReal(LLNetBase):
                     mask = IPv4Address(addrinfo.netmask)
                     addrset.add(IPv4Interface("{}/{}".format(ipaddr, mask.max_prefixlen)))
                 elif addrinfo.family == socket.AddressFamily.AF_INET6:
-                    ipaddr = IPv6Address(addrinfo.address)
+                    s = str(addrinfo.address)
+                    scopeidx = s.find('%')
+                    if scopeidx > -1:
+                        s = s[:scopeidx]
+                    ipaddr = IPv6Address(s)
                     mask = IPv6Address(addrinfo.netmask)
-                    addrset.add(IPv4Interface("{}/{}".format(ipaddr, mask.max_prefixlen)))
+                    addrset.add(IPv6Interface("{}/{}".format(ipaddr, mask.max_prefixlen)))
                 elif addrinfo.family == layer2addrfam:
                     macaddr = EthAddr(addrinfo.address)
             intf = Interface(devname, macaddr, ifnum=ifnum, iftype=devtype[devname])
-            for addf in addrset:
+            for addr in addrset:
                 intf.assign_ipaddr(addr)
             devinfo[devname] = intf
 
