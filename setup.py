@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-thisversion = '2019.01.01'
+thisversion = '1.0.0'
 
 setup(name="switchyard", 
       version=thisversion,
@@ -11,11 +11,11 @@ setup(name="switchyard",
       keywords=['education', 'networked systems',],
       zip_safe=True,
       packages=find_packages(),
-      python_requires='>=3.4', 
+      python_requires='>=3.6', 
       package_data={ '': ['*.txt', '*.rst'], },
       exclude_package_data={'': ['README.rst','README.md']},
-      install_requires=["cffi >=1.10.0","colorama >=0.3.7","networkx >=1.11", "psutil >=5.2.0"],
-      tests_require=['coverage >=3.7.1'],
+      install_requires=["cffi >=1.14.0","colorama >=0.4.3","networkx >=2.4", "psutil >=5.7.0"],
+      tests_require=['coverage >=5.1'],
       entry_points= {
         'console_scripts': [ 'swyard = switchyard.swyard:main' ],
       },
