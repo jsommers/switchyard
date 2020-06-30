@@ -1,10 +1,11 @@
 from switchyard.lib.packet import *
-from switchyard.lib.address import EthAddr, IPAddr
+from switchyard.lib.address import EthAddr
 from switchyard.lib.topo.util import *
 from switchyard.lib.topo.topobuild import *
 import switchyard.lib.interface as intfmod
 import unittest 
 from unittest.mock import Mock
+from ipaddress import IPv4Interface
 
 class TopologyTests(unittest.TestCase):
     def testHumanizeCap(self):
@@ -106,17 +107,15 @@ class TopologyTests(unittest.TestCase):
         self.assertTrue(str(nobj).startswith("Host eth0 "))
 
         t.assignIPAddresses(prefix='192.168.1.0/24')
-        self.assertEqual(str(nobj.interfaces['eth0'].ipaddr)[:-1], "192.168.1.")
-        self.assertEqual(str(nobj.interfaces['eth0'].netmask), "255.255.255.0")
+        self.assertTrue(IPv4Interface('192.168.1.1/24') in nobj.interfaces['eth0'].ipaddrs)
 
         h1ifname,r1ifname = t.getLinkInterfaces('h1','r1')
         self.assertEqual(h1ifname, 'eth0')
         self.assertEqual(r1ifname, 'eth0')
-        t.setInterfaceAddresses('h1',h1ifname,ip="10.0.1.1",netmask="255.255.0.0",mac="11:22:33:44:55:66") 
-        ethaddr,ip,mask = t.getInterfaceAddresses('h1',h1ifname)
+        t.setInterfaceAddresses('h1',h1ifname,ip="10.0.1.1/16",mac="11:22:33:44:55:66") 
+        ethaddr,ipset = t.getInterfaceAddresses('h1',h1ifname)
         self.assertEqual(ethaddr,EthAddr("11:22:33:44:55:66"))
-        self.assertEqual(ip,IPAddr("10.0.1.1"))
-        self.assertEqual(mask,IPAddr("255.255.0.0"))
+        self.assertTrue(IPv4Interface('10.0.1.1/16') in ipset)
 
         t.removeLink('h1', 'r1')
         self.assertFalse(t.hasEdge('h1', 'r1'))
@@ -193,19 +192,17 @@ class TopologyTests(unittest.TestCase):
         self.assertTrue(r.hasInterface('eth0'))
         self.assertEqual(r.nodetype, 'Router')
         self.assertEqual(r.getInterface('eth0').ethaddr, EthAddr("00:00:00:00:00:18"))
-        self.assertEqual(r.getInterface('eth0').ipaddr, IPv4Address("192.168.3.3"))
-        self.assertEqual(r.getInterface('eth0').netmask, IPv4Address("255.255.255.0"))
+        self.assertTrue(IPv4Interface('192.168.3.3/24') in r.getInterface('eth0').ipaddrs)
 
         d = {"eth0": "eth0 mac:00:00:00:00:00:18" }
         r = Router(interfaces=d)
         self.assertEqual(r.getInterface('eth0').ethaddr, EthAddr("00:00:00:00:00:18"))
-        self.assertEqual(r.getInterface('eth0').ipaddr, IPv4Address("0.0.0.0"))
-        self.assertEqual(r.getInterface('eth0').netmask, IPv4Address("255.255.255.255"))
+        self.assertEqual(len(r.getInterface('eth0').ipaddrs), 0)
         rdict = r.asDict()
         self.assertEqual(rdict['interfaces'], d)
 
     def testInterface(self):
-        intf = intfmod.Interface("test", None, None, None)
+        intf = intfmod.Interface("test", None)
         self.assertTrue(str(intf).startswith("test"))
         self.assertTrue("mac:00:00:00:00:00:00" in str(intf))
         intf.ethaddr = EthAddr("00:11:22:33:44:55")
@@ -214,10 +211,10 @@ class TopologyTests(unittest.TestCase):
         self.assertTrue("mac:00:00:00:00:00:00" in str(intf))
         with self.assertRaises(Exception):
             intf.ipaddr = 1
-        intf.ipaddr = "1.2.3.4"
-        intf.netmask = "24"
+        intf.assign_ipaddr("1.2.3.4/24")
         self.assertTrue("ip:1.2.3.4/24" in str(intf))
-        intf.netmask = "255.255.252.0"
+        intf.remove_ipaddr("1.2.3.4")
+        intf.assign_ipaddr("1.2.3.4/22")
         self.assertTrue("ip:1.2.3.4/22" in str(intf))
         with self.assertRaises(Exception):
             intf.netmask = True
@@ -225,13 +222,8 @@ class TopologyTests(unittest.TestCase):
             intf.ethaddr = True
         intf.ethaddr = b'\x01\x02\x03\x04\x05\x06'
         self.assertEqual(intf.ethaddr, EthAddr("01:02:03:04:05:06"))
-        intf.ipaddr = "9.8.7.6"
-        intf.netmask = None
-        self.assertEqual(intf.ipaddr, IPv4Address("9.8.7.6"))
-        self.assertEqual(str(intf.ipinterface), "9.8.7.6/32")
-        with self.assertRaises(Exception):
-            intf.netmask = 4.5
-        self.assertEqual(intf.iftype, intfmod.InterfaceType.Unknown)
+        intf.assign_ipaddr('9.8.7.6')
+        self.assertTrue(IPv4Interface('9.8.7.6/32') in intf.ipaddrs)
         with self.assertRaises(Exception):
             intf.iftype = intfmod.InterfaceType.Wireless
 

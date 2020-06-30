@@ -79,10 +79,11 @@ class Interface(object):
         can be as a string or IPAddress object.
         '''
         ipa = ip_interface(value)
-        try:
-            self.__ipaddrset.remove(ipa)
-        except KeyError:
-            raise Exception("No such address {} exists to remove from interface".format(ipa))
+        for addr in self.__ipaddrset:
+            if addr.ip == ipa.ip:
+                self.__ipaddrset.remove(addr)
+                return
+        raise Exception("No such address {} exists to remove from interface".format(ipa))
 
     @property 
     def ifnum(self):

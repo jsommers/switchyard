@@ -134,16 +134,23 @@ class LLNetReal(LLNetBase):
                 raise RuntimeException("Platform not supported")
 
             macaddr = "00:00:00:00:00:00"
-            ipaddr = mask = "0.0.0.0"
+            ipaddrs = set()
+            ifnum = socket.if_nametoindex(devname)
+
             for addrinfo in ifaddrs:
                 if addrinfo.family == socket.AddressFamily.AF_INET:
                     ipaddr = IPv4Address(addrinfo.address)
                     mask = IPv4Address(addrinfo.netmask)
+                elif addrinfo.family == socket.AddressFamily.AF_INET6:
+                    ipaddr = IPv6Address(addrinfo.address)
+                    mask = IPv6Address(addrinfo.netmask)
                 elif addrinfo.family == layer2addrfam:
                     macaddr = EthAddr(addrinfo.address)
 
-            ifnum = socket.if_nametoindex(devname)
-            devinfo[devname] = Interface(devname, macaddr, ipaddr, netmask=mask, ifnum=ifnum, iftype=devtype[devname])
+            intf = Interface(devname, macaddr, ifnum=ifnum, iftype=devtype[devname])
+
+            devinfo[devname] = intf
+
         return devinfo
 
     def _make_pcaps(self):

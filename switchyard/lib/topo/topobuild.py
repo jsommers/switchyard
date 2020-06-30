@@ -22,10 +22,11 @@ class Node(object):
             for ifname,ifstr in kwargs['interfaces'].items():
                 ifcomponents = ifstr.split()
                 mac = ifcomponents[1][4:]
-                ipmask = (None,None)
-                if len(ifcomponents) > 2:
-                    ipmask = ifcomponents[2].split(':')[1].split('/')
-                self.__interfaces[ifname] = Interface(ifname, mac, ipmask[0], ipmask[1])
+                intf = Interface(ifname, mac)
+                for addrspec in ifcomponents[2:]:
+                    _,addr = addrspec.split(':')
+                    intf.assign_ipaddr(addr)
+                self.__interfaces[ifname] = intf
 
     @property
     def nodetype(self):
@@ -314,8 +315,8 @@ class Topology(object):
                 if node in nodes_to_number:
                     ifname = linkdata[node]
                     intf = self.getNode(node)['nodeobj'].getInterface(ifname)
-                    intf.ipaddr = next(ipgenerator)
-                    intf.netmask = subnet.netmask
+                    ipaddr = "{}/{}".format(str(next(ipgenerator)), subnet.prefixlen)
+                    intf.assign_ipaddr(ipaddr)
 
     def getLinkInterfaces(self, node1, node2):
         '''
@@ -326,7 +327,7 @@ class Topology(object):
         linkdata = self.getLink(node1,node2)
         return linkdata[node1],linkdata[node1]
 
-    def setInterfaceAddresses(self, node, interface, mac=None, ip=None, netmask=None):
+    def setInterfaceAddresses(self, node, interface, mac=None, ip=None):
         '''
         Set any one of Ethernet (MAC) address, IP address or IP netmask for
         a given interface on a node.
@@ -341,9 +342,7 @@ class Topology(object):
         if mac:
             intf.ethaddr = mac
         if ip:
-            intf.ipaddr = ip
-        if netmask:
-            intf.netmask = netmask
+            intf.assign_ipaddr(ip)
 
     def getInterfaceAddresses(self, node, interface):
         '''
@@ -351,7 +350,7 @@ class Topology(object):
         given interface on a node.
         '''
         intf = self.getNode(node)['nodeobj'].getInterface(interface)
-        return intf.ethaddr,intf.ipaddr,intf.netmask
+        return intf.ethaddr,intf.ipaddrs
 
     @staticmethod
     def __relabel_graph(nxgraph, prefix=None):

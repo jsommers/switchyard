@@ -10,7 +10,7 @@ def main(net):
     my_interfaces = net.interfaces() 
     log_info ("My interfaces: {}".format([intf.name for intf in my_interfaces]))
     count = 0
-    while True:
+    while count < 10:
         try:
             timestamp,dev,packet = net.recv_packet(timeout=1.0)
         except NoPackets:
