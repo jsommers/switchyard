@@ -36,7 +36,7 @@ class ICMPPv6PacketTests(unittest.TestCase):
         self.assertEqual(i.dst, SpecialIPv6Addr.ALL_NODES_LINK_LOCAL.value)
         self.assertIn("::->ff02::1", str(i))
 
-    def testReconstruct(self):
+    def testReconstruct1(self):
         raw = b'33\x00\x00\x00\x16\x18\x81\x0e\x03\xaeQ\x86\xdd`\x00\x00\x00\x00$\x00\x01\xfe\x80\x00\x00\x00\x00\x00\x00\x1c\xe7\xbe)OU\x89s\xff\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x16:\x00\x01\x00\x05\x02\x00\x00\x8f\x00\xbb6\x00\x00\x00\x01\x04\x00\x00\x00\xff\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xfb'         
         p = Packet(raw)
         ip6 = p[IPv6]
@@ -47,6 +47,12 @@ class ICMPPv6PacketTests(unittest.TestCase):
         self.assertEqual(opts[1].__class__, RouterAlert)
         icmpv6 = p[ICMPv6]
         self.assertEqual(icmpv6.icmptype, ICMPv6Type.Version2MulticastListenerReport)
+
+    def testReconstruct2(self):
+        raw = b'33\x00\x00\x00\x16\x18\x81\x0e\x03\xaeQ\x86\xdd`\x00\x00\x00\x00$\x00\x01\xfe\x80\x00\x00\x00\x00\x00\x00\x1c\xe7\xbe)OU\x89s\xff\x02\x00\x00'
+        with self.assertRaises(NotEnoughDataError):
+            p = Packet(raw)
+
 
 if __name__ == '__main__':
     unittest.main()

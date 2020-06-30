@@ -4,8 +4,8 @@ from abc import ABCMeta, abstractmethod
 from enum import IntEnum
 
 from ..logging import log_warn
-from .packet import PacketHeaderBase,Packet
-from ..address import EthAddr,ip_address,SpecialIPv6Addr,SpecialEthAddr
+from .packet import PacketHeaderBase, Packet, NullPacketHeader
+from ..address import EthAddr, ip_address, SpecialIPv6Addr, SpecialEthAddr
 from .common import IPProtocol, checksum
 from ..exceptions import *
 
@@ -483,7 +483,7 @@ IPTypeClasses = {
     IPProtocol.IPv6RouteOption: IPv6RouteOption,
     IPProtocol.IPv6Fragment: IPv6Fragment,
     IPProtocol.IPv6DestinationOption: IPv6DestinationOption,
-    IPProtocol.IPv6NoNext: None,
+    IPProtocol.IPv6NoNext: NullPacketHeader,
     IPProtocol.IPv6Mobility: IPv6Mobility,
 }
 
