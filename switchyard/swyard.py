@@ -8,10 +8,10 @@ import argparse
 from switchyard.syinit import start_framework
 
 def version_check():
-    required = (3,4)
+    required = (3,6)
     this = (sys.version_info.major, sys.version_info.minor)
     if this < required:
-        log_failure("Invalid Python version for using Switchyard: need at least 3.4")
+        log_failure("Invalid Python version for using Switchyard: need at least 3.6")
         sys.exit(-1)
 
 def main():

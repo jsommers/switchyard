@@ -2,7 +2,7 @@ import struct
 from ipaddress import IPv6Address
 from abc import ABCMeta
 
-from .icmp import ICMP, ICMPData, ICMPEchoRequest, ICMPEchoReply
+from .icmp import ICMP, ICMPData, ICMPEchoRequest, ICMPEchoReply, ICMPDestinationUnreachable
 from .common import ICMPv6Type, ICMPv6TypeCodeMap, ICMPv6OptionNumber
 from .common import checksum as csum
 from ..address import EthAddr
@@ -19,14 +19,17 @@ References:
 
 
 class ICMPv6(ICMP):
+    __slots__ = ('_type', '_code', '_icmpdata', '_valid_types', 
+                 '_valid_codes_map', '_classtype_from_icmptype', 
+                 '_icmptype_from_classtype', '_checksum')
+    _PACKFMT = '!BBH'
+    _MINLEN = struct.calcsize(_PACKFMT)
+
     def __init__(self, **kwargs):
-        # Another hacky way to make this thing work.. super should be last..
-        if 'icmptype' in kwargs:
-            self.icmp6type = kwargs['icmptype']
-            del kwargs['icmptype']
+        if 'icmp6type' in kwargs:
+            kwargs['icmptype'] = kwargs['icmp6type']
+            del kwargs['icmp6type']
         super().__init__(**kwargs)
-        if hasattr(self, "icmp6type"):
-            kwargs['icmptype'] = self.icmp6type
 
         self._valid_types = ICMPv6Type
         self._valid_codes_map = ICMPv6TypeCodeMap
@@ -36,11 +39,11 @@ class ICMPv6(ICMP):
         self._code = self._valid_codes_map[self._type].EchoRequest
         self._icmpdata = ICMPv6ClassFromType(self._type)()
         self._checksum = 0
+
         # if kwargs are given, must ensure that type gets set
         # before code due to dependencies on validity.
         if 'icmptype' in kwargs:
             self.icmptype = kwargs['icmptype']
-            # del kwargs['icmptype']
 
     def checksum(self):
         return self._checksum
@@ -303,6 +306,8 @@ class ICMPv6EchoRequest(ICMPEchoRequest):
 class ICMPv6EchoReply(ICMPEchoReply):
     pass
 
+class ICMPv6DestinationUnreachable(ICMPDestinationUnreachable):
+    pass
 
 class ICMPv6HomeAgentAddressDiscoveryRequestMessage(ICMPv6Data):
     pass

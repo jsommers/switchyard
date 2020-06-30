@@ -248,5 +248,6 @@ class LLNetDevTests(unittest.TestCase):
         with self.assertRaises(PcapException):
             rv = r.send_packet(p)
 
+
 if __name__ == '__main__':
     unittest.main()

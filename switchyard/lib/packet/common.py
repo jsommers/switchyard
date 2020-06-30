@@ -274,6 +274,7 @@ class ICMPv6CodeMulticastListenerDone(IntEnum):
 ICMPv6TypeCodeMap = {
     ICMPv6Type.EchoRequest: ICMPCodeEchoRequest,
     ICMPv6Type.EchoReply: ICMPCodeEchoReply,
+    ICMPv6Type.DestinationUnreachable: ICMPCodeDestinationUnreachable,  
     ICMPv6Type.NeighborSolicitation: ICMPv6CodeNeighborSolicitation,
     ICMPv6Type.NeighborAdvertisement: ICMPv6CodeNeighborAdvertisement,
     ICMPv6Type.RedirectMessage: ICMPv6CodeRedirectMessage,
@@ -282,6 +283,7 @@ ICMPv6TypeCodeMap = {
     ICMPv6Type.MulticastListenerQuery: ICMPv6CodeMulticastListenerQuery,
     ICMPv6Type.MulticastListenerReport: ICMPv6CodeMulticastListenerReport,
     ICMPv6Type.MulticastListenerDone: ICMPv6CodeMulticastListenerDone,
+    ICMPv6Type.Version2MulticastListenerReport: ICMPv6CodeMulticastListenerReport,
 }
 
 
