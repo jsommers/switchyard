@@ -51,10 +51,10 @@ from switchyard.lib.userlib import *
 
 s = TestScenario("ARP request")
 s.timeout = 1.0
-s.add_interface('router-eth0', '40:00:00:00:00:00', '192.168.1.1', '255.255.255.0')
-s.add_interface('router-eth1', '40:00:00:00:00:01', '192.168.100.1', '255.255.255.0')
-s.add_interface('router-eth2', '40:00:00:00:00:02', '10.0.1.2', '255.255.255.0')
-s.add_interface('router-eth3', '40:00:00:00:00:03', '10.1.1.2', '255.255.255.0')
+s.add_interface('router-eth0', '40:00:00:00:00:00', '192.168.1.1/24')
+s.add_interface('router-eth1', '40:00:00:00:00:01', '192.168.100.1/24')
+s.add_interface('router-eth2', '40:00:00:00:00:02', '10.0.1.2/24')
+s.add_interface('router-eth3', '40:00:00:00:00:03', '10.1.1.2/24')
 
 # arp coming from client
 arpreq = create_ip_arp_request("30:00:00:00:00:01", "10.1.1.1", "10.1.1.2")
@@ -289,7 +289,7 @@ def handle_app_data(net, intf, appdata):
     log_debug("flowaddr: {}".format(flowaddr))
 
     proto,srcip,srcport,dstip,dstport = flowaddr
-    p = Null() + IPv4(protocol=proto, src=intf.ipaddr, dst=dstip, ipid=0xabcd, ttl=64, flags=IPFragmentFlag.DontFragment) + UDP(src=srcport,dst=dstport) + message
+    p = Null() + IPv4(protocol=proto, src=list(intf.ipaddrs)[0].ip, dst=dstip, ipid=0xabcd, ttl=64, flags=IPFragmentFlag.DontFragment) + UDP(src=srcport,dst=dstport) + message
 
     log_debug("Sending {} to {}".format(p, intf.name))
     net.send_packet(intf, p)

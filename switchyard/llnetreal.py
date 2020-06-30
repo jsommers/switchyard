@@ -137,18 +137,21 @@ class LLNetReal(LLNetBase):
             ipaddrs = set()
             ifnum = socket.if_nametoindex(devname)
 
+            addrset = set()
             for addrinfo in ifaddrs:
                 if addrinfo.family == socket.AddressFamily.AF_INET:
                     ipaddr = IPv4Address(addrinfo.address)
                     mask = IPv4Address(addrinfo.netmask)
+                    addrset.add(IPv4Interface("{}/{}".format(ipaddr, mask.max_prefixlen)))
                 elif addrinfo.family == socket.AddressFamily.AF_INET6:
                     ipaddr = IPv6Address(addrinfo.address)
                     mask = IPv6Address(addrinfo.netmask)
+                    addrset.add(IPv4Interface("{}/{}".format(ipaddr, mask.max_prefixlen)))
                 elif addrinfo.family == layer2addrfam:
                     macaddr = EthAddr(addrinfo.address)
-
             intf = Interface(devname, macaddr, ifnum=ifnum, iftype=devtype[devname])
-
+            for addf in addrset:
+                intf.assign_ipaddr(addr)
             devinfo[devname] = intf
 
         return devinfo
