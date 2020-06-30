@@ -288,8 +288,9 @@ class ICMPv6OptionList(object):
 
 
 class ICMPv6Data(ICMPData):
-    '''Hack to make the inheritance chain happy and lead into v6-specific
-       differences; need to fix...'''
+    '''
+    Placeholder for unimplemented ICMPv6 message types
+    '''
     def __init__(self, **kwargs):
         self._options = ICMPv6OptionList()
         super().__init__(**kwargs)
@@ -306,8 +307,10 @@ class ICMPv6EchoRequest(ICMPEchoRequest):
 class ICMPv6EchoReply(ICMPEchoReply):
     pass
 
+
 class ICMPv6DestinationUnreachable(ICMPDestinationUnreachable):
     pass
+
 
 class ICMPv6HomeAgentAddressDiscoveryRequestMessage(ICMPv6Data):
     pass
@@ -322,6 +325,10 @@ class ICMPv6MobilePrefixSolicitation(ICMPv6Data):
 
 
 class ICMPv6MobilePrefixAdvertisement(ICMPv6Data):
+    pass
+
+
+class ICMPv6Version2MulticastListenerReport(ICMPv6Data):
     pass
 
 

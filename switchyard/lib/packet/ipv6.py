@@ -282,7 +282,7 @@ class RouterAlert(IPv6Option):
         return RouterAlert(fields[0])
 
     def __str__(self):
-        return "{} ({})".format(self.__class__.__name__, self._limit)
+        return "{} ({})".format(self.__class__.__name__, self._value)
 
 class HomeAddress(IPv6Option):
     __slots__ = ('_addr',)
@@ -333,10 +333,10 @@ class IPv6HopOption(IPv6ExtensionHeader):
         return common + xopt
 
     def from_bytes(self, raw):
-        if len(raw) % 8 != 0:
-            log_warn("Trying to reconstruct {} that isn't a multiple of 8. This will end badly.".format(self.__class__.__name__))
         remain = super().from_bytes(raw)
         optbytes = (self._optdatalen + 1) * 8 - 2
+        if (optbytes+2) % 8 != 0:
+            log_warn("Trying to reconstruct {} that isn't a multiple of 8. This will end badly.".format(self.__class__.__name__))
         rawopt = remain[:optbytes]
         remain = remain[optbytes:]
         self._parseTLVOptions(rawopt)

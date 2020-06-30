@@ -6,19 +6,31 @@ from socket import ntohs
 
 class EtherType(IntEnum):
     NoType = 0xFFFF
+    IEEE8023 = 0x05dc
     IP = 0x0800
     IPv4 = 0x0800
     ARP = 0x0806
+    WOL = 0x0842
+    AVTP = 0x22F0
+    TRILL = 0x22F3
+    SRP = 0x22EA
+    RARP = 0x8035
     x8021Q = 0x8100
     Vlan = 0x8100
     VLAN = 0x8100
+    SLPP = 0x8102
+    VLACP = 0x8103
+    IPX = 0x8137
     IPv6 = 0x86dd
+    LACP = 0x8809
     SLOW = 0x8809
     MPLS = 0x8847
+    MPLSUni = 0x8847
+    MPLSMulti = 0x8848
     x8021AD = 0x88a8
     LLDP = 0x88cc
     x8021AH = 0x88e7
-    IEEE8023 = 0x05dc
+    PTP = 0x88f7
 
 
 class ArpHwType(IntEnum):
@@ -271,6 +283,10 @@ class ICMPv6CodeMulticastListenerDone(IntEnum):
     MulticastListenerDone = 0
 
 
+class ICMPv6CodeVersion2MulticastListenerReport(IntEnum):
+    MulticastListenerReport = 0
+
+
 ICMPv6TypeCodeMap = {
     ICMPv6Type.EchoRequest: ICMPCodeEchoRequest,
     ICMPv6Type.EchoReply: ICMPCodeEchoReply,
@@ -283,7 +299,7 @@ ICMPv6TypeCodeMap = {
     ICMPv6Type.MulticastListenerQuery: ICMPv6CodeMulticastListenerQuery,
     ICMPv6Type.MulticastListenerReport: ICMPv6CodeMulticastListenerReport,
     ICMPv6Type.MulticastListenerDone: ICMPv6CodeMulticastListenerDone,
-    ICMPv6Type.Version2MulticastListenerReport: ICMPv6CodeMulticastListenerReport,
+    ICMPv6Type.Version2MulticastListenerReport: ICMPv6CodeVersion2MulticastListenerReport,
 }
 
 
