@@ -80,8 +80,9 @@ class PcapFfiTests(unittest.TestCase):
             self.assertEqual(px.tstamp_precision, pf.PcapTstampPrecision.Micro)
         with self.assertRaises(pf.PcapException):
             px.blocking
+        px.blocking = True
         with self.assertRaises(pf.PcapException):
-            px.blocking = True
+            px.blocking
         with self.assertRaises(pf.PcapException):            
             x = px.dlt # exc because not activated
         self.assertEqual(px.fd, -1)     
@@ -91,8 +92,8 @@ class PcapFfiTests(unittest.TestCase):
         self.assertIsNone(px.recv_packet_or_none())
         with self.assertRaises(pf.PcapException):
             px.set_direction(pf.PcapDirection.InOut) # not active
-        #with self.assertRaises(pf.PcapException):
-        #    px.set_filter("icmp") # not active
+        with self.assertRaises(pf.PcapException):
+            px.set_filter("icmp") # not active
         px.close()
 
 if __name__ == '__main__':

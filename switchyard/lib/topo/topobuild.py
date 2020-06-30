@@ -1,6 +1,6 @@
 import json
 from collections import defaultdict
-from ..address import EthAddr,IPAddr
+from ..address import *
 from ..interface import Interface
 from .util import *
 import networkx as nx
@@ -126,12 +126,12 @@ class Topology(object):
         if name in self.nodes:
             raise Exception("A node by the name {} already exists.  Can't add a duplicate.".format(name))
         self.__nxgraph.add_node(name)
-        self.__nxgraph.node[name]['label'] = name
-        self.__nxgraph.node[name]['nodeobj'] = cls()
-        self.__nxgraph.node[name]['type'] = cls.__name__
+        self.__nxgraph.nodes[name]['label'] = name
+        self.__nxgraph.nodes[name]['nodeobj'] = cls()
+        self.__nxgraph.nodes[name]['type'] = cls.__name__
 
     def getNode(self, name):
-        return self.__nxgraph.node[name]
+        return self.__nxgraph.nodes[name]
 
     def getEdge(self, node1, node2):
         return self.__nxgraph[node1][node2]
@@ -243,8 +243,8 @@ class Topology(object):
                 self.__ifnum += 1
                 macaddr = ':'.join([ macstr[j:(j+2)] for j in range(0,len(macstr),2)])
                 macs[i] = macaddr
-        node1if = self.__nxgraph.node[node1]['nodeobj'].addInterface(ethaddr=macs[0])
-        node2if = self.__nxgraph.node[node2]['nodeobj'].addInterface(ethaddr=macs[1])
+        node1if = self.__nxgraph.nodes[node1]['nodeobj'].addInterface(ethaddr=macs[0])
+        node2if = self.__nxgraph.nodes[node2]['nodeobj'].addInterface(ethaddr=macs[1])
         self.__nxgraph.add_edge(node1, node2)
         self.__nxgraph[node1][node2][node1] = node1if
         self.__nxgraph[node1][node2][node2] = node2if
@@ -362,11 +362,11 @@ class Topology(object):
         nxgraph = nx.relabel_nodes(nxgraph, renamer, copy=True)
 
         # relabel 'label' in node attributes
-        for n,ndict in nxgraph.nodes_iter(data=True):
-            nxgraph.node[n]['label'] = n
+        for n,ndict in nxgraph.nodes(data=True):
+            nxgraph.nodes[n]['label'] = n
 
         # relabel nodename->interfacename attributes in edges
-        for u,v,edict in nxgraph.edges_iter(data=True):
+        for u,v,edict in list(nxgraph.edges(data=True)):
             nxgraph[u][v][u] = nxgraph[u][v][u[len(prefix)+1:]] 
             del nxgraph[u][v][u[len(prefix)+1:]] 
             nxgraph[u][v][v] = nxgraph[u][v][v[len(prefix)+1:]] 
@@ -425,11 +425,11 @@ def __do_draw(cn_topo, showintfs=False, showaddrs=False):
 
     pos=nx.spring_layout(G)
     nx.draw_networkx(G, pos=pos, with_labels=True, alpha=0.9, font_size=10)
-    elabels = labels = dict(((u, v), d['label']) for u, v, d in G.edges_iter(data=True))
+    elabels = labels = dict(((u, v), d['label']) for u, v, d in G.edges(data=True))
     nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=elabels, font_size=8)
     if showintfs:
-        if1d = dict(( ((u,v),"{}".format(addrlabel(G,u,d[u]))) for u,v,d in G.edges_iter(data=True)))
-        if2d = dict(( ((u,v),"{}".format(addrlabel(G,v,d[v]))) for u,v,d in G.edges_iter(data=True)))
+        if1d = dict(( ((u,v),"{}".format(addrlabel(G,u,d[u]))) for u,v,d in G.edges(data=True)))
+        if2d = dict(( ((u,v),"{}".format(addrlabel(G,v,d[v]))) for u,v,d in G.edges(data=True)))
         nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=if1d, label_pos=0.9, font_size=6, alpha=0.5, font_color='b')
         nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=if2d, label_pos=0.1, font_size=6, alpha=0.5, font_color='b')
 

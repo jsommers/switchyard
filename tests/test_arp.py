@@ -1,5 +1,5 @@
 from switchyard.lib.packet import *
-from switchyard.lib.address import EthAddr, IPAddr
+from switchyard.lib.address import EthAddr, ip_address
 import unittest 
 
 class ArpTests(unittest.TestCase):

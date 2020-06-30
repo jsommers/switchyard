@@ -1,5 +1,4 @@
 from switchyard.lib.packet import *
-from switchyard.lib.address import EthAddr, IPAddr
 import unittest 
 
 class UDPPacketTests(unittest.TestCase):

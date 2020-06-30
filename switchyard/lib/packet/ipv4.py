@@ -4,7 +4,7 @@ from ipaddress import IPv4Address
 from collections import namedtuple
 
 from .packet import PacketHeaderBase,Packet
-from ..address import EthAddr,IPAddr,SpecialIPv4Addr,SpecialEthAddr
+from ..address import EthAddr,ip_address,SpecialIPv4Addr,SpecialEthAddr
 from ..logging import log_warn
 from .common import IPProtocol,IPFragmentFlag,IPOptionNumber, checksum
 from .icmp import ICMP
@@ -525,7 +525,7 @@ class IPv4(PacketHeaderBase):
 
     @src.setter
     def src(self, value):
-        self._src = IPAddr(value)
+        self._src = ip_address(value)
 
     @property
     def dst(self):
@@ -533,7 +533,7 @@ class IPv4(PacketHeaderBase):
 
     @dst.setter
     def dst(self, value):
-        self._dst = IPAddr(value)
+        self._dst = ip_address(value)
 
     @property
     def flags(self):

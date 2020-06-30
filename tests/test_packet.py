@@ -3,7 +3,6 @@ import sys
 import unittest 
 
 from switchyard.lib.packet import *
-from switchyard.lib.address import EthAddr, IPAddr
 from switchyard.lib.testing import SwitchyardTestEvent
 
 class FakeTestEvent(SwitchyardTestEvent):

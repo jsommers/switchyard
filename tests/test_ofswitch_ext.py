@@ -18,8 +18,8 @@ def mk_pkt(hwsrc, hwdst, ipsrc, ipdst, reply=False):
     ether.ethertype = EtherType.IP
 
     ippkt = IPv4()
-    ippkt.src = IPAddr(ipsrc)
-    ippkt.dst = IPAddr(ipdst)
+    ippkt.src = ip_address(ipsrc)
+    ippkt.dst = ip_address(ipdst)
     ippkt.protocol = IPProtocol.ICMP
     ippkt.ttl = 32
 

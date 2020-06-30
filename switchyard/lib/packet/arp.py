@@ -1,5 +1,5 @@
 from .packet import PacketHeaderBase,Packet
-from ..address import EthAddr,IPAddr,SpecialIPv4Addr,SpecialEthAddr
+from ..address import EthAddr,ip_address,SpecialIPv4Addr,SpecialEthAddr
 import struct
 from .common import EtherType, ArpHwType, ArpOperation
 from ..exceptions import *
@@ -57,9 +57,9 @@ class Arp(PacketHeaderBase):
             self._protoaddrlen = fields[3]
             self.operation = ArpOperation(fields[4])
             self.senderhwaddr = EthAddr(fields[5])
-            self.senderprotoaddr = IPAddr(fields[6])
+            self.senderprotoaddr = ip_address(fields[6])
             self.targethwaddr = EthAddr(fields[7])
-            self.targetprotoaddr = IPAddr(fields[8])
+            self.targetprotoaddr = ip_address(fields[8])
         except Exception as e:
             raise Exception("Error constructing Arp packet object from raw bytes: {}".format(str(e)))
         return raw[Arp._MINLEN:]
@@ -103,7 +103,7 @@ class Arp(PacketHeaderBase):
 
     @senderprotoaddr.setter
     def senderprotoaddr(self, value):
-        self._senderprotoaddr = IPAddr(value)
+        self._senderprotoaddr = ip_address(value)
 
     @property
     def targethwaddr(self):
@@ -119,7 +119,7 @@ class Arp(PacketHeaderBase):
 
     @targetprotoaddr.setter
     def targetprotoaddr(self, value):
-        self._targetprotoaddr = IPAddr(value)
+        self._targetprotoaddr = ip_address(value)
 
     def next_header_class(self):
         '''

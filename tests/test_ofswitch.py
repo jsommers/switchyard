@@ -27,8 +27,8 @@ def mk_pkt(hwsrc, hwdst, ipsrc, ipdst, reply=False):
     ether.ethertype = EtherType.IP
 
     ippkt = IPv4()
-    ippkt.srcip = IPAddr(ipsrc)
-    ippkt.dstip = IPAddr(ipdst)
+    ippkt.srcip = ip_address(ipsrc)
+    ippkt.dstip = ip_address(ipdst)
     ippkt.protocol = IPProtocol.ICMP
     ippkt.ttl = 32
 
@@ -45,7 +45,7 @@ class NetConnection(LLNetBase):
     '''
     def __init__(self):
         LLNetBase.__init__(self)
-        self._devinfo['eth0'] = Interface('eth0', '11:22:33:44:55:66', '192.168.1.1', '255.255.255.0', 0)
+        self._devinfo['eth0'] = Interface('eth0', '11:22:33:44:55:66', '192.168.1.1/24', 0)
         self.lastsent = None
 
     def recv_packet(self, timeout=None):

@@ -22,9 +22,8 @@ class WrapLLNet(LLNetReal):
     def _fix_devinfo(self, dlist):
         self.devinfo = {}
         for i,d in enumerate(dlist):
-            self.devinfo[d] = Interface(d, EthAddr('00:00:00:00:00:00'), IPAddr(i), '255.255.255.255', i)
-
-
+            intf = Interface(d, EthAddr('00:00:00:00:00:00'), i)
+            self.devinfo[d] = intf
 
 class LLNetDevTests(unittest.TestCase):
     def setUp(self):
@@ -32,7 +31,7 @@ class LLNetDevTests(unittest.TestCase):
         self.scenario.add_interface('eth1', '11:11:11:11:11:11')
         self.scenario.add_interface('eth0', '00:00:00:00:00:00')
         self.scenario.add_interface('eth2', '22:22:22:22:22:22')
-        self.scenario.add_interface('eth7', '77:77:77:77:77:77', ipaddr='192.168.1.1', netmask='255.255.255.0')
+        self.scenario.add_interface('eth7', '77:77:77:77:77:77', '192.168.1.1/24')
         self.scenario.done = Mock(return_value=False)
         self.ev = Mock()
         self.ev.match = Mock(return_value=None)
@@ -107,7 +106,9 @@ class LLNetDevTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.fake.intf_up(self.fake.interface_by_name('eth0'))
         self.assertEqual('test', self.fake.name)
-        self.fake.intf_up(Interface("testif", "00:00:00:11:11:11", "1.2.3.4"))
+        intf = Interface("testif", "00:00:00:11:11:11")
+        intf.assign_ipaddr('1.2.3.4')
+        self.fake.intf_up(intf)
 
     def testFakeAddrLookups(self):
         with self.assertRaises(KeyError):
@@ -159,8 +160,8 @@ class LLNetDevTests(unittest.TestCase):
         si = signal.SIGINT
         setattr(signal, "signal", Mock())
 
-        devdict = {'en0': Interface("en0", "0:0:0:0:0:0", "1.2.3.4", "255.255.255.255",
-                          1, InterfaceType.Wired)}
+        devdict = {'en0': Interface("en0", "0:0:0:0:0:0", ifnum=1, iftype=InterfaceType.Wired)}
+        devdict['en0'].assign_ipaddr('1.2.3.4/24')
         mdev = Mock(return_value=devdict)
         setattr(LLNetReal, "_assemble_devinfo", mdev)
 

@@ -3,9 +3,6 @@ __author__ = 'jsommers@colgate.edu'
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network, ip_address
 from enum import Enum
 
-# make aliases for built-in ip_address class
-IPAddr = IPv4Address 
-
 import struct
 import socket
 
@@ -188,7 +185,7 @@ class SpecialEthAddr(Enum):
 
 def netmask_to_cidr (dq):
   """
-  Takes a netmask as either an IPAddr or a string, and returns the number
+  Takes a netmask as either an IPAddress or a string, and returns the number
   of network bits.  e.g., 255.255.255.0 -> 24
   Raise exception if subnet mask is not CIDR-compatible.
   """
@@ -211,7 +208,7 @@ def cidr_to_netmask (bits):
   """
   v = (1 << bits) - 1
   v = v << (32-bits)
-  return IPAddr(v)
+  return ip_address(v)
 
 def parse_cidr (addr, infer=True, allow_host=False):
   """
@@ -234,8 +231,8 @@ def parse_cidr (addr, infer=True, allow_host=False):
   addr = addr.split('/', 2)
   if len(addr) == 1:
     if infer is False:
-      return check(IPAddr(addr[0]), 0)
-    addr = IPAddr(addr[0])
+      return check(ip_address(addr[0]), 0)
+    addr = ip_address(addr[0])
     b = 32-infer_netmask(addr)
     m = (1<<b)-1
     if (int(addr) & m) == 0:
@@ -248,7 +245,7 @@ def parse_cidr (addr, infer=True, allow_host=False):
     wild = 32-int(addr[1])
   except:
     # Maybe they passed a netmask
-    m = int(IPAddr(addr[1]))
+    m = int(ip_address(addr[1]))
     b = 0
     while m & (1<<31):
       b += 1
@@ -258,10 +255,10 @@ def parse_cidr (addr, infer=True, allow_host=False):
     wild = 32-b
     if not (wild >= 0 and wild <= 32):
       raise RuntimeError("Invalid mask length")
-    return check(IPAddr(addr[0]), wild)
+    return check(ip_address(addr[0]), wild)
   if not (wild >= 0 and wild <= 32):
     raise RuntimeError("Invalid mask length")
-  return check(IPAddr(addr[0]), wild)
+  return check(ip_address(addr[0]), wild)
 
 def infer_netmask (addr):
   """

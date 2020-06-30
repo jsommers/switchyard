@@ -1,5 +1,4 @@
 from switchyard.lib.packet import *
-from switchyard.lib.address import EthAddr, IPAddr
 from switchyard.lib.packet.common import ICMPType
 from switchyard.lib.packet.icmpv6 import construct_icmpv6_type_map
 import unittest 

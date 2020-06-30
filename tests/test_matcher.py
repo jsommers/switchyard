@@ -124,8 +124,8 @@ def x():
 
     def testWildcarding(self):
         pkt = Ethernet() + IPv4()
-        pkt[1].src = IPAddr("192.168.1.1")
-        pkt[1].dst = IPAddr("192.168.1.2")
+        pkt[1].src = ip_address("192.168.1.1")
+        pkt[1].dst = ip_address("192.168.1.2")
         pkt[1].ttl = 64
         
         with self.assertRaises(ValueError):

@@ -120,10 +120,11 @@ class LLNetBase(metaclass=ABCMeta):
         '''
         Given an IP address, return the interface that 'owns' this address
         '''
-        ipaddr = IPAddr(ipaddr)
+        ipaddr = ip_address(ipaddr)
         for devname,iface in self._devinfo.items():
-            if iface.ipaddr == ipaddr:
-                return iface
+            for ipa in  iface.ipaddrs:
+                if ipa.ip == ipaddr:
+                    return iface
         raise KeyError("No device has IP address {}".format(ipaddr))
 
     def port_by_ipaddr(self, ipaddr):

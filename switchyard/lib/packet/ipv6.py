@@ -5,7 +5,7 @@ from enum import IntEnum
 
 from ..logging import log_warn
 from .packet import PacketHeaderBase,Packet
-from ..address import EthAddr,IPAddr,SpecialIPv6Addr,SpecialEthAddr
+from ..address import EthAddr,ip_address,SpecialIPv6Addr,SpecialEthAddr
 from .common import IPProtocol, checksum
 from ..exceptions import *
 

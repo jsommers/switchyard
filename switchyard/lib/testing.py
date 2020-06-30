@@ -668,19 +668,17 @@ class TestScenario(object):
         if self._teardown:
             self._teardown()
 
-    def add_interface(self, interface_name, macaddr, ipaddr=None, netmask=None, **kwargs):
+    def add_interface(self, interface_name, macaddr, *ipaddrs, **kwargs):
         '''
         Add an interface to the test scenario.
 
-        (str, str/EthAddr, str/IPAddr, str/IPAddr) -> None
+        (str, str/EthAddr, ipaddrs (str/IPAddr), kwargs) -> None
         '''
         if 'ifnum' not in kwargs:
             kwargs['ifnum'] = len(self._interface_map)
-        if ipaddr is not None:
-            kwargs['ipaddr'] = ipaddr
-        if netmask is not None:
-            kwargs['netmask'] = netmask
         intf = Interface(interface_name, macaddr, **kwargs)
+        for ipaddr in ipaddrs:
+            intf.assign_ipaddr(ipaddr)
         self._interface_map[interface_name] = intf
 
     def interfaces(self):

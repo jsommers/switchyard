@@ -5,7 +5,7 @@ import pdb
 import queue
 
 from ..lib.packet import *
-from ..lib.address import EthAddr, IPAddr
+from ..lib.address import EthAddr, ip_address
 from .. import pcapffi
 from ..importcode import import_or_die
 from ..llnetbase import LLNetBase
