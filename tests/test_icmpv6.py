@@ -147,6 +147,17 @@ class ICMPPv6PacketTests(unittest.TestCase):
         raw = p.to_bytes()
         p2 = Packet(raw=raw)
         self.assertEqual(p, p2)
+        icmp6 = p[ICMPv6]
+        self.assertEqual(icmp6.icmpdata.get_rso_str(), '')
+        icmp6.icmpdata.r = True
+        self.assertTrue(icmp6.icmpdata.r)
+        icmp6.icmpdata.s = True
+        self.assertTrue(icmp6.icmpdata.s)
+        icmp6.icmpdata.o = True
+        self.assertTrue(icmp6.icmpdata.o)
+        self.assertEqual(icmp6.icmpdata.get_rso_str(), 'RSO')
+        icmp6.icmpdata.targetaddr = 'fe80::1'
+        self.assertEqual(icmp6.icmpdata.targetaddr, IPv6Address('fe80::1'))
 
     def testMakeNeighborSolicitation(self):
         p = Ethernet(ethertype=EtherType.IPv6, dst='33:33:ff:01:70:86', src='58:ac:78:93:da:00') + \

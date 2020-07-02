@@ -557,35 +557,35 @@ class ICMPv6RouterAdvertisement(ICMPv6Data):
 
     @property
     def m(self):
-        return self._m
+        return bool(self._m)
 
     @m.setter
     def m(self, value):
-        self._m = int(value) & 0x1
+        self._m = bool(int(value) & 0x1)
 
     @property
     def o(self):
-        return self._o
+        return bool(self._o)
 
     @o.setter
     def o(self, value):
-        self._o = int(value) & 0x1
+        self._o = bool(int(value) & 0x1)
 
     @property
     def h(self):
-        return self._h
+        return bool(self._h)
 
     @h.setter
     def h(self, value):
-        self._h = int(value) & 0x1
+        self._h = bool(int(value) & 0x1)
 
     @property
     def p(self):
-        return self._p
+        return bool(self._p)
 
     @p.setter
     def p(self, value):
-        self._p = int(value) & 0x1
+        self._p = bool(int(value) & 0x1)
 
     @property
     def router_lifetime(self):
@@ -665,14 +665,14 @@ class ICMPv6NeighborSolicitation(ICMPv6Data):
 
 
 class ICMPv6NeighborAdvertisement(ICMPv6Data):
-    __slots__ = ['_R_S_O', '_targetaddr']
+    __slots__ = ['_R_S_O', '_r', '_s', '_o', '_targetaddr']
     _PACKFMT = "!cxxx16s"
     _MINLEN = struct.calcsize(_PACKFMT)
     def __init__(self, **kwargs):
         self._targetaddr = IPv6Address("::0")
-        self._routerflag = 0
-        self._solicitedflag = 0
-        self._overrideflag = 0
+        self._r = 0
+        self._s = 0
+        self._o = 0
         super().__init__(**kwargs)
 
     def to_bytes(self):
@@ -691,25 +691,25 @@ class ICMPv6NeighborAdvertisement(ICMPv6Data):
             ICMPv6NeighborAdvertisement._PACKFMT,
             raw[:ICMPv6NeighborAdvertisement._MINLEN])
         rso = int.from_bytes(fields[0], byteorder=byteorder, signed=False)
-        self._routerflag = (rso & 0x80) >> 7
-        self._solicitedflag = (rso & 0x40) >> 6
-        self._overrideflag = (rso & 0x20) >> 5
+        self._r = (rso & 0x80) >> 7
+        self._s = (rso & 0x40) >> 6
+        self._o = (rso & 0x20) >> 5
         self._targetaddr = IPv6Address(fields[1])
         self._options = ICMPv6OptionList.from_bytes(optionbytes)
 
     def get_rso_byte(self):
-        rso = self._routerflag << 7 | \
-              self._solicitedflag << 6 | \
-              self._overrideflag << 5
+        rso = self._r << 7 | \
+              self._s << 6 | \
+              self._o << 5
         return int.to_bytes(rso, length=1, byteorder=byteorder, signed=False)
 
     def get_rso_str(self):
         s = ''
-        if self.routerflag:
+        if self.r:
             s += 'R'
-        if self.solicitedflag:
+        if self.s:
             s += 'S'
-        if self.overrideflag:
+        if self.o:
             s += 'O'
         return s
 
@@ -722,31 +722,31 @@ class ICMPv6NeighborAdvertisement(ICMPv6Data):
         self._targetaddr = IPv6Address(value)
 
     @property
-    def routerflag(self):
-        return bool(self._routerflag)
+    def r(self):
+        return bool(self._r)
 
     @property
-    def solicitedflag(self):
-        return bool(self._solicitedflag)
+    def s(self):
+        return bool(self._s)
 
     @property
-    def overrideflag(self):
-        return bool(self._overrideflag)
+    def o(self):
+        return bool(self._o)
 
-    @routerflag.setter
-    def routerflag(self, value):
+    @r.setter
+    def r(self, value):
         assert isinstance(value, bool)
-        self._routerflag = int(value)
+        self._r = int(value)
 
-    @solicitedflag.setter
-    def solicitedflag(self, value):
+    @s.setter
+    def s(self, value):
         assert isinstance(value, bool)
-        self._solicitedflag = int(value)
+        self._s = int(value)
 
-    @overrideflag.setter
-    def overrideflag(self, value):
+    @o.setter
+    def o(self, value):
         assert isinstance(value, bool)
-        self._overrideflag = int(value)
+        self._o = int(value)
 
     def __str__(self):
         s = "Target address: {} flags: {} ({})".format(
