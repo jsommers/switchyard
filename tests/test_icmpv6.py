@@ -1,6 +1,6 @@
 import unittest 
 from copy import deepcopy
-
+from ipaddress import IPv6Address, IPv6Network
 from switchyard.lib.packet import *
 from switchyard.lib.address import SpecialIPv6Addr
 from switchyard.pcapffi import PcapDumper
@@ -51,6 +51,20 @@ class ICMPPv6PacketTests(unittest.TestCase):
         pfx2 = ICMPv6OptionPrefixInformation()
         pfx2.from_bytes(raw)
         self.assertEqual(pfx, pfx2)
+    
+    def testOptionRedirectedHeader(self):
+        opt = ICMPv6OptionRedirectedHeader(b'\x00\x11\x22\x33')
+        raw = opt.to_bytes()
+        opt2 = ICMPv6OptionRedirectedHeader()
+        opt2.from_bytes(raw)
+        self.assertEqual(opt, opt2)
+
+    def testOptionMTU(self):
+        opt = ICMPv6OptionMTU(576)
+        raw = opt.to_bytes()
+        opt2 = ICMPv6OptionMTU()
+        opt2.from_bytes(raw)
+        self.assertEqual(opt, opt2)
 
     def testReconstruct1(self):
         raw = b'33\x00\x00\x00\x16\x18\x81\x0e\x03\xaeQ\x86\xdd`\x00\x00\x00\x00$\x00\x01\xfe\x80\x00\x00\x00\x00\x00\x00\x1c\xe7\xbe)OU\x89s\xff\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x16:\x00\x01\x00\x05\x02\x00\x00\x8f\x00\xbb6\x00\x00\x00\x01\x04\x00\x00\x00\xff\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xfb'         

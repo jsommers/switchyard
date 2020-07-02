@@ -319,6 +319,7 @@ ICMPv6TypeCodeMap = {
 }
 
 
+# https://www.iana.org/assignments/icmpv6-parameters/icmpv6-parameters.xml#icmpv6-parameters-5
 class ICMPv6OptionNumber(IntEnum):
     SourceLinkLayerAddress = 1
     TargetLinkLayerAddress = 2

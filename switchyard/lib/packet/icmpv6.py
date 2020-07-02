@@ -171,7 +171,7 @@ class ICMPv6OptionPrefixInformation(ICMPv6Option):
     def to_bytes(self):
         flags = ((self._l << 7| self._a << 6)) & 0xff
         return struct.pack(ICMPv6OptionPrefixInformation._PACKFMT, self.optnum, 4,
-            self.prefix.prefixlen, self.valid_lifetime, self.preferred_lifetime,
+            self.prefix.prefixlen, flags, self.valid_lifetime, self.preferred_lifetime,
             self.prefix.network_address.packed)
         return ICMPv6OptionPrefixInformation._MINLEN
 
@@ -181,6 +181,14 @@ class ICMPv6OptionPrefixInformation(ICMPv6Option):
         fields = struct.unpack(ICMPv6OptionPrefixInformation._PACKFMT, raw)
         assert(fields[0] == self.optnum)
         assert(fields[1] == 4)
+        pfxlen = fields[2]
+        flags = fields[3]
+        self.l = flags >> 7
+        self.a = flags >> 6
+        self.valid_lifetime = fields[4]
+        self.preferred_lifetime = fields[5]
+        addr = IPv6Address(fields[-1])
+        self._prefix = IPv6Network("{}/{}".format(addr, pfxlen))
         
     @property
     def prefix_length(self):
@@ -279,6 +287,8 @@ class ICMPv6OptionRedirectedHeader(ICMPv6Option):
 
     def __init__(self, header=None):
         super().__init__(ICMPv6OptionNumber.RedirectedHeader)
+        if header is None:
+            header = b''
         assert(isinstance(header, bytes))
         self.header = header
 
@@ -294,7 +304,7 @@ class ICMPv6OptionRedirectedHeader(ICMPv6Option):
         assert(tl[0] == self.optnum)
         bytelen = tl[1] * 8
         if len(raw) < bytelen:
-            raise NotEnoughDataError("Insufficient data to reconstruct {}".format(self.__class__.__name))
+            raise NotEnoughDataError("Insufficient data to reconstruct {}".format(self.__class__.__name__))
         self.header = raw[2:bytelen]
         return bytelen
     
@@ -305,6 +315,8 @@ class ICMPv6OptionRedirectedHeader(ICMPv6Option):
     @header.setter
     def header(self, value):
         assert(isinstance(value, bytes))
+        padbytes = 8 - (len(value) + 2 % 8)
+        value += b'\x00' * padbytes
         self._header = value
 
     def __str__(self):
@@ -349,7 +361,6 @@ class ICMPv6OptionList(object):
                 log_warn("Unimplemented ICMPv6 Option {}".format(opttype))
                 continue
 
-            print(optnum, olen)
             obj = ICMPv6OptionClasses[optnum]()
             obj.from_bytes(optdata)
         return icmpv6popts
@@ -689,7 +700,6 @@ class ICMPv6NeighborAdvertisement(ICMPv6Data):
         fields = struct.unpack(
             ICMPv6NeighborAdvertisement._PACKFMT,
             raw[:ICMPv6NeighborAdvertisement._MINLEN])
-        # print('fields[0]: {}'.format(fields[0]))
         rso = int.from_bytes(fields[0], byteorder=byteorder, signed=False)
         self._routerflag = (rso & 0x80) >> 7
         self._solicitedflag = (rso & 0x40) >> 6
