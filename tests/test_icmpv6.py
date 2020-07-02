@@ -160,6 +160,16 @@ class ICMPPv6PacketTests(unittest.TestCase):
         raw = p.to_bytes()
         p2 = Packet(raw=raw)
         self.assertEqual(p, p2)
+        icmp6 = p[ICMPv6]
+        opt = icmp6.icmpdata.options[-1]
+        xopt = icmp6.icmpdata.options[ICMPv6OptionPrefixInformation]
+        self.assertEqual(opt, xopt)
+        self.assertEqual(xopt.l, 1)
+        self.assertEqual(xopt.a, 1)
+        xopt.l = 0
+        xopt.a = 0
+        self.assertEqual(xopt.l, 0)
+        self.assertEqual(xopt.a, 0)
 
     def testMakeNeighborAdvertisement(self):
         p = Ethernet(ethertype=EtherType.IPv6, dst='58:ac:78:93:da:00', src='00:50:56:af:97:68') + \
@@ -191,6 +201,9 @@ class ICMPPv6PacketTests(unittest.TestCase):
         raw = p.to_bytes()
         p2 = Packet(raw=raw)
         self.assertEqual(p, p2)
+        icmp6 = p[ICMPv6]
+        icmp6.icmpdata.targetaddr = 'fe80::13'
+        self.assertEqual(icmp6.icmpdata.targetaddr, IPv6Address('fe80::13'))
 
     def testMakeRedirect(self):
         p = Ethernet(ethertype=EtherType.IPv6, dst='33:33:ff:01:70:86', src='58:ac:78:93:da:00') + \

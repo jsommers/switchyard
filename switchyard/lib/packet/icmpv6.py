@@ -384,11 +384,19 @@ class ICMPv6OptionList(object):
         return len(self._options)
 
     def __getitem__(self, i):
-        if i < 0:
-            i = len(self._options) + i
-        if 0 <= i < len(self._options):
-            return self._options[i]
-        raise IndexError("Invalid IP option index")
+        if isinstance(i, int):
+            if i < 0:
+                i = len(self._options) + i
+            if 0 <= i < len(self._options):
+                return self._options[i]
+            raise IndexError("Invalid IP option index")
+        elif issubclass(i, ICMPv6Option):
+            for obj in self._options:
+                if obj.__class__ == i:
+                    return obj
+            raise IndexError("option class {} doesn't exist in options list".format(i))
+        else:
+            raise IndexError("IP option index must be int or ICMPv6Option class")
 
     def __setitem__(self, i, val):
         if i < 0:
