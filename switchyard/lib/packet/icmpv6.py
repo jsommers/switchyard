@@ -505,7 +505,7 @@ class ICMPv6RouterSolicitation(ICMPv6Data):
 
 class ICMPv6RouterAdvertisement(ICMPv6Data):
     __slots__ = ['_curhoplimit', '_m', '_o', '_h', '_p',
-                 '_router_lifetime', '_reachable_time', '_retrans_time']
+                 '_router_lifetime', '_reachable_time', '_retrans_timer']
     _PACKFMT = '!BBHII'
     _MINLEN = struct.calcsize(_PACKFMT)
 
@@ -514,7 +514,7 @@ class ICMPv6RouterAdvertisement(ICMPv6Data):
         self._m = self._o = self._h = self._p = 0
         self._router_lifetime = 1800
         self._reachable_time = 0
-        self._retrans_time = 0
+        self._retrans_timer = 0
         super().__init__(**kwargs)
 
     def to_bytes(self):
@@ -524,7 +524,7 @@ class ICMPv6RouterAdvertisement(ICMPv6Data):
                         self._curhoplimit,
                         flags,
                         self._router_lifetime, self._reachable_time,
-                        self._retrans_time),
+                        self._retrans_timer),
             self._options.to_bytes()))
 
     def from_bytes(self, raw):
@@ -542,7 +542,7 @@ class ICMPv6RouterAdvertisement(ICMPv6Data):
         self.p = (flags & 0x1) >> 4
         self.router_lifetime = fields[2]
         self.reachable_time = fields[3]
-        self.retrans_time = fields[4]
+        self.retrans_timer = fields[4]
         self._options = ICMPv6OptionList.from_bytes(optionbytes)
 
     @property

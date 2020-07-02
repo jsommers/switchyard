@@ -130,6 +130,30 @@ class ICMPPv6PacketTests(unittest.TestCase):
         raw = p.to_bytes()
         p2 = Packet(raw=raw)
         self.assertEqual(p, p2)
+        icmp6 = p[ICMPv6]
+        self.assertEqual(icmp6.icmpdata.curhoplimit, 64)
+        icmp6.icmpdata.curhoplimit = 128
+        self.assertEqual(icmp6.icmpdata.curhoplimit, 128)
+        self.assertFalse(icmp6.icmpdata.m)
+        self.assertFalse(icmp6.icmpdata.o)
+        self.assertFalse(icmp6.icmpdata.h)
+        self.assertFalse(icmp6.icmpdata.p)
+        icmp6.icmpdata.m = 1
+        icmp6.icmpdata.o = 1
+        icmp6.icmpdata.h = 1
+        icmp6.icmpdata.p = 1
+        self.assertTrue(icmp6.icmpdata.m)
+        self.assertTrue(icmp6.icmpdata.o)
+        self.assertTrue(icmp6.icmpdata.h)
+        self.assertTrue(icmp6.icmpdata.p)
+        icmp6.icmpdata.router_lifetime = 600
+        self.assertEqual(icmp6.icmpdata.router_lifetime, 600)
+        self.assertEqual(icmp6.icmpdata.reachable_time, 0)
+        self.assertEqual(icmp6.icmpdata.retrans_timer, 0)
+        icmp6.icmpdata.reachable_time = 13
+        icmp6.icmpdata.retrans_timer = 13
+        self.assertEqual(icmp6.icmpdata.reachable_time, 13)
+        self.assertEqual(icmp6.icmpdata.retrans_timer, 13)
 
     def testMakeRouterSolicitation(self):
         p = Ethernet(ethertype=EtherType.IPv6, src='58:ac:78:93:da:00', dst='33:33:00:00:00:01') + IPv6(nextheader=IPProtocol.ICMPv6, hoplimit=255, src='fe80::1', dst='ff02::1') + ICMPv6(icmptype=ICMPv6Type.RouterSolicitation, icmpdata=ICMPv6RouterSolicitation(options=(ICMPv6OptionSourceLinkLayerAddress('00:50:56:af:97:68'),ICMPv6OptionMTU(1250), ICMPv6OptionPrefixInformation(prefix='fd00::/64'))))
