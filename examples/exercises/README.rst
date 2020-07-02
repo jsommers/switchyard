@@ -14,6 +14,8 @@ Learning switch
 IP router
 	This is really a set of 3 projects designed to gradually built up capabilities to implement an IPv4 router that uses a static forwarding table.  Descriptions of extensions and variants such as dynamic routing are included.
 
+        An exercise to develop an IPv6 router is in progress.
+
 Firewall
 	In this exercise, build a stand-alone firewall device with token bucket rate-limiting capability.
 
