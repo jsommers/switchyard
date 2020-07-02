@@ -42,6 +42,14 @@ Finally, install Switchyard.  All the required additional libraries should be au
     $ python3 -m pip install switchyard
 
 
+There is also a docker image, if you prefer: https://hub.docker.com/repository/docker/jsommers/switchyard.  Just do::
+
+    $ docker run -v `pwd`:/swyard -it jsommers/switchyard
+
+Mininet is also installed in the container, if that's helpful.
+
+---
+
 Results of tests run in Travis (on Ubuntu):
 
 .. image:: https://travis-ci.org/jsommers/switchyard.svg?branch=master
