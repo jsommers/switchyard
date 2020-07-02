@@ -9,6 +9,7 @@ from .common import ICMPv6Type, ICMPv6TypeCodeMap, ICMPv6OptionNumber
 from .common import checksum as csum
 from ..address import EthAddr
 from ..exceptions import *
+from ..logging import log_warn
 from sys import byteorder
 
 
@@ -98,14 +99,8 @@ class ICMPv6Option(object, metaclass=ABCMeta):
     def optnum(self):
         return self._optnum
 
-    def length(self):
-        pass
-
-    def to_bytes(self):
-        pass
-
-    def from_bytes(self, raw):
-        pass
+    def __len__(self):
+        return len(self.to_bytes())
 
     def __eq__(self, other):
         return self.to_bytes() == other.to_bytes()
@@ -124,7 +119,7 @@ class _ICMPv6OptionLinkLayerAddress(ICMPv6Option):
         self.ethaddr = address
 
     def to_bytes(self):
-        tl = struct.pack('!BB6B', self.optnum, 1)
+        tl = struct.pack('!BB', self.optnum, 1)
         return tl + self.ethaddr.packed
 
     def from_bytes(self, raw):
@@ -622,7 +617,7 @@ class ICMPv6RouterAdvertisement(ICMPv6Data):
         self._retrans_timer = value
 
     def __str__(self):
-        s = "{}: curr hop limit {} m {} o {} h {} p {} router lifetime {} reachable time {} retrans timer {}".format(super.__str__(), self._curhoplimit, self._m, self._o, self._h, self._p, self._router_lifetime, self._reachable_time, self._retrans_time)
+        s = "{}: curr hop limit {} m {} o {} h {} p {} router lifetime {} reachable time {} retrans timer {}".format(self.__class__.__name__, self._curhoplimit, self._m, self._o, self._h, self._p, self._router_lifetime, self._reachable_time, self._retrans_time)
         if len(self._options) > 0:
             s = "{} | {}".format(s, self._options)
         return s
@@ -662,7 +657,7 @@ class ICMPv6NeighborSolicitation(ICMPv6Data):
         self._targetaddr = IPv6Address(value)
 
     def __str__(self):
-        s = "{}: target address {}".format(super.__str__(), self._targetaddr)
+        s = "{}: target address {}".format(self.__class__.__name__, self._targetaddr)
         if len(self._options) > 0:
             s = "{} | {}".format(s, self._options)
         return s

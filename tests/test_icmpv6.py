@@ -36,6 +36,22 @@ class ICMPPv6PacketTests(unittest.TestCase):
         self.assertEqual(i.dst, SpecialIPv6Addr.ALL_NODES_LINK_LOCAL.value)
         self.assertIn("::->ff02::1", str(i))
 
+    def testOptionLinkLayerAddress(self):
+        lladdr = ICMPv6OptionTargetLinkLayerAddress('33:33:00:00:00:01')
+        raw = lladdr.to_bytes()
+        self.assertEqual(len(raw), 8)
+        self.assertEqual(raw[1], 1)
+        lladdr2 = ICMPv6OptionTargetLinkLayerAddress()
+        lladdr2.from_bytes(raw)
+        self.assertEqual(lladdr, lladdr2)
+
+    def testOptionPrefixInformation(self):
+        pfx = ICMPv6OptionPrefixInformation(prefix='fd00::/64')
+        raw = pfx.to_bytes()
+        pfx2 = ICMPv6OptionPrefixInformation()
+        pfx2.from_bytes(raw)
+        self.assertEqual(pfx, pfx2)
+
     def testReconstruct1(self):
         raw = b'33\x00\x00\x00\x16\x18\x81\x0e\x03\xaeQ\x86\xdd`\x00\x00\x00\x00$\x00\x01\xfe\x80\x00\x00\x00\x00\x00\x00\x1c\xe7\xbe)OU\x89s\xff\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x16:\x00\x01\x00\x05\x02\x00\x00\x8f\x00\xbb6\x00\x00\x00\x01\x04\x00\x00\x00\xff\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xfb'         
         p = Packet(raw)
@@ -47,6 +63,11 @@ class ICMPPv6PacketTests(unittest.TestCase):
         self.assertEqual(opts[1].__class__, RouterAlert)
         icmpv6 = p[ICMPv6]
         self.assertEqual(icmpv6.icmptype, ICMPv6Type.Version2MulticastListenerReport)
+        self.assertEqual(icmpv6.icmp6type, ICMPv6Type.Version2MulticastListenerReport)
+        self.assertEqual(icmpv6.icmpcode, 0)
+        self.assertEqual(icmpv6.icmp6code, 0)
+        with self.assertRaises(ValueError):
+            icmpv6.icmp6code = 13
 
     def testReconstruct2(self):
         raw = b'33\x00\x00\x00\x16\x18\x81\x0e\x03\xaeQ\x86\xdd`\x00\x00\x00\x00$\x00\x01\xfe\x80\x00\x00\x00\x00\x00\x00\x1c\xe7\xbe)OU\x89s\xff\x02\x00\x00'
