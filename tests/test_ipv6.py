@@ -28,9 +28,9 @@ class IPv6PacketTests(unittest.TestCase):
         with self.assertLogs() as cm:
             self.assertIsNone(i.next_header_class())
         self.assertIn('No class exists', cm.output[0])
-        self.assertEqual(i.hopcount, 128)
-        i.hopcount = 64
-        self.assertEqual(i.hopcount, 64)
+        self.assertEqual(i.hoplimit, 128)
+        i.hoplimit = 64
+        self.assertEqual(i.hoplimit, 64)
         i = IPv6(src=SpecialIPv6Addr.UNDEFINED.value, dst=SpecialIPv6Addr.ALL_NODES_LINK_LOCAL.value)
         self.assertEqual(i.src, SpecialIPv6Addr.UNDEFINED.value)
         self.assertEqual(i.dst, SpecialIPv6Addr.ALL_NODES_LINK_LOCAL.value)
@@ -80,6 +80,14 @@ class IPv6PacketTests(unittest.TestCase):
         xraw = pkt.to_bytes()
         p = Packet(raw=xraw)
         self.assertEqual(p, pkt)
+        self.assertIn("IPv6RouteOption", str(pkt[idx]))
+        self.assertEqual(hopopt.address, IPv6Address("fd00::1"))
+
+        hopopt._routingtype = 13
+        b = hopopt.to_bytes()
+        h2 = IPv6RouteOption()
+        with self.assertRaises(ValueError):
+            h2.from_bytes(b)
 
     def testFragExtHdr(self):
         pkt = deepcopy(self.pkt)
@@ -97,6 +105,13 @@ class IPv6PacketTests(unittest.TestCase):
         self.assertEqual(p[idx].id, 42)
         self.assertEqual(p[idx].offset, 1000)
         self.assertEqual(p[idx].mf, False)
+
+        self.assertEqual(str(frag), "IPv6Fragment (id: 42 offset: 1000 mf: False)")
+        f2 = IPv6Fragment()
+        raw = frag.to_bytes()
+        with self.assertRaises(NotEnoughDataError):
+            f2.from_bytes(raw[:-1])
+
 
     def testDestOptTunnelLimit(self):
         pkt = deepcopy(self.pkt)
@@ -177,6 +192,46 @@ class IPv6PacketTests(unittest.TestCase):
         self.assertEqual(len(destopt), 1)
         self.assertEqual(destopt[0].len, 10000)
 
+    def testV6JumboInsufficientData(self):
+        pkt = deepcopy(self.pkt)
+        del pkt[ICMPv6]
+        destopt = IPv6DestinationOption()
+        destopt.add_option(JumboPayload(10000))
+        destopt.nextheader = IPProtocol.IPv6NoNext
+        idx = pkt.get_header_index(IPv6)
+        pkt.insert_header(idx+1, destopt)
+        pkt[idx].nextheader = IPProtocol.IPv6DestinationOption
+        xraw = pkt.to_bytes()
+        p = Packet(raw=xraw)
+        self.assertEqual(pkt, p)
+        xraw = xraw[:-3]
+        with self.assertRaises(NotEnoughDataError):
+            Packet(raw=xraw)
+
+    def testV6Pad1BadOption(self):
+        pkt = deepcopy(self.pkt)
+        del pkt[ICMPv6]
+        destopt = IPv6DestinationOption()
+        destopt.add_option(Pad1())
+        destopt.add_option(Pad1())
+        destopt.add_option(Pad1())
+        destopt.add_option(Pad1())
+        destopt.add_option(Pad1())
+        destopt.add_option(Pad1())
+        destopt.add_option(Pad1())
+        destopt.add_option(Pad1())
+        # destopt.add_option(PadN(4))
+        destopt.nextheader = IPProtocol.IPv6NoNext
+        idx = pkt.get_header_index(IPv6)
+        pkt.insert_header(idx+1, destopt)
+        pkt[idx].nextheader = IPProtocol.IPv6DestinationOption
+        xraw = pkt.to_bytes()
+        Packet(raw=xraw)    
+        xraw = xraw[:-4]
+        xraw += b'\x0d\x00\x00\x00'
+        with self.assertRaises(ValueError):
+            Packet(raw=xraw)    
+
     def testNoNextHdr(self):
         pkt = deepcopy(self.pkt)
         idx = pkt.get_header_index(IPv6)
@@ -189,26 +244,6 @@ class IPv6PacketTests(unittest.TestCase):
         p = Packet(raw=xraw)
         self.assertEqual(p[IPv6], pkt[IPv6])
 
-    @unittest.skip("Skipping mobility header tests (currently broken)")
-    def testMobilityHeader(self):
-        pkt = deepcopy(self.pkt)
-        idx = pkt.get_header_index(IPv6)
-        mob = IPv6Mobility()
-        pkt.insert_header(idx+1, mob)
-        mob.nextheader = pkt[idx].nextheader
-        pkt[idx].nextheader = IPProtocol.IPv6Mobility
-        pkt[idx].src = IPv6Address("fc00::a")
-        pkt[idx].dst = IPv6Address("fc00::b")
-        self.assertEqual(pkt.num_headers(), 4)
-        print (pkt)
-        xraw = pkt.to_bytes()
-        print (xraw)
-        print (len(xraw))
-        p = Packet(raw=xraw)
-        xraw2 = p.to_bytes()
-        self.assertEqual(xraw, xraw2)
-        # yes: there are currently bugs in IPv6 mobility header handling
-        
 
 if __name__ == '__main__':
     unittest.main()

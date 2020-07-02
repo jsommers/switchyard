@@ -19,7 +19,6 @@ References:
     IETF RFC 2460 http://tools.ietf.org/html/rfc2460 (ipv6)
     IETF RFC 6564 http://tools.ietf.org/html/rfc6564 (uniform format for ipv6 extension headers)
     IETF RFC 7045 http://tools.ietf.org/html/rfc7045 (transmission and processing of ipv6 extension headers)
-    IETF RFC 6275 IPv6 mobility
 '''
 
 class IPv6ExtensionHeader(PacketHeaderBase):
@@ -367,7 +366,7 @@ class IPv6HopOption(IPv6ExtensionHeader):
             else:
                 xlen = raw[1]
                 if len(raw) < xlen+2:
-                    raise Exception("Not enough data to unpack IPv6 TLV option (have {} bytes, need {} bytes for type {}".format(len(raw), xlen, xtype))
+                    raise NotEnoughDataError("Not enough data to unpack IPv6 TLV option (have {} bytes, need {} bytes for type {}".format(len(raw), xlen, xtype))
                 data = raw[2:(2+xlen)]
                 raw = raw[(2+xlen):]
                 cls = IPv6HopOption._option_type_dict.get(xtype, None)
@@ -378,99 +377,99 @@ class IPv6HopOption(IPv6ExtensionHeader):
 class IPv6DestinationOption(IPv6HopOption):
     pass
 
-class IPv6MobilityHeaderType(IntEnum):
-    BindingRefreshRequest = 0
-    HomeTestInit = 1
-    CareOfTestInit = 2
-    HomeTest = 3
-    CareOfTest = 4
-    BindingUpdate = 5
-    BindingAcknowledgment = 6
-    BindingError = 7
+# class IPv6MobilityHeaderType(IntEnum):
+#     BindingRefreshRequest = 0
+#     HomeTestInit = 1
+#     CareOfTestInit = 2
+#     HomeTest = 3
+#     CareOfTest = 4
+#     BindingUpdate = 5
+#     BindingAcknowledgment = 6
+#     BindingError = 7
 
-_IPv6MobilityHeaderStruct = {
-    IPv6MobilityHeaderType.BindingRefreshRequest: '!H', # 2 reserved bytes, TLV options
-    IPv6MobilityHeaderType.HomeTestInit: '!H8s', # 2 reserved bytes, 8 byte cookie, TLV options
-    IPv6MobilityHeaderType.CareOfTestInit: '!H8s', # 2 reserved bytes, 8 byte cookie, TLV options
-    IPv6MobilityHeaderType.HomeTest: '!H8s8s', # 2 byte nonce, 8 byte cookie, 8 byte keygen token, TLV options
-    IPv6MobilityHeaderType.CareOfTest: '!H8s8s', # 2 byte nonce, 8 byte cookie, 8 byte keygen token, TLV options
-    IPv6MobilityHeaderType.BindingUpdate: '!H4B', # 2 byte seq, 4 more bytes (bitfields, etc.), TLV options
-    IPv6MobilityHeaderType.BindingAcknowledgment: '!2BHH', # 2 byte status/reserved, 2 byte seq, 2 byte lifetime, TLV options
-    IPv6MobilityHeaderType.BindingError: '!BB16s', # status(1), reserved(1), homeaddr(16), TLV options
-}
+# _IPv6MobilityHeaderStruct = {
+#     IPv6MobilityHeaderType.BindingRefreshRequest: '!H', # 2 reserved bytes, TLV options
+#     IPv6MobilityHeaderType.HomeTestInit: '!H8s', # 2 reserved bytes, 8 byte cookie, TLV options
+#     IPv6MobilityHeaderType.CareOfTestInit: '!H8s', # 2 reserved bytes, 8 byte cookie, TLV options
+#     IPv6MobilityHeaderType.HomeTest: '!H8s8s', # 2 byte nonce, 8 byte cookie, 8 byte keygen token, TLV options
+#     IPv6MobilityHeaderType.CareOfTest: '!H8s8s', # 2 byte nonce, 8 byte cookie, 8 byte keygen token, TLV options
+#     IPv6MobilityHeaderType.BindingUpdate: '!H4B', # 2 byte seq, 4 more bytes (bitfields, etc.), TLV options
+#     IPv6MobilityHeaderType.BindingAcknowledgment: '!2BHH', # 2 byte status/reserved, 2 byte seq, 2 byte lifetime, TLV options
+#     IPv6MobilityHeaderType.BindingError: '!BB16s', # status(1), reserved(1), homeaddr(16), TLV options
+# }
 
 
 # Mobility Options: Pad1, PadN, BindingRefreshAdvice (type = 2), Alternate CoA (type = 3),
 # Nonce Indices (type=4), Binding Authz Data (type=5)
 
 
-class IPv6Mobility(IPv6ExtensionHeader):
-    '''
-    IPv6Mobility packet header.
+# class IPv6Mobility(IPv6ExtensionHeader):
+#     '''
+#     IPv6Mobility packet header.
 
-    This header is incomplete, but *should* sufficiently parse any valid
-    MIPv6 header.  In particular, there is no special handling of the
-    header type elements apart from simply making sure that all the data
-    are encoded/decoded in the right byte sizes (see IPv6MobilityHeaderType 
-    enumeration, above).  
-    '''
+#     This header is incomplete, but *should* sufficiently parse any valid
+#     MIPv6 header.  In particular, there is no special handling of the
+#     header type elements apart from simply making sure that all the data
+#     are encoded/decoded in the right byte sizes (see IPv6MobilityHeaderType 
+#     enumeration, above).  
+#     '''
 
-    __slots__ = ('_mhtype','_checksum','_data','_src','_dst')
-    _PACKFMT = '!BBH'
-    _MINLEN = struct.calcsize(_PACKFMT)
+#     __slots__ = ('_mhtype','_checksum','_data','_src','_dst')
+#     _PACKFMT = '!BBH'
+#     _MINLEN = struct.calcsize(_PACKFMT)
 
-    def __init__(self, **kwargs):
-        self._nextheader = IPProtocol.IPv6NoNext
-        self._optdatalen = 0 #FIXME
-        self._mhtype = IPv6MobilityHeaderType(0)
-        self._data = (0,)
-        self._src = self._dst = SpecialIPv6Addr.UNDEFINED.value
-        super().__init__(8, **kwargs)
+#     def __init__(self, **kwargs):
+#         self._nextheader = IPProtocol.IPv6NoNext
+#         self._optdatalen = 0 #FIXME
+#         self._mhtype = IPv6MobilityHeaderType(0)
+#         self._data = (0,)
+#         self._src = self._dst = SpecialIPv6Addr.UNDEFINED.value
+#         super().__init__(8, **kwargs)
 
-    def pre_serialize(self, raw, pkt, i):
-        ipv6hdr = pkt.get_header(IPv6)
-        self._src = ipv6hdr.src
-        self._dst = ipv6hdr.dst
+#     def pre_serialize(self, raw, pkt, i):
+#         ipv6hdr = pkt.get_header(IPv6)
+#         self._src = ipv6hdr.src
+#         self._dst = ipv6hdr.dst
 
-    def __str__(self):
-        return "IPv6Mobility ({})".format(self._mhtype.name)
+#     def __str__(self):
+#         return "IPv6Mobility ({})".format(self._mhtype.name)
 
-    def _compute_checksum(self):
-        # FIXME: computed on IPv6 pseudoheader + full mobility header (starting with ext header)
-        # pseudoheader: srcaddr(16),dstaddr(16),len of mobility header (4), 000 next header(4)
-        self._checksum = 0
-        exthdr = self.to_bytes(computecsum=False)
-        self._checksum = checksum(struct.pack('16s16sIxxxB',
-                                  self._src.packed,
-                                  self._dst.packed,
-                                  len(exthdr), IPProtocol.IPv6Mobility.value) +
-            exthdr)
-        return self._checksum
+#     def _compute_checksum(self):
+#         # FIXME: computed on IPv6 pseudoheader + full mobility header (starting with ext header)
+#         # pseudoheader: srcaddr(16),dstaddr(16),len of mobility header (4), 000 next header(4)
+#         self._checksum = 0
+#         exthdr = self.to_bytes(computecsum=False)
+#         self._checksum = checksum(struct.pack('16s16sIxxxB',
+#                                   self._src.packed,
+#                                   self._dst.packed,
+#                                   len(exthdr), IPProtocol.IPv6Mobility.value) +
+#             exthdr)
+#         return self._checksum
 
-    def _parse_tlv(self, raw):
-        pass
+#     def _parse_tlv(self, raw):
+#         pass
 
-    def to_bytes(self, computecsum=True):
-        if computecsum:
-            self._compute_checksum()
-        exthdr = super().to_bytes()
-        mobhdr = struct.pack(IPv6Mobility._PACKFMT, self._mhtype.value, 0, self._checksum)
-        remain = struct.pack(_IPv6MobilityHeaderStruct[self._mhtype], *self._data)
-        return exthdr + mobhdr + remain
+#     def to_bytes(self, computecsum=True):
+#         if computecsum:
+#             self._compute_checksum()
+#         exthdr = super().to_bytes()
+#         mobhdr = struct.pack(IPv6Mobility._PACKFMT, self._mhtype.value, 0, self._checksum)
+#         remain = struct.pack(_IPv6MobilityHeaderStruct[self._mhtype], *self._data)
+#         return exthdr + mobhdr + remain
 
-    def from_bytes(self, raw):
-        super().from_bytes(raw)
-        remain = raw[2:]
-        if len(remain) < IPv6Mobility._MINLEN:
-            raise NotEnoughDataError("Not enough data to unpack IPv6Mobility header")
-        mhtype,reserved,checksum = struct.unpack(IPv6Mobility._PACKFMT, 
-                                                 remain[:IPv6Mobility._MINLEN])
-        self._mhtype = IPv6MobilityHeaderType(mhtype)
-        self._checksum = checksum
-        mobheaderstruct = _IPv6MobilityHeaderStruct[self._mhtype]
-        structsize = struct.calcsize(mobheaderstruct)
-        self._data = struct.unpack(mobheaderstruct, remain[IPv6Mobility._MINLEN:(IPv6Mobility._MINLEN+structsize)])
-        return raw[(IPv6Mobility._MINLEN + structsize):]
+#     def from_bytes(self, raw):
+#         super().from_bytes(raw)
+#         remain = raw[2:]
+#         if len(remain) < IPv6Mobility._MINLEN:
+#             raise NotEnoughDataError("Not enough data to unpack IPv6Mobility header")
+#         mhtype,reserved,checksum = struct.unpack(IPv6Mobility._PACKFMT, 
+#                                                  remain[:IPv6Mobility._MINLEN])
+#         self._mhtype = IPv6MobilityHeaderType(mhtype)
+#         self._checksum = checksum
+#         mobheaderstruct = _IPv6MobilityHeaderStruct[self._mhtype]
+#         structsize = struct.calcsize(mobheaderstruct)
+#         self._data = struct.unpack(mobheaderstruct, remain[IPv6Mobility._MINLEN:(IPv6Mobility._MINLEN+structsize)])
+#         return raw[(IPv6Mobility._MINLEN + structsize):]
 
 
 IPTypeClasses = {
@@ -483,8 +482,7 @@ IPTypeClasses = {
     IPProtocol.IPv6RouteOption: IPv6RouteOption,
     IPProtocol.IPv6Fragment: IPv6Fragment,
     IPProtocol.IPv6DestinationOption: IPv6DestinationOption,
-    IPProtocol.IPv6NoNext: NullPacketHeader,
-    IPProtocol.IPv6Mobility: IPv6Mobility,
+    IPProtocol.IPv6NoNext: None,
 }
 
 
@@ -582,11 +580,11 @@ class IPv6(PacketHeaderBase):
         self._ttl = int(value)
 
     @property 
-    def hopcount(self):
+    def hoplimit(self):
         return self.ttl
 
-    @hopcount.setter
-    def hopcount(self, value):
+    @hoplimit.setter
+    def hoplimit(self, value):
         self.ttl = value
 
     @property

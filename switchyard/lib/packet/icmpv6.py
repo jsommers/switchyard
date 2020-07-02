@@ -1,8 +1,10 @@
 import struct
-from ipaddress import IPv6Address
+from ipaddress import IPv6Address,IPv6Network
 from abc import ABCMeta
+from math import ceil
 
 from .icmp import ICMP, ICMPData, ICMPEchoRequest, ICMPEchoReply, ICMPDestinationUnreachable
+from .packet import PacketHeaderBase
 from .common import ICMPv6Type, ICMPv6TypeCodeMap, ICMPv6OptionNumber
 from .common import checksum as csum
 from ..address import EthAddr
@@ -26,11 +28,6 @@ class ICMPv6(ICMP):
     _MINLEN = struct.calcsize(_PACKFMT)
 
     def __init__(self, **kwargs):
-        if 'icmp6type' in kwargs:
-            kwargs['icmptype'] = kwargs['icmp6type']
-            del kwargs['icmp6type']
-        super().__init__(**kwargs)
-
         self._valid_types = ICMPv6Type
         self._valid_codes_map = ICMPv6TypeCodeMap
         self._classtype_from_icmptype = ICMPv6ClassFromType
@@ -40,10 +37,19 @@ class ICMPv6(ICMP):
         self._icmpdata = ICMPv6ClassFromType(self._type)()
         self._checksum = 0
 
-        # if kwargs are given, must ensure that type gets set
-        # before code due to dependencies on validity.
-        if 'icmptype' in kwargs:
-            self.icmptype = kwargs['icmptype']
+        # make sure that icmptype is set first; this has the
+        # side-effect of also creating the "right" icmpdata object.
+        # as a convenience, allow kw syntax to set icmpdata values
+        popattr = []
+        for attr,val in kwargs.items():
+            if hasattr(self.icmpdata, attr):
+                setattr(self.icmpdata, attr, val)
+                popattr.append(attr)
+        for pattr in popattr:
+            kwargs.pop(pattr)
+        # don't explicitly call init in parent ICMPv4 class;
+        # it will set classtype map incorrectly back to v4
+        PacketHeaderBase.__init__(self, **kwargs)
 
     def checksum(self):
         return self._checksum
@@ -65,9 +71,24 @@ class ICMPv6(ICMP):
         assert(ip6hdr is not None)
         self._compute_checksum(ip6hdr.src, ip6hdr.dst, raw)
 
+    @property
+    def icmp6type(self):
+        return self.icmptype
+
+    @icmp6type.setter
+    def icmp6type(self, value):
+        self.icmptype = value
+
+    @property
+    def icmp6code(self):
+        return self.icmpcode
+
+    @icmp6code.setter
+    def icmp6code(self, value):
+        self.icmpcode = value
+
 
 class ICMPv6Option(object, metaclass=ABCMeta):
-    _PACKFMT = 'B'
     __slots__ = ['_optnum']
 
     def __init__(self, optnum):
@@ -78,107 +99,222 @@ class ICMPv6Option(object, metaclass=ABCMeta):
         return self._optnum
 
     def length(self):
-        return struct.calcsize(ICMPv6Option._PACKFMT)
+        pass
 
     def to_bytes(self):
-        return struct.pack(ICMPv6Option._PACKFMT, self._optnum.value)
+        pass
 
     def from_bytes(self, raw):
-        return self.length()
+        pass
 
     def __eq__(self, other):
-        return self._optnum == other._optnum
+        return self.to_bytes() == other.to_bytes()
 
     def __str__(self):
         return "{}".format(self.__class__.__name__)
 
 
-class ICMPv6OptionLinkLayerAddress(ICMPv6Option):
-    def __init__(self, address=None):
-        super().__init__(self._ICMPv6OptionType)
-        self._linklayeraddress = EthAddr(address)
+class _ICMPv6OptionLinkLayerAddress(ICMPv6Option):
+    __slots__ = ['_ethaddr']
+    _PACKFMT = '!BB6s'
+    _MINLEN = struct.calcsize(_PACKFMT)
+
+    def __init__(self, optnum, address=None):
+        super().__init__(optnum)
+        self.ethaddr = address
 
     def to_bytes(self):
-        value = self._linklayeraddress.packed
-        length = int.to_bytes(int((len(value) + 2)/8), length=1,
-                              byteorder=byteorder, signed=False)
-        xtype = int.to_bytes(self._ICMPv6OptionType, length=1,
-                             byteorder=byteorder, signed=False)
-        return xtype+length+value
+        tl = struct.pack('!BB6B', self.optnum, 1)
+        return tl + self.ethaddr.packed
 
     def from_bytes(self, raw):
-        type_ = raw[0]
-        assert type_ == self._ICMPv6OptionType
-        length_ = raw[1] * 8
-        # length of option header (t + l + v = 2 + length_)
-        # current implementation supports only Ethernet addresses
-        assert (length_ - 2) == len(EthAddr())
-        self._linklayeraddress = EthAddr(raw[2:length_])
-        return length_
+        if len(raw) < _ICMPv6OptionLinkLayerAddress._MINLEN:
+            raise NotEnoughDataError("Insufficient data to reconstruct {} (have {} need {})".format(self.__class__.__name__, length_, len(EthAddr)))
+        fields = struct.unpack(_ICMPv6OptionLinkLayerAddress._PACKFMT, raw)
+        assert(fields[0] == self.optnum)
+        assert(fields[1] == 1)
+        self.ethaddr = EthAddr(fields[2])
+        return _ICMPv6OptionLinkLayerAddress._MINLEN
+
+    @property
+    def ethaddr(self):
+        return self._ethaddr
+    
+    @ethaddr.setter
+    def ethaddr(self, value):
+        self._ethaddr = EthAddr(value)
 
     def __str__(self):
-        return "{} {}".format(super().__str__(), self._linklayeraddress)
+        return "{} {}".format(super().__str__(), self.ethaddr)
 
 
-class ICMPv6OptionSourceLinkLayerAddress(ICMPv6OptionLinkLayerAddress):
-    _ICMPv6OptionType = ICMPv6OptionNumber.SourceLinkLayerAddress
+class ICMPv6OptionTargetLinkLayerAddress(_ICMPv6OptionLinkLayerAddress):
+    def __init__(self, address=None):
+        super().__init__(ICMPv6OptionNumber.TargetLinkLayerAddress)
 
 
-class ICMPv6OptionTargetLinkLayerAddress(ICMPv6OptionLinkLayerAddress):
-    _ICMPv6OptionType = ICMPv6OptionNumber.TargetLinkLayerAddress
+class ICMPv6OptionSourceLinkLayerAddress(_ICMPv6OptionLinkLayerAddress):
+    def __init__(self, address=None):
+        super().__init__(ICMPv6OptionNumber.SourceLinkLayerAddress, address)
 
 
 class ICMPv6OptionPrefixInformation(ICMPv6Option):
-    pass
+    __slots__ = ['_l', '_a', '_valid_lifetime', '_preferred_lifetime', '_prefix']
+    _PACKFMT = '!BBBBIIxxxx16s'
+    _MINLEN = struct.calcsize(_PACKFMT)
 
-
-class ICMPv6OptionRedirectedHeader(ICMPv6Option):
-    _PACKFMT = "!xxxxxx"
-    _reservedbytes = b'\x00' * 6
-    _max_pkt_len = 8 * 100  # FIXME: hack: arbitrary length; enough for hdrs
-
-    def __init__(self, redirected_packet=None):
-        if redirected_packet is not None:
-            # FIXME: todo: Truncate frame to path MTU?!
-            # for now, quick hack to just header and some data
-            data = redirected_packet.to_bytes()
-            data_length = int((len(data) + 2)/8) * 8
-
-            if data_length > self._max_pkt_len:  # cut to 200B
-                data_length = data_length - self._max_pkt_len
-
-            # data_length - 2,  so option header fits into units on 8 octets
-            self._packetdata = redirected_packet.to_bytes()[:(data_length-2)]
-        else:
-            self._packetdata = None
+    def __init__(self, **kwargs):
+        super().__init__(ICMPv6OptionNumber.PrefixInformation)
+        self._l = 1
+        self._a = 1
+        self._valid_lifetime = 25920000
+        self._preferred_lifetime = 604800
+        self._prefix = IPv6Network('::/64')
+        for k,v in kwargs.items():
+            setattr(self, k, v)
 
     def to_bytes(self):
-        value = ICMPv6OptionRedirectedHeader._reservedbytes + self._packetdata
-
-        # FIXME: truncate to 8 octet group
-        data_length = int((len(v) + 2)/8)
-        length = int.to_bytes(data_length, length=1,
-                              byteorder=byteorder, signed=False)
-        xtype = int.to_bytes(ICMPv6OptionNumber.RedirectedHeader, length=1,
-                             byteorder=byteorder, signed=False)
-        return xtype+length+value[:(data_length*8)-2]
+        flags = ((self._l << 7| self._a << 6)) & 0xff
+        return struct.pack(ICMPv6OptionPrefixInformation._PACKFMT, self.optnum, 4,
+            self.prefix.prefixlen, self.valid_lifetime, self.preferred_lifetime,
+            self.prefix.network_address.packed)
+        return ICMPv6OptionPrefixInformation._MINLEN
 
     def from_bytes(self, raw):
-        type_ = raw[0]
-        assert type_ == ICMPv6OptionNumber.RedirectedHeader
-        length_ = raw[1] * 8
-        # length of option header (t + l + v = 2 + length_)
+        if len(raw) < ICMPv6OptionPrefixInformation._MINLEN:
+            raise NotEnoughDataError("Insufficient data to reconstruct {}: need {} have {}".format(self.__class__.__name__, ICMPv6OptionPrefixInformation._MINLEN, len(raw)))
+        fields = struct.unpack(ICMPv6OptionPrefixInformation._PACKFMT, raw)
+        assert(fields[0] == self.optnum)
+        assert(fields[1] == 4)
+        
+    @property
+    def prefix_length(self):
+        return self._prefix.prefixlen
 
-        self._packetdata = raw[2:length_]
-        return length_
+    @prefix_length.setter
+    def prefix_length(self, value):
+        _addr = self._prefix.network_address
+        self._prefix = IPv6Network("{}/{}".format(_addr, value))
+
+    @property
+    def l(self):
+        return self._l
+
+    @l.setter
+    def l(self, value):
+        self._l = int(value) & 0x1
+
+    @property
+    def a(self):
+        return self._a
+
+    @a.setter
+    def a(self, value):
+        self._a = int(value) & 0x1
+
+    @property 
+    def valid_lifetime(self):
+        return self._valid_lifetime
+
+    @valid_lifetime.setter
+    def valid_lifetime(self, value):
+        if value < 0:
+            raise ValueError("valid_lifetime must be non-negative")
+        self._valid_lifetime = int(value)
+
+    @property
+    def preferred_lifetime(self):
+        return self._preferred_lifetime
+
+    @preferred_lifetime.setter
+    def preferred_lifetime(self, value):
+        if value < 0:
+            raise ValueError("preferred_lifetime must be non-negative")
+        self._preferred_lifetime = int(value)
+
+    @property
+    def prefix(self):
+        return self._prefix
+
+    @prefix.setter
+    def prefix(self, value):
+        self._prefix = IPv6Network(value, strict=False)
 
     def __str__(self):
-        return "{} Enclosed packet ({} bytes)".format(
-                super().__str__(), len(self._packetdata))
+        return "{} pfxlen {} l {} a {} valid lifetime {} preferred lifetime {} prefix {}".format(self.__class__.__name__, self.prefix.prefixlen, self.l, self.a, self.valid_lifetime, self.preferred_lifetime, self.prefix.network_address)
 
 
 class ICMPv6OptionMTU(ICMPv6Option):
-    pass
+    __slots__ = ['_mtu']
+    _PACKFMT = '!BBxxI'
+    _MINLEN = struct.calcsize(_PACKFMT)
+
+    def __init__(self, mtu=1500):
+        super().__init__(ICMPv6OptionNumber.MTU)
+        self.mtu = mtu
+
+    def to_bytes(self):
+        return struct.pack(ICMPv6OptionMTU._PACKFMT, self.optnum, 1, self.mtu)
+
+    def from_bytes(self, raw):
+        if len(raw) < ICMPv6OptionMTU._MINLEN:
+            raise NotEnoughDataError("Insufficient data to reconstruct {}: have {} need {}".format(self.__class__.__name__, len(raw), ICMPv6OptionMTU._MINLEN))
+        fields = struct.unpack(ICMPv6OptionMTU._PACKFMT, raw)
+        assert(fields[0] == self.optnum)
+        assert(fields[1] == 1)
+        self.mtu = fields[2]
+        return ICMPv6OptionMTU._MINLEN 
+
+    @property
+    def mtu(self):
+        return self._mtu
+
+    @mtu.setter
+    def mtu(self, value):
+        self._mtu = int(value)
+
+    def __str__(self):
+        return "{} {}".format(super().__str__(), self.mtu)
+
+
+class ICMPv6OptionRedirectedHeader(ICMPv6Option):
+    __slots__ = ['_header']
+    _PACKFMT = '!BB'
+    _MINLEN = struct.calcsize(_PACKFMT)
+
+    def __init__(self, header=None):
+        super().__init__(ICMPv6OptionNumber.RedirectedHeader)
+        assert(isinstance(header, bytes))
+        self.header = header
+
+    def to_bytes(self):
+        _len = int(ceil((len(self.header) + 2)/8))
+        rv = struct.pack(ICMPv6OptionRedirectedHeader._PACKFMT, self.optnum, _len)
+        return rv + self._header
+
+    def from_bytes(self, raw):
+        if len(raw) < ICMPv6OptionRedirectedHeader._MINLEN:
+            raise NotEnoughDataError("Insufficient data to reconstruct {}".format(self.__class__.__name))
+        tl = struct.unpack(ICMPv6OptionRedirectedHeader._PACKFMT, raw[:2])
+        assert(tl[0] == self.optnum)
+        bytelen = tl[1] * 8
+        if len(raw) < bytelen:
+            raise NotEnoughDataError("Insufficient data to reconstruct {}".format(self.__class__.__name))
+        self.header = raw[2:bytelen]
+        return bytelen
+    
+    @property
+    def header(self):
+        return self._header
+
+    @header.setter
+    def header(self, value):
+        assert(isinstance(header, bytes))
+        self._header = value
+
+    def __str__(self):
+        return "{} redirected packet ({} bytes)".format(
+                super().__str__(), len(self._header))
 
 
 ICMPv6OptionClasses = {
@@ -193,25 +329,34 @@ ICMPv6OptionClasses = {
 
 
 class ICMPv6OptionList(object):
+    __slots__ = ['_options']
     def __init__(self):
         self._options = []
 
     @staticmethod
-    def from_bytes(rawbytes):
+    def from_bytes(raw):
         '''
         Takes a byte string as a parameter and returns a list of
         ICMPv6Option objects.
         '''
         icmpv6popts = ICMPv6OptionList()
 
-        i = 0
-        while i < len(rawbytes):
-            opttype = rawbytes[i]
-            optnum = ICMPv6OptionNumber(opttype)
+        while len(raw) >= 8:
+            opttype = raw[0]
+            optlen = raw[1]
+            olen = optlen * 8
+            optdata = raw[:olen]
+            raw = raw[olen:]
+
+            try:
+                optnum = ICMPv6OptionNumber(opttype)
+            except ValueError:
+                log_warn("Unimplemented ICMPv6 Option {}".format(opttype))
+                continue
+
+            print(optnum, olen)
             obj = ICMPv6OptionClasses[optnum]()
-            eaten = obj.from_bytes(rawbytes[i:])
-            i += eaten
-            icmpv6popts.append(obj)
+            obj.from_bytes(optdata)
         return icmpv6popts
 
     def to_bytes(self):
@@ -289,15 +434,22 @@ class ICMPv6OptionList(object):
 
 class ICMPv6Data(ICMPData):
     '''
-    Placeholder for unimplemented ICMPv6 message types
+    Parent class for ICMPv6 informational message data types 
     '''
     def __init__(self, **kwargs):
         self._options = ICMPv6OptionList()
+        _opts = kwargs.pop('options', None)
         super().__init__(**kwargs)
+        if _opts is not None:
+            for o in _opts:
+                self._options.append(o)
 
     @property
     def options(self):
         return self._options
+
+    def __str__(self):
+        return self.__class__.__name__
 
 
 class ICMPv6EchoRequest(ICMPEchoRequest):
@@ -309,22 +461,6 @@ class ICMPv6EchoReply(ICMPEchoReply):
 
 
 class ICMPv6DestinationUnreachable(ICMPDestinationUnreachable):
-    pass
-
-
-class ICMPv6HomeAgentAddressDiscoveryRequestMessage(ICMPv6Data):
-    pass
-
-
-class ICMPv6HomeAgentAddressDiscoveryReplyMessage(ICMPv6Data):
-    pass
-
-
-class ICMPv6MobilePrefixSolicitation(ICMPv6Data):
-    pass
-
-
-class ICMPv6MobilePrefixAdvertisement(ICMPv6Data):
     pass
 
 
@@ -345,21 +481,157 @@ class ICMPv6MulticastListenerDone(ICMPv6Data):
 
 
 class ICMPv6RouterSolicitation(ICMPv6Data):
-    pass
+    _PACKFMT = '!xxxx'
+    _MINLEN = struct.calcsize(_PACKFMT)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def to_bytes(self):
+        return b''.join((struct.pack(ICMPv6RouterSolicitation._PACKFMT),
+            self._options.to_bytes(), super().to_bytes()))
+    
+    def from_bytes(self, raw):
+        if len(raw) < ICMPv6RouterSolicitation._MINLEN:
+            raise NotEnoughDataError("Not enough bytes to unpack {}".format(
+                self.__class__.__name__))
+        optionbytes = raw[ICMPv6NeighborSolicitation._MINLEN:]
+        _ = struct.unpack(ICMPv6RouterSolicitation._PACKFMT,
+                          raw[:ICMPv6RouterSolicitation._MINLEN])
+        self._options = ICMPv6OptionList.from_bytes(optionbytes)
+
+    def __str__(self):
+        s = self.__class__.__name__
+        if len(self._options) > 0:
+            s = "{} | {}".format(s, self._options)
+        return s
 
 
 class ICMPv6RouterAdvertisement(ICMPv6Data):
-    pass
+    __slots__ = ['_curhoplimit', '_m', '_o', '_h', '_p',
+                 '_router_lifetime', '_reachable_time', '_retrans_time']
+    _PACKFMT = '!BBHII'
+    _MINLEN = struct.calcsize(_PACKFMT)
+
+    def __init__(self, **kwargs):
+        self._curhoplimit = 64
+        self._m = self._o = self._h = self._p = 0
+        self._router_lifetime = 1800
+        self._reachable_time = 0
+        self._retrans_time = 0
+        super().__init__(**kwargs)
+
+    def to_bytes(self):
+        flags = ((self._m << 7) | (self._o << 6) | (self._h << 5) | (self._p << 4)) & 0xff
+        return b''.join((
+            struct.pack(ICMPv6RouterAdvertisement._PACKFMT,
+                        self._curhoplimit,
+                        flags,
+                        self._router_lifetime, self._reachable_time,
+                        self._retrans_time),
+            self._options.to_bytes(), super().to_bytes()))
+
+    def from_bytes(self, raw):
+        if len(raw) < ICMPv6RouterAdvertisement._MINLEN:
+            raise NotEnoughDataError("Not enough bytes to unpack {}".format(
+                self.__class__.__name__))
+        optionbytes = raw[ICMPv6RouterAdvertisement._MINLEN:]
+        fields = struct.unpack(ICMPv6RouterAdvertisement._PACKFMT,
+                               raw[:ICMPv6RouterAdvertisement._MINLEN])
+        self.curhoplimit = fields[0]
+        flags = fields[1]
+        self.m = (flags & 0x8) >> 7
+        self.o = (flags & 0x4) >> 6
+        self.h = (flags & 0x2) >> 5
+        self.p = (flags & 0x1) >> 4
+        self.router_lifetime = fields[2]
+        self.reachable_time = fields[3]
+        self.retrans_time = fields[4]
+        self._options = ICMPv6OptionList.from_bytes(optionbytes)
+
+    @property
+    def curhoplimit(self):
+        return self._curhoplimit
+
+    @curhoplimit.setter
+    def curhoplimit(self, value):
+        if value < 0:
+            raise ValueError("Invalid curhoplimit: must be non-negative")
+        self._curhoplimit = value
+
+    @property
+    def m(self):
+        return self._m
+
+    @m.setter
+    def m(self, value):
+        self._m = int(value) & 0x1
+
+    @property
+    def o(self):
+        return self._o
+
+    @o.setter
+    def o(self, value):
+        self._o = int(value) & 0x1
+
+    @property
+    def h(self):
+        return self._h
+
+    @h.setter
+    def h(self, value):
+        self._h = int(value) & 0x1
+
+    @property
+    def p(self):
+        return self._p
+
+    @p.setter
+    def p(self, value):
+        self._p = int(value) & 0x1
+
+    @property
+    def router_lifetime(self):
+        return self._router_lifetime
+
+    @router_lifetime.setter
+    def router_lifetime(self, value):
+        if value < 0:
+            raise ValueError("Invalid router_lifetime must be non-negative")
+        self._router_lifetime = value
+
+    @property
+    def reachable_time(self):
+        return self._reachable_time
+
+    @reachable_time.setter
+    def reachable_time(self, value):
+        if value < 0:
+            raise ValueError("Invalid reachable_time must be non-negative")
+        self._reachable_time = value
+
+    @property
+    def retrans_timer(self):
+        return self._retrans_timer
+
+    @retrans_timer.setter
+    def retrans_timer(self, value):
+        if value < 0:
+            raise ValueError("Invalid retrans_timer must be non-negative")
+        self._retrans_timer = value
+
+    def __str__(self):
+        s = "{}: curr hop limit {} m {} o {} h {} p {} router lifetime {} reachable time {} retrans timer {}".format(super.__str__(), self._curhoplimit, self._m, self._o, self._h, self._p, self._router_lifetime, self._reachable_time, self._retrans_time)
+        if len(self._options) > 0:
+            s = "{} | {}".format(s, self._options)
+        return s
 
 
 class ICMPv6NeighborSolicitation(ICMPv6Data):
     __slots__ = ['_targetaddr']
     _PACKFMT = "!xxxx16s"
     _MINLEN = struct.calcsize(_PACKFMT)
-    '''
-        possible options:
-          * source_link_layer_address: link layer address of sending host
-    '''
 
     def __init__(self, **kwargs):
         self._targetaddr = IPv6Address("::0")
@@ -387,11 +659,10 @@ class ICMPv6NeighborSolicitation(ICMPv6Data):
 
     @targetaddr.setter
     def targetaddr(self, value):
-        print("setting target address: {}".format(IPv6Address(value)))
         self._targetaddr = IPv6Address(value)
 
     def __str__(self):
-        s = "Target address: {}".format(self._targetaddr)
+        s = "{}: target address {}".format(super.__str__(), self._targetaddr)
         if len(self._options) > 0:
             s = "{} | {}".format(s, self._options)
         return s
@@ -401,10 +672,6 @@ class ICMPv6NeighborAdvertisement(ICMPv6Data):
     __slots__ = ['_R_S_O', '_targetaddr']
     _PACKFMT = "!cxxx16s"
     _MINLEN = struct.calcsize(_PACKFMT)
-    '''
-        possible options:
-          * source_link_layer_address: link layer address of sending host
-    '''
     def __init__(self, **kwargs):
         self._targetaddr = IPv6Address("::0")
         self._routerflag = 0
@@ -501,12 +768,6 @@ class ICMPv6RedirectMessage(ICMPv6Data):
     __slots__ = ['_targetaddr', '_destinationaddr']
     _PACKFMT = "!xxxx16s16s"
     _MINLEN = struct.calcsize(_PACKFMT)
-    '''
-        possible options:
-          * target_link_layer_address: link layer address of sending host
-          * redirected_header: link layer address of sending host
-    '''
-
     def __init__(self, **kwargs):
         self._targetaddr = IPv6Address("::0")
         self._destinationaddr = IPv6Address("::0")
@@ -547,7 +808,8 @@ class ICMPv6RedirectMessage(ICMPv6Data):
         self._destinationaddr = IPv6Address(value)
 
     def __str__(self):
-        s = "Target: {} Destination: {}".format(
+        s = "{} Target: {} Destination: {}".format(
+            super.__str__(),
             self._targetaddr,
             self._targetaddr)
         if len(self._options) > 0:

@@ -27,7 +27,11 @@ class EtherType(IntEnum):
     MPLS = 0x8847
     MPLSUni = 0x8847
     MPLSMulti = 0x8848
+    EAP = 0x888e
     x8021AD = 0x88a8
+    AOE = 0x88a2
+    EtherCat = 0x88a4
+    LWAPP = 0x88bb
     LLDP = 0x88cc
     x8021AH = 0x88e7
     PTP = 0x88f7
@@ -130,6 +134,18 @@ class ICMPCodeDestinationUnreachable(IntEnum):
     CommunicationAdministrativelyProhibited = 13
     HostPrecedenceViolation = 14
     PrecedenceCutoffInEffect = 15
+
+
+class ICMPv6CodeDestinationUnreachable(IntEnum):
+    NoRouteToDestination = 0
+    CommunicationWithDestinationAdminProhibitied = 1
+    BeyondScopeOfSourceAddress = 2
+    AddressUnreachable = 3
+    PortUnreachable = 4
+    SourceAddressFailedIngressEgressPolicy	= 5
+    RejectRouteToDestination	= 6
+    ErrorInSourceRoutingHeader = 7
+    HeadersTooLong = 8
 
 
 class ICMPCodeSourceQuench(IntEnum):
@@ -290,7 +306,7 @@ class ICMPv6CodeVersion2MulticastListenerReport(IntEnum):
 ICMPv6TypeCodeMap = {
     ICMPv6Type.EchoRequest: ICMPCodeEchoRequest,
     ICMPv6Type.EchoReply: ICMPCodeEchoReply,
-    ICMPv6Type.DestinationUnreachable: ICMPCodeDestinationUnreachable,  
+    ICMPv6Type.DestinationUnreachable: ICMPv6CodeDestinationUnreachable,  
     ICMPv6Type.NeighborSolicitation: ICMPv6CodeNeighborSolicitation,
     ICMPv6Type.NeighborAdvertisement: ICMPv6CodeNeighborAdvertisement,
     ICMPv6Type.RedirectMessage: ICMPv6CodeRedirectMessage,

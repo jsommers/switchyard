@@ -28,9 +28,9 @@ class ICMPPv6PacketTests(unittest.TestCase):
         with self.assertLogs() as cm:
             self.assertIsNone(i.next_header_class())
         self.assertIn('No class exists', cm.output[0])
-        self.assertEqual(i.hopcount, 128)
-        i.hopcount = 64
-        self.assertEqual(i.hopcount, 64)
+        self.assertEqual(i.hoplimit, 128)
+        i.hoplimit = 64
+        self.assertEqual(i.hoplimit, 64)
         i = IPv6(src=SpecialIPv6Addr.UNDEFINED.value, dst=SpecialIPv6Addr.ALL_NODES_LINK_LOCAL.value)
         self.assertEqual(i.src, SpecialIPv6Addr.UNDEFINED.value)
         self.assertEqual(i.dst, SpecialIPv6Addr.ALL_NODES_LINK_LOCAL.value)
@@ -53,6 +53,30 @@ class ICMPPv6PacketTests(unittest.TestCase):
         with self.assertRaises(NotEnoughDataError):
             p = Packet(raw)
 
+    def testSetType(self):
+        p = Ethernet(ethertype=EtherType.IPv6) + IPv6(nextheader=IPProtocol.ICMPv6) + ICMPv6(icmp6type=ICMPv6Type.RouterSolicitation)
+        self.assertEqual(p[-1].icmptype, ICMPv6Type.RouterSolicitation)
+        self.assertEqual(p[-1].icmp6type, ICMPv6Type.RouterSolicitation)
+        #print(p.to_bytes())
+        #print(p)
+        #print(p[-1])
+
+    def testMakeRouterAdvertisement(self):
+        p = Ethernet(ethertype=EtherType.IPv6, src='58:ac:78:93:da:00', dst='33:33:00:00:00:01') + IPv6(nextheader=IPProtocol.ICMPv6, hoplimit=255, src='fe80::1', dst='ff02::1') + ICMPv6(icmptype=ICMPv6Type.RouterAdvertisement, icmpdata=ICMPv6RouterAdvertisement(options=(ICMPv6OptionSourceLinkLayerAddress('00:50:56:af:97:68'),)))
+
+    def testMakeRouterSolicitation(self):
+        p = Ethernet(ethertype=EtherType.IPv6, src='58:ac:78:93:da:00', dst='33:33:00:00:00:01') + IPv6(nextheader=IPProtocol.ICMPv6, hoplimit=255, src='fe80::1', dst='ff02::1') + ICMPv6(icmptype=ICMPv6Type.RouterAdvertisement, icmpdata=ICMPv6RouterSolicitation(options=(ICMPv6OptionSourceLinkLayerAddress('00:50:56:af:97:68'),ICMPv6OptionMTU(1250), ICMPv6OptionPrefixInformation(prefix='fd00::/64'))))
+        print(p)
+
+
+    def testNeighborAdvertisementReconstruct(self):
+        raw=b'\x60\x00\x00\x00\x00\x18\x3a\xff\xfe\x80\x00\x00\x00\x00\x00\x00\xea\x8d\x28\xff\xfe\x59\x2e\x5b\xfe\x80\x00\x00\x00\x00\x00\x00\x1c\x44\x49\xff\x8e\x68\x2b\x21\x88\x00\x1b\xd8\xc0\x00\x00\x00\xfe\x80\x00\x00\x00\x00\x00\x00\xea\x8d\x28\xff\xfe\x59\x2e\x5b' 
+        p = Packet(raw=raw, first_header=IPv6)
+        #print(p)
+
+        raw=b'\x60\x00\x00\x00\x00\x20\x3a\xff\xfe\x80\x00\x00\x00\x00\x00\x00\x1c\x44\x49\xff\x8e\x68\x2b\x21\xfe\x80\x00\x00\x00\x00\x00\x00\xea\x8d\x28\xff\xfe\x59\x2e\x5b\x87\x00\x45\xf7\x00\x00\x00\x00\xfe\x80\x00\x00\x00\x00\x00\x00\xea\x8d\x28\xff\xfe\x59\x2e\x5b\x01\x01\xac\xbc\x32\xc2\xb6\x59'
+        p = Packet(raw=raw, first_header=IPv6)
+        #print(p)
 
 if __name__ == '__main__':
     unittest.main()
