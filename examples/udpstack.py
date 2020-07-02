@@ -42,7 +42,7 @@ def handle_app_data(net, intf, appdata):
 
     proto,srcip,srcport,dstip,dstport = flowaddr
     srcaddr = [a for a in intf.ipaddrs if a.version == 4][0]
-    p = Null() + IPv4(protocol=proto, src=srcaddr.ip., dst=dstip, ipid=0xabcd, ttl=64, flags=IPFragmentFlag.DontFragment) + UDP(src=srcport,dst=dstport) + message
+    p = Null() + IPv4(protocol=proto, src=srcaddr.ip, dst=dstip, ipid=0xabcd, ttl=64, flags=IPFragmentFlag.DontFragment) + UDP(src=srcport, dst=dstport) + message
 
     log_debug("Sending {} to {}".format(p, intf.name))
     net.send_packet(intf, p)
