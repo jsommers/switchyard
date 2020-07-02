@@ -309,7 +309,7 @@ class ICMPv6OptionRedirectedHeader(ICMPv6Option):
 
     @header.setter
     def header(self, value):
-        assert(isinstance(header, bytes))
+        assert(isinstance(value, bytes))
         self._header = value
 
     def __str__(self):
@@ -765,18 +765,18 @@ class ICMPv6NeighborAdvertisement(ICMPv6Data):
 
 
 class ICMPv6RedirectMessage(ICMPv6Data):
-    __slots__ = ['_targetaddr', '_destinationaddr']
+    __slots__ = ['_targetaddr', '_destaddr']
     _PACKFMT = "!xxxx16s16s"
     _MINLEN = struct.calcsize(_PACKFMT)
     def __init__(self, **kwargs):
         self._targetaddr = IPv6Address("::0")
-        self._destinationaddr = IPv6Address("::0")
+        self._destaddr = IPv6Address("::0")
         super().__init__(**kwargs)
 
     def to_bytes(self):
         return b''.join((struct.pack(
             ICMPv6RedirectMessage._PACKFMT,
-            self._targetaddr.packed, self._destinationaddr.packed),
+            self._targetaddr.packed, self._destaddr.packed),
             self._options.to_bytes(), super().to_bytes()))
 
     def from_bytes(self, raw):
@@ -788,7 +788,7 @@ class ICMPv6RedirectMessage(ICMPv6Data):
             ICMPv6RedirectMessage._PACKFMT,
             raw[:ICMPv6RedirectMessage._MINLEN])
         self._targetaddr = IPv6Address(fields[0])
-        self._destinationaddr = IPv6Address(fields[1])
+        self._destaddr = IPv6Address(fields[1])
         self._options = ICMPv6OptionList.from_bytes(optionbytes)
 
     @property
@@ -800,12 +800,12 @@ class ICMPv6RedirectMessage(ICMPv6Data):
         self._targetaddr = IPv6Address(value)
 
     @property
-    def destinationaddr(self):
-        return self._targetaddr
+    def destaddr(self):
+        return self._destaddr
 
-    @destinationaddr.setter
-    def destinationaddr(self, value):
-        self._destinationaddr = IPv6Address(value)
+    @destaddr.setter
+    def destaddr(self, value):
+        self._destaddr = IPv6Address(value)
 
     def __str__(self):
         s = "{} Target: {} Destination: {}".format(
