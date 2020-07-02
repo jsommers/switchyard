@@ -122,8 +122,8 @@ class LLNetBase(metaclass=ABCMeta):
         '''
         ipaddr = ip_address(ipaddr)
         for devname,iface in self._devinfo.items():
-            for ipa in  iface.ipaddrs:
-                if ipa.ip == ipaddr:
+            for ipa in iface.ipaddrs:
+                if str(ipa.ip) == str(ipaddr):
                     return iface
         raise KeyError("No device has IP address {}".format(ipaddr))
 

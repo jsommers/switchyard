@@ -1,33 +1,21 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>switchyard.lib.socket.socketemu &#8212; Switchyard 2017.01.5 documentation</title>
-    
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>switchyard.lib.socket.socketemu &#8212; Switchyard 1.0.0 documentation</title>
     <link rel="stylesheet" href="../../../../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
-    
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../../../../',
-        VERSION:     '2017.01.5',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" /> 
-  </head>
-  <body role="document">
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -37,24 +25,11 @@
         <li class="right" >
           <a href="../../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 1.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">switchyard.lib.socket.socketemu</a></li> 
       </ul>
-    </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="../../../../search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -63,23 +38,23 @@
             
   <h1>Source code for switchyard.lib.socket.socketemu</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">from</span> <span class="nn">queue</span> <span class="k">import</span> <span class="n">Queue</span><span class="p">,</span> <span class="n">Empty</span>
-<span class="kn">from</span> <span class="nn">threading</span> <span class="k">import</span> <span class="n">Lock</span>
-<span class="kn">from</span> <span class="nn">subprocess</span> <span class="k">import</span> <span class="n">getoutput</span>
+<span class="kn">from</span> <span class="nn">queue</span> <span class="kn">import</span> <span class="n">Queue</span><span class="p">,</span> <span class="n">Empty</span>
+<span class="kn">from</span> <span class="nn">threading</span> <span class="kn">import</span> <span class="n">Lock</span>
+<span class="kn">from</span> <span class="nn">subprocess</span> <span class="kn">import</span> <span class="n">getoutput</span>
 <span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">import</span> <span class="nn">random</span>
-<span class="kn">from</span> <span class="nn">textwrap</span> <span class="k">import</span> <span class="n">indent</span>
-<span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">copy</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">namedtuple</span>
-<span class="kn">from</span> <span class="nn">time</span> <span class="k">import</span> <span class="n">time</span>
+<span class="kn">from</span> <span class="nn">textwrap</span> <span class="kn">import</span> <span class="n">indent</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">copy</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
 <span class="kn">import</span> <span class="nn">socket</span>
-<span class="kn">from</span> <span class="nn">socket</span> <span class="k">import</span> <span class="n">error</span> <span class="k">as</span> <span class="n">sockerr</span>
+<span class="kn">from</span> <span class="nn">socket</span> <span class="kn">import</span> <span class="n">error</span> <span class="k">as</span> <span class="n">sockerr</span>
 
 <span class="c1"># carefully control what we export to user code; we provide our own</span>
 <span class="c1"># implementation for some symbols, and others simply aren&#39;t supported</span>
 <span class="c1"># ugly, but working within limitations of importlib, etc....</span>
 <span class="n">implist</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">__all__</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">socket</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">socket</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="n">dontimport</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;setdefaulttimeout&#39;</span><span class="p">,</span> <span class="s1">&#39;getdefaulttimeout&#39;</span><span class="p">,</span> <span class="s1">&#39;has_ipv6&#39;</span><span class="p">,</span> 
     <span class="s1">&#39;socket&#39;</span><span class="p">,</span> <span class="s1">&#39;socketpair&#39;</span><span class="p">,</span> <span class="s1">&#39;fromfd&#39;</span><span class="p">,</span> <span class="s1">&#39;dup&#39;</span><span class="p">,</span> <span class="s1">&#39;create_connection&#39;</span><span class="p">,</span> <span class="s1">&#39;CMSG_LEN&#39;</span><span class="p">,</span>
     <span class="s1">&#39;CMSG_SPACE&#39;</span><span class="p">)</span>
@@ -91,12 +66,12 @@
 <span class="n">explist</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">implist</span><span class="p">)</span>
 <span class="n">__all__</span> <span class="o">=</span> <span class="n">explist</span>
 
-<span class="kn">from</span> <span class="nn">...hostfirewall</span> <span class="k">import</span> <span class="n">Firewall</span>
-<span class="kn">from</span> <span class="nn">...pcapffi</span> <span class="k">import</span> <span class="n">PcapLiveDevice</span>
-<span class="kn">from</span> <span class="nn">..exceptions</span> <span class="k">import</span> <span class="n">NoPackets</span>
-<span class="kn">from</span> <span class="nn">..logging</span> <span class="k">import</span> <span class="n">log_debug</span><span class="p">,</span> <span class="n">log_info</span><span class="p">,</span> <span class="n">log_warn</span><span class="p">,</span> <span class="n">setup_logging</span><span class="p">,</span> <span class="n">red</span><span class="p">,</span> <span class="n">yellow</span>
-<span class="kn">from</span> <span class="nn">..packet</span> <span class="k">import</span> <span class="n">IPProtocol</span>
-<span class="kn">from</span> <span class="nn">..address</span> <span class="k">import</span> <span class="n">ip_address</span>
+<span class="kn">from</span> <span class="nn">...hostfirewall</span> <span class="kn">import</span> <span class="n">Firewall</span>
+<span class="kn">from</span> <span class="nn">...pcapffi</span> <span class="kn">import</span> <span class="n">PcapLiveDevice</span>
+<span class="kn">from</span> <span class="nn">..exceptions</span> <span class="kn">import</span> <span class="n">NoPackets</span>
+<span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">log_debug</span><span class="p">,</span> <span class="n">log_info</span><span class="p">,</span> <span class="n">log_warn</span><span class="p">,</span> <span class="n">setup_logging</span><span class="p">,</span> <span class="n">red</span><span class="p">,</span> <span class="n">yellow</span>
+<span class="kn">from</span> <span class="nn">..packet</span> <span class="kn">import</span> <span class="n">IPProtocol</span>
+<span class="kn">from</span> <span class="nn">..address</span> <span class="kn">import</span> <span class="n">ip_address</span>
 
 <span class="n">has_ipv6</span> <span class="o">=</span> <span class="kc">True</span>
 
@@ -110,7 +85,7 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>
             <span class="k">continue</span>
         <span class="n">ports</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-        <span class="n">mobj</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s1">r&#39;[\.:](\d+|\*)$&#39;</span><span class="p">,</span> <span class="n">ports</span><span class="p">)</span>
+        <span class="n">mobj</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[\.:](\d+|\*)$&#39;</span><span class="p">,</span> <span class="n">ports</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">mobj</span><span class="p">:</span>
             <span class="n">port</span> <span class="o">=</span> <span class="p">(</span><span class="n">mobj</span><span class="o">.</span><span class="n">groups</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
             <span class="k">if</span> <span class="n">port</span> <span class="o">!=</span> <span class="s1">&#39;*&#39;</span><span class="p">:</span>
@@ -155,7 +130,7 @@
     <span class="n">_to_app</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_from_app</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Don&#39;t try to create an instance of this class.  Switchyard internally</span>
 <span class="sd">        handles initialization.  Users should only ever call the</span>
@@ -163,7 +138,7 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Ouch.  Please don&#39;t try to create an instance &quot;</span>
                            <span class="s2">&quot;of </span><span class="si">{}</span><span class="s2">.  Use the static init() method &quot;</span>
-                           <span class="s2">&quot;instead.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span>
+                           <span class="s2">&quot;instead.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_init</span><span class="p">():</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -182,8 +157,8 @@
             <span class="n">s</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">sockid</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">s</span>
 
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="ApplicationLayer.recv_from_app"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.ApplicationLayer.recv_from_app">[docs]</a>    <span class="k">def</span> <span class="nf">recv_from_app</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">_default_timeout</span><span class="p">):</span>
+<div class="viewcode-block" id="ApplicationLayer.recv_from_app"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.ApplicationLayer.recv_from_app">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">recv_from_app</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">_default_timeout</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Called by a network stack implementer to receive application-layer</span>
 <span class="sd">        data for sending on to a remote location.  </span>
@@ -201,8 +176,8 @@
             <span class="k">pass</span>
         <span class="k">raise</span> <span class="n">NoPackets</span><span class="p">()</span></div>
 
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="ApplicationLayer.send_to_app"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.ApplicationLayer.send_to_app">[docs]</a>    <span class="k">def</span> <span class="nf">send_to_app</span><span class="p">(</span><span class="n">proto</span><span class="p">,</span> <span class="n">local_addr</span><span class="p">,</span> <span class="n">remote_addr</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<div class="viewcode-block" id="ApplicationLayer.send_to_app"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.ApplicationLayer.send_to_app">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">send_to_app</span><span class="p">(</span><span class="n">proto</span><span class="p">,</span> <span class="n">local_addr</span><span class="p">,</span> <span class="n">remote_addr</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Called by a network stack implementer to push application-layer</span>
 <span class="sd">        data &quot;up&quot; from the stack.</span>
@@ -277,11 +252,11 @@
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    A socket object, emulated by Switchyard.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
-    <span class="n">__slots__</span> <span class="o">=</span>  <span class="p">(</span><span class="s1">&#39;_family&#39;</span><span class="p">,</span><span class="s1">&#39;_socktype&#39;</span><span class="p">,</span><span class="s1">&#39;_protoname&#39;</span><span class="p">,</span><span class="s1">&#39;_proto&#39;</span><span class="p">,</span>
+    <span class="vm">__slots__</span> <span class="o">=</span>  <span class="p">(</span><span class="s1">&#39;_family&#39;</span><span class="p">,</span><span class="s1">&#39;_socktype&#39;</span><span class="p">,</span><span class="s1">&#39;_protoname&#39;</span><span class="p">,</span><span class="s1">&#39;_proto&#39;</span><span class="p">,</span>
         <span class="s1">&#39;_timeout&#39;</span><span class="p">,</span><span class="s1">&#39;_block&#39;</span><span class="p">,</span><span class="s1">&#39;_remote_addr&#39;</span><span class="p">,</span><span class="s1">&#39;_local_addr&#39;</span><span class="p">,</span>
         <span class="s1">&#39;_socket_queue_app_to_stack&#39;</span><span class="p">,</span><span class="s1">&#39;_socket_queue_stack_to_app&#39;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">family</span><span class="p">,</span> <span class="n">socktype</span><span class="p">,</span> <span class="n">proto</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">fileno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">family</span><span class="p">,</span> <span class="n">socktype</span><span class="p">,</span> <span class="n">proto</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">fileno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">ApplicationLayer</span><span class="o">.</span><span class="n">_isinit</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;ApplicationLayer isn&#39;t initialized; this socket class can only be used within a Switchyard program.&quot;</span><span class="p">)</span>
         <span class="n">family</span> <span class="o">=</span> <span class="n">AddressFamily</span><span class="p">(</span><span class="n">family</span><span class="p">)</span>
@@ -568,7 +543,22 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div></div>
 </pre></div>
 
+            <div class="clearer"></div>
           </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -582,13 +572,14 @@
         <li class="right" >
           <a href="../../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 1.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">switchyard.lib.socket.socketemu</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2017, Joel Sommers.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+        &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
     </div>
   </body>
 </html>

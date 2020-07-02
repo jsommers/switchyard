@@ -812,7 +812,7 @@ class ICMPv6RedirectMessage(ICMPv6Data):
 
     def __str__(self):
         s = "{} Target: {} Destination: {}".format(
-            super.__str__(),
+            self.__class__.__name__,
             self._targetaddr,
             self._targetaddr)
         if len(self._options) > 0:

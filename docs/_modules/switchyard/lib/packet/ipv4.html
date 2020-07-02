@@ -1,33 +1,21 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>switchyard.lib.packet.ipv4 &#8212; Switchyard 2017.01.5 documentation</title>
-    
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>switchyard.lib.packet.ipv4 &#8212; Switchyard 1.0.0 documentation</title>
     <link rel="stylesheet" href="../../../../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
-    
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../../../../',
-        VERSION:     '2017.01.5',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" /> 
-  </head>
-  <body role="document">
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -37,24 +25,11 @@
         <li class="right" >
           <a href="../../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 1.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">switchyard.lib.packet.ipv4</a></li> 
       </ul>
-    </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="../../../../search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -63,18 +38,18 @@
             
   <h1>Source code for switchyard.lib.packet.ipv4</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">struct</span>
-<span class="kn">from</span> <span class="nn">abc</span> <span class="k">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span> <span class="nn">ipaddress</span> <span class="k">import</span> <span class="n">IPv4Address</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">namedtuple</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">ipaddress</span> <span class="kn">import</span> <span class="n">IPv4Address</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
 
-<span class="kn">from</span> <span class="nn">.packet</span> <span class="k">import</span> <span class="n">PacketHeaderBase</span><span class="p">,</span><span class="n">Packet</span>
-<span class="kn">from</span> <span class="nn">..address</span> <span class="k">import</span> <span class="n">EthAddr</span><span class="p">,</span><span class="n">IPAddr</span><span class="p">,</span><span class="n">SpecialIPv4Addr</span><span class="p">,</span><span class="n">SpecialEthAddr</span>
-<span class="kn">from</span> <span class="nn">..logging</span> <span class="k">import</span> <span class="n">log_warn</span>
-<span class="kn">from</span> <span class="nn">.common</span> <span class="k">import</span> <span class="n">IPProtocol</span><span class="p">,</span><span class="n">IPFragmentFlag</span><span class="p">,</span><span class="n">IPOptionNumber</span><span class="p">,</span> <span class="n">checksum</span>
-<span class="kn">from</span> <span class="nn">.icmp</span> <span class="k">import</span> <span class="n">ICMP</span>
-<span class="kn">from</span> <span class="nn">.udp</span> <span class="k">import</span> <span class="n">UDP</span>
-<span class="kn">from</span> <span class="nn">.tcp</span> <span class="k">import</span> <span class="n">TCP</span>
-<span class="kn">from</span> <span class="nn">..exceptions</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.packet</span> <span class="kn">import</span> <span class="n">PacketHeaderBase</span><span class="p">,</span><span class="n">Packet</span>
+<span class="kn">from</span> <span class="nn">..address</span> <span class="kn">import</span> <span class="n">EthAddr</span><span class="p">,</span><span class="n">ip_address</span><span class="p">,</span><span class="n">SpecialIPv4Addr</span><span class="p">,</span><span class="n">SpecialEthAddr</span>
+<span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">log_warn</span>
+<span class="kn">from</span> <span class="nn">.common</span> <span class="kn">import</span> <span class="n">IPProtocol</span><span class="p">,</span><span class="n">IPFragmentFlag</span><span class="p">,</span><span class="n">IPOptionNumber</span><span class="p">,</span> <span class="n">checksum</span>
+<span class="kn">from</span> <span class="nn">.icmp</span> <span class="kn">import</span> <span class="n">ICMP</span>
+<span class="kn">from</span> <span class="nn">.udp</span> <span class="kn">import</span> <span class="n">UDP</span>
+<span class="kn">from</span> <span class="nn">.tcp</span> <span class="kn">import</span> <span class="n">TCP</span>
+<span class="kn">from</span> <span class="nn">..exceptions</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">References:</span>
@@ -88,8 +63,8 @@
 
 <span class="k">class</span> <span class="nc">IPOption</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
     <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s1">&#39;B&#39;</span>
-    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_optnum&#39;</span><span class="p">]</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optnum</span><span class="p">):</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_optnum&#39;</span><span class="p">]</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optnum</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_optnum</span> <span class="o">=</span> <span class="n">IPOptionNumber</span><span class="p">(</span><span class="n">optnum</span><span class="p">)</span>
 
     <span class="nd">@property</span>
@@ -105,28 +80,28 @@
     <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optnum</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_optnum</span>
 
-    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">IPOptionNoOperation</span><span class="p">(</span><span class="n">IPOption</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">NoOperation</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">NoOperation</span><span class="p">)</span>
 
  
 <span class="k">class</span> <span class="nc">IPOptionEndOfOptionList</span><span class="p">(</span><span class="n">IPOption</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">EndOfOptionList</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">EndOfOptionList</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">IPOptionXRouting</span><span class="p">(</span><span class="n">IPOption</span><span class="p">):</span>
     <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s1">&#39;BBB&#39;</span>
-    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_routedata&#39;</span><span class="p">,</span><span class="s1">&#39;_ptr&#39;</span><span class="p">]</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ipoptnum</span><span class="p">,</span> <span class="n">numaddrs</span><span class="o">=</span><span class="mi">9</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">ipoptnum</span><span class="p">)</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_routedata&#39;</span><span class="p">,</span><span class="s1">&#39;_ptr&#39;</span><span class="p">]</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ipoptnum</span><span class="p">,</span> <span class="n">numaddrs</span><span class="o">=</span><span class="mi">9</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">ipoptnum</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">numaddrs</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">numaddrs</span> <span class="o">&gt;</span> <span class="mi">9</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid number of addresses for IP routing-type option (must be 1-9)&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_routedata</span> <span class="o">=</span> <span class="p">[</span><span class="n">IPv4Address</span><span class="p">(</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">)]</span> <span class="o">*</span> <span class="n">numaddrs</span>
@@ -135,7 +110,7 @@
     <span class="k">def</span> <span class="nf">length</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">IPOptionXRouting</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">)</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_routedata</span><span class="p">)</span><span class="o">*</span><span class="mi">4</span>
 
-    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_routedata</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -169,14 +144,14 @@
     <span class="k">def</span> <span class="nf">num_addrs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_routedata</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">index</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_routedata</span><span class="p">)</span> <span class="o">+</span> <span class="n">index</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_routedata</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;Index out of range&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_routedata</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">addr</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">addr</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">addr</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span><span class="n">IPv4Address</span><span class="p">)):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Value must be IPv4Address or str&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
@@ -185,45 +160,45 @@
             <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;Index out of range&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_routedata</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">IPv4Address</span><span class="p">(</span><span class="n">addr</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">index</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_routedata</span><span class="p">)</span> <span class="o">+</span> <span class="n">index</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_routedata</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;Index out of range&quot;</span><span class="p">)</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_routedata</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> 
 
-    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">optnum</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">optnum</span> <span class="ow">and</span> \
             <span class="bp">self</span><span class="o">.</span><span class="n">_ptr</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_ptr</span> <span class="ow">and</span> \
             <span class="bp">self</span><span class="o">.</span><span class="n">_routedata</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_routedata</span>
 
-    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
             <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">addr</span><span class="p">)</span> <span class="k">for</span> <span class="n">addr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_routedata</span><span class="p">]))</span>
 
 
 <span class="k">class</span> <span class="nc">IPOptionLooseSourceRouting</span><span class="p">(</span><span class="n">IPOptionXRouting</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">numaddrs</span><span class="o">=</span><span class="mi">9</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">LooseSourceRouting</span><span class="p">,</span> <span class="n">numaddrs</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">numaddrs</span><span class="o">=</span><span class="mi">9</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">LooseSourceRouting</span><span class="p">,</span> <span class="n">numaddrs</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">IPOptionStrictSourceRouting</span><span class="p">(</span><span class="n">IPOptionXRouting</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">numaddrs</span><span class="o">=</span><span class="mi">9</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">StrictSourceRouting</span><span class="p">,</span> <span class="n">numaddrs</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">numaddrs</span><span class="o">=</span><span class="mi">9</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">StrictSourceRouting</span><span class="p">,</span> <span class="n">numaddrs</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">IPOptionRecordRoute</span><span class="p">(</span><span class="n">IPOptionXRouting</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">numaddrs</span><span class="o">=</span><span class="mi">9</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">RecordRoute</span><span class="p">,</span> <span class="n">numaddrs</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">numaddrs</span><span class="o">=</span><span class="mi">9</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">RecordRoute</span><span class="p">,</span> <span class="n">numaddrs</span><span class="p">)</span>
 
 
 <span class="n">TimestampEntry</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;TimestampEntry&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;ipv4addr&#39;</span><span class="p">,</span><span class="s1">&#39;timestamp&#39;</span><span class="p">])</span>
 
 <span class="k">class</span> <span class="nc">IPOptionTimestamp</span><span class="p">(</span><span class="n">IPOption</span><span class="p">):</span>
-    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_entries&#39;</span><span class="p">,</span><span class="s1">&#39;_ptr&#39;</span><span class="p">,</span><span class="s1">&#39;_flag&#39;</span><span class="p">]</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_entries&#39;</span><span class="p">,</span><span class="s1">&#39;_ptr&#39;</span><span class="p">,</span><span class="s1">&#39;_flag&#39;</span><span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span> <span class="o">=</span> <span class="p">[</span><span class="n">TimestampEntry</span><span class="p">(</span><span class="n">IPv4Address</span><span class="p">(</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">),</span> <span class="mi">0</span><span class="p">)]</span> <span class="o">*</span> <span class="mi">4</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ptr</span> <span class="o">=</span> <span class="mi">5</span>
         <span class="c1"># flags: 0x0 only timestamps, 0x1 ipaddr and timestamp, 0x3 optlist initialized</span>
@@ -259,7 +234,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">xlen</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">xlen</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="n">NotEnoughDataError</span><span class="p">(</span><span class="s2">&quot;Not enough data to unpack raw </span><span class="si">{}</span><span class="s2">: need </span><span class="si">{}</span><span class="s2"> but only have </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="n">xlen</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)))</span>
+            <span class="k">raise</span> <span class="n">NotEnoughDataError</span><span class="p">(</span><span class="s2">&quot;Not enough data to unpack raw </span><span class="si">{}</span><span class="s2">: need </span><span class="si">{}</span><span class="s2"> but only have </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">xlen</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)))</span>
         <span class="n">raw</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="n">xlen</span><span class="p">]</span>
         <span class="n">haveipaddr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flag</span> <span class="o">!=</span> <span class="mi">0</span>
         <span class="n">unpackfmt</span> <span class="o">=</span> <span class="s1">&#39;!II&#39;</span>
@@ -279,22 +254,22 @@
     <span class="k">def</span> <span class="nf">timestamp_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">IPOptionTimestamp</span><span class="p">)</span> <span class="ow">and</span> \
             <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_entries</span> <span class="ow">and</span> \
             <span class="bp">self</span><span class="o">.</span><span class="n">_flag</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_flag</span>
 
-    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
             <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">]))</span>
 
 
 <span class="k">class</span> <span class="nc">IPOption4Bytes</span><span class="p">(</span><span class="n">IPOption</span><span class="p">):</span>
-    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_value&#39;</span><span class="p">,</span> <span class="s1">&#39;_copyflag&#39;</span><span class="p">]</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_value&#39;</span><span class="p">,</span> <span class="s1">&#39;_copyflag&#39;</span><span class="p">]</span>
     <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s1">&#39;!BBH&#39;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optnum</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">copyflag</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">optnum</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optnum</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">copyflag</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optnum</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_copyflag</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">if</span> <span class="n">copyflag</span><span class="p">:</span>
@@ -312,25 +287,25 @@
         <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">IPOption4Bytes</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> 
             <span class="bp">self</span><span class="o">.</span><span class="n">_copyflag</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">optnum</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">optnum</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">optnum</span> <span class="ow">and</span> \
             <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_value</span> <span class="ow">and</span> \
             <span class="bp">self</span><span class="o">.</span><span class="n">_copyflag</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_copyflag</span>    
 
 
 <span class="k">class</span> <span class="nc">IPOptionRouterAlert</span><span class="p">(</span><span class="n">IPOption4Bytes</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">RouterAlert</span><span class="p">,</span> <span class="n">copyflag</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">RouterAlert</span><span class="p">,</span> <span class="n">copyflag</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">IPOptionMTUProbe</span><span class="p">(</span><span class="n">IPOption4Bytes</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">MTUProbe</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">1500</span><span class="p">,</span> <span class="n">copyflag</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">MTUProbe</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">1500</span><span class="p">,</span> <span class="n">copyflag</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">IPOptionMTUReply</span><span class="p">(</span><span class="n">IPOption4Bytes</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">MTUReply</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">1500</span><span class="p">,</span> <span class="n">copyflag</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">IPOptionNumber</span><span class="o">.</span><span class="n">MTUReply</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">1500</span><span class="p">,</span> <span class="n">copyflag</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 
 <span class="n">IPOptionClasses</span> <span class="o">=</span> <span class="p">{</span>
@@ -346,7 +321,7 @@
 <span class="p">}</span>
 
 <span class="k">class</span> <span class="nc">IPOptionList</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="nd">@staticmethod</span>
@@ -375,13 +350,13 @@
 <span class="sd">        Takes a list of IPOption objects and returns a packed byte string</span>
 <span class="sd">        of options, appropriately padded if necessary.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="n">raw</span> <span class="o">=</span> <span class="n">b</span><span class="s1">&#39;&#39;</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">raw</span>
         <span class="k">for</span> <span class="n">ipopt</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">:</span>
             <span class="n">raw</span> <span class="o">+=</span> <span class="n">ipopt</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
         <span class="n">padbytes</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">-</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">%</span> <span class="mi">4</span><span class="p">)</span>
-        <span class="n">raw</span> <span class="o">+=</span> <span class="n">b</span><span class="s1">&#39;</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="o">*</span><span class="n">padbytes</span>
+        <span class="n">raw</span> <span class="o">+=</span> <span class="sa">b</span><span class="s1">&#39;</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="o">*</span><span class="n">padbytes</span>
         <span class="k">return</span> <span class="n">raw</span>
     
     <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">opt</span><span class="p">):</span>
@@ -390,27 +365,27 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Option to be added must be an IPOption object&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">i</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span>
         <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">):</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
         <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;Invalid IP option index&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">i</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">__class__</span><span class="p">,</span> <span class="n">IPOption</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Assigned value must be of type IPOption, but </span><span class="si">{}</span><span class="s2"> is not.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">IPOption</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Assigned value must be of type IPOption, but </span><span class="si">{}</span><span class="s2"> is not.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
         <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;Invalid IP option index&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">i</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span>
         <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">):</span>
@@ -424,15 +399,15 @@
     <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">IPOptionList</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">_options</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_options</span>
 
-    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
             <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">opt</span><span class="p">)</span> <span class="k">for</span> <span class="n">opt</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">]))</span>
 
 
@@ -443,7 +418,7 @@
 <span class="p">}</span>
 
 <div class="viewcode-block" id="IPv4"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.IPv4">[docs]</a><span class="k">class</span> <span class="nc">IPv4</span><span class="p">(</span><span class="n">PacketHeaderBase</span><span class="p">):</span>
-    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_tos&#39;</span><span class="p">,</span><span class="s1">&#39;_totallen&#39;</span><span class="p">,</span><span class="s1">&#39;_ttl&#39;</span><span class="p">,</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_tos&#39;</span><span class="p">,</span><span class="s1">&#39;_totallen&#39;</span><span class="p">,</span><span class="s1">&#39;_ttl&#39;</span><span class="p">,</span>
                  <span class="s1">&#39;_ipid&#39;</span><span class="p">,</span><span class="s1">&#39;_flags&#39;</span><span class="p">,</span><span class="s1">&#39;_fragoffset&#39;</span><span class="p">,</span>
                  <span class="s1">&#39;_protocol&#39;</span><span class="p">,</span><span class="s1">&#39;_csum&#39;</span><span class="p">,</span>
                  <span class="s1">&#39;_src&#39;</span><span class="p">,</span><span class="s1">&#39;_dst&#39;</span><span class="p">,</span><span class="s1">&#39;_options&#39;</span><span class="p">]</span>
@@ -452,7 +427,7 @@
     <span class="n">_next_header_map</span> <span class="o">=</span> <span class="n">IPTypeClasses</span>
     <span class="n">_next_header_class_key</span> <span class="o">=</span> <span class="s1">&#39;_protocol&#39;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="c1"># fill in fields with (essentially) zero values</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tos</span> <span class="o">=</span> <span class="mh">0x00</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_totallen</span> <span class="o">=</span> <span class="n">IPv4</span><span class="o">.</span><span class="n">_MINLEN</span>
@@ -465,7 +440,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">src</span> <span class="o">=</span> <span class="n">SpecialIPv4Addr</span><span class="o">.</span><span class="n">IP_ANY</span><span class="o">.</span><span class="n">value</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dst</span> <span class="o">=</span> <span class="n">SpecialIPv4Addr</span><span class="o">.</span><span class="n">IP_ANY</span><span class="o">.</span><span class="n">value</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="n">IPOptionList</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         
     <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">IPv4</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">raw_length</span><span class="p">()</span>
@@ -505,7 +480,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="n">IPOptionList</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">optionbytes</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">raw</span><span class="p">[</span><span class="n">hl</span><span class="p">:]</span>
 
-    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tos</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">tos</span> <span class="ow">and</span> \
                 <span class="bp">self</span><span class="o">.</span><span class="n">ipid</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">ipid</span> <span class="ow">and</span> \
                 <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">flags</span> <span class="ow">and</span> \
@@ -589,7 +564,7 @@
 
     <span class="nd">@src</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">src</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_src</span> <span class="o">=</span> <span class="n">IPAddr</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_src</span> <span class="o">=</span> <span class="n">ip_address</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">dst</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -597,7 +572,7 @@
 
     <span class="nd">@dst</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">dst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span> <span class="o">=</span> <span class="n">IPAddr</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span> <span class="o">=</span> <span class="n">ip_address</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">flags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -633,12 +608,27 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_csum</span> <span class="o">=</span> <span class="n">checksum</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_csum</span>
 
-    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">-&gt;</span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">src</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dst</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">protocol</span><span class="o">.</span><span class="n">name</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">-&gt;</span><span class="si">{}</span><span class="s1"> </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">src</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dst</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">protocol</span><span class="o">.</span><span class="n">name</span><span class="p">)</span></div>
 
 </pre></div>
 
+            <div class="clearer"></div>
           </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -652,13 +642,14 @@
         <li class="right" >
           <a href="../../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 1.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">switchyard.lib.packet.ipv4</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2017, Joel Sommers.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+        &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
     </div>
   </body>
 </html>

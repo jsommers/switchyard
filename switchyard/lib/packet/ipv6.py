@@ -499,7 +499,7 @@ class IPv6(PacketHeaderBase):
         self.trafficclass = 0
         self.flowlabel = 0
         self.ttl = 128
-        self.nextheader = IPProtocol.ICMP
+        self.nextheader = IPProtocol.ICMPv6
         self._payloadlen = 0
         self.src = SpecialIPv6Addr.UNDEFINED.value
         self.dst = SpecialIPv6Addr.UNDEFINED.value

@@ -2,8 +2,9 @@ from switchyard.lib.userlib import *
 
 def main(net):
     for intf in net.interfaces():
-        log_info("{} has ethaddr {} and ipaddr {}/{} and is of type {}".format(
-            intf.name, intf.ethaddr, intf.ipaddr, intf.netmask, intf.iftype.name))
+        addrs = ','.join([str(a) for a in intf.ipaddrs])
+        log_info("{} has ethaddr {} and ipaddrs {} and is of type {}".format(
+            intf.name, intf.ethaddr, addrs, intf.iftype.name))
 
     # below, recvdata is a namedtuple
     recvdata = net.recv_packet()

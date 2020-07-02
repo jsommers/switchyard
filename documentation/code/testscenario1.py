@@ -3,7 +3,7 @@ from switchyard.lib.userlib import *
 scenario = TestScenario("in/out test scenario example")
 
 # only one interface on this imaginary device
-scenario.add_interface('eth0', 'ab:cd:ef:ab:cd:ef', '1.2.3.4', '255.255.0.0', 
+scenario.add_interface('eth0', 'ab:cd:ef:ab:cd:ef', '1.2.3.4/16', 
     iftype=InterfaceType.Wired)
 
 # construct a packet to be received

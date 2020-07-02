@@ -1,33 +1,21 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>switchyard.lib.packet.common &#8212; Switchyard 2017.01.5 documentation</title>
-    
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>switchyard.lib.packet.common &#8212; Switchyard 1.0.0 documentation</title>
     <link rel="stylesheet" href="../../../../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
-    
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../../../../',
-        VERSION:     '2017.01.5',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" /> 
-  </head>
-  <body role="document">
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -37,24 +25,11 @@
         <li class="right" >
           <a href="../../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 1.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">switchyard.lib.packet.common</a></li> 
       </ul>
-    </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="../../../../search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -64,25 +39,41 @@
   <h1>Source code for switchyard.lib.packet.common</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">struct</span>
 <span class="kn">import</span> <span class="nn">array</span>
-<span class="kn">from</span> <span class="nn">enum</span> <span class="k">import</span> <span class="n">IntEnum</span>
-<span class="kn">from</span> <span class="nn">socket</span> <span class="k">import</span> <span class="n">ntohs</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">IntEnum</span>
+<span class="kn">from</span> <span class="nn">socket</span> <span class="kn">import</span> <span class="n">ntohs</span>
 
 
 <div class="viewcode-block" id="EtherType"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.common.EtherType">[docs]</a><span class="k">class</span> <span class="nc">EtherType</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">NoType</span> <span class="o">=</span> <span class="mh">0xFFFF</span>
+    <span class="n">IEEE8023</span> <span class="o">=</span> <span class="mh">0x05dc</span>
     <span class="n">IP</span> <span class="o">=</span> <span class="mh">0x0800</span>
     <span class="n">IPv4</span> <span class="o">=</span> <span class="mh">0x0800</span>
     <span class="n">ARP</span> <span class="o">=</span> <span class="mh">0x0806</span>
+    <span class="n">WOL</span> <span class="o">=</span> <span class="mh">0x0842</span>
+    <span class="n">AVTP</span> <span class="o">=</span> <span class="mh">0x22F0</span>
+    <span class="n">TRILL</span> <span class="o">=</span> <span class="mh">0x22F3</span>
+    <span class="n">SRP</span> <span class="o">=</span> <span class="mh">0x22EA</span>
+    <span class="n">RARP</span> <span class="o">=</span> <span class="mh">0x8035</span>
     <span class="n">x8021Q</span> <span class="o">=</span> <span class="mh">0x8100</span>
     <span class="n">Vlan</span> <span class="o">=</span> <span class="mh">0x8100</span>
     <span class="n">VLAN</span> <span class="o">=</span> <span class="mh">0x8100</span>
+    <span class="n">SLPP</span> <span class="o">=</span> <span class="mh">0x8102</span>
+    <span class="n">VLACP</span> <span class="o">=</span> <span class="mh">0x8103</span>
+    <span class="n">IPX</span> <span class="o">=</span> <span class="mh">0x8137</span>
     <span class="n">IPv6</span> <span class="o">=</span> <span class="mh">0x86dd</span>
+    <span class="n">LACP</span> <span class="o">=</span> <span class="mh">0x8809</span>
     <span class="n">SLOW</span> <span class="o">=</span> <span class="mh">0x8809</span>
     <span class="n">MPLS</span> <span class="o">=</span> <span class="mh">0x8847</span>
+    <span class="n">MPLSUni</span> <span class="o">=</span> <span class="mh">0x8847</span>
+    <span class="n">MPLSMulti</span> <span class="o">=</span> <span class="mh">0x8848</span>
+    <span class="n">EAP</span> <span class="o">=</span> <span class="mh">0x888e</span>
     <span class="n">x8021AD</span> <span class="o">=</span> <span class="mh">0x88a8</span>
+    <span class="n">AOE</span> <span class="o">=</span> <span class="mh">0x88a2</span>
+    <span class="n">EtherCat</span> <span class="o">=</span> <span class="mh">0x88a4</span>
+    <span class="n">LWAPP</span> <span class="o">=</span> <span class="mh">0x88bb</span>
     <span class="n">LLDP</span> <span class="o">=</span> <span class="mh">0x88cc</span>
     <span class="n">x8021AH</span> <span class="o">=</span> <span class="mh">0x88e7</span>
-    <span class="n">IEEE8023</span> <span class="o">=</span> <span class="mh">0x05dc</span></div>
+    <span class="n">PTP</span> <span class="o">=</span> <span class="mh">0x88f7</span></div>
 
 
 <span class="k">class</span> <span class="nc">ArpHwType</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
@@ -182,6 +173,18 @@
     <span class="n">CommunicationAdministrativelyProhibited</span> <span class="o">=</span> <span class="mi">13</span>
     <span class="n">HostPrecedenceViolation</span> <span class="o">=</span> <span class="mi">14</span>
     <span class="n">PrecedenceCutoffInEffect</span> <span class="o">=</span> <span class="mi">15</span>
+
+
+<span class="k">class</span> <span class="nc">ICMPv6CodeDestinationUnreachable</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">NoRouteToDestination</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">CommunicationWithDestinationAdminProhibitied</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">BeyondScopeOfSourceAddress</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">AddressUnreachable</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">PortUnreachable</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">SourceAddressFailedIngressEgressPolicy</span>	<span class="o">=</span> <span class="mi">5</span>
+    <span class="n">RejectRouteToDestination</span>	<span class="o">=</span> <span class="mi">6</span>
+    <span class="n">ErrorInSourceRoutingHeader</span> <span class="o">=</span> <span class="mi">7</span>
+    <span class="n">HeadersTooLong</span> <span class="o">=</span> <span class="mi">8</span>
 
 
 <span class="k">class</span> <span class="nc">ICMPCodeSourceQuench</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
@@ -335,9 +338,14 @@
     <span class="n">MulticastListenerDone</span> <span class="o">=</span> <span class="mi">0</span>
 
 
+<span class="k">class</span> <span class="nc">ICMPv6CodeVersion2MulticastListenerReport</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">MulticastListenerReport</span> <span class="o">=</span> <span class="mi">0</span>
+
+
 <span class="n">ICMPv6TypeCodeMap</span> <span class="o">=</span> <span class="p">{</span>
     <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">EchoRequest</span><span class="p">:</span> <span class="n">ICMPCodeEchoRequest</span><span class="p">,</span>
     <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">EchoReply</span><span class="p">:</span> <span class="n">ICMPCodeEchoReply</span><span class="p">,</span>
+    <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">DestinationUnreachable</span><span class="p">:</span> <span class="n">ICMPv6CodeDestinationUnreachable</span><span class="p">,</span>  
     <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">NeighborSolicitation</span><span class="p">:</span> <span class="n">ICMPv6CodeNeighborSolicitation</span><span class="p">,</span>
     <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">NeighborAdvertisement</span><span class="p">:</span> <span class="n">ICMPv6CodeNeighborAdvertisement</span><span class="p">,</span>
     <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">RedirectMessage</span><span class="p">:</span> <span class="n">ICMPv6CodeRedirectMessage</span><span class="p">,</span>
@@ -346,9 +354,11 @@
     <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">MulticastListenerQuery</span><span class="p">:</span> <span class="n">ICMPv6CodeMulticastListenerQuery</span><span class="p">,</span>
     <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">MulticastListenerReport</span><span class="p">:</span> <span class="n">ICMPv6CodeMulticastListenerReport</span><span class="p">,</span>
     <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">MulticastListenerDone</span><span class="p">:</span> <span class="n">ICMPv6CodeMulticastListenerDone</span><span class="p">,</span>
+    <span class="n">ICMPv6Type</span><span class="o">.</span><span class="n">Version2MulticastListenerReport</span><span class="p">:</span> <span class="n">ICMPv6CodeVersion2MulticastListenerReport</span><span class="p">,</span>
 <span class="p">}</span>
 
 
+<span class="c1"># https://www.iana.org/assignments/icmpv6-parameters/icmpv6-parameters.xml#icmpv6-parameters-5</span>
 <span class="k">class</span> <span class="nc">ICMPv6OptionNumber</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">SourceLinkLayerAddress</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="n">TargetLinkLayerAddress</span> <span class="o">=</span> <span class="mi">2</span>
@@ -403,7 +413,7 @@
       <span class="n">start</span> <span class="o">+=</span>  <span class="n">arr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
 
   <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-    <span class="n">start</span> <span class="o">+=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;H&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:]</span><span class="o">+</span><span class="n">b</span><span class="s1">&#39;</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># Specify order?</span>
+    <span class="n">start</span> <span class="o">+=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;H&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:]</span><span class="o">+</span><span class="sa">b</span><span class="s1">&#39;</span><span class="se">\x00</span><span class="s1">&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># Specify order?</span>
 
   <span class="n">start</span>  <span class="o">=</span> <span class="p">(</span><span class="n">start</span> <span class="o">&gt;&gt;</span> <span class="mi">16</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">start</span> <span class="o">&amp;</span> <span class="mh">0xffff</span><span class="p">)</span>
   <span class="n">start</span> <span class="o">+=</span> <span class="p">(</span><span class="n">start</span> <span class="o">&gt;&gt;</span> <span class="mi">16</span><span class="p">)</span>
@@ -413,7 +423,22 @@
   <span class="k">return</span> <span class="n">ntohs</span><span class="p">(</span><span class="o">~</span><span class="n">start</span> <span class="o">&amp;</span> <span class="mh">0xffff</span><span class="p">)</span>
 </pre></div>
 
+            <div class="clearer"></div>
           </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -427,13 +452,14 @@
         <li class="right" >
           <a href="../../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Switchyard 1.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">switchyard.lib.packet.common</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2017, Joel Sommers.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+        &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
     </div>
   </body>
 </html>

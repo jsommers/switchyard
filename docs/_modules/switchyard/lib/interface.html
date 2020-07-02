@@ -1,33 +1,21 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>switchyard.lib.interface &#8212; Switchyard 2017.01.5 documentation</title>
-    
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>switchyard.lib.interface &#8212; Switchyard 1.0.0 documentation</title>
     <link rel="stylesheet" href="../../../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-    
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../../../',
-        VERSION:     '2017.01.5',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="../../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
-  </head>
-  <body role="document">
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -37,24 +25,11 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Switchyard 1.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">switchyard.lib.interface</a></li> 
       </ul>
-    </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="../../../search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -62,13 +37,13 @@
           <div class="body" role="main">
             
   <h1>Source code for switchyard.lib.interface</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">ipaddress</span> <span class="k">import</span> <span class="n">ip_interface</span><span class="p">,</span> <span class="n">IPv6Interface</span><span class="p">,</span> <span class="n">IPv4Interface</span><span class="p">,</span> <span class="n">IPv6Address</span><span class="p">,</span> <span class="n">IPv4Address</span>
-<span class="kn">from</span> <span class="nn">enum</span> <span class="k">import</span> <span class="n">Enum</span>
-<span class="kn">from</span> <span class="nn">socket</span> <span class="k">import</span> <span class="n">if_nametoindex</span>
+<span></span><span class="kn">from</span> <span class="nn">ipaddress</span> <span class="kn">import</span> <span class="n">ip_interface</span><span class="p">,</span> <span class="n">ip_address</span><span class="p">,</span> <span class="n">IPv6Interface</span><span class="p">,</span> <span class="n">IPv4Interface</span><span class="p">,</span> <span class="n">IPv6Address</span><span class="p">,</span> <span class="n">IPv4Address</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">socket</span> <span class="kn">import</span> <span class="n">if_nametoindex</span>
 
-<span class="kn">from</span> <span class="nn">.address</span> <span class="k">import</span> <span class="n">IPAddr</span><span class="p">,</span><span class="n">EthAddr</span>
-<span class="kn">from</span> <span class="nn">.logging</span> <span class="k">import</span> <span class="n">log_debug</span>
-<span class="kn">from</span> <span class="nn">..pcapffi</span> <span class="k">import</span> <span class="n">pcap_devices</span>
+<span class="kn">from</span> <span class="nn">.address</span> <span class="kn">import</span> <span class="n">EthAddr</span>
+<span class="kn">from</span> <span class="nn">.logging</span> <span class="kn">import</span> <span class="n">log_debug</span>
+<span class="kn">from</span> <span class="nn">..pcapffi</span> <span class="kn">import</span> <span class="n">pcap_devices</span>
 
 <div class="viewcode-block" id="InterfaceType"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.interface.InterfaceType">[docs]</a><span class="k">class</span> <span class="nc">InterfaceType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
     <span class="n">Unknown</span><span class="o">=</span><span class="mi">1</span>
@@ -77,22 +52,20 @@
     <span class="n">Wireless</span><span class="o">=</span><span class="mi">4</span></div>
 
 <div class="viewcode-block" id="Interface"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.interface.Interface">[docs]</a><span class="k">class</span> <span class="nc">Interface</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;__name&#39;</span><span class="p">,</span><span class="s1">&#39;__ethaddr&#39;</span><span class="p">,</span><span class="s1">&#39;__ipaddr&#39;</span><span class="p">,</span><span class="s1">&#39;__ifnum&#39;</span><span class="p">,</span><span class="s1">&#39;__iftype&#39;</span><span class="p">]</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;__name&#39;</span><span class="p">,</span><span class="s1">&#39;__ethaddr&#39;</span><span class="p">,</span><span class="s1">&#39;__ipaddrset&#39;</span><span class="p">,</span><span class="s1">&#39;__ifnum&#39;</span><span class="p">,</span><span class="s1">&#39;__iftype&#39;</span><span class="p">]</span>
     <span class="n">__nextnum</span> <span class="o">=</span> <span class="mi">1</span>
 
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Class that models a single logical interface on a network</span>
 <span class="sd">    device.  An interface has a name, 48-bit Ethernet MAC address,</span>
-<span class="sd">    and (optionally) an IP address and network mask.  An interface</span>
+<span class="sd">    and (optionally) set of IP addresses with network masks.  An interface</span>
 <span class="sd">    also has a number associated with it and a type, which is one</span>
 <span class="sd">    of the values of the enumerated type ``InterfaceType``.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ethaddr</span><span class="p">,</span> <span class="n">ipaddr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">netmask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ifnum</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">iftype</span><span class="o">=</span><span class="n">InterfaceType</span><span class="o">.</span><span class="n">Unknown</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ethaddr</span><span class="p">,</span> <span class="n">ifnum</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">iftype</span><span class="o">=</span><span class="n">InterfaceType</span><span class="o">.</span><span class="n">Unknown</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__name</span> <span class="o">=</span> <span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ethaddr</span> <span class="o">=</span> <span class="n">ethaddr</span>
-        <span class="k">if</span> <span class="n">netmask</span><span class="p">:</span>
-            <span class="n">ipaddr</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ipaddr</span><span class="p">,</span><span class="n">netmask</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ipaddr</span> <span class="o">=</span> <span class="n">ipaddr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__ipaddrset</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ifnum</span> <span class="o">=</span> <span class="n">ifnum</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__iftype</span> <span class="o">=</span> <span class="n">iftype</span>
 
@@ -118,39 +91,38 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Can&#39;t initialize ethaddr with </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
 
     <span class="nd">@property</span> 
-    <span class="k">def</span> <span class="nf">ipaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Get the IPv4 address associated with the interface&#39;&#39;&#39;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__ipaddr</span><span class="o">.</span><span class="n">ip</span>
+    <span class="k">def</span> <span class="nf">ipaddrs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Get the IP addresses associated with the interface, as a (frozen) set</span>
+<span class="sd">           of ipaddress.IPv4Interface or ipaddress.IPv6Interface objects&#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="nb">frozenset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__ipaddrset</span><span class="p">)</span>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">ipinterface</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Interface.assign_ipaddr"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.interface.Interface.assign_ipaddr">[docs]</a>    <span class="k">def</span> <span class="nf">assign_ipaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Returns the address assigned to this interface as an IPInterface object.  (see documentation for the built-in ipaddress module).</span>
+<span class="sd">        Assign a new IP address (v4 or v6) to this interface.</span>
+<span class="sd">        Address can either be a IPv4Interface object, IPv6Interface object,</span>
+<span class="sd">        or string in the form &#39;addr/prefix&#39; (i.e., something that</span>
+<span class="sd">        ipaddress.ip_interface will parse).</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__ipaddr</span>
-
-    <span class="nd">@ipaddr</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">ipaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span><span class="n">IPAddr</span><span class="p">)):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">__ipaddr</span> <span class="o">=</span> <span class="n">ip_interface</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="n">IPv4Interface</span><span class="p">,</span> <span class="n">IPv6Interface</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__ipaddrset</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span><span class="n">IPv4Address</span><span class="p">,</span><span class="n">IPv6Address</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__ipaddrset</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ip_interface</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
         <span class="k">elif</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">__ipaddr</span> <span class="o">=</span> <span class="n">ip_interface</span><span class="p">(</span><span class="s1">&#39;0.0.0.0&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__ipaddrset</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ip_interface</span><span class="p">(</span><span class="s1">&#39;0.0.0.0&#39;</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid type assignment to IP address (must be string or existing IP address)&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid type assignment to IP address (must be string or existing IP address) (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">))</span></div>
 
-    <span class="nd">@property</span> 
-    <span class="k">def</span> <span class="nf">netmask</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Get the IPv4 subnet mask associated with the interface&#39;&#39;&#39;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__ipaddr</span><span class="o">.</span><span class="n">netmask</span>
-
-    <span class="nd">@netmask</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">netmask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="n">IPAddr</span><span class="p">,</span><span class="nb">str</span><span class="p">,</span><span class="nb">int</span><span class="p">)):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">__ipaddr</span> <span class="o">=</span> <span class="n">ip_interface</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__ipaddr</span><span class="o">.</span><span class="n">ip</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)))</span>
-        <span class="k">elif</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">__ipaddr</span> <span class="o">=</span> <span class="n">ip_interface</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/32&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__ipaddr</span><span class="o">.</span><span class="n">ip</span><span class="p">))</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid type assignment to netmask (must be IPAddr, string, or int)&quot;</span><span class="p">)</span>
+<div class="viewcode-block" id="Interface.remove_ipaddr"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.interface.Interface.remove_ipaddr">[docs]</a>    <span class="k">def</span> <span class="nf">remove_ipaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Remove an IP address from this interface.  Value to remove</span>
+<span class="sd">        can be as a string or IPAddress object.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">ipa</span> <span class="o">=</span> <span class="n">ip_interface</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">addr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__ipaddrset</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">addr</span><span class="o">.</span><span class="n">ip</span> <span class="o">==</span> <span class="n">ipa</span><span class="o">.</span><span class="n">ip</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__ipaddrset</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">addr</span><span class="p">)</span>
+                <span class="k">return</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No such address </span><span class="si">{}</span><span class="s2"> exists to remove from interface&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ipa</span><span class="p">))</span></div>
 
     <span class="nd">@property</span> 
     <span class="k">def</span> <span class="nf">ifnum</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -169,10 +141,11 @@
         <span class="sd">&#39;&#39;&#39;Get the type of the interface as a value from the InterfaceType enumeration.&#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__iftype</span>
 
-    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">s</span> <span class="o">=</span>  <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> mac:</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ethaddr</span><span class="p">))</span>
-        <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ipaddr</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot; ip:</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__ipaddr</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ipa</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ipaddrs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">ipa</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot; ip:</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ipa</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">s</span> </div>
 
 <span class="k">def</span> <span class="nf">make_device_list</span><span class="p">(</span><span class="n">includes</span><span class="o">=</span><span class="nb">set</span><span class="p">(),</span> <span class="n">excludes</span><span class="o">=</span><span class="nb">set</span><span class="p">()):</span>
@@ -202,7 +175,22 @@
     <span class="k">return</span> <span class="n">devs</span>
 </pre></div>
 
+            <div class="clearer"></div>
           </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -216,13 +204,14 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">Switchyard 2017.01.5 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Switchyard 1.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">switchyard.lib.interface</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2017, Joel Sommers.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+        &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
     </div>
   </body>
 </html>

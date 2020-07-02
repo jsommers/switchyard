@@ -1,6 +1,11 @@
 Release notes
 *************
 
+1.0.0
+-----
+Major revision, with fixes and updates to IPv6 classes and to generalize the ``Interface`` class so that any number of IP addresses may be assigned to it.  ICMPv6 classes are basically complete for neighbor discovery and router solicitation and advertisement.  
+
+
 The headings below refer either to branches on Switchyard's github repo (v1 and v2) or tags (2017.01.1).
 
 2017.01.4
@@ -30,12 +35,12 @@ Some key API changes to be aware of:
  * Instead of invoking ``srpy.py``, a ``swyard`` program is installed during the new install process.  ``swyard`` has a few command-line changes compared with ``srpy.py``.  In particular, the ``-s`` option has gone away; to run Switchyard with a test, just use the ``-t`` option with the scenario file as the argument.
 
 
-v2
---
+alphav2
+-------
 
 Complete rewrite of v1.  Moved to Python 3 and created packet parsing libraries, new libpcap interface library (pcapffi).  Redesigned test scenario modules and an expanded of publicly available exercises.  Used at Colgate twice and University of Wisconsin-Madison twice.  Available on the ``v2`` branch on github.
 
-v1
---
+alphav1
+-------
 
 First version, which used the POX packet parsing libraries and had a variety of limitations.  Implemented in Python 2 and used at Colgate once.  Available on the ``v1`` branch on github, but very much obsolete.

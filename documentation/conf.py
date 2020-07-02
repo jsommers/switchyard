@@ -13,7 +13,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-thisversion = '2017.01.5'
+thisversion = '1.0.0'
 
 import sys
 import os
@@ -52,7 +52,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Switchyard'
-copyright = '2013-2017, Joel Sommers'
+copyright = '2013-2020, Joel Sommers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

@@ -30,9 +30,9 @@ Notice that in the above example code, we assigned the instance of the ``TestSce
 
 There are two methods on ``TestScenario`` that are used to configure the test environment:
 
-  * ``add_interface(name, macaddr, ipaddr=None, netmask=None, **kwargs)``
+  * ``add_interface(name, macaddr, *ipaddrs, **kwargs)``
 
-    This method adds an interface/port to an imaginary network device that is the subject of the test scenario.  For example, if you are creating a test for an IP router and you want to verify that a packet received on one port is forwarded out another (different) port on the device, you will need to add *at least* two interfaces.  Arguments to the ``add_interface`` method are used to specify the interface's name (e.g., ``en0``), its hardware Ethernet (MAC) address, and its (optional) IP address and netmask.  
+    This method adds an interface/port to an imaginary network device that is the subject of the test scenario.  For example, if you are creating a test for an IP router and you want to verify that a packet received on one port is forwarded out another (different) port on the device, you will need to add *at least* two interfaces.  Arguments to the ``add_interface`` method are used to specify the interface's name (e.g., ``en0``), its hardware Ethernet (MAC) address, and zero or more IP addresses, which must be in the form ``addr/prefixlen``, e.g., ``fe80::13/64``.
 
     Two optional keyword arguments can also be given: ``ifnum`` can be used to explicitly specify the number (integer) associated with this interface, and ``iftype`` can be used to explicitly indicate the type of the interface.  A value from the enumeration ``InterfaceType`` must be used, e.g., ``Wired``, ``Wireless``, ``Loopback``, or ``Unknown``. The type of an interface defaults to ``InterfaceType.Unknown``.
 

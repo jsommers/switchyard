@@ -52,7 +52,6 @@ The ``Interface`` class is used to encapsulate information about a network inter
 .. autoclass:: switchyard.lib.interface.Interface
    :members:
    :undoc-members:
-   :member-order: name, ethaddr, ipaddr, netmask, ipinterface, ifnum, iftype
 
 
 .. _addresses:
@@ -274,8 +273,8 @@ number defaults to ICMP.  An example of creating an IPv4 header
 and setting various fields is shown below:
 
 >>> ip = IPv4()
->>> ip.srcip = '10.0.1.1'
->>> ip.dstip = '10.0.2.42'
+>>> ip.src = '10.0.1.1'
+>>> ip.dst = '10.0.2.42'
 >>> ip.protocol = IPProtocol.UDP
 >>> ip.ttl = 64
 
@@ -289,6 +288,21 @@ IP version 6 header
    :members:
    :undoc-members:
    :exclude-members: next_header_class, pre_serialize, size, to_bytes, from_bytes, checksum
+
+
+Represents an IP version 6 packet header.  All properties relate to
+specific fields in the header and can be inspected and/or modified.
+
+As with IPv4, header values generally default to zeroes.  The ``nextheader``
+for IPv6 defaults to ICMPv6.
+
+>>> ip6 = IPv6()
+>>> print(ip6)
+IPv6 ::->:: ICMPv6
+>>> ip6.src = 'fe80::1'
+>>> ip6.dst = 'fe80::2'
+>>> print(ip6)
+IPv6 fe80::1->fe80::2 ICMPv6
 
 ------
 
@@ -503,16 +517,23 @@ ICMP (Internet control message protocol) header (v6)
 
    Represents an ICMPv6 packet header.
 
-Additional ICMPv6 headers to support the Network Discovery Protocol, [RFC4861](http://tools.ietf.org/html/rfc4861) are also available in Switchyard:
+Additional ICMPv6 headers to support the Neighbor Discovery Protocol, [RFC4861](http://tools.ietf.org/html/rfc4861) are also available in Switchyard:
 
   * ICMPv6NeighborSolicitation
   * ICMPv6NeighborAdvertisement
   * ICMPv6RedirectMessage
 
+ICMPv6 Headers to support router advertisement and solicitation are also available:
+
+  * ICMPv6RouterSolicitation
+  * ICMPv6RouterAdvertisement
+
 To create an ICMPv6 packet an instance of type ``ICMPv6`` can be created.  You will want (and need) to set its ``icmptype`` appropriately, too.  For example:
 
 >>> icmpv6 = ICMPv6()
->>> icmp.icmptype = ICMPv6Type.RedirectMessage
+>>> icmpv6.icmptype = ICMPv6Type.RedirectMessage
+>>> print(icmpv6)
+ICMPv6 RedirectMessage ICMPv6RedirectMessage Target: :: Destination: ::
 >>>
 >>> ## OR Directly when initializing the ICMPv6 header
 >>> # icmpv6 = ICMPv6(icmptype=ICMPv6Type.RedirectMessage)
@@ -520,16 +541,31 @@ To create an ICMPv6 packet an instance of type ``ICMPv6`` can be created.  You w
 >>> r = ICMPv6RedirectMessage()
 >>> # or r = icmpv6.icmpdata if already assigned to ICMPv6 object
 >>> r.targetaddr = IPv6Address( "::0" )
->>> r.options.append( ICMPv6OptionRedirectedHeader( redirected_packet=p ))
->>> r.options.append( ICMPv6OptionTargetLinkLayerAddress( address="00:00:00:00:00:00" )
+>>> r.options.append( ICMPv6OptionRedirectedHeader( header=p ))
+>>> r.options.append( ICMPv6OptionTargetLinkLayerAddress( address="00:00:00:00:00:00" ))
 >>>
 >>> icmpv6.icmpdata = r
+>>> print(icmpv6)
+ICMPv6 RedirectMessage ICMPv6RedirectMessage Target: :: Destination: :: | ICMPv6OptionList (ICMPv6OptionRedirectedHeader redirected packet (6 bytes), ICMPv6OptionTargetLinkLayerAddress 00:00:00:00:00:00)
+
+It's possible, too, to construct the ICMPv6 packet in one go:
+
+>>> p = Ethernet(ethertype=EtherType.IPv6, src='58:ac:78:93:da:00', dst='33:33:00:00:00:01') + \
+        IPv6(nextheader=IPProtocol.ICMPv6, hoplimit=255, src='fe80::1', dst='ff02::1') + \
+        ICMPv6(icmptype=ICMPv6Type.RouterSolicitation, 
+               icmpdata=ICMPv6RouterSolicitation(options=(
+                  ICMPv6OptionSourceLinkLayerAddress('00:50:56:af:97:68'),
+                  ICMPv6OptionMTU(1250), 
+                  ICMPv6OptionPrefixInformation(prefix='fd00::/64'))))
+
 
 There are several ICMPv6 options which can be attached to these:
 
   * ICMPv6OptionSourceLinkLayerAddress
   * ICMPv6OptionTargetLinkLayerAddress
   * ICMPv6OptionRedirectedHeader
+  * ICMPv6OptionMTU
+  * ICMPv6OptionPrefixInformation
 
 
 .. autoclass:: switchyard.lib.packet.ICMPv6NeighborSolicitation
@@ -539,27 +575,12 @@ There are several ICMPv6 options which can be attached to these:
    :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class, set_next_header_class_key, set_next_header_map, add_next_header_class
 
 
-.. ### Properties
-.. * targetaddr
-.. * options
-
-
 .. autoclass:: switchyard.lib.packet.ICMPv6NeighborAdvertisement
    :members:
    :inherited-members:
    :undoc-members:
    :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class, set_next_header_class_key, set_next_header_map, add_next_header_class
 
-.. ICMPv6NeighborAdvertisement
-.. ---------------------------
-..
-.. ### Properties
-.. * targetaddr
-.. * routerflag
-.. * solicitedflag
-.. * overrideflag
-.. * options
-..
 
 .. autoclass:: switchyard.lib.packet.ICMPv6RedirectMessage
    :members:
@@ -567,14 +588,19 @@ There are several ICMPv6 options which can be attached to these:
    :undoc-members:
    :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class, set_next_header_class_key, set_next_header_map, add_next_header_class
 
-..
-.. ICMPv6RedirectMessage
-.. ---------------------
-..
-.. ### Properties
-.. * targetaddr
-.. * destinationaddr
-.. * options
+
+.. autoclass:: switchyard.lib.packet.ICMPv6RouterAdvertisement
+   :members:
+   :inherited-members:
+   :undoc-members:
+   :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class, set_next_header_class_key, set_next_header_map, add_next_header_class
+
+.. autoclass:: switchyard.lib.packet.ICMPv6RouterSolicitation
+   :members:
+   :inherited-members:
+   :undoc-members:
+   :exclude-members: to_bytes, from_bytes, size, pre_serialize, next_header_class, set_next_header_class_key, set_next_header_map, add_next_header_class
+
 
 .. autoclass:: switchyard.lib.packet.icmpv6.ICMPv6Option
 
@@ -584,7 +610,6 @@ There are several ICMPv6 options which can be attached to these:
 
 .. autoclass:: switchyard.lib.packet.icmpv6.ICMPv6OptionRedirectedHeader
 
->>> # need to add various ICMPv6 examples
 
 
 Test scenario creation
