@@ -3,7 +3,7 @@ Release notes
 
 1.0.0
 -----
-Major revision, with fixes and updates to IPv6 classes and to generalize the ``Interface`` class so that any number of IP addresses may be assigned to it.  ICMPv6 classes are basically complete for neighbor discovery and router solicitation and advertisement.  
+Major revision, with fixes and updates to IPv6 classes and to generalize the ``Interface`` class so that any number of IP addresses may be assigned to it.  ICMPv6 classes are basically complete for neighbor discovery and router solicitation and advertisement.  These changes are **backward incompatible**.  
 
 
 The headings below refer either to branches on Switchyard's github repo (v1 and v2) or tags (2017.01.1).

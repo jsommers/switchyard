@@ -10,7 +10,8 @@ Switchyard can run in a standalone test harness mode or can also use "live" netw
 Some history
 ^^^^^^^^^^^^
 
-The version of Switchyard on the master branch is a major revision of the code as of the beginning of 2017.  This is the second major overhaul.  The earliest working version of Switchyard (from late 2013) can be found on the v1 branch, and the subsequent rewrite (through the end of 2016) can be found on the v2 branch.  Beware that the current version of Switchyard is *backward incompatible* with previous versions and many parts of the code are under active development.  As with the last major version of Switchyard, this one requires Python 3.4, at minimum.
+The version of Switchyard on the master branch is a major revision of the code as of July 2020.  There are non-backward compatible API changes (particularly with the ``Interface`` class).  Please see the release notes for more info.  If you need an earlier version, use ``pip3 install switchyard==2019.1.1``.
+
 
 Installation
 ------------
@@ -18,7 +19,7 @@ Installation
 Prequisites: you'll also likely need to install additional packages (do this before using pip to install the Python libraries) on different operating systems:
 
  * Fedora (20 and later): ``sudo yum install libffi-devel libpcap-devel python3-devel python3-pip python3-virtualenv``
- * FreeBSD (10.3): ``pkg install libffi libpcap``
+ * FreeBSD 11 and later: ``pkg install libffi libpcap``
  * macOS: install libffi and libpcap through mac Homebrew (https://brew.sh)
  * Ubuntu (14.04 and later): ``sudo apt-get install libffi-dev libpcap-dev python3-dev python3-pip python3-venv``
 
@@ -59,14 +60,14 @@ Documentation and Exercises
 Credits
 -------
 
-I gratefully acknowledge support from the National Science Foundation.  The materials here are based upon work supported by the NSF under grant CNS-1054985 ("CAREER: Expanding the functionality of Internet routers").
+I gratefully acknowledge support from the NSF.  The materials here are based upon work supported by the National Science Foundation under grants CNS-1814537 ("NeTS: Small: RUI: Automating Active Measurement Metadata Collection and Analysis"; 2018-2021)  and CNS-1054985 ("CAREER: Expanding the functionality of Internet routers"; 2011-2017).
 
 Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author and do not necessarily reflect the views of the National Science Foundation.
 
 License
 -------
 
-Copyright 2015-2019 Joel Sommers.  All rights reserved.
+Copyright 2015-2020 Joel Sommers.  All rights reserved.
 
 The Switchyard software is distributed under terms of the GNU General Public License, version 3.  See below for the standard GNU GPL v3 copying text.
 
