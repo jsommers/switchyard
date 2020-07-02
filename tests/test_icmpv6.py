@@ -51,6 +51,9 @@ class ICMPPv6PacketTests(unittest.TestCase):
         pfx2 = ICMPv6OptionPrefixInformation()
         pfx2.from_bytes(raw)
         self.assertEqual(pfx, pfx2)
+        pfx2.prefix_length = 48
+        self.assertEqual(pfx2.prefix_length, 48)
+        self.assertIn('/48', str(pfx2.prefix))
     
     def testOptionRedirectedHeader(self):
         opt = ICMPv6OptionRedirectedHeader(b'\x00\x11\x22\x33')
@@ -88,6 +91,9 @@ class ICMPPv6PacketTests(unittest.TestCase):
             optlist[-3]
         with self.assertRaises(IndexError):
             del optlist[-3]
+        optlist[0] = opt
+        self.assertEqual(len(optlist), 2)
+        self.assertEqual(optlist[0], opt)
 
     def testReconstruct1(self):
         raw = b'33\x00\x00\x00\x16\x18\x81\x0e\x03\xaeQ\x86\xdd`\x00\x00\x00\x00$\x00\x01\xfe\x80\x00\x00\x00\x00\x00\x00\x1c\xe7\xbe)OU\x89s\xff\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x16:\x00\x01\x00\x05\x02\x00\x00\x8f\x00\xbb6\x00\x00\x00\x01\x04\x00\x00\x00\xff\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xfb'         
@@ -126,7 +132,7 @@ class ICMPPv6PacketTests(unittest.TestCase):
         self.assertEqual(p, p2)
 
     def testMakeRouterSolicitation(self):
-        p = Ethernet(ethertype=EtherType.IPv6, src='58:ac:78:93:da:00', dst='33:33:00:00:00:01') + IPv6(nextheader=IPProtocol.ICMPv6, hoplimit=255, src='fe80::1', dst='ff02::1') + ICMPv6(icmptype=ICMPv6Type.RouterAdvertisement, icmpdata=ICMPv6RouterSolicitation(options=(ICMPv6OptionSourceLinkLayerAddress('00:50:56:af:97:68'),ICMPv6OptionMTU(1250), ICMPv6OptionPrefixInformation(prefix='fd00::/64'))))
+        p = Ethernet(ethertype=EtherType.IPv6, src='58:ac:78:93:da:00', dst='33:33:00:00:00:01') + IPv6(nextheader=IPProtocol.ICMPv6, hoplimit=255, src='fe80::1', dst='ff02::1') + ICMPv6(icmptype=ICMPv6Type.RouterSolicitation, icmpdata=ICMPv6RouterSolicitation(options=(ICMPv6OptionSourceLinkLayerAddress('00:50:56:af:97:68'),ICMPv6OptionMTU(1250), ICMPv6OptionPrefixInformation(prefix='fd00::/64'))))
         raw = p.to_bytes()
         p2 = Packet(raw=raw)
         self.assertEqual(p, p2)

@@ -485,13 +485,13 @@ class ICMPv6RouterSolicitation(ICMPv6Data):
 
     def to_bytes(self):
         return b''.join((struct.pack(ICMPv6RouterSolicitation._PACKFMT),
-            self._options.to_bytes(), super().to_bytes()))
+            self._options.to_bytes()))
     
     def from_bytes(self, raw):
         if len(raw) < ICMPv6RouterSolicitation._MINLEN:
             raise NotEnoughDataError("Not enough bytes to unpack {}".format(
                 self.__class__.__name__))
-        optionbytes = raw[ICMPv6NeighborSolicitation._MINLEN:]
+        optionbytes = raw[ICMPv6RouterSolicitation._MINLEN:]
         _ = struct.unpack(ICMPv6RouterSolicitation._PACKFMT,
                           raw[:ICMPv6RouterSolicitation._MINLEN])
         self._options = ICMPv6OptionList.from_bytes(optionbytes)
@@ -525,7 +525,7 @@ class ICMPv6RouterAdvertisement(ICMPv6Data):
                         flags,
                         self._router_lifetime, self._reachable_time,
                         self._retrans_time),
-            self._options.to_bytes(), super().to_bytes()))
+            self._options.to_bytes()))
 
     def from_bytes(self, raw):
         if len(raw) < ICMPv6RouterAdvertisement._MINLEN:
@@ -637,7 +637,7 @@ class ICMPv6NeighborSolicitation(ICMPv6Data):
         return b''.join((
             struct.pack(ICMPv6NeighborSolicitation._PACKFMT,
                         self._targetaddr.packed),
-            self._options.to_bytes(), super().to_bytes()))
+            self._options.to_bytes()))
 
     def from_bytes(self, raw):
         if len(raw) < ICMPv6NeighborSolicitation._MINLEN:
@@ -680,7 +680,7 @@ class ICMPv6NeighborAdvertisement(ICMPv6Data):
             struct.pack(ICMPv6NeighborAdvertisement._PACKFMT,
                         self.get_rso_byte(),
                         self._targetaddr.packed),
-            self._options.to_bytes(), super().to_bytes()))
+            self._options.to_bytes()))
 
     def from_bytes(self, raw):
         if len(raw) < self._MINLEN:
@@ -772,7 +772,7 @@ class ICMPv6RedirectMessage(ICMPv6Data):
         return b''.join((struct.pack(
             ICMPv6RedirectMessage._PACKFMT,
             self._targetaddr.packed, self._destaddr.packed),
-            self._options.to_bytes(), super().to_bytes()))
+            self._options.to_bytes()))
 
     def from_bytes(self, raw):
         if len(raw) < self._MINLEN:
