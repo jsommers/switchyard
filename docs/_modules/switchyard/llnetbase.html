@@ -161,8 +161,8 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">ipaddr</span> <span class="o">=</span> <span class="n">ip_address</span><span class="p">(</span><span class="n">ipaddr</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">devname</span><span class="p">,</span><span class="n">iface</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_devinfo</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">for</span> <span class="n">ipa</span> <span class="ow">in</span>  <span class="n">iface</span><span class="o">.</span><span class="n">ipaddrs</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">ipa</span><span class="o">.</span><span class="n">ip</span> <span class="o">==</span> <span class="n">ipaddr</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ipa</span> <span class="ow">in</span> <span class="n">iface</span><span class="o">.</span><span class="n">ipaddrs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">ipa</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">ipaddr</span><span class="p">):</span>
                     <span class="k">return</span> <span class="n">iface</span>
         <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;No device has IP address </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ipaddr</span><span class="p">))</span></div>
 

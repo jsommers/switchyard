@@ -80,9 +80,7 @@ Each ``Interface`` object has a set of properties that can be used to access var
  
  * ``ethaddr``: returns the Ethernet address associated with the interface, as a :py:class:`switchyard.lib.address.EthAddr` instance.
 
- * ``ipaddr``: returns the IPv4 address associated with the interface, if any.  This property returns an object of type :py:class:`IPv4Address`.  If there is no address assigned to the interface, the address is 0.0.0.0.  A current limitation with the ``Interface`` implementation in Switchyard is that only one address can be associated with an interface, and it must be an IPv4 address.  Eventually, Switchyard will fully support IPv6 addresses, and multiple IP addresses per interface.
-
- * ``netmask``: returns the network mask associated with the IPv4 address assigned to the interface.  The netmask defaults to 255.255.255.255 (/32) if none is specified.
+ * ``ipaddrs``: returns a (frozen) set of IP addresses assigned to the interface.  Each object in the set is either a ``ipaddress.IPv6Interface`` or ``ipaddress.IPv4Interface``.  
 
  * ``ifnum``: returns an integer index associated with the interface.
 
@@ -98,8 +96,8 @@ As an example, to simply print out information regarding each interface defined 
 
     def main(net):
         for intf in net.interfaces():
-            log_info("{} has ethaddr {} and ipaddr {}/{} and is of type {}".format(
-                intf.name, intf.ethaddr, intf.ipaddr, intf.netmask, intf.iftype.name))
+            addrs = ','.join([str(a) for a in intf.ipaddrs])
+            log_info("{} has ethaddr {} and ipaddrs {} and is of type {}".format(intf.name, intf.ethaddr, addrs, intf.iftype.name))
 
         # could also be:
         # for intf in net.ports():
@@ -109,9 +107,9 @@ As an example, to simply print out information regarding each interface defined 
 Entirely depending on how the network device is configured, output from 
 the above program might look like the following::
 
-    09:10:08 2016/12/17     INFO eth0 has ethaddr 10:00:00:00:00:01 and ipaddr 172.16.42.1/255.255.255.252 and is of type Unknown
-    09:10:08 2016/12/17     INFO eth1 has ethaddr 10:00:00:00:00:02 and ipaddr 10.10.0.1/255.255.0.0 and is of type Unknown
-    09:10:08 2016/12/17     INFO eth2 has ethaddr 10:00:00:00:00:03 and ipaddr 192.168.1.1/255.255.255.0 and is of type Unknown
+    09:10:08 2016/12/17     INFO eth0 has ethaddr 10:00:00:00:00:01 and ipaddrs 172.16.42.1/255.255.255.252 and is of type Unknown
+    09:10:08 2016/12/17     INFO eth1 has ethaddr 10:00:00:00:00:02 and ipaddrs 10.10.0.1/255.255.0.0 and is of type Unknown
+    09:10:08 2016/12/17     INFO eth2 has ethaddr 10:00:00:00:00:03 and ipaddrs 192.168.1.1/255.255.255.0 and is of type Unknown
 
 The above example code was run in the :ref:`Switchyard *test* environment <runtest>`; when a Switchyard program is run in test mode, all interfaces will show type ``Unknown``.  Note also that there is *no inherent ordering* to the list of interfaces returned.
 
@@ -122,7 +120,7 @@ or Ethernet (MAC) address:
  * ``interface_by_name(name)``: This method returns an ``Interface`` object given a string name
    of a interface.  An alias method ``port_by_name(name)`` also exists.
 
- * ``interface_by_ipaddr(ipaddr)``: This method returns an ``Interface`` object given an IP address configured on one of the interfaces.  The IP address may be given as a string or as an IPv4Address object.  An alias method ``port_by_ipaddr(ipaddr)`` also exists.
+ * ``interface_by_ipaddr(ipaddr)``: This method returns an ``Interface`` object given an IP address configured on one of the interfaces.  The IP address may be given as a string, an ``IPv6Address`` object, or as an ``IPv4Address`` object.  An alias method ``port_by_ipaddr(ipaddr)`` also exists.
 
  * ``interface_by_macaddr(ethaddr)``: This method returns an ``Interface`` object given an Ethernet (MAC) address configured on one of the interfaces.  An alias method ``port_by_macaddr(ethaddr)`` also exists.
 

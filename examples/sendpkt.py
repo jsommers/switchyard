@@ -17,7 +17,9 @@ def main(net):
     pkt = eth+ip+icmp
     for intf in my_interfaces:
         eth.src = intf.ethaddr
-        ip.src = intf.ipaddr
+        # assumes at least one v4 address assigned 
+        v4addrs = [a for a in intf.ipaddrs if a.version == 4]
+        ip.src = v4addrs[0].src.ip
         print("Sending {} out {}".format(pkt, intf.name))
         try:
             net.send_packet(intf.name, pkt)
