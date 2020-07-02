@@ -530,10 +530,10 @@ class IPv6(PacketHeaderBase):
         self.trafficclass = (fields[0] & 0x0f) << 4 | (fields[1] >> 4)
         self.flowlabel = (fields[1] & 0x0f) << 16 | fields[2]
         self._payloadlen = fields[3]
-        self.nextheader = IPProtocol(fields[4])
+        self.nextheader = fields[4]
         self.ttl = fields[5]
-        self.src = IPv6Address(fields[6])
-        self.dst = IPv6Address(fields[7])
+        self.src = fields[6]
+        self.dst = fields[7]
         # FIXME: extension headers
         return raw[IPv6._MINLEN:]
 
@@ -593,7 +593,7 @@ class IPv6(PacketHeaderBase):
 
     @src.setter
     def src(self, value):
-        self._src = value
+        self._src = IPv6Address(value)
 
     @property
     def dst(self):
@@ -601,7 +601,7 @@ class IPv6(PacketHeaderBase):
 
     @dst.setter
     def dst(self, value):
-        self._dst = value
+        self._dst = IPv6Address(value)
 
     def __str__(self):
         return '{} {}->{} {}'.format(self.__class__.__name__, self.src, self.dst, self.nextheader.name) 

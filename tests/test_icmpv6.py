@@ -66,6 +66,29 @@ class ICMPPv6PacketTests(unittest.TestCase):
         opt2.from_bytes(raw)
         self.assertEqual(opt, opt2)
 
+    def testOptionList(self):
+        opt = ICMPv6OptionPrefixInformation(prefix='fd00::/64')
+        optlist = ICMPv6OptionList(opt,
+                                   ICMPv6OptionRedirectedHeader(b'\x00\x11\x22\x33'),
+                                   ICMPv6OptionMTU(576))
+        self.assertEqual(optlist.size(), 3)
+        raw = optlist.to_bytes()
+        optlist2 = ICMPv6OptionList.from_bytes(raw)
+        self.assertEqual(optlist, optlist2)
+        with self.assertRaises(TypeError):
+            optlist.append("hello")
+        self.assertEqual(optlist.size(), len(optlist))
+        self.assertEqual(len(raw), optlist.raw_length())
+        del optlist[-1]
+        self.assertEqual(len(optlist), 2)
+        self.assertEqual(opt, optlist[0])
+        with self.assertRaises(IndexError):
+            optlist[2]
+        with self.assertRaises(IndexError):
+            optlist[-3]
+        with self.assertRaises(IndexError):
+            del optlist[-3]
+
     def testReconstruct1(self):
         raw = b'33\x00\x00\x00\x16\x18\x81\x0e\x03\xaeQ\x86\xdd`\x00\x00\x00\x00$\x00\x01\xfe\x80\x00\x00\x00\x00\x00\x00\x1c\xe7\xbe)OU\x89s\xff\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x16:\x00\x01\x00\x05\x02\x00\x00\x8f\x00\xbb6\x00\x00\x00\x01\x04\x00\x00\x00\xff\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xfb'         
         p = Packet(raw)
@@ -98,10 +121,15 @@ class ICMPPv6PacketTests(unittest.TestCase):
 
     def testMakeRouterAdvertisement(self):
         p = Ethernet(ethertype=EtherType.IPv6, src='58:ac:78:93:da:00', dst='33:33:00:00:00:01') + IPv6(nextheader=IPProtocol.ICMPv6, hoplimit=255, src='fe80::1', dst='ff02::1') + ICMPv6(icmptype=ICMPv6Type.RouterAdvertisement, icmpdata=ICMPv6RouterAdvertisement(options=(ICMPv6OptionSourceLinkLayerAddress('00:50:56:af:97:68'),)))
+        raw = p.to_bytes()
+        p2 = Packet(raw=raw)
+        self.assertEqual(p, p2)
 
     def testMakeRouterSolicitation(self):
         p = Ethernet(ethertype=EtherType.IPv6, src='58:ac:78:93:da:00', dst='33:33:00:00:00:01') + IPv6(nextheader=IPProtocol.ICMPv6, hoplimit=255, src='fe80::1', dst='ff02::1') + ICMPv6(icmptype=ICMPv6Type.RouterAdvertisement, icmpdata=ICMPv6RouterSolicitation(options=(ICMPv6OptionSourceLinkLayerAddress('00:50:56:af:97:68'),ICMPv6OptionMTU(1250), ICMPv6OptionPrefixInformation(prefix='fd00::/64'))))
-        print(p)
+        raw = p.to_bytes()
+        p2 = Packet(raw=raw)
+        self.assertEqual(p, p2)
 
     def testMakeNeighborAdvertisement(self):
         p = Ethernet(ethertype=EtherType.IPv6, dst='58:ac:78:93:da:00', src='00:50:56:af:97:68') + \
@@ -110,18 +138,27 @@ class ICMPPv6PacketTests(unittest.TestCase):
                  dst='2001:db8:cafe:1::1') + \
             ICMPv6(icmptype=ICMPv6Type.NeighborAdvertisement, 
                    icmpdata=ICMPv6NeighborAdvertisement(options=(ICMPv6OptionTargetLinkLayerAddress('00:1b:24:04:a2:1e'),)))
+        raw = p.to_bytes()
+        p2 = Packet(raw=raw)
+        self.assertEqual(p, p2)
 
     def testMakeNeighborSolicitation(self):
         p = Ethernet(ethertype=EtherType.IPv6, dst='33:33:ff:01:70:86', src='58:ac:78:93:da:00') + \
             IPv6(nextheader=IPProtocol.ICMPv6, hoplimit=255, src='2001:db8:cafe:1::1', dst='ff02::1:ff01:7086') +  \
             ICMPv6(icmptype=ICMPv6Type.NeighborSolicitation, 
                    icmpdata=ICMPv6NeighborSolicitation(options=(ICMPv6OptionSourceLinkLayerAddress('58:ac:78:93:da:00'),)))
+        raw = p.to_bytes()
+        p2 = Packet(raw=raw)
+        self.assertEqual(p, p2)
 
     def testMakeRedirect(self):
         p = Ethernet(ethertype=EtherType.IPv6, dst='33:33:ff:01:70:86', src='58:ac:78:93:da:00') + \
             IPv6(nextheader=IPProtocol.ICMPv6, hoplimit=255, src='2001:db8:cafe:1::1', dst='ff02::1:ff01:7086') +  \
             ICMPv6(icmptype=ICMPv6Type.RedirectMessage,
                    icmpdata=ICMPv6RedirectMessage(targetaddr='fe80:3::1', destaddr='fe80:3::2', options=(ICMPv6OptionTargetLinkLayerAddress('58:ac:78:93:da:00'), ICMPv6OptionRedirectedHeader(self.pkt.to_bytes()))))
+        raw = p.to_bytes()
+        p2 = Packet(raw=raw)
+        self.assertEqual(p, p2)
 
     def testNeighborAdvertisementReconstruct(self):
         raw=b'\x60\x00\x00\x00\x00\x18\x3a\xff\xfe\x80\x00\x00\x00\x00\x00\x00\xea\x8d\x28\xff\xfe\x59\x2e\x5b\xfe\x80\x00\x00\x00\x00\x00\x00\x1c\x44\x49\xff\x8e\x68\x2b\x21\x88\x00\x1b\xd8\xc0\x00\x00\x00\xfe\x80\x00\x00\x00\x00\x00\x00\xea\x8d\x28\xff\xfe\x59\x2e\x5b' 

@@ -337,8 +337,11 @@ ICMPv6OptionClasses = {
 
 class ICMPv6OptionList(object):
     __slots__ = ['_options']
-    def __init__(self):
+    def __init__(self, *args):
         self._options = []
+        for arg in args:
+            assert(isinstance(arg, ICMPv6Option))
+            self._options.append(arg)
 
     @staticmethod
     def from_bytes(raw):
@@ -346,48 +349,35 @@ class ICMPv6OptionList(object):
         Takes a byte string as a parameter and returns a list of
         ICMPv6Option objects.
         '''
-        icmpv6popts = ICMPv6OptionList()
-
+        icmpv6opts = ICMPv6OptionList()
         while len(raw) >= 8:
             opttype = raw[0]
             optlen = raw[1]
             olen = optlen * 8
             optdata = raw[:olen]
             raw = raw[olen:]
-
             try:
                 optnum = ICMPv6OptionNumber(opttype)
             except ValueError:
                 log_warn("Unimplemented ICMPv6 Option {}".format(opttype))
                 continue
-
             obj = ICMPv6OptionClasses[optnum]()
             obj.from_bytes(optdata)
-        return icmpv6popts
+            icmpv6opts.append(obj)
+        return icmpv6opts
 
     def to_bytes(self):
         '''
         Takes a list of ICMPv6Option objects and returns a packed byte string
         of options, appropriately padded if necessary.
         '''
-        raw = b''
-        if not self._options:
-            return raw
-        for icmpv6popt in self._options:
-            raw += icmpv6popt.to_bytes()
-        # Padding doesn't seem necessary?
-        #   RFC states it should be padded to 'natural 64bit boundaries'
-        #   However, wireshark interprets \x00 as a malformed option field
-        #   So for now, ignore padding
-        # padbytes = 4 - (len(raw) % 4)
-        # raw += b'\x00'*padbytes
-        return raw
+        return b''.join([opt.to_bytes() for opt in self._options])
 
     def append(self, opt):
         if isinstance(opt, ICMPv6Option):
             self._options.append(opt)
         else:
-            raise Exception("Option to be added must be an ICMPv6Option " +
+            raise TypeError("Option to be added must be an ICMPv6Option " +
                             "object ( is {} )".format(type(opt)))
 
     def __len__(self):
