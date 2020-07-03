@@ -137,7 +137,7 @@ Note that the above test scenario file is *not* included in this repository but 
 Mininet ("live") testing
 ------------------------
 
-Once the Switchyard tests pass, you should test your router in Mininet.  There is a ``start_mininet.py`` available for building the following network topology::
+Once the Switchyard tests pass, you should test your router in Mininet.  There is a ``start_mininet.py`` available for building the following network topology:
 
 .. image:: router2_topology.png
 
