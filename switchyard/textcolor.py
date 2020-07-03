@@ -1,22 +1,26 @@
 import sys
 import atexit
 from contextlib import contextmanager
-from colorama import init, Fore, Back, Style
+import colorama
+from colorama import Fore, Back, Style
+
 
 class TextColor(object):
     _SETUP=False
+    _NoColor=False
 
     def __init__(self):
         raise Exception("Don't instantiate me.")
 
     @staticmethod
-    def setup():
+    def setup(nocolor):
         if TextColor._SETUP:
             return
+        TextColor._NoColor=nocolor
         if sys.platform == 'win32':
-            init(strip=True,convert=True,wrap=True)
+            colorama.init(strip=True,convert=True,wrap=True)
         else:
-            init()
+            colorama.init()
         atexit.register(TextColor.reset)
         TextColor._SETUP=True
 
@@ -26,30 +30,33 @@ class TextColor(object):
 
     @staticmethod
     def green():
-        print(Fore.GREEN,end='')
+        if not TextColor._NoColor:
+            print(Fore.GREEN,end='')
 
     @staticmethod
     def red():
-        print(Fore.RED,end='')
+        if not TextColor._NoColor:
+            print(Fore.RED,end='')
 
     @staticmethod
     def blue():
-        print(Fore.BLUE,end='')
+        if not TextColor._NoColor:
+            print(Fore.BLUE,end='')
 
     @staticmethod
     def cyan():
-        print(Fore.CYAN,end='')
+        if not TextColor._NoColor:
+            print(Fore.CYAN,end='')
 
     @staticmethod
     def magenta():
-        print(Fore.MAGENTA,end='')
+        if not TextColor._NoColor:
+            print(Fore.MAGENTA,end='')
 
     @staticmethod
     def yellow():
-        print(Fore.YELLOW,end='')
-
-TextColor.setup()
-
+        if not TextColor._NoColor:
+            print(Fore.YELLOW,end='')
 
 @contextmanager
 def red():

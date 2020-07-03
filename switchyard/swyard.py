@@ -6,6 +6,7 @@ sys.path.append(os.getcwd())
 import argparse
 
 from switchyard.syinit import start_framework
+import switchyard.textcolor as tcolor
 
 def version_check():
     required = (3,6)
@@ -52,6 +53,8 @@ def main():
     parser.add_argument("-l", "--logfile", help="Specify the name of a file to send"
         " log entries to (default is to send log to stdout/stderr).", 
         dest="logfile", default=None, type=str)
+    parser.add_argument('--nocolor', default=False, action='store_true',
+            help="Don't show colored output; use terminal defaults.")
     parser.add_argument("--nopdb", help="Don't enter pdb on crash.", 
         dest="nopdb", action="store_true", default=False)
     parser.add_argument("-f", "--firewall", 
@@ -76,6 +79,7 @@ def main():
     if (args.usercode is None and not args.compile) and not args.listif:
         parser.print_usage()
         return -1
+    tcolor.TextColor.setup(args.nocolor)
     start_framework(args)
 
 if __name__ == '__main__':

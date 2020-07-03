@@ -3,7 +3,7 @@ import os
 from threading import Thread, Barrier
 from textwrap import indent
 
-from switchyard.textcolor import *
+import switchyard.textcolor as tcolor
 from switchyard.hostfirewall import Firewall
 from switchyard.llnettest import main_test
 from switchyard.llnetreal import main_real, LLNetReal
@@ -15,6 +15,7 @@ from switchyard.lib.topo import Topology
 from switchyard.sim.cli import run_simulation
 from switchyard.lib.interface import make_device_list
 from switchyard.outputfmt import VerboseOutput
+
 
 _setup_ok = False
 _netobj = None
@@ -146,7 +147,7 @@ def _start_app(appcode, firewall_setup):
             import_or_die(appcode, [])
         except Exception as e:
             import traceback
-            with red():
+            with tcolor.red():
                 print('*'*60)
                 print ("Exception while running your code: {}".format(e))
                 lines = indent(traceback.format_exc(), '   ').split('\n')
