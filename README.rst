@@ -46,8 +46,6 @@ There is also a docker image, if you prefer: https://hub.docker.com/repository/d
 
     $ docker run -v `pwd`:/swyard -it jsommers/switchyard
 
-Mininet is also installed in the container, if that's helpful.
-
 ---
 
 Results of tests run in Travis (on Ubuntu):
