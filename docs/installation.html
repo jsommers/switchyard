@@ -1,18 +1,16 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
     <title>Installing Switchyard &#8212; Switchyard 1.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css?v=d59dc883" />
+    <script src="_static/documentation_options.js?v=292eb321"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="API Reference" href="reference.html" />
@@ -24,9 +22,6 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li class="right" >
           <a href="reference.html" title="API Reference"
              accesskey="N">next</a> |</li>
@@ -43,8 +38,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="installing-switchyard">
-<span id="install"></span><h1>Installing Switchyard<a class="headerlink" href="#installing-switchyard" title="Permalink to this headline">¶</a></h1>
+  <section id="installing-switchyard">
+<span id="install"></span><h1>Installing Switchyard<a class="headerlink" href="#installing-switchyard" title="Link to this heading">¶</a></h1>
 <p>Switchyard has been tested and developed on the following operating systems:</p>
 <blockquote>
 <div><ul class="simple">
@@ -76,28 +71,28 @@
 </pre></div>
 </div>
 <p>That’s it.  Once you’ve done that, the <code class="docutils literal notranslate"><span class="pre">swyard</span></code> program should be on your <code class="docutils literal notranslate"><span class="pre">PATH</span></code> (you can check by typing <code class="docutils literal notranslate"><span class="pre">which</span> <span class="pre">swyard</span></code>).  If you no longer want to use the Python virtual environment you’ve created, you can just type <code class="docutils literal notranslate"><span class="pre">deactivate</span></code>.</p>
-<div class="section" id="operating-system-specific-instructions">
-<h2>Operating system-specific instructions<a class="headerlink" href="#operating-system-specific-instructions" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="macos-x">
-<h3>MacOS X<a class="headerlink" href="#macos-x" title="Permalink to this headline">¶</a></h3>
+<section id="operating-system-specific-instructions">
+<h2>Operating system-specific instructions<a class="headerlink" href="#operating-system-specific-instructions" title="Link to this heading">¶</a></h2>
+<section id="macos-x">
+<h3>MacOS X<a class="headerlink" href="#macos-x" title="Link to this heading">¶</a></h3>
 <p>The easiest way to get Switchyard running in macOS is to install homebrew.  You can use <code class="docutils literal notranslate"><span class="pre">brew</span></code> to install Python 3.  You should also <code class="docutils literal notranslate"><span class="pre">brew</span></code> to install the <code class="docutils literal notranslate"><span class="pre">libpcap</span></code> package.  That should be all that is necessary.</p>
-</div>
-<div class="section" id="ubuntu">
-<h3>Ubuntu<a class="headerlink" href="#ubuntu" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="ubuntu">
+<h3>Ubuntu<a class="headerlink" href="#ubuntu" title="Link to this heading">¶</a></h3>
 <p>For Ubuntu systems, you’ll need to use <code class="docutils literal notranslate"><span class="pre">apt-get</span></code> or something similar to install the following packages:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">libffi</span><span class="o">-</span><span class="n">dev</span> <span class="n">libpcap</span><span class="o">-</span><span class="n">dev</span> <span class="n">python3</span><span class="o">-</span><span class="n">dev</span> <span class="n">python3</span><span class="o">-</span><span class="n">pip</span> <span class="n">python3</span><span class="o">-</span><span class="n">venv</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="fedora-redhat">
-<h3>Fedora/RedHat<a class="headerlink" href="#fedora-redhat" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="fedora-redhat">
+<h3>Fedora/RedHat<a class="headerlink" href="#fedora-redhat" title="Link to this heading">¶</a></h3>
 <p>For Fedora and RedHat-based systems, you’ll need to use <code class="docutils literal notranslate"><span class="pre">yum</span></code> or something similar to install a similar set of packages as with Ubuntu (but with the right name changes for the way packages are identified on Fedora):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">libffi</span><span class="o">-</span><span class="n">devel</span> <span class="n">libpcap</span><span class="o">-</span><span class="n">devel</span> <span class="n">python3</span><span class="o">-</span><span class="n">devel</span> <span class="n">python3</span><span class="o">-</span><span class="n">pip</span> <span class="n">python3</span><span class="o">-</span><span class="n">virtualenv</span>
 </pre></div>
 </div>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
             <div class="clearer"></div>
@@ -106,8 +101,9 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">Installing Switchyard</a><ul>
 <li><a class="reference internal" href="#operating-system-specific-instructions">Operating system-specific instructions</a><ul>
 <li><a class="reference internal" href="#macos-x">MacOS X</a></li>
@@ -119,12 +115,17 @@
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="advanced_api.html"
-                        title="previous chapter">Advanced API topics</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="reference.html"
-                        title="next chapter">API Reference</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="advanced_api.html"
+                          title="previous chapter">Advanced API topics</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="reference.html"
+                          title="next chapter">API Reference</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -136,12 +137,12 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -153,9 +154,6 @@
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="reference.html" title="API Reference"
              >next</a> |</li>
         <li class="right" >
@@ -166,8 +164,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2020, Joel Sommers.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     </div>
   </body>
 </html>

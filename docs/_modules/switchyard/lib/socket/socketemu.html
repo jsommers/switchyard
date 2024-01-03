@@ -1,18 +1,15 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="../../../../">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>switchyard.lib.socket.socketemu &#8212; Switchyard 1.0.1 documentation</title>
-    <link rel="stylesheet" href="../../../../_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
-    <script src="../../../../_static/jquery.js"></script>
-    <script src="../../../../_static/underscore.js"></script>
-    <script src="../../../../_static/doctools.js"></script>
-    <script src="../../../../_static/language_data.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinxdoc.css?v=d59dc883" />
+    <script src="../../../../_static/documentation_options.js?v=292eb321"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" /> 
   </head><body>
@@ -104,14 +101,14 @@
 <span class="n">_default_timeout</span> <span class="o">=</span> <span class="kc">None</span>
 
 <span class="k">def</span> <span class="nf">getdefaulttimeout</span><span class="p">():</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Get the default timeout value for a socket.  The preset default</span>
 <span class="sd">    is None, meaning to block indefinitely.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">return</span> <span class="n">_default_timeout</span>
 
 <span class="k">def</span> <span class="nf">setdefaulttimeout</span><span class="p">(</span><span class="n">tmo</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Set the default timeout value for a socket to the given value.</span>
 <span class="sd">    Calling this function does not affect any preexisting sockets.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
@@ -125,13 +122,15 @@
 <span class="k">def</span> <span class="nf">_stringify_addrs</span><span class="p">(</span><span class="n">addrtuple</span><span class="p">):</span>
     <span class="k">return</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">addrtuple</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">addrtuple</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
 
-<div class="viewcode-block" id="ApplicationLayer"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.ApplicationLayer">[docs]</a><span class="k">class</span> <span class="nc">ApplicationLayer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="ApplicationLayer">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.ApplicationLayer">[docs]</a>
+<span class="k">class</span> <span class="nc">ApplicationLayer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="n">_isinit</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">_to_app</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_from_app</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Don&#39;t try to create an instance of this class.  Switchyard internally</span>
 <span class="sd">        handles initialization.  Users should only ever call the</span>
 <span class="sd">        recv_from_app() and send_to_app() static methods.</span>
@@ -141,7 +140,7 @@
                            <span class="s2">&quot;instead.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_init</span><span class="p">():</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Internal switchyard static initialization method.  </span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="n">ApplicationLayer</span><span class="o">.</span><span class="n">_isinit</span><span class="p">:</span>
@@ -157,9 +156,11 @@
             <span class="n">s</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">sockid</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">s</span>
 
-<div class="viewcode-block" id="ApplicationLayer.recv_from_app"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.ApplicationLayer.recv_from_app">[docs]</a>    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="ApplicationLayer.recv_from_app">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.ApplicationLayer.recv_from_app">[docs]</a>
+    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">recv_from_app</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">_default_timeout</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Called by a network stack implementer to receive application-layer</span>
 <span class="sd">        data for sending on to a remote location.  </span>
 
@@ -176,9 +177,12 @@
             <span class="k">pass</span>
         <span class="k">raise</span> <span class="n">NoPackets</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="ApplicationLayer.send_to_app"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.ApplicationLayer.send_to_app">[docs]</a>    <span class="nd">@staticmethod</span>
+
+<div class="viewcode-block" id="ApplicationLayer.send_to_app">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.ApplicationLayer.send_to_app">[docs]</a>
+    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">send_to_app</span><span class="p">(</span><span class="n">proto</span><span class="p">,</span> <span class="n">local_addr</span><span class="p">,</span> <span class="n">remote_addr</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Called by a network stack implementer to push application-layer</span>
 <span class="sd">        data &quot;up&quot; from the stack.</span>
 
@@ -213,9 +217,10 @@
         <span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;No socket queue found for local proto/address: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">xtup</span><span class="p">))</span>
         <span class="k">return</span> <span class="kc">False</span></div>
 
+
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_register_socket</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Internal method used by socket emulation layer to create a new &quot;upward&quot;</span>
 <span class="sd">        queue for an app-layer socket and to register the socket object.</span>
 <span class="sd">        Returns two queues: &quot;downward&quot; (fromapp) and &quot;upward&quot; (toapp).</span>
@@ -227,7 +232,7 @@
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_registry_update</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">oldid</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Internal method used to update an existing socket registry when the socket</span>
 <span class="sd">        is re-bound to a different local port number.  Requires the socket object</span>
 <span class="sd">        and old sockid.  Returns None.</span>
@@ -238,7 +243,7 @@
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_unregister_socket</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Internal method used to remove the socket from AppLayer registry.</span>
 <span class="sd">        Warns if the &quot;upward&quot; socket queue has any left-over data.  </span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -248,8 +253,11 @@
             <span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;Socket being destroyed still has data enqueued for application layer.&quot;</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="socket"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket">[docs]</a><span class="k">class</span> <span class="nc">socket</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket">[docs]</a>
+<span class="k">class</span> <span class="nc">socket</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    A socket object, emulated by Switchyard.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="vm">__slots__</span> <span class="o">=</span>  <span class="p">(</span><span class="s1">&#39;_family&#39;</span><span class="p">,</span><span class="s1">&#39;_socktype&#39;</span><span class="p">,</span><span class="s1">&#39;_protoname&#39;</span><span class="p">,</span><span class="s1">&#39;_proto&#39;</span><span class="p">,</span>
@@ -307,21 +315,21 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">family</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Get the address family of the socket.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_family</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Get the type of the socket.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_socktype</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">proto</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Get the protocol of the socket.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proto</span>
@@ -333,14 +341,19 @@
         <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_proto</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_local_addr</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_local_addr</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> 
             <span class="bp">self</span><span class="o">.</span><span class="n">_remote_addr</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remote_addr</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> 
 
-<div class="viewcode-block" id="socket.accept"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.accept">[docs]</a>    <span class="k">def</span> <span class="nf">accept</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="socket.accept">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.accept">[docs]</a>
+    <span class="k">def</span> <span class="nf">accept</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Not implemented.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="socket.close"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.close">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.close">[docs]</a>
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Close the socket.  </span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">try</span><span class="p">:</span>
@@ -350,8 +363,11 @@
             <span class="k">pass</span>
         <span class="k">return</span> <span class="mi">0</span></div>
 
-<div class="viewcode-block" id="socket.bind"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.bind">[docs]</a>    <span class="k">def</span> <span class="nf">bind</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.bind">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.bind">[docs]</a>
+    <span class="k">def</span> <span class="nf">bind</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Alter the local address with which this socket is associated.</span>
 <span class="sd">        The address parameter is a 2-tuple consisting of an IP address</span>
 <span class="sd">        and port number. </span>
@@ -374,77 +390,107 @@
         <span class="n">ApplicationLayer</span><span class="o">.</span><span class="n">_registry_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">oldid</span><span class="p">)</span>
         <span class="k">return</span> <span class="mi">0</span></div>
 
-<div class="viewcode-block" id="socket.connect"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.connect">[docs]</a>    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.connect">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.connect">[docs]</a>
+    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Set the remote address (IP address and port) with which</span>
 <span class="sd">        this socket is used to communicate.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_remote_addr</span> <span class="o">=</span> <span class="n">_normalize_addrs</span><span class="p">(</span><span class="n">address</span><span class="p">)</span>
         <span class="k">return</span> <span class="mi">0</span></div>
 
-<div class="viewcode-block" id="socket.connect_ex"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.connect_ex">[docs]</a>    <span class="k">def</span> <span class="nf">connect_ex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.connect_ex">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.connect_ex">[docs]</a>
+    <span class="k">def</span> <span class="nf">connect_ex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Set the remote address (IP address and port) with which</span>
 <span class="sd">        this socket is used to communicate.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_remote_addr</span> <span class="o">=</span> <span class="n">_normalize_addrs</span><span class="p">(</span><span class="n">address</span><span class="p">)</span>
         <span class="k">return</span> <span class="mi">0</span></div>
 
-<div class="viewcode-block" id="socket.getpeername"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.getpeername">[docs]</a>    <span class="k">def</span> <span class="nf">getpeername</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.getpeername">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.getpeername">[docs]</a>
+    <span class="k">def</span> <span class="nf">getpeername</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Return a 2-tuple containing the remote IP address and port</span>
 <span class="sd">        associated with the socket, if any.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="n">_stringify_addrs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_remote_addr</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="socket.getsockname"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.getsockname">[docs]</a>    <span class="k">def</span> <span class="nf">getsockname</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.getsockname">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.getsockname">[docs]</a>
+    <span class="k">def</span> <span class="nf">getsockname</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Return a 2-tuple containing the local IP address and port</span>
 <span class="sd">        associated with the socket.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="n">_stringify_addrs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_local_addr</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="socket.getsockopt"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.getsockopt">[docs]</a>    <span class="k">def</span> <span class="nf">getsockopt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">option</span><span class="p">,</span> <span class="n">buffersize</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.getsockopt">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.getsockopt">[docs]</a>
+    <span class="k">def</span> <span class="nf">getsockopt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">option</span><span class="p">,</span> <span class="n">buffersize</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Not implemented.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="socket.gettimeout"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.gettimeout">[docs]</a>    <span class="k">def</span> <span class="nf">gettimeout</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.gettimeout">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.gettimeout">[docs]</a>
+    <span class="k">def</span> <span class="nf">gettimeout</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Obtain the currently set timeout value.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span></div>
 
+
     <span class="nd">@property</span> 
     <span class="k">def</span> <span class="nf">timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Obtain the currently set timeout value.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span>
 
-<div class="viewcode-block" id="socket.listen"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.listen">[docs]</a>    <span class="k">def</span> <span class="nf">listen</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">backlog</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="socket.listen">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.listen">[docs]</a>
+    <span class="k">def</span> <span class="nf">listen</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">backlog</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Not implemented.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="socket.recv"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.recv">[docs]</a>    <span class="k">def</span> <span class="nf">recv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffersize</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.recv">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.recv">[docs]</a>
+    <span class="k">def</span> <span class="nf">recv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffersize</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Receive data on the socket.  The buffersize and flags</span>
 <span class="sd">        arguments are currently ignored.  Only returns the data.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">_</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recv</span><span class="p">(</span><span class="n">buffersize</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">data</span></div>
 
-<div class="viewcode-block" id="socket.recv_into"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.recv_into">[docs]</a>    <span class="k">def</span> <span class="nf">recv_into</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.recv_into">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.recv_into">[docs]</a>
+    <span class="k">def</span> <span class="nf">recv_into</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Not implemented.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;*_into calls aren&#39;t implemented&quot;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="socket.recvfrom"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.recvfrom">[docs]</a>    <span class="k">def</span> <span class="nf">recvfrom</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffersize</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.recvfrom">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.recvfrom">[docs]</a>
+    <span class="k">def</span> <span class="nf">recvfrom</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffersize</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Receive data on the socket.  The buffersize and flags</span>
 <span class="sd">        arguments are currently ignored.  Returns the data and</span>
 <span class="sd">        an address tuple (IP address and port) of the remote host.</span>
@@ -452,11 +498,15 @@
         <span class="n">_</span><span class="p">,</span><span class="n">remoteaddr</span><span class="p">,</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recv</span><span class="p">(</span><span class="n">buffersize</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">data</span><span class="p">,</span><span class="n">remoteaddr</span></div>
 
-<div class="viewcode-block" id="socket.recvfrom_into"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.recvfrom_into">[docs]</a>    <span class="k">def</span> <span class="nf">recvfrom_into</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.recvfrom_into">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.recvfrom_into">[docs]</a>
+    <span class="k">def</span> <span class="nf">recvfrom_into</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Not implemented.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;*_into calls aren&#39;t implemented&quot;</span><span class="p">)</span></div>
+
 
     <span class="k">def</span> <span class="nf">_recv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nbytes</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
@@ -467,8 +517,10 @@
             <span class="k">pass</span>
         <span class="k">raise</span> <span class="n">timeout</span><span class="p">(</span><span class="s2">&quot;timed out&quot;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="socket.send"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.send">[docs]</a>    <span class="k">def</span> <span class="nf">send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="socket.send">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.send">[docs]</a>
+    <span class="k">def</span> <span class="nf">send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Send data on the socket.  A call to connect() must have</span>
 <span class="sd">        been previously made for this call to succeed.</span>
 <span class="sd">        Flags is currently ignored.</span>
@@ -477,8 +529,11 @@
             <span class="k">raise</span> <span class="n">sockerr</span><span class="p">(</span><span class="s2">&quot;ENOTCONN: socket not connected&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flowaddr</span><span class="p">())</span></div>
 
-<div class="viewcode-block" id="socket.sendto"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.sendto">[docs]</a>    <span class="k">def</span> <span class="nf">sendto</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.sendto">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.sendto">[docs]</a>
+    <span class="k">def</span> <span class="nf">sendto</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Send data on the socket.  Accepts the same parameters as the</span>
 <span class="sd">        built-in socket sendto: data[, flags], address</span>
 <span class="sd">        where address is a 2-tuple of IP address and port.</span>
@@ -489,42 +544,60 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_proto</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_local_addr</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> 
             <span class="bp">self</span><span class="o">.</span><span class="n">_local_addr</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">remoteaddr</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">remoteaddr</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span></div>
 
+
     <span class="k">def</span> <span class="nf">_send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">flowaddr</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_socket_queue_app_to_stack</span><span class="o">.</span><span class="n">put</span><span class="p">(</span> <span class="p">(</span><span class="n">flowaddr</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span> <span class="p">)</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
-<div class="viewcode-block" id="socket.sendall"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.sendall">[docs]</a>    <span class="k">def</span> <span class="nf">sendall</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="socket.sendall">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.sendall">[docs]</a>
+    <span class="k">def</span> <span class="nf">sendall</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Not implemented.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;sendall isn&#39;t implemented&quot;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="socket.sendmsg"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.sendmsg">[docs]</a>    <span class="k">def</span> <span class="nf">sendmsg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.sendmsg">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.sendmsg">[docs]</a>
+    <span class="k">def</span> <span class="nf">sendmsg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Not implemented.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;*msg calls aren&#39;t implemented&quot;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="socket.recvmsg"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.recvmsg">[docs]</a>    <span class="k">def</span> <span class="nf">recvmsg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.recvmsg">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.recvmsg">[docs]</a>
+    <span class="k">def</span> <span class="nf">recvmsg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Not implemented.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;*msg calls aren&#39;t implemented&quot;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="socket.setblocking"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.setblocking">[docs]</a>    <span class="k">def</span> <span class="nf">setblocking</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flags</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.setblocking">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.setblocking">[docs]</a>
+    <span class="k">def</span> <span class="nf">setblocking</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flags</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Set whether this socket should block on a call to recv*.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_block</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">flags</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="socket.setsockopt"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.setsockopt">[docs]</a>    <span class="k">def</span> <span class="nf">setsockopt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.setsockopt">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.setsockopt">[docs]</a>
+    <span class="k">def</span> <span class="nf">setsockopt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Not implemented.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;set/get sockopt calls aren&#39;t implemented&quot;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="socket.settimeout"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.settimeout">[docs]</a>    <span class="k">def</span> <span class="nf">settimeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.settimeout">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.settimeout">[docs]</a>
+    <span class="k">def</span> <span class="nf">settimeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Set the timeout value for this socket.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="n">timeout</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -535,12 +608,17 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_block</span> <span class="o">=</span> <span class="kc">True</span></div>
 
-<div class="viewcode-block" id="socket.shutdown"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.shutdown">[docs]</a>    <span class="k">def</span> <span class="nf">shutdown</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="socket.shutdown">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.socket.socket.shutdown">[docs]</a>
+    <span class="k">def</span> <span class="nf">shutdown</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Shut down the socket.  This is currently implemented by</span>
 <span class="sd">        calling close().</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+</div>
+
 </pre></div>
 
             <div class="clearer"></div>
@@ -553,12 +631,12 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../../../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -578,8 +656,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2020, Joel Sommers.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     </div>
   </body>
 </html>

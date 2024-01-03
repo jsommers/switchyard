@@ -1,18 +1,15 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="../../../">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>switchyard.lib.interface &#8212; Switchyard 1.0.1 documentation</title>
-    <link rel="stylesheet" href="../../../_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-    <script src="../../../_static/jquery.js"></script>
-    <script src="../../../_static/underscore.js"></script>
-    <script src="../../../_static/doctools.js"></script>
-    <script src="../../../_static/language_data.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css?v=d59dc883" />
+    <script src="../../../_static/documentation_options.js?v=292eb321"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
   </head><body>
@@ -45,17 +42,22 @@
 <span class="kn">from</span> <span class="nn">.logging</span> <span class="kn">import</span> <span class="n">log_debug</span>
 <span class="kn">from</span> <span class="nn">..pcapffi</span> <span class="kn">import</span> <span class="n">pcap_devices</span>
 
-<div class="viewcode-block" id="InterfaceType"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.interface.InterfaceType">[docs]</a><span class="k">class</span> <span class="nc">InterfaceType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<div class="viewcode-block" id="InterfaceType">
+<a class="viewcode-back" href="../../../reference.html#switchyard.lib.interface.InterfaceType">[docs]</a>
+<span class="k">class</span> <span class="nc">InterfaceType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
     <span class="n">Unknown</span><span class="o">=</span><span class="mi">1</span>
     <span class="n">Loopback</span><span class="o">=</span><span class="mi">2</span>
     <span class="n">Wired</span><span class="o">=</span><span class="mi">3</span>
     <span class="n">Wireless</span><span class="o">=</span><span class="mi">4</span></div>
 
-<div class="viewcode-block" id="Interface"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.interface.Interface">[docs]</a><span class="k">class</span> <span class="nc">Interface</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Interface">
+<a class="viewcode-back" href="../../../reference.html#switchyard.lib.interface.Interface">[docs]</a>
+<span class="k">class</span> <span class="nc">Interface</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;__name&#39;</span><span class="p">,</span><span class="s1">&#39;__ethaddr&#39;</span><span class="p">,</span><span class="s1">&#39;__ipaddrset&#39;</span><span class="p">,</span><span class="s1">&#39;__ifnum&#39;</span><span class="p">,</span><span class="s1">&#39;__iftype&#39;</span><span class="p">]</span>
     <span class="n">__nextnum</span> <span class="o">=</span> <span class="mi">1</span>
 
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Class that models a single logical interface on a network</span>
 <span class="sd">    device.  An interface has a name, 48-bit Ethernet MAC address,</span>
 <span class="sd">    and (optionally) set of IP addresses with network masks.  An interface</span>
@@ -71,12 +73,12 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Get the name of the interface&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Get the name of the interface&#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__name</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">ethaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Get the Ethernet address associated with the interface&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Get the Ethernet address associated with the interface&#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__ethaddr</span>
 
     <span class="nd">@ethaddr</span><span class="o">.</span><span class="n">setter</span>
@@ -92,12 +94,14 @@
 
     <span class="nd">@property</span> 
     <span class="k">def</span> <span class="nf">ipaddrs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Get the IP addresses associated with the interface, as a (frozen) set</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Get the IP addresses associated with the interface, as a (frozen) set</span>
 <span class="sd">           of ipaddress.IPv4Interface or ipaddress.IPv6Interface objects&#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="nb">frozenset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__ipaddrset</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Interface.assign_ipaddr"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.interface.Interface.assign_ipaddr">[docs]</a>    <span class="k">def</span> <span class="nf">assign_ipaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="Interface.assign_ipaddr">
+<a class="viewcode-back" href="../../../reference.html#switchyard.lib.interface.Interface.assign_ipaddr">[docs]</a>
+    <span class="k">def</span> <span class="nf">assign_ipaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Assign a new IP address (v4 or v6) to this interface.</span>
 <span class="sd">        Address can either be a IPv4Interface object, IPv6Interface object,</span>
 <span class="sd">        or string in the form &#39;addr/prefix&#39; (i.e., something that</span>
@@ -112,8 +116,11 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid type assignment to IP address (must be string or existing IP address) (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Interface.remove_ipaddr"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.interface.Interface.remove_ipaddr">[docs]</a>    <span class="k">def</span> <span class="nf">remove_ipaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="Interface.remove_ipaddr">
+<a class="viewcode-back" href="../../../reference.html#switchyard.lib.interface.Interface.remove_ipaddr">[docs]</a>
+    <span class="k">def</span> <span class="nf">remove_ipaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Remove an IP address from this interface.  Value to remove</span>
 <span class="sd">        can be as a string or IPAddress object.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -124,9 +131,10 @@
                 <span class="k">return</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No such address </span><span class="si">{}</span><span class="s2"> exists to remove from interface&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ipa</span><span class="p">))</span></div>
 
+
     <span class="nd">@property</span> 
     <span class="k">def</span> <span class="nf">ifnum</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Get the interface number (integer) associated with the interface&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Get the interface number (integer) associated with the interface&#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__ifnum</span>
 
     <span class="nd">@ifnum</span><span class="o">.</span><span class="n">setter</span>
@@ -138,7 +146,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">iftype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Get the type of the interface as a value from the InterfaceType enumeration.&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Get the type of the interface as a value from the InterfaceType enumeration.&#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__iftype</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -147,6 +155,7 @@
             <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">ipa</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot; ip:</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ipa</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">s</span> </div>
+
 
 <span class="k">def</span> <span class="nf">make_device_list</span><span class="p">(</span><span class="n">includes</span><span class="o">=</span><span class="nb">set</span><span class="p">(),</span> <span class="n">excludes</span><span class="o">=</span><span class="nb">set</span><span class="p">()):</span>
     <span class="n">log_debug</span><span class="p">(</span><span class="s2">&quot;Making device list.  Includes: </span><span class="si">{}</span><span class="s2">, Excludes: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">includes</span><span class="p">,</span> <span class="n">excludes</span><span class="p">))</span>
@@ -185,12 +194,12 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -210,8 +219,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2020, Joel Sommers.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     </div>
   </body>
 </html>

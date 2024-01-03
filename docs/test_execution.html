@@ -1,18 +1,16 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
     <title>Running in the test environment &#8212; Switchyard 1.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css?v=d59dc883" />
+    <script src="_static/documentation_options.js?v=292eb321"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Test scenario creation" href="test_scenario_creation.html" />
@@ -24,9 +22,6 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li class="right" >
           <a href="test_scenario_creation.html" title="Test scenario creation"
              accesskey="N">next</a> |</li>
@@ -43,8 +38,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="running-in-the-test-environment">
-<span id="runtest"></span><h1>Running in the test environment<a class="headerlink" href="#running-in-the-test-environment" title="Permalink to this headline">¶</a></h1>
+  <section id="running-in-the-test-environment">
+<span id="runtest"></span><h1>Running in the test environment<a class="headerlink" href="#running-in-the-test-environment" title="Link to this heading">¶</a></h1>
 <p>To run Switchyard in test mode, a <em>test scenario</em> file is needed.  This file includes specifications of various events (sending particularly crafted packets, receiving packets, etc.) that a Switchyard program is expected to do if it behaves correctly.  Also needed, of course, is the Switchyard program you wish to test.  The test scenario files may be regular Python (<code class="docutils literal notranslate"><span class="pre">.py</span></code>) files, but they may alternatively have an extension <code class="docutils literal notranslate"><span class="pre">.srpy</span></code> if they have been <em>compiled</em>.  For details on creating and compiling test scenarios, see <a class="reference internal" href="test_scenario_creation.html#test-scenario-creation"><span class="std std-ref">Test scenario creation</span></a>.</p>
 <p>Let’s say your program is named <code class="docutils literal notranslate"><span class="pre">myhub.py</span></code>.  To invoke Switchyard in test mode and subject your program to a set of tests, at minimum you would invoke <code class="docutils literal notranslate"><span class="pre">swyard</span></code> as follows:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ swyard -t hubtests.srpy myhub
@@ -55,11 +50,11 @@
 </pre></div>
 </div>
 <p>would work the same as above.</p>
-<div class="section" id="test-output">
-<h2>Test output<a class="headerlink" href="#test-output" title="Permalink to this headline">¶</a></h2>
+<section id="test-output">
+<h2>Test output<a class="headerlink" href="#test-output" title="Link to this heading">¶</a></h2>
 <p>When you run <code class="docutils literal notranslate"><span class="pre">swyard</span></code> in test mode and all tests pass, you’ll see something similar to the following:</p>
 <div class="literal-block-wrapper docutils container" id="id1">
-<div class="code-block-caption"><span class="caption-text">Abbreviated (normal) test output.</span><a class="headerlink" href="#id1" title="Permalink to this code">¶</a></div>
+<div class="code-block-caption"><span class="caption-text">Abbreviated (normal) test output.</span><a class="headerlink" href="#id1" title="Link to this code">¶</a></div>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span> Results for test scenario hub tests: 8 passed, 0 failed, 0 pending
 
  Passed:
@@ -86,12 +81,12 @@
 </div>
 </div>
 <p>Note that the above output is an abbreviated version of test output and is normally shown in colored text when run in a capable terminal.</p>
-</div>
-<div class="section" id="verbose-test-output">
-<h2>Verbose test output<a class="headerlink" href="#verbose-test-output" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="verbose-test-output">
+<h2>Verbose test output<a class="headerlink" href="#verbose-test-output" title="Link to this heading">¶</a></h2>
 <p>If you invoke <code class="docutils literal notranslate"><span class="pre">swyard</span></code> with the <code class="docutils literal notranslate"><span class="pre">-v</span></code> (verbose) option, the test output includes quite a bit more detail:</p>
 <div class="literal-block-wrapper docutils container" id="id2">
-<div class="code-block-caption"><span class="caption-text">Verbose test output.</span><a class="headerlink" href="#id2" title="Permalink to this code">¶</a></div>
+<div class="code-block-caption"><span class="caption-text">Verbose test output.</span><a class="headerlink" href="#id2" title="Link to this code">¶</a></div>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span> Results for test scenario hub tests: 8 passed, 0 failed, 0 pending
 
  Passed:
@@ -123,13 +118,13 @@
 </div>
 <p>Note that the above output has been truncated — output would normally be shown for all tests.  When invoked with the <em>verbose</em> option, individual tests show exactly what packets would be expected (either as input to a device or as output from it).</p>
 <p><em>Test scenario</em> descriptions that drive test executions as shown here are composed of a series of test <em>expectations</em>.  Test expectations may be that a packet is received on a particular port, or that a packet is emitted out one or more ports, or that the user code calls <code class="docutils literal notranslate"><span class="pre">recv_packet</span></code> but times out (and thus nothing is received).  Both the abbreviated and verbose test output shown above contain brief descriptions of the nature of each test.  In the verbose output, packet details related to each test are also shown.  Reading this information can help to understand what the tests are trying to accomplish, especially when a test expectation fails.</p>
-</div>
-<div class="section" id="when-a-test-fails">
-<h2>When a test fails<a class="headerlink" href="#when-a-test-fails" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="when-a-test-fails">
+<h2>When a test fails<a class="headerlink" href="#when-a-test-fails" title="Link to this heading">¶</a></h2>
 <p>If some test expectation is not met, then the output indicates that something has gone wrong and, by default, Switchyard gives the user the standard Python pdb debugger prompt.  The motivation for immediately putting the user in pdb is to enable just-in-time debugging.  If the test output is read carefully and can be used to identify a flaw by inspecting code and data at the time of failure, then this should help to facilitate the development/testing/debugging cycle.  At least that’s the hope.</p>
 <p>Say that we’ve done something wrong in our code which causes a test expectation to fail.  The output we see might be similar to the following (note that to create the output below, we’ve used the full set of hub device tests, but the code we’ve used is the broken code we started with in <a class="reference internal" href="writing_a_program.html#coding"><span class="std std-ref">Writing a Switchyard program</span></a> that sends any packet back out the same port that it arrived on):</p>
 <div class="literal-block-wrapper docutils container" id="id3">
-<div class="code-block-caption"><span class="caption-text">Normal (abbreviated) test output when one test fails.</span><a class="headerlink" href="#id3" title="Permalink to this code">¶</a></div>
+<div class="code-block-caption"><span class="caption-text">Normal (abbreviated) test output when one test fails.</span><a class="headerlink" href="#id3" title="Link to this code">¶</a></div>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span> Results for test scenario hub tests: 1 passed, 1 failed, 6 pending
 
 
@@ -170,7 +165,7 @@
 failed, and how many are <em>pending</em>.  The pending category simply means that tests cannot be run because some earlier test failed.   In the example above, the output from <code class="docutils literal notranslate"><span class="pre">swyard</span></code> clearly shows which test fails; when that happens, some additional explanatory text is shown, and a debugger session is started as close as possible to the point of failure.  When not run in verbose mode, Switchyard will show abbreviated test descriptions for any passed tests and any pending tests, but the failed test will show everything.</p>
 <p>Following the overall test results showing passed, failed, and pending tests, some summary information is displayed about the test failure, and a debugging session is started.  By default, Switchyard uses Python’s built-in <code class="docutils literal notranslate"><span class="pre">pdb</span></code> debugger.  At the very end of the output, a stack trace is shown and a debugger prompt is displayed:</p>
 <div class="literal-block-wrapper docutils container" id="id4">
-<div class="code-block-caption"><span class="caption-text">Additional output from a test failure.  Notice the error diagnosis in the output below, as well as how Switchyard invokes the debugger (pdb) at the point of failure.</span><a class="headerlink" href="#id4" title="Permalink to this code">¶</a></div>
+<div class="code-block-caption"><span class="caption-text">Additional output from a test failure.  Notice the error diagnosis in the output below, as well as how Switchyard invokes the debugger (pdb) at the point of failure.</span><a class="headerlink" href="#id4" title="Link to this code">¶</a></div>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span> ************************************************************
  Your code didn&#39;t crash, but a test failed.
  ************************************************************
@@ -210,7 +205,7 @@ failed, and how many are <em>pending</em>.  The pending category simply means th
 </div>
 <p>Again, notice that the last couple lines show a (partial) stack trace.   These lines can help a bit to understand the context of the error, but it is often helpful to show the source code around the failed code in light of the error diagnosis under “Failure observed”, which says that we called <code class="docutils literal notranslate"><span class="pre">send_packet</span></code> with an unexpected output port. If we keep reading the diagnosis, we see that the packet was expected to be forwarded out two ports (eth0 and eth2), but was instead sent on eth1.  Showing the source code can be accomplished with <code class="docutils literal notranslate"><span class="pre">pdb</span></code>’s <code class="docutils literal notranslate"><span class="pre">list</span></code> command:</p>
 <div class="literal-block-wrapper docutils container" id="id5">
-<div class="code-block-caption"><span class="caption-text">Output from pdb when listing the source code at the point of failure.</span><a class="headerlink" href="#id5" title="Permalink to this code">¶</a></div>
+<div class="code-block-caption"><span class="caption-text">Output from pdb when listing the source code at the point of failure.</span><a class="headerlink" href="#id5" title="Link to this code">¶</a></div>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span> (Pdb) list
    8
    9         # alternatively, the above line could use indexing, although
@@ -228,12 +223,12 @@ failed, and how many are <em>pending</em>.  The pending category simply means th
 </div>
 </div>
 <p>Between thinking about the observed failure and viewing the code, we might realize that we have foolishly sent the frame out the same interface on which it arrived.</p>
-</div>
-<div class="section" id="another-example">
-<h2>Another example<a class="headerlink" href="#another-example" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="another-example">
+<h2>Another example<a class="headerlink" href="#another-example" title="Link to this heading">¶</a></h2>
 <p>To give a slightly different example, let’s say that we’re developing the code for a network hub, and because we love sheep, we decide to set every Ethernet source address to <code class="docutils literal notranslate"><span class="pre">ba:ba:ba:ba:ba:ba</span></code>.  When we execute Switchyard in test mode (e.g., <code class="docutils literal notranslate"><span class="pre">swyard</span> <span class="pre">-t</span> <span class="pre">hubtests.py</span> <span class="pre">baaadhub.py</span></code>), we get the following output:</p>
 <div class="literal-block-wrapper docutils container" id="id6">
-<div class="code-block-caption"><span class="caption-text">Test output for an example in which all Ethernet source addresses have been hijacked by sheep.</span><a class="headerlink" href="#id6" title="Permalink to this code">¶</a></div>
+<div class="code-block-caption"><span class="caption-text">Test output for an example in which all Ethernet source addresses have been hijacked by sheep.</span><a class="headerlink" href="#id6" title="Link to this code">¶</a></div>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span> Results for test scenario hub tests: 1 passed, 1 failed, 6 pending
 
  Passed:
@@ -292,7 +287,7 @@ failed, and how many are <em>pending</em>.  The pending category simply means th
 </div>
 <p>In this case, we can see that the first section is basically the same as with the other erroneous code, but the failure description is different:  Switchyard tells us that in the Ethernet header, the <code class="docutils literal notranslate"><span class="pre">src</span></code> attribute was wrong.  If, at the <code class="docutils literal notranslate"><span class="pre">pdb</span></code> prompt, we type <code class="docutils literal notranslate"><span class="pre">list</span></code>, we see our wooly problem:</p>
 <div class="literal-block-wrapper docutils container" id="id7">
-<div class="code-block-caption"><span class="caption-text">Pdb source code listing showing the point of test failure.</span><a class="headerlink" href="#id7" title="Permalink to this code">¶</a></div>
+<div class="code-block-caption"><span class="caption-text">Pdb source code listing showing the point of test failure.</span><a class="headerlink" href="#id7" title="Link to this code">¶</a></div>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span> (Pdb) list
   28             else:
   29                 for intf in my_interfaces:
@@ -311,21 +306,21 @@ failed, and how many are <em>pending</em>.  The pending category simply means th
 <p class="admonition-title">See also</p>
 <p>To learn more about pdb and the various commands and capabilities it has, refer to the Python library documentation (there’s a section specifically on <code class="docutils literal notranslate"><span class="pre">pdb</span></code>).  There are other debuggers out there with additional features, but <code class="docutils literal notranslate"><span class="pre">pdb</span></code> is <em>always</em> available with any Python distribution so it is worth acquainting yourself with it.</p>
 </div>
-</div>
-<div class="section" id="even-more-verbose-output">
-<h2>Even more verbose output<a class="headerlink" href="#even-more-verbose-output" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="even-more-verbose-output">
+<h2>Even more verbose output<a class="headerlink" href="#even-more-verbose-output" title="Link to this heading">¶</a></h2>
 <p>If you’d like even more verbose output, you can add the <code class="docutils literal notranslate"><span class="pre">-v</span></code> (verbose) and/or <code class="docutils literal notranslate"><span class="pre">-d</span></code> (debug) flags to <code class="docutils literal notranslate"><span class="pre">swyard</span></code>.  The <code class="docutils literal notranslate"><span class="pre">-d</span></code> flag may be more trouble than it’s worth since it enables all DEBUG-level log messages to be printed to the console.  If you’re really stuck trying to figure out what’s going on, however, this may be useful.</p>
-</div>
-<div class="section" id="if-you-don-t-like-pdb">
-<h2>If you don’t like pdb<a class="headerlink" href="#if-you-don-t-like-pdb" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="if-you-don-t-like-pdb">
+<h2>If you don’t like pdb<a class="headerlink" href="#if-you-don-t-like-pdb" title="Link to this heading">¶</a></h2>
 <p>If you don’t appreciate being dumped into the <code class="docutils literal notranslate"><span class="pre">pdb</span></code> debugger when something fails (maybe you’re a cretin who really just likes <code class="docutils literal notranslate"><span class="pre">printf</span></code>-style debugging?), you can add the <code class="docutils literal notranslate"><span class="pre">--nopdb</span></code> flag to <code class="docutils literal notranslate"><span class="pre">swyard</span></code>.  With the <code class="docutils literal notranslate"><span class="pre">--nopdb</span></code> option, Switchyard will print out information about test failure, but you’ll go straight back to a command-line prompt.</p>
 <p>If you’d like to use a debugger, but just not <code class="docutils literal notranslate"><span class="pre">pdb</span></code>, you can use the <code class="docutils literal notranslate"><span class="pre">--nohandle</span></code> (or <code class="docutils literal notranslate"><span class="pre">-e</span></code>) option to tell Switchyard not to trap any exceptions, but to let them be raised normally.  You can then catch any exceptions using an alterative debugger.  For example, if you’d like to use the <code class="docutils literal notranslate"><span class="pre">PuDB</span></code> debugger, you could invoke <code class="docutils literal notranslate"><span class="pre">swyard</span></code> as follows:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python3 -m pudb.run swyard --nohandle ...
 </pre></div>
 </div>
 <p>where the ellipsis is replaced with other command-line arguments to <code class="docutils literal notranslate"><span class="pre">swyard</span></code>.</p>
-<div class="section" id="debugging-switchyard-code">
-<span id="debugging"></span><h3>Debugging Switchyard code<a class="headerlink" href="#debugging-switchyard-code" title="Permalink to this headline">¶</a></h3>
+<section id="debugging-switchyard-code">
+<span id="debugging"></span><h3>Debugging Switchyard code<a class="headerlink" href="#debugging-switchyard-code" title="Link to this heading">¶</a></h3>
 <p>When running Switchyard, especially in test mode, it is often very helpful to use the interactive Python debugger as you work out problems and figure things out.  With the <code class="docutils literal notranslate"><span class="pre">import</span></code> of <code class="docutils literal notranslate"><span class="pre">switchyard.lib.userlib</span></code> you get a function named <code class="docutils literal notranslate"><span class="pre">debugger</span></code>.  You can insert calls to the <code class="docutils literal notranslate"><span class="pre">debugger</span></code> function where ever you want to have an interactive debugger session start up.   For example, we could create a simple program that starts up a debugger session when ever we receive a packet:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switchyard.lib.userlib</span> <span class="kn">import</span> <span class="o">*</span>
 
@@ -352,7 +347,7 @@ failed, and how many are <em>pending</em>.  The pending category simply means th
 </div>
 <p>If we run the above program, we will stop at the line <em>after</em> the call to <code class="docutils literal notranslate"><span class="pre">debugger</span></code>:</p>
 <div class="literal-block-wrapper docutils container" id="id8">
-<div class="code-block-caption"><span class="caption-text">When the debugger() call is added to a Switchyard program, execution is halted at the <em>next</em> line of code.</span><a class="headerlink" href="#id8" title="Permalink to this code">¶</a></div>
+<div class="code-block-caption"><span class="caption-text">When the debugger() call is added to a Switchyard program, execution is halted at the <em>next</em> line of code.</span><a class="headerlink" href="#id8" title="Link to this code">¶</a></div>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span> &gt; /users/jsommers/dropbox/src/switchyard/documentation/code/enterdebugger.py(17)main()
  -&gt; hdrs = packet.num_headers()
  (Pdb) list
@@ -376,10 +371,10 @@ failed, and how many are <em>pending</em>.  The pending category simply means th
 <p>There are currently a couple limitations when entering <code class="docutils literal notranslate"><span class="pre">pdb</span></code> through a call to <code class="docutils literal notranslate"><span class="pre">debugger()</span></code>.  First, if you attempt to exit <code class="docutils literal notranslate"><span class="pre">pdb</span></code> while the Switchyard program is still running, an exception from <code class="docutils literal notranslate"><span class="pre">pdb</span></code>’s base class (<code class="docutils literal notranslate"><span class="pre">Bdb</span></code>) will get raised.  Thus, it may take a couple invocations of the <code class="docutils literal notranslate"><span class="pre">quit</span></code> command to actually exit.  Second, only the <code class="docutils literal notranslate"><span class="pre">pdb</span></code> debugger may be invoked through a call to <code class="docutils literal notranslate"><span class="pre">debugger</span></code>.</p>
 </div>
 <p>As noted above, if there is a runtime error in your code, Switchyard will automatically dump you into the Python debugger (pdb) to see exactly where the program crashed and what may have caused it.  You can use any Python commands to inspect variables, and try to understand the state of the program at the time of the crash.</p>
-</div>
-</div>
-<div class="section" id="checking-code-coverage">
-<h2>Checking code coverage<a class="headerlink" href="#checking-code-coverage" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+<section id="checking-code-coverage">
+<h2>Checking code coverage<a class="headerlink" href="#checking-code-coverage" title="Link to this heading">¶</a></h2>
 <p>If you want to check which lines of code are <em>covered</em> by one or more test scenarios, you can install and use the <code class="docutils literal notranslate"><span class="pre">coverage</span></code> package.  This can be helpful for seeing which lines of your code are <em>not</em> being exercised by tests, and how you might focus additional testing effort.</p>
 <p>To install:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ pip3 install coverage
@@ -394,8 +389,8 @@ failed, and how many are <em>pending</em>.  The pending category simply means th
 </pre></div>
 </div>
 <p>After running the above command, you can open the file <code class="docutils literal notranslate"><span class="pre">index.html</span></code> within the <code class="docutils literal notranslate"><span class="pre">htmlcov</span></code> folder.  Clicking on a file name will show detailed coverage information.</p>
-</div>
-</div>
+</section>
+</section>
 
 
             <div class="clearer"></div>
@@ -404,8 +399,9 @@ failed, and how many are <em>pending</em>.  The pending category simply means th
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">Running in the test environment</a><ul>
 <li><a class="reference internal" href="#test-output">Test output</a></li>
 <li><a class="reference internal" href="#verbose-test-output">Verbose test output</a></li>
@@ -421,12 +417,17 @@ failed, and how many are <em>pending</em>.  The pending category simply means th
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="writing_a_program.html"
-                        title="previous chapter">Writing a Switchyard program</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="test_scenario_creation.html"
-                        title="next chapter">Test scenario creation</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="writing_a_program.html"
+                          title="previous chapter">Writing a Switchyard program</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="test_scenario_creation.html"
+                          title="next chapter">Test scenario creation</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -438,12 +439,12 @@ failed, and how many are <em>pending</em>.  The pending category simply means th
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -455,9 +456,6 @@ failed, and how many are <em>pending</em>.  The pending category simply means th
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="test_scenario_creation.html" title="Test scenario creation"
              >next</a> |</li>
         <li class="right" >
@@ -468,8 +466,8 @@ failed, and how many are <em>pending</em>.  The pending category simply means th
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2020, Joel Sommers.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     </div>
   </body>
 </html>

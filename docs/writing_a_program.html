@@ -1,18 +1,16 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
     <title>Writing a Switchyard program &#8212; Switchyard 1.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css?v=d59dc883" />
+    <script src="_static/documentation_options.js?v=292eb321"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Running in the test environment" href="test_execution.html" />
@@ -24,9 +22,6 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li class="right" >
           <a href="test_execution.html" title="Running in the test environment"
              accesskey="N">next</a> |</li>
@@ -43,18 +38,18 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="writing-a-switchyard-program">
-<span id="coding"></span><h1>Writing a Switchyard program<a class="headerlink" href="#writing-a-switchyard-program" title="Permalink to this headline">¶</a></h1>
+  <section id="writing-a-switchyard-program">
+<span id="coding"></span><h1>Writing a Switchyard program<a class="headerlink" href="#writing-a-switchyard-program" title="Link to this heading">¶</a></h1>
 <p id="index-0">A Switchyard program is simply a Python program that includes a particular entrypoint function which accepts a single parameter.  The startup function can simply be named <code class="docutils literal notranslate"><span class="pre">main</span></code>, but can also be named <code class="docutils literal notranslate"><span class="pre">switchy_main</span></code> if you like.  The function must accept at least one parameter, which is a reference to the Switchyard <em>network object</em> (described below).  Method calls on the network object are used to send and receive packets to and from network ports.</p>
 <p id="index-1">A Switchyard program isn’t executed <em>directly</em> with the Python interpreter.  Instead, the program <code class="docutils literal notranslate"><span class="pre">swyard</span></code> is used to start up the Switchyard framework and to load your code.  When Switchyard starts your code it looks for a function named <code class="docutils literal notranslate"><span class="pre">main</span></code> and invokes it, passing in the network object as the first parameter.  Details on how to start Switchyard (and thus your program) are given in the chapters on <a class="reference internal" href="test_execution.html#runtest"><span class="std std-ref">running a Switchyard in the test environment</span></a> and <a class="reference internal" href="live_execution.html#runlive"><span class="std std-ref">running Switchyard in a live environment</span></a>.  Note that it is possible to pass arguments into a Switchyard program; see <a class="reference internal" href="#swyardargs"><span class="std std-ref">Passing arguments into a Switchyard program</span></a> for details.</p>
 <p>A Switchyard program will typically also import other Switchyard modules such as modules for parsing and constructing packets, dealing with network addresses, and other functions.  These modules are introduced below and described in detail in the <a class="reference internal" href="reference.html#apiref"><span class="std std-ref">API reference chapter</span></a>.</p>
-<div class="section" id="introducing-the-network-object">
-<h2>Introducing the “network object”<a class="headerlink" href="#introducing-the-network-object" title="Permalink to this headline">¶</a></h2>
+<section id="introducing-the-network-object">
+<h2>Introducing the “network object”<a class="headerlink" href="#introducing-the-network-object" title="Link to this heading">¶</a></h2>
 <p>As mentioned above, a Switchyard program can simply have a <code class="docutils literal notranslate"><span class="pre">main</span></code> function that accepts a single argument.  The parameter passed to <code class="docutils literal notranslate"><span class="pre">main</span></code> is called the “network object”.  It is on this object that you can call methods for sending and receiving packets and getting information about ports on the device for which you’re implementing the logic.</p>
-<div class="section" id="sending-and-receiving-packets">
-<h3>Sending and receiving packets<a class="headerlink" href="#sending-and-receiving-packets" title="Permalink to this headline">¶</a></h3>
+<section id="sending-and-receiving-packets">
+<h3>Sending and receiving packets<a class="headerlink" href="#sending-and-receiving-packets" title="Link to this heading">¶</a></h3>
 <p>As a way to describe two of the most important methods on the network object, here is a program that receives one packet, prints it out, sends it <em>back out the same interface</em>, then quits.</p>
-<p>Notice in the code below that we only need to import <a class="reference internal" href="reference.html#module-switchyard.lib.userlib" title="switchyard.lib.userlib"><code class="xref py py-mod docutils literal notranslate"><span class="pre">switchyard.lib.userlib</span></code></a> to get access to various Switchyard classes and functions; generally speaking, this is the <em>only</em> import you should ever need for any Switchyard program.  Although you can import individual Switchyard modules separately (for the specific module to import, see <a class="reference internal" href="reference.html#apiref"><span class="std std-ref">API Reference</span></a>), but you will probably find that importing <code class="docutils literal notranslate"><span class="pre">userlib</span></code> is much easier.</p>
+<p>Notice in the code below that we only need to import <code class="xref py py-mod docutils literal notranslate"><span class="pre">switchyard.lib.userlib</span></code> to get access to various Switchyard classes and functions; generally speaking, this is the <em>only</em> import you should ever need for any Switchyard program.  Although you can import individual Switchyard modules separately (for the specific module to import, see <a class="reference internal" href="reference.html#apiref"><span class="std std-ref">API Reference</span></a>), but you will probably find that importing <code class="docutils literal notranslate"><span class="pre">userlib</span></code> is much easier.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switchyard.lib.userlib</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">net</span><span class="p">):</span>
@@ -97,7 +92,7 @@
 </pre></div>
 </div>
 <p>Importantly, note that in the above examples we are not handling any potential exceptions that could occur.  In particular, we really should be handling <em>at least</em> the situation in which the framework is shut down (and we receive a <code class="docutils literal notranslate"><span class="pre">Shutdown</span></code> exception).  Just for completeness, we should also handle the <code class="docutils literal notranslate"><span class="pre">NoPackets</span></code> exception, although if the code is designed to block indefinitely we shouldn’t normally receive that particular exception.</p>
-<p>Let’s rewrite the code above, and now put everything in a <code class="docutils literal notranslate"><span class="pre">while</span></code> loop so that we keep reading and sending packets as long as we’re running.  We will eventually turn this code into a working network <em>hub</em> implementation <a class="footnote-reference brackets" href="#f1" id="id1">1</a>, but it’s currently broken because it still just sends a packet out the <em>same port</em> on which it arrived:</p>
+<p>Let’s rewrite the code above, and now put everything in a <code class="docutils literal notranslate"><span class="pre">while</span></code> loop so that we keep reading and sending packets as long as we’re running.  We will eventually turn this code into a working network <em>hub</em> implementation <a class="footnote-reference brackets" href="#f1" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>, but it’s currently broken because it still just sends a packet out the <em>same port</em> on which it arrived:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switchyard.lib.userlib</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">net</span><span class="p">):</span>
@@ -118,9 +113,9 @@
 </div>
 <p id="index-3">In the example above, notice that we also changed the <code class="docutils literal notranslate"><span class="pre">print</span></code> function calls to <code class="docutils literal notranslate"><span class="pre">log_info</span></code>.  Switchyard uses built-in Python logging capabilities (see <code class="xref py py-mod docutils literal notranslate"><span class="pre">logging</span></code> in the Python library reference) for printing various notices to the console.  The <a class="reference internal" href="#logging-label"><span class="std std-ref">logging functions</span></a>, described below, each just accept one string parameter which is just the text to be printed on the console.</p>
 <p>For full details of the <code class="docutils literal notranslate"><span class="pre">send_packet</span></code> and <code class="docutils literal notranslate"><span class="pre">recv_packet</span></code> method calls, refer to <a class="reference internal" href="reference.html#netobj"><span class="std std-ref">Net object reference</span></a> in the <a class="reference internal" href="reference.html#apiref"><span class="std std-ref">API Reference</span></a> section at the end of this documentation.</p>
-</div>
-<div class="section" id="getting-information-about-ports-interfaces-on-the-device">
-<span id="intf-overview"></span><h3>Getting information about ports (interfaces) on the device<a class="headerlink" href="#getting-information-about-ports-interfaces-on-the-device" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="getting-information-about-ports-interfaces-on-the-device">
+<span id="intf-overview"></span><h3>Getting information about ports (interfaces) on the device<a class="headerlink" href="#getting-information-about-ports-interfaces-on-the-device" title="Link to this heading">¶</a></h3>
 <p>Other methods available the network object relate to getting information about the ports/interfaces attached to the device on which the Switchyard code is running.  The two basic methods are <code class="docutils literal notranslate"><span class="pre">interfaces</span></code> and <code class="docutils literal notranslate"><span class="pre">ports</span></code>.  These methods are aliases and do exactly the same thing.  In particular:</p>
 <blockquote>
 <div><ul>
@@ -136,7 +131,7 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">ethaddr</span></code>: returns the Ethernet address associated with the interface, as a <a class="reference internal" href="reference.html#switchyard.lib.address.EthAddr" title="switchyard.lib.address.EthAddr"><code class="xref py py-class docutils literal notranslate"><span class="pre">switchyard.lib.address.EthAddr</span></code></a> instance.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ipaddrs</span></code>: returns a (frozen) set of IP addresses assigned to the interface.  Each object in the set is either a <code class="docutils literal notranslate"><span class="pre">ipaddress.IPv6Interface</span></code> or <code class="docutils literal notranslate"><span class="pre">ipaddress.IPv4Interface</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ifnum</span></code>: returns an integer index associated with the interface.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">iftype</span></code>: returns the type of the interface, if it can be inferred by Switchyard.  The return type is a value from the <a class="reference internal" href="reference.html#switchyard.lib.interface.InterfaceType" title="switchyard.lib.interface.InterfaceType"><code class="xref py py-class docutils literal notranslate"><span class="pre">switchyard.lib.interface.InterfaceType</span></code></a> enumerated type.  The type can either be <code class="docutils literal notranslate"><span class="pre">Unknown</span></code>, <code class="docutils literal notranslate"><span class="pre">Loopback</span></code>, <code class="docutils literal notranslate"><span class="pre">Wired</span></code>, or <code class="docutils literal notranslate"><span class="pre">Wireless</span></code>.  The type is automatically set when an interface is initialized.  Note that in some cases the type can be inferred, but in others it cannot (thus the potential for an <code class="docutils literal notranslate"><span class="pre">Unknown</span></code> value).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">iftype</span></code>: returns the type of the interface, if it can be inferred by Switchyard.  The return type is a value from the <code class="xref py py-class docutils literal notranslate"><span class="pre">switchyard.lib.interface.InterfaceType</span></code> enumerated type.  The type can either be <code class="docutils literal notranslate"><span class="pre">Unknown</span></code>, <code class="docutils literal notranslate"><span class="pre">Loopback</span></code>, <code class="docutils literal notranslate"><span class="pre">Wired</span></code>, or <code class="docutils literal notranslate"><span class="pre">Wireless</span></code>.  The type is automatically set when an interface is initialized.  Note that in some cases the type can be inferred, but in others it cannot (thus the potential for an <code class="docutils literal notranslate"><span class="pre">Unknown</span></code> value).</p></li>
 </ul>
 </div></blockquote>
 <p>All the above properties except <code class="docutils literal notranslate"><span class="pre">ifnum</span></code> and <code class="docutils literal notranslate"><span class="pre">iftype</span></code> are modifiable.  Changing them can be accomplished just by assigning a new value to the property.  Beware, though, that changing address values has no effect on the underlying host operating system if Switchyard is run in a live environment, so you would generally be wise to leave the addresses alone.</p>
@@ -154,9 +149,9 @@
 </div>
 <p>Entirely depending on how the network device is configured, output from
 the above program might look like the following:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">09</span><span class="p">:</span><span class="mi">10</span><span class="p">:</span><span class="mi">08</span> <span class="mi">2016</span><span class="o">/</span><span class="mi">12</span><span class="o">/</span><span class="mi">17</span>     <span class="n">INFO</span> <span class="n">eth0</span> <span class="n">has</span> <span class="n">ethaddr</span> <span class="mi">10</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">01</span> <span class="ow">and</span> <span class="n">ipaddrs</span> <span class="mf">172.16</span><span class="o">.</span><span class="mf">42.1</span><span class="o">/</span><span class="mf">255.255</span><span class="o">.</span><span class="mf">255.252</span> <span class="ow">and</span> <span class="ow">is</span> <span class="n">of</span> <span class="nb">type</span> <span class="n">Unknown</span>
-<span class="mi">09</span><span class="p">:</span><span class="mi">10</span><span class="p">:</span><span class="mi">08</span> <span class="mi">2016</span><span class="o">/</span><span class="mi">12</span><span class="o">/</span><span class="mi">17</span>     <span class="n">INFO</span> <span class="n">eth1</span> <span class="n">has</span> <span class="n">ethaddr</span> <span class="mi">10</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">02</span> <span class="ow">and</span> <span class="n">ipaddrs</span> <span class="mf">10.10</span><span class="o">.</span><span class="mf">0.1</span><span class="o">/</span><span class="mf">255.255</span><span class="o">.</span><span class="mf">0.0</span> <span class="ow">and</span> <span class="ow">is</span> <span class="n">of</span> <span class="nb">type</span> <span class="n">Unknown</span>
-<span class="mi">09</span><span class="p">:</span><span class="mi">10</span><span class="p">:</span><span class="mi">08</span> <span class="mi">2016</span><span class="o">/</span><span class="mi">12</span><span class="o">/</span><span class="mi">17</span>     <span class="n">INFO</span> <span class="n">eth2</span> <span class="n">has</span> <span class="n">ethaddr</span> <span class="mi">10</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">03</span> <span class="ow">and</span> <span class="n">ipaddrs</span> <span class="mf">192.168</span><span class="o">.</span><span class="mf">1.1</span><span class="o">/</span><span class="mf">255.255</span><span class="o">.</span><span class="mf">255.0</span> <span class="ow">and</span> <span class="ow">is</span> <span class="n">of</span> <span class="nb">type</span> <span class="n">Unknown</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">09</span><span class="p">:</span><span class="mi">10</span><span class="p">:</span><span class="mi">08</span> <span class="mi">2016</span><span class="o">/</span><span class="mi">12</span><span class="o">/</span><span class="mi">17</span>     <span class="n">INFO</span> <span class="n">eth0</span> <span class="n">has</span> <span class="n">ethaddr</span> <span class="mi">10</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">01</span> <span class="ow">and</span> <span class="n">ipaddrs</span> <span class="mf">172.16.42.1</span><span class="o">/</span><span class="mf">255.255.255.252</span> <span class="ow">and</span> <span class="ow">is</span> <span class="n">of</span> <span class="nb">type</span> <span class="n">Unknown</span>
+<span class="mi">09</span><span class="p">:</span><span class="mi">10</span><span class="p">:</span><span class="mi">08</span> <span class="mi">2016</span><span class="o">/</span><span class="mi">12</span><span class="o">/</span><span class="mi">17</span>     <span class="n">INFO</span> <span class="n">eth1</span> <span class="n">has</span> <span class="n">ethaddr</span> <span class="mi">10</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">02</span> <span class="ow">and</span> <span class="n">ipaddrs</span> <span class="mf">10.10.0.1</span><span class="o">/</span><span class="mf">255.255.0.0</span> <span class="ow">and</span> <span class="ow">is</span> <span class="n">of</span> <span class="nb">type</span> <span class="n">Unknown</span>
+<span class="mi">09</span><span class="p">:</span><span class="mi">10</span><span class="p">:</span><span class="mi">08</span> <span class="mi">2016</span><span class="o">/</span><span class="mi">12</span><span class="o">/</span><span class="mi">17</span>     <span class="n">INFO</span> <span class="n">eth2</span> <span class="n">has</span> <span class="n">ethaddr</span> <span class="mi">10</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">03</span> <span class="ow">and</span> <span class="n">ipaddrs</span> <span class="mf">192.168.1.1</span><span class="o">/</span><span class="mf">255.255.255.0</span> <span class="ow">and</span> <span class="ow">is</span> <span class="n">of</span> <span class="nb">type</span> <span class="n">Unknown</span>
 </pre></div>
 </div>
 <p>The above example code was run in the <a class="reference internal" href="test_execution.html#runtest"><span class="std std-ref">Switchyard *test* environment</span></a>; when a Switchyard program is run in test mode, all interfaces will show type <code class="docutils literal notranslate"><span class="pre">Unknown</span></code>.  Note also that there is <em>no inherent ordering</em> to the list of interfaces returned.</p>
@@ -172,74 +167,49 @@ of a interface.  An alias method <code class="docutils literal notranslate"><spa
 </ul>
 </div></blockquote>
 <p>Note that the above lookup methods raise a <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> exception if the lookup name is invalid.</p>
-</div>
-<div class="section" id="other-methods-on-the-network-object">
-<h3>Other methods on the network object<a class="headerlink" href="#other-methods-on-the-network-object" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="other-methods-on-the-network-object">
+<h3>Other methods on the network object<a class="headerlink" href="#other-methods-on-the-network-object" title="Link to this heading">¶</a></h3>
 <p>Lastly, there is a <code class="docutils literal notranslate"><span class="pre">shutdown</span></code> method available on the network object.  This method should be used by a Switchyard program prior to exiting in order to clean up and shut down various resources.</p>
 <p>Let’s now add a bit to the previous example program to turn it into an almost-complete implementation of a hub.  Whenever we receive a packet, we need to loop through the ports on the device and send the packet on a port as long as the port isn’t the one on which we received the packet (lines 21-23, below):</p>
 <div class="literal-block-wrapper docutils container" id="id4">
-<div class="code-block-caption"><span class="caption-text">A (nearly) full implementation of a hub.</span><a class="headerlink" href="#id4" title="Permalink to this code">¶</a></div>
-<div class="highlight-python notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
- 2
- 3
- 4
- 5
- 6
- 7
- 8
- 9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switchyard.lib.userlib</span> <span class="kn">import</span> <span class="o">*</span>
-
-<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">net</span><span class="p">):</span>
-    <span class="c1"># add some informational text about ports on this device</span>
-    <span class="n">log_info</span> <span class="p">(</span><span class="s2">&quot;Hub is starting up with these ports:&quot;</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">port</span> <span class="ow">in</span> <span class="n">net</span><span class="o">.</span><span class="n">ports</span><span class="p">():</span>
-        <span class="n">log_info</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">: ethernet address </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">port</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">port</span><span class="o">.</span><span class="n">ethaddr</span><span class="p">))</span>
-
-    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">timestamp</span><span class="p">,</span><span class="n">input_port</span><span class="p">,</span><span class="n">packet</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">recv_packet</span><span class="p">()</span>
-        <span class="k">except</span> <span class="n">Shutdown</span><span class="p">:</span>
-            <span class="c1"># got shutdown signal</span>
-            <span class="k">break</span>
-        <span class="k">except</span> <span class="n">NoPackets</span><span class="p">:</span>
-            <span class="c1"># try again...</span>
-            <span class="k">continue</span>
-
-        <span class="c1"># send the packet out all ports *except*</span>
-        <span class="c1"># the one on which it arrived</span>
-        <span class="k">for</span> <span class="n">port</span> <span class="ow">in</span> <span class="n">net</span><span class="o">.</span><span class="n">ports</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">port</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="n">input_port</span><span class="p">:</span>
-                <span class="n">net</span><span class="o">.</span><span class="n">send_packet</span><span class="p">(</span><span class="n">port</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">packet</span><span class="p">)</span>
-
-    <span class="c1"># shutdown is the last thing we should do</span>
-    <span class="n">net</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+<div class="code-block-caption"><span class="caption-text">A (nearly) full implementation of a hub.</span><a class="headerlink" href="#id4" title="Link to this code">¶</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="kn">from</span> <span class="nn">switchyard.lib.userlib</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="linenos"> 2</span>
+<span class="linenos"> 3</span><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">net</span><span class="p">):</span>
+<span class="linenos"> 4</span>    <span class="c1"># add some informational text about ports on this device</span>
+<span class="linenos"> 5</span>    <span class="n">log_info</span> <span class="p">(</span><span class="s2">&quot;Hub is starting up with these ports:&quot;</span><span class="p">)</span>
+<span class="linenos"> 6</span>    <span class="k">for</span> <span class="n">port</span> <span class="ow">in</span> <span class="n">net</span><span class="o">.</span><span class="n">ports</span><span class="p">():</span>
+<span class="linenos"> 7</span>        <span class="n">log_info</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">: ethernet address </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">port</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">port</span><span class="o">.</span><span class="n">ethaddr</span><span class="p">))</span>
+<span class="linenos"> 8</span>
+<span class="linenos"> 9</span>    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+<span class="linenos">10</span>        <span class="k">try</span><span class="p">:</span>
+<span class="linenos">11</span>            <span class="n">timestamp</span><span class="p">,</span><span class="n">input_port</span><span class="p">,</span><span class="n">packet</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">recv_packet</span><span class="p">()</span>
+<span class="linenos">12</span>        <span class="k">except</span> <span class="n">Shutdown</span><span class="p">:</span>
+<span class="linenos">13</span>            <span class="c1"># got shutdown signal</span>
+<span class="linenos">14</span>            <span class="k">break</span>
+<span class="linenos">15</span>        <span class="k">except</span> <span class="n">NoPackets</span><span class="p">:</span>
+<span class="linenos">16</span>            <span class="c1"># try again...</span>
+<span class="linenos">17</span>            <span class="k">continue</span>
+<span class="linenos">18</span>
+<span class="linenos">19</span>        <span class="c1"># send the packet out all ports *except*</span>
+<span class="linenos">20</span>        <span class="c1"># the one on which it arrived</span>
+<span class="linenos">21</span>        <span class="k">for</span> <span class="n">port</span> <span class="ow">in</span> <span class="n">net</span><span class="o">.</span><span class="n">ports</span><span class="p">():</span>
+<span class="linenos">22</span>            <span class="k">if</span> <span class="n">port</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="n">input_port</span><span class="p">:</span>
+<span class="linenos">23</span>                <span class="n">net</span><span class="o">.</span><span class="n">send_packet</span><span class="p">(</span><span class="n">port</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">packet</span><span class="p">)</span>
+<span class="linenos">24</span>
+<span class="linenos">25</span>    <span class="c1"># shutdown is the last thing we should do</span>
+<span class="linenos">26</span>    <span class="n">net</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
 </pre></div>
-</td></tr></table></div>
+</div>
 </div>
 <p>There’s still one thing missing from the above code, which is for the hub to ignore any frames that are destined to the hub itself.  That is, if an Ethernet destination address in a received frame is the same as an Ethernet address assigned to one of the ports on the hub, the frame should <em>not</em> be forwarded (it can simply be ignored).  Finishing off the hub by doing this is left as an exercise.</p>
-</div>
-</div>
-<div class="section" id="introduction-to-packet-parsing-and-construction">
-<h2>Introduction to packet parsing and construction<a class="headerlink" href="#introduction-to-packet-parsing-and-construction" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+<section id="introduction-to-packet-parsing-and-construction">
+<h2>Introduction to packet parsing and construction<a class="headerlink" href="#introduction-to-packet-parsing-and-construction" title="Link to this heading">¶</a></h2>
 <p>This section provides an overview of packet construction and parsing in Switchyard.  For full details on these capabilities, see <a class="reference internal" href="reference.html#pktlib"><span class="std std-ref">Packet parsing and construction reference</span></a>.</p>
-<p>Switchyard’s packet construction/parsing library is found in <code class="docutils literal notranslate"><span class="pre">switchyard.lib.packet</span></code>.  Its design is based on a few other libraries out there, including POX’s library <a class="footnote-reference brackets" href="#f2" id="id2">2</a> and Ryu’s library <a class="footnote-reference brackets" href="#f3" id="id3">3</a>.</p>
+<p>Switchyard’s packet construction/parsing library is found in <code class="docutils literal notranslate"><span class="pre">switchyard.lib.packet</span></code>.  Its design is based on a few other libraries out there, including POX’s library <a class="footnote-reference brackets" href="#f2" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a> and Ryu’s library <a class="footnote-reference brackets" href="#f3" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>.</p>
 <p>There are a few key ideas to understand when using the packet library:</p>
 <blockquote>
 <div><ul class="simple">
@@ -250,9 +220,9 @@ of a interface.  An alias method <code class="docutils literal notranslate"><spa
 <li><p>The Switchyard framework generally <em>automatically</em> handles serializing and deserializing Packet objects to and from byte sequences (i.e., wire format packets), but you can also explicitly invoke those methods if you need to.</p></li>
 </ul>
 </div></blockquote>
-<div class="figure align-center">
+<figure class="align-center">
 <img alt="_images/packet.png" src="_images/packet.png" />
-</div>
+</figure>
 <p>Here are some examples using <code class="docutils literal notranslate"><span class="pre">Ethernet</span></code>, <code class="docutils literal notranslate"><span class="pre">IPv4</span></code>, and <code class="docutils literal notranslate"><span class="pre">ICMP</span></code> headers. First, let’s construct a packet object and add these headers to the packet:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switchyard.lib.packet</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">p</span> <span class="o">=</span> <span class="n">Packet</span><span class="p">()</span>   <span class="c1"># construct a packet object</span>
@@ -364,7 +334,7 @@ of a interface.  An alias method <code class="docutils literal notranslate"><spa
 <span class="gp">&gt;&gt;&gt; </span><span class="n">p</span> <span class="o">=</span> <span class="n">e</span> <span class="o">+</span> <span class="n">ip</span> <span class="o">+</span> <span class="n">udp</span> <span class="o">+</span> <span class="sa">b</span><span class="s2">&quot;this is some application payload!&quot;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
 <span class="go">Ethernet 11:22:33:44:55:66-&gt;66:55:44:33:22:11 IP | IPv4 1.2.3.4-&gt;4.3.2.1 UDP | UDP 1234-&gt;4321 | RawPacketContents (33 bytes) b&#39;this is so&#39;...</span>
-<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt;</span>
 </pre></div>
 </div>
 <p>Finally, to serialize the packet into a wire format sequence of bytes, we can use the <code class="docutils literal notranslate"><span class="pre">to_bytes()</span></code> method:</p>
@@ -375,43 +345,43 @@ of a interface.  An alias method <code class="docutils literal notranslate"><spa
 <p>Switchyard normally handles <em>deserialization</em> automatically, but there is a <code class="docutils literal notranslate"><span class="pre">from_bytes(raw)</span></code> method available that accepts a raw bytes object and reconstructs packet header attributes.  It either succeeds or throws an exception.  It returns any bytes that were not necessary for reconstructing the header.</p>
 <p>As mentioned above, Switchyard does not require packets to be correctly constructed (e.g., there may be a TCP header in a packet without any IP header).  As a result, while serialization will often succeed even if the packet is malformed, whereas deserialization often will not.  The reason is that in deserialization, the contents of bytes earlier in a packet are necessary for determining how to reconstruct later headers and attributes in a packet (e.g., the <code class="docutils literal notranslate"><span class="pre">ethertype</span></code> attribute in the Ethernet header is necessary for determining which header comes next).</p>
 <p>Other header classes that are available in Switchyard include <code class="docutils literal notranslate"><span class="pre">Arp</span></code>, <code class="docutils literal notranslate"><span class="pre">UDP</span></code>, <code class="docutils literal notranslate"><span class="pre">TCP</span></code>, <code class="docutils literal notranslate"><span class="pre">IPv6</span></code>, and <code class="docutils literal notranslate"><span class="pre">ICMPv6</span></code>.  Again, see the <a class="reference internal" href="reference.html#pktlib"><span class="std std-ref">packet library reference documentation</span></a> for details on these header classes, and full documentation for all classes.</p>
-</div>
-<div class="section" id="utility-functions">
-<span id="utilityfns-label"></span><h2>Utility functions<a class="headerlink" href="#utility-functions" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="utility-functions">
+<span id="utilityfns-label"></span><h2>Utility functions<a class="headerlink" href="#utility-functions" title="Link to this heading">¶</a></h2>
 <p>There are a few additional utility functions that are useful when developing a Switchyard program related to logging and debugging.</p>
-<div class="section" id="logging-functions">
-<span id="logging-label"></span><h3>Logging functions<a class="headerlink" href="#logging-functions" title="Permalink to this headline">¶</a></h3>
+<section id="logging-functions">
+<span id="logging-label"></span><h3>Logging functions<a class="headerlink" href="#logging-functions" title="Link to this heading">¶</a></h3>
 <p>Switchyard uses Python’s standard logging facilities and provides four convenience functions.  Each of these functions takes a string as a parameter and prints it to the console as a logging message.  The only difference with the functions relates to the logging <em>level</em> (see <code class="xref py py-mod docutils literal notranslate"><span class="pre">logging</span></code> in the Python library reference), and whether the output is colored to visually highlight a problem.  The default logging level is INFO  within Switchyard.  If you wish to include debugging messages, you can use the <code class="docutils literal notranslate"><span class="pre">-d</span></code> flag for the various invocation programs (e.g., <code class="docutils literal notranslate"><span class="pre">swyard</span></code>), as described in <a class="reference internal" href="test_execution.html#runtest"><span class="std std-ref">Running in the test environment</span></a> and <a class="reference internal" href="live_execution.html#runlive"><span class="std std-ref">Running in a “live” environment</span></a>.</p>
 <dl class="py function">
-<dt id="log_debug">
-<code class="sig-name descname">log_debug</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#log_debug" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="log_debug">
+<span class="sig-name descname"><span class="pre">log_debug</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#log_debug" title="Link to this definition">¶</a></dt>
 <dd><p>Write a debugging message to the log using the log level DEBUG.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="log_info">
-<code class="sig-name descname">log_info</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#log_info" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="log_info">
+<span class="sig-name descname"><span class="pre">log_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#log_info" title="Link to this definition">¶</a></dt>
 <dd><p>Write a debugging message to the log using the log level INFO.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="log_warn">
-<code class="sig-name descname">log_warn</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#log_warn" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="log_warn">
+<span class="sig-name descname"><span class="pre">log_warn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#log_warn" title="Link to this definition">¶</a></dt>
 <dd><p>Write a debugging message to the log using the log level WARNING.  Output
 is colored magenta.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="log_failure">
-<code class="sig-name descname">log_failure</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#log_failure" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="log_failure">
+<span class="sig-name descname"><span class="pre">log_failure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#log_failure" title="Link to this definition">¶</a></dt>
 <dd><p>Write a debugging message to the log using the log level CRITICAL.  Output
 is colored red.</p>
 </dd></dl>
 
 <p>While you can still use the built-in <code class="docutils literal notranslate"><span class="pre">print</span></code> function to write messages to the console, using the log functions provides a much more structured way of writing information to the screen.</p>
-</div>
-<div class="section" id="invoking-the-debugger">
-<h3>Invoking the debugger<a class="headerlink" href="#invoking-the-debugger" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="invoking-the-debugger">
+<h3>Invoking the debugger<a class="headerlink" href="#invoking-the-debugger" title="Link to this heading">¶</a></h3>
 <p>Although a longer discussion of debugging is included in <a class="reference internal" href="test_execution.html#debugging"><span class="std std-ref">a later section</span></a>, it is worth mentioning that there is a built-in function named <code class="docutils literal notranslate"><span class="pre">debugger</span></code> that can be used <em>anywhere</em> in Switchyard code to immediately invoke the standard Python pdb debugger.</p>
 <p>For example, if we add a call to <code class="docutils literal notranslate"><span class="pre">debugger()</span></code> in the example code above just <em>after</em> the try/except block, then <a class="reference internal" href="test_execution.html#runtest"><span class="std std-ref">run the code in a test environment</span></a>, the program pauses immediately after the call to debugger and the pdb prompt is shown:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># after hub code is started in test environment,</span>
@@ -432,10 +402,10 @@ is colored red.</p>
 </pre></div>
 </div>
 <p>As you can see, the program is paused on the next executable line following the call to <code class="docutils literal notranslate"><span class="pre">debugger()</span></code>.  At this point, any valid <code class="docutils literal notranslate"><span class="pre">pdb</span></code> commands can be given to inspect or alter program state.  Once again, see later sections for details on running Switchyard code <a class="reference internal" href="live_execution.html#runlive"><span class="std std-ref">in a live environment</span></a> and on other <a class="reference internal" href="test_execution.html#debugging"><span class="std std-ref">debugging capabilities</span></a>.</p>
-</div>
-</div>
-<div class="section" id="passing-arguments-into-a-switchyard-program">
-<span id="swyardargs"></span><span id="index-4"></span><h2>Passing arguments into a Switchyard program<a class="headerlink" href="#passing-arguments-into-a-switchyard-program" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+<section id="passing-arguments-into-a-switchyard-program">
+<span id="swyardargs"></span><span id="index-4"></span><h2>Passing arguments into a Switchyard program<a class="headerlink" href="#passing-arguments-into-a-switchyard-program" title="Link to this heading">¶</a></h2>
 <p>It is possible to pass in additional arguments to a Switchyard program via its <code class="docutils literal notranslate"><span class="pre">main</span></code> function.  To accept additional arguments into your <code class="docutils literal notranslate"><span class="pre">main</span></code> function, you should <em>at least</em> add a <code class="docutils literal notranslate"><span class="pre">*args</span></code> parameter.  You can optionally also accept keyword-style arguments by including a <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> parameter.  For example, here is the initial part of a <code class="docutils literal notranslate"><span class="pre">main</span></code> function which accepts both:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">netobj</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="c1"># args is a list of arguments</span>
@@ -449,21 +419,24 @@ is colored red.</p>
 </div>
 <p>When invoking your <code class="docutils literal notranslate"><span class="pre">main</span></code> function, <code class="docutils literal notranslate"><span class="pre">args</span></code> would have a single value (the string <code class="docutils literal notranslate"><span class="pre">'13'</span></code>) and <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> would be the dictionary <code class="docutils literal notranslate"><span class="pre">{'debug':</span> <span class="pre">'True'}</span></code> (notice that <code class="docutils literal notranslate"><span class="pre">True</span></code> would be a string since all arguments end up being passed in as strings).</p>
 <p class="rubric">Footnotes</p>
-<dl class="footnote brackets">
-<dt class="label" id="f1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
-<dd><p>A hub is a network device with multiple physical ports.  Any packet
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="f1" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>A hub is a network device with multiple physical ports.  Any packet
 to arrive on a port is sent back out <em>all</em> ports <strong>except</strong> for the one
 on which it arrived.</p>
-</dd>
-<dt class="label" id="f2"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
-<dd><p><a class="reference external" href="https://github.com/noxrepo/pox">https://github.com/noxrepo/pox</a></p>
-</dd>
-<dt class="label" id="f3"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
-<dd><p><a class="reference external" href="https://github.com/osrg/ryu">https://github.com/osrg/ryu</a></p>
-</dd>
-</dl>
-</div>
-</div>
+</aside>
+<aside class="footnote brackets" id="f2" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">2</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://github.com/noxrepo/pox">https://github.com/noxrepo/pox</a></p>
+</aside>
+<aside class="footnote brackets" id="f3" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">3</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://github.com/osrg/ryu">https://github.com/osrg/ryu</a></p>
+</aside>
+</aside>
+</section>
+</section>
 
 
             <div class="clearer"></div>
@@ -472,8 +445,9 @@ on which it arrived.</p>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">Writing a Switchyard program</a><ul>
 <li><a class="reference internal" href="#introducing-the-network-object">Introducing the “network object”</a><ul>
 <li><a class="reference internal" href="#sending-and-receiving-packets">Sending and receiving packets</a></li>
@@ -483,7 +457,13 @@ on which it arrived.</p>
 </li>
 <li><a class="reference internal" href="#introduction-to-packet-parsing-and-construction">Introduction to packet parsing and construction</a></li>
 <li><a class="reference internal" href="#utility-functions">Utility functions</a><ul>
-<li><a class="reference internal" href="#logging-functions">Logging functions</a></li>
+<li><a class="reference internal" href="#logging-functions">Logging functions</a><ul>
+<li><a class="reference internal" href="#log_debug"><code class="docutils literal notranslate"><span class="pre">log_debug()</span></code></a></li>
+<li><a class="reference internal" href="#log_info"><code class="docutils literal notranslate"><span class="pre">log_info()</span></code></a></li>
+<li><a class="reference internal" href="#log_warn"><code class="docutils literal notranslate"><span class="pre">log_warn()</span></code></a></li>
+<li><a class="reference internal" href="#log_failure"><code class="docutils literal notranslate"><span class="pre">log_failure()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#invoking-the-debugger">Invoking the debugger</a></li>
 </ul>
 </li>
@@ -492,12 +472,17 @@ on which it arrived.</p>
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="intro.html"
-                        title="previous chapter">Introduction and Overview</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="test_execution.html"
-                        title="next chapter">Running in the test environment</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="intro.html"
+                          title="previous chapter">Introduction and Overview</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="test_execution.html"
+                          title="next chapter">Running in the test environment</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -509,12 +494,12 @@ on which it arrived.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -526,9 +511,6 @@ on which it arrived.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="test_execution.html" title="Running in the test environment"
              >next</a> |</li>
         <li class="right" >
@@ -539,8 +521,8 @@ on which it arrived.</p>
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2020, Joel Sommers.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     </div>
   </body>
 </html>

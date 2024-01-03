@@ -1,18 +1,16 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
     <title>Test scenario creation &#8212; Switchyard 1.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css?v=d59dc883" />
+    <script src="_static/documentation_options.js?v=292eb321"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Running in a “live” environment" href="live_execution.html" />
@@ -24,9 +22,6 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li class="right" >
           <a href="live_execution.html" title="Running in a “live” environment"
              accesskey="N">next</a> |</li>
@@ -43,8 +38,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="test-scenario-creation">
-<span id="id1"></span><h1>Test scenario creation<a class="headerlink" href="#test-scenario-creation" title="Permalink to this headline">¶</a></h1>
+  <section id="test-scenario-creation">
+<span id="id1"></span><h1>Test scenario creation<a class="headerlink" href="#test-scenario-creation" title="Link to this heading">¶</a></h1>
 <p>Writing tests to determine whether a piece of code behaves as expected is an important part of the software development process.  With Switchyard, it is possible to create a set of tests that verify whether a program attempts to receive packets when it should and sends the <em>right</em> packet(s) out the <em>right</em> ports.  This section describes how to construct such tests.</p>
 <p>A <em>test scenario</em> is Switchyard’s term for a series of tests that verify a program’s behavior.  A test scenario is simply a Python source code file that includes a particular variable name (symbol) called <code class="docutils literal notranslate"><span class="pre">scenario</span></code>, which must refer to an instance of the class <code class="docutils literal notranslate"><span class="pre">TestScenario</span></code>.  A <code class="docutils literal notranslate"><span class="pre">TestScenario</span></code> object contains the basic configuration for an imaginary network device along with an ordered series of <em>test expectations</em>.  These expectations may be one of three types:</p>
 <blockquote>
@@ -56,7 +51,7 @@
 </div></blockquote>
 <p>To start off, here is an example of an <em>empty</em> test scenario:</p>
 <div class="literal-block-wrapper docutils container" id="id2">
-<div class="code-block-caption"><span class="caption-text">An empty test scenario.</span><a class="headerlink" href="#id2" title="Permalink to this code">¶</a></div>
+<div class="code-block-caption"><span class="caption-text">An empty test scenario.</span><a class="headerlink" href="#id2" title="Link to this code">¶</a></div>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switchyard.lib.userlib</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="n">scenario</span> <span class="o">=</span> <span class="n">TestScenario</span><span class="p">(</span><span class="s2">&quot;test example&quot;</span><span class="p">)</span>
@@ -150,11 +145,11 @@ All tests passed!
 </li>
 </ul>
 </div></blockquote>
-<div class="section" id="test-scenario-examples">
-<h2>Test scenario examples<a class="headerlink" href="#test-scenario-examples" title="Permalink to this headline">¶</a></h2>
+<section id="test-scenario-examples">
+<h2>Test scenario examples<a class="headerlink" href="#test-scenario-examples" title="Link to this heading">¶</a></h2>
 <p>First, here is an example of a test scenario in which a packet is constructed and is expected to be received on port <code class="docutils literal notranslate"><span class="pre">eth1</span></code>, then sent back out the same port, unmodified.  Notice in the example that the name <code class="docutils literal notranslate"><span class="pre">scenario</span></code> is <em>required</em>.</p>
 <div class="literal-block-wrapper docutils container" id="id3">
-<div class="code-block-caption"><span class="caption-text">A test scenario in which a packet is received then sent back out the same port.</span><a class="headerlink" href="#id3" title="Permalink to this code">¶</a></div>
+<div class="code-block-caption"><span class="caption-text">A test scenario in which a packet is received then sent back out the same port.</span><a class="headerlink" href="#id3" title="Link to this code">¶</a></div>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switchyard.lib.userlib</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="n">scenario</span> <span class="o">=</span> <span class="n">TestScenario</span><span class="p">(</span><span class="s2">&quot;in/out test scenario example&quot;</span><span class="p">)</span>
@@ -180,7 +175,7 @@ All tests passed!
 </div>
 <p>Here is an additional example with a bit more complexity.  The context for this example might be that we are implementing an IPv4 router.  First, notice that we include in the scenario a static forwarding table file (<code class="docutils literal notranslate"><span class="pre">forwarding_table.txt</span></code>) to be written out when the scenario is executed.  We construct a packet destined to a particular IP address and create an expectation that it arrives on port <code class="docutils literal notranslate"><span class="pre">eth0</span></code>.  We then construct an expectation that the packet should be forwarded out port <code class="docutils literal notranslate"><span class="pre">eth2</span></code> (note that according to the forwarding table, any packets destined to 2.0.0.0/8 should be forwarded out that port).  We also include a predicate function to test that the IPv4 ttl is decremented by 1.  Note that if we did not include this predicate, <em>any</em> ttl value would be accepted since we have specified <code class="docutils literal notranslate"><span class="pre">exact=False</span></code>.  Note also that if we had set <code class="docutils literal notranslate"><span class="pre">exact=True</span></code> we would almost certainly need to wildcard several fields, e.g., checksums in the IPv4 and UDP headers, and would still need to include a predicate to check that ttl has been properly decremented.  Furthermore, if we were writing a test scenario for an IP router, we would also want to include expectations that the correct ARP messages were sent in order to obtain the hardware address corresponding to the next hop IP address.</p>
 <div class="literal-block-wrapper docutils container" id="id4">
-<div class="code-block-caption"><span class="caption-text">A simplified IP forwarding test scenario.</span><a class="headerlink" href="#id4" title="Permalink to this code">¶</a></div>
+<div class="code-block-caption"><span class="caption-text">A simplified IP forwarding test scenario.</span><a class="headerlink" href="#id4" title="Link to this code">¶</a></div>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switchyard.lib.userlib</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="n">scenario</span> <span class="o">=</span> <span class="n">TestScenario</span><span class="p">(</span><span class="s2">&quot;packet forwarding example&quot;</span><span class="p">)</span>
@@ -217,9 +212,9 @@ All tests passed!
 </pre></div>
 </div>
 </div>
-</div>
-<div class="section" id="compiling-a-test-scenario">
-<h2>Compiling a test scenario<a class="headerlink" href="#compiling-a-test-scenario" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="compiling-a-test-scenario">
+<h2>Compiling a test scenario<a class="headerlink" href="#compiling-a-test-scenario" title="Link to this heading">¶</a></h2>
 <p>A test scenario can be run <em>directly</em> with <code class="docutils literal notranslate"><span class="pre">swyard</span></code> or it can be <em>compiled</em> into a form that can be distributed without giving away the code which was used to construct it.  Compiled test scenario files are, by default, given a <code class="docutils literal notranslate"><span class="pre">.srpy</span></code> extension; uncompiled test scenarios should just be regular Python (<code class="docutils literal notranslate"><span class="pre">.py</span></code>) files.</p>
 <p>To compile a test scenario, you can simply invoke <code class="docutils literal notranslate"><span class="pre">swyard</span></code> with the <code class="docutils literal notranslate"><span class="pre">-c</span></code> flag, as follows:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">swyard</span> <span class="o">-</span><span class="n">c</span> <span class="n">code</span><span class="o">/</span><span class="n">testscenario2</span><span class="o">.</span><span class="n">py</span>
@@ -230,8 +225,8 @@ All tests passed!
 <p class="admonition-title">Note</p>
 <p>Note that if a scenario is <em>compiled</em> using a different version of Python than the one used to <em>run</em> a test scenario (especially a different major version, e.g., 3.4 vs. 3.5), you may get some mysterious errors.  The errors are due to the fact that serialized representations of Python objects may change from one version to the next; if there are any changes, then the version used to run the test cannot correctly deserialize the various objects stored in the test scenario.</p>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
             <div class="clearer"></div>
@@ -240,8 +235,9 @@ All tests passed!
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">Test scenario creation</a><ul>
 <li><a class="reference internal" href="#test-scenario-examples">Test scenario examples</a></li>
 <li><a class="reference internal" href="#compiling-a-test-scenario">Compiling a test scenario</a></li>
@@ -249,12 +245,17 @@ All tests passed!
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="test_execution.html"
-                        title="previous chapter">Running in the test environment</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="live_execution.html"
-                        title="next chapter">Running in a “live” environment</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="test_execution.html"
+                          title="previous chapter">Running in the test environment</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="live_execution.html"
+                          title="next chapter">Running in a “live” environment</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -266,12 +267,12 @@ All tests passed!
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -283,9 +284,6 @@ All tests passed!
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="live_execution.html" title="Running in a “live” environment"
              >next</a> |</li>
         <li class="right" >
@@ -296,8 +294,8 @@ All tests passed!
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2020, Joel Sommers.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     </div>
   </body>
 </html>

@@ -1,18 +1,16 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
     <title>Release notes &#8212; Switchyard 1.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css?v=d59dc883" />
+    <script src="_static/documentation_options.js?v=292eb321"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Acknowledgments and thanks" href="thanks.html" />
@@ -24,9 +22,6 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li class="right" >
           <a href="thanks.html" title="Acknowledgments and thanks"
              accesskey="N">next</a> |</li>
@@ -43,28 +38,28 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="release-notes">
-<h1>Release notes<a class="headerlink" href="#release-notes" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="id1">
-<h2>1.0.0<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+  <section id="release-notes">
+<h1>Release notes<a class="headerlink" href="#release-notes" title="Link to this heading">¶</a></h1>
+<section id="id1">
+<h2>1.0.0<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
 <p>Major revision, with fixes and updates to IPv6 classes and to generalize the <code class="docutils literal notranslate"><span class="pre">Interface</span></code> class so that any number of IP addresses may be assigned to it.  ICMPv6 classes are basically complete for neighbor discovery and router solicitation and advertisement.  These changes are <strong>backward incompatible</strong>.</p>
 <p>The headings below refer either to branches on Switchyard’s github repo (v1 and v2) or tags (2017.01.1).</p>
-</div>
-<div class="section" id="id2">
-<h2>2017.01.4<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="id2">
+<h2>2017.01.4<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
 <p>More bugfixes.</p>
-</div>
-<div class="section" id="id3">
-<h2>2017.01.3<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="id3">
+<h2>2017.01.3<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h2>
 <p>Minor bugfixes.</p>
-</div>
-<div class="section" id="id4">
-<h2>2017.01.2<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="id4">
+<h2>2017.01.2<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h2>
 <p>Add the capability to pass arguments to a Switchyard program via <code class="docutils literal notranslate"><span class="pre">-g</span></code> option to <code class="docutils literal notranslate"><span class="pre">swyard</span></code>.
 Switchyard parses and assembles <code class="docutils literal notranslate"><span class="pre">*args</span></code> and <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> to pass into the user code, being careful to only pass them if the code can accept them.</p>
-</div>
-<div class="section" id="id5">
-<h2>2017.01.1<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="id5">
+<h2>2017.01.1<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h2>
 <p>Major revision; expansion of types of exercises supported (notably application-layer programs via socket emulation) and several non-backward compatible API changes.  Simplified user code import (single import of switchyard.lib.userlib).  Installation via standard setuptools, so easily installed via easy_install or pip.  Major revision of documentation.  Lots of new tests were written, bringing test coverage above 90%.  Expansion of exercises is still in progress.</p>
 <p>Some key API changes to be aware of:</p>
 <blockquote>
@@ -75,16 +70,16 @@ Switchyard parses and assembles <code class="docutils literal notranslate"><span
 <li><p>Instead of invoking <code class="docutils literal notranslate"><span class="pre">srpy.py</span></code>, a <code class="docutils literal notranslate"><span class="pre">swyard</span></code> program is installed during the new install process.  <code class="docutils literal notranslate"><span class="pre">swyard</span></code> has a few command-line changes compared with <code class="docutils literal notranslate"><span class="pre">srpy.py</span></code>.  In particular, the <code class="docutils literal notranslate"><span class="pre">-s</span></code> option has gone away; to run Switchyard with a test, just use the <code class="docutils literal notranslate"><span class="pre">-t</span></code> option with the scenario file as the argument.</p></li>
 </ul>
 </div></blockquote>
-</div>
-<div class="section" id="alphav2">
-<h2>alphav2<a class="headerlink" href="#alphav2" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="alphav2">
+<h2>alphav2<a class="headerlink" href="#alphav2" title="Link to this heading">¶</a></h2>
 <p>Complete rewrite of v1.  Moved to Python 3 and created packet parsing libraries, new libpcap interface library (pcapffi).  Redesigned test scenario modules and an expanded of publicly available exercises.  Used at Colgate twice and University of Wisconsin-Madison twice.  Available on the <code class="docutils literal notranslate"><span class="pre">v2</span></code> branch on github.</p>
-</div>
-<div class="section" id="alphav1">
-<h2>alphav1<a class="headerlink" href="#alphav1" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="alphav1">
+<h2>alphav1<a class="headerlink" href="#alphav1" title="Link to this heading">¶</a></h2>
 <p>First version, which used the POX packet parsing libraries and had a variety of limitations.  Implemented in Python 2 and used at Colgate once.  Available on the <code class="docutils literal notranslate"><span class="pre">v1</span></code> branch on github, but very much obsolete.</p>
-</div>
-</div>
+</section>
+</section>
 
 
             <div class="clearer"></div>
@@ -93,8 +88,9 @@ Switchyard parses and assembles <code class="docutils literal notranslate"><span
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">Release notes</a><ul>
 <li><a class="reference internal" href="#id1">1.0.0</a></li>
 <li><a class="reference internal" href="#id2">2017.01.4</a></li>
@@ -107,12 +103,17 @@ Switchyard parses and assembles <code class="docutils literal notranslate"><span
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="reference.html"
-                        title="previous chapter">API Reference</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="thanks.html"
-                        title="next chapter">Acknowledgments and thanks</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="reference.html"
+                          title="previous chapter">API Reference</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="thanks.html"
+                          title="next chapter">Acknowledgments and thanks</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -124,12 +125,12 @@ Switchyard parses and assembles <code class="docutils literal notranslate"><span
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -141,9 +142,6 @@ Switchyard parses and assembles <code class="docutils literal notranslate"><span
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="thanks.html" title="Acknowledgments and thanks"
              >next</a> |</li>
         <li class="right" >
@@ -154,8 +152,8 @@ Switchyard parses and assembles <code class="docutils literal notranslate"><span
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2020, Joel Sommers.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     </div>
   </body>
 </html>

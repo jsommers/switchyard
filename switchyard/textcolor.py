@@ -18,9 +18,9 @@ class TextColor(object):
             return
         TextColor._NoColor=nocolor
         if sys.platform == 'win32':
-            colorama.init(strip=True,convert=True,wrap=True)
+            colorama.init(autoreset=True,strip=True,convert=True,wrap=True)
         else:
-            colorama.init()
+            colorama.init(autoreset=True,)
         atexit.register(TextColor.reset)
         TextColor._SETUP=True
 

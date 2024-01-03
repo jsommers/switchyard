@@ -1,18 +1,15 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="../../">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>switchyard.llnetbase &#8212; Switchyard 1.0.1 documentation</title>
-    <link rel="stylesheet" href="../../_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinxdoc.css?v=d59dc883" />
+    <script src="../../_static/documentation_options.js?v=292eb321"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
   </head><body>
@@ -49,7 +46,7 @@
     <span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">,</span> <span class="s1">&#39;input_port&#39;</span><span class="p">,</span> <span class="s1">&#39;packet&#39;</span><span class="p">])</span>
 
 <span class="k">def</span> <span class="nf">_start_usercode</span><span class="p">(</span><span class="n">entryfunction</span><span class="p">,</span> <span class="n">netobj</span><span class="p">,</span> <span class="n">codeargdict</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    figure out how to correctly start the user code.  warn if</span>
 <span class="sd">    args are passed on the command line, but the code doesn&#39;t </span>
 <span class="sd">    accept them.</span>
@@ -84,8 +81,10 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">entryfunction</span><span class="p">(</span><span class="n">netobj</span><span class="p">)</span>
 
-<div class="viewcode-block" id="LLNetBase"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase">[docs]</a><span class="k">class</span> <span class="nc">LLNetBase</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="LLNetBase">
+<a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase">[docs]</a>
+<span class="k">class</span> <span class="nc">LLNetBase</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Base class for the low-level networking library in Python.</span>
 <span class="sd">    &quot;net&quot; objects are constructed from classes derived from this</span>
 <span class="sd">    class.</span>
@@ -95,7 +94,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_devinfo</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># dict(str -&gt; Interface)</span>
 
     <span class="k">def</span> <span class="nf">set_devupdown_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Set the callback function to be invoked when</span>
 <span class="sd">        an interface goes up or down.  The arguments to the</span>
 <span class="sd">        callback are: Interface (object representing the interface</span>
@@ -106,7 +105,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_devupdown_callback</span> <span class="o">=</span> <span class="n">callback</span>
 
     <span class="k">def</span> <span class="nf">intf_down</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Can be called when an interface goes down.</span>
 <span class="sd">        FIXME: doesn&#39;t really do anything at this point.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -115,7 +114,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_devupdown_callback</span><span class="p">(</span><span class="n">intf</span><span class="p">,</span> <span class="s1">&#39;down&#39;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">intf_up</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Can be called when an interface is put in service.</span>
 <span class="sd">        FIXME: not currently used; more needs to be done to</span>
 <span class="sd">        correctly put a new intf into service.</span>
@@ -127,36 +126,50 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Interface already registered&quot;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="LLNetBase.interfaces"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.interfaces">[docs]</a>    <span class="k">def</span> <span class="nf">interfaces</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="LLNetBase.interfaces">
+<a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.interfaces">[docs]</a>
+    <span class="k">def</span> <span class="nf">interfaces</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Return a list of interfaces incident on this node/router.</span>
 <span class="sd">        Each item in the list is an Interface object, each of which includes</span>
 <span class="sd">        name, ethaddr, ipaddr, and netmask attributes.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_devinfo</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
 
-<div class="viewcode-block" id="LLNetBase.ports"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.ports">[docs]</a>    <span class="k">def</span> <span class="nf">ports</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="LLNetBase.ports">
+<a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.ports">[docs]</a>
+    <span class="k">def</span> <span class="nf">ports</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Alias for interfaces() method.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">interfaces</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="LLNetBase.interface_by_name"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.interface_by_name">[docs]</a>    <span class="k">def</span> <span class="nf">interface_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="LLNetBase.interface_by_name">
+<a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.interface_by_name">[docs]</a>
+    <span class="k">def</span> <span class="nf">interface_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Given a device name, return the corresponding interface object</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_devinfo</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_devinfo</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
         <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;No device named </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="LLNetBase.port_by_name"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.port_by_name">[docs]</a>    <span class="k">def</span> <span class="nf">port_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="LLNetBase.port_by_name">
+<a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.port_by_name">[docs]</a>
+    <span class="k">def</span> <span class="nf">port_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Alias for interface_by_name</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">interface_by_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="LLNetBase.interface_by_ipaddr"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.interface_by_ipaddr">[docs]</a>    <span class="k">def</span> <span class="nf">interface_by_ipaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ipaddr</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="LLNetBase.interface_by_ipaddr">
+<a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.interface_by_ipaddr">[docs]</a>
+    <span class="k">def</span> <span class="nf">interface_by_ipaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ipaddr</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Given an IP address, return the interface that &#39;owns&#39; this address</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">ipaddr</span> <span class="o">=</span> <span class="n">ip_address</span><span class="p">(</span><span class="n">ipaddr</span><span class="p">)</span>
@@ -166,14 +179,20 @@
                     <span class="k">return</span> <span class="n">iface</span>
         <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;No device has IP address </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ipaddr</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="LLNetBase.port_by_ipaddr"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.port_by_ipaddr">[docs]</a>    <span class="k">def</span> <span class="nf">port_by_ipaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ipaddr</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="LLNetBase.port_by_ipaddr">
+<a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.port_by_ipaddr">[docs]</a>
+    <span class="k">def</span> <span class="nf">port_by_ipaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ipaddr</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Alias for interface_by_ipaddr</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">interface_by_ipaddr</span><span class="p">(</span><span class="n">ipaddr</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="LLNetBase.interface_by_macaddr"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.interface_by_macaddr">[docs]</a>    <span class="k">def</span> <span class="nf">interface_by_macaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">macaddr</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="LLNetBase.interface_by_macaddr">
+<a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.interface_by_macaddr">[docs]</a>
+    <span class="k">def</span> <span class="nf">interface_by_macaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">macaddr</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Given a MAC address, return the interface that &#39;owns&#39; this address</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">macaddr</span> <span class="o">=</span> <span class="n">EthAddr</span><span class="p">(</span><span class="n">macaddr</span><span class="p">)</span>
@@ -182,23 +201,29 @@
                 <span class="k">return</span> <span class="n">iface</span>
         <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;No device has MAC address </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">macaddr</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="LLNetBase.port_by_macaddr"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.port_by_macaddr">[docs]</a>    <span class="k">def</span> <span class="nf">port_by_macaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">macaddr</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="LLNetBase.port_by_macaddr">
+<a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.port_by_macaddr">[docs]</a>
+    <span class="k">def</span> <span class="nf">port_by_macaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">macaddr</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Alias for interface_by_macaddr</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">interface_by_macaddr</span><span class="p">(</span><span class="n">macaddr</span><span class="p">)</span></div>
 
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">testmode</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Returns True if running in test mode and False if running in</span>
 <span class="sd">        live/real mode.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;This property must be overridden by derived classes&quot;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="LLNetBase.recv_packet"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.recv_packet">[docs]</a>    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="LLNetBase.recv_packet">
+<a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.recv_packet">[docs]</a>
+    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">recv_packet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Receive a packet on any port/interface.</span>
 <span class="sd">        If a non-None timeout is given, the method will block for up</span>
 <span class="sd">        to timeout seconds.  If no packet is available, the exception</span>
@@ -209,13 +234,17 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">raise</span> <span class="n">NoPackets</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="LLNetBase.send_packet"><a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.send_packet">[docs]</a>    <span class="nd">@abstractmethod</span>
+
+<div class="viewcode-block" id="LLNetBase.send_packet">
+<a class="viewcode-back" href="../../reference.html#switchyard.llnetbase.LLNetBase.send_packet">[docs]</a>
+    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">send_packet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_port</span><span class="p">,</span> <span class="n">packet</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Send a packet out the given output port/interface.  </span>
 <span class="sd">        Returns None.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">pass</span></div>
+
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">shutdown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -231,6 +260,7 @@
                 <span class="k">return</span> <span class="n">devname</span>
         <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;No device has ifnum </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ifnum</span><span class="p">))</span> </div>
 
+
 </pre></div>
 
             <div class="clearer"></div>
@@ -243,12 +273,12 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -268,8 +298,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2020, Joel Sommers.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     </div>
   </body>
 </html>

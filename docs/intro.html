@@ -1,18 +1,16 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
     <title>Introduction and Overview &#8212; Switchyard 1.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css?v=d59dc883" />
+    <script src="_static/documentation_options.js?v=292eb321"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Writing a Switchyard program" href="writing_a_program.html" />
@@ -24,9 +22,6 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li class="right" >
           <a href="writing_a_program.html" title="Writing a Switchyard program"
              accesskey="N">next</a> |</li>
@@ -43,14 +38,14 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="introduction-and-overview">
-<h1>Introduction and Overview<a class="headerlink" href="#introduction-and-overview" title="Permalink to this headline">¶</a></h1>
+  <section id="introduction-and-overview">
+<h1>Introduction and Overview<a class="headerlink" href="#introduction-and-overview" title="Link to this heading">¶</a></h1>
 <p>Switchyard is a framework for creating, testing, and experimenting with software implementations of networked systems such as Ethernet switches, IP routers, firewalls and middleboxes, and end-host protocol stacks.  Switchyard can be used for system-building projects targeting layers of the network protocol stack from layer 2 (link layer) and above.  It is intended primarily for educational use and has purpose-built testing and debugging features. Although its design favors understandability over speed, it can work quite nicely as a prototyping environment for new kinds of networked devices.</p>
 <p>The Switchyard framework is implemented in Python and consists of two components: a program (<code class="docutils literal notranslate"><span class="pre">swyard</span></code>) which creates a runtime environment for the code that implements some networked system or device, and a collection of library modules that can be used for a variety of tasks such as packet creation and parsing.  The networked system code is implemented in one or more Python files (which you write!) and that use the Switchyard libraries and conform to certain conventions.  The <code class="docutils literal notranslate"><span class="pre">swyard</span></code> runtime environment creator and orchestrator seamlessly handles running your code either in a test setting where no actual network traffic is generated or in a real or “live” setting in which your code can interact with other networked systems.</p>
-<p>The Switchyard runtime environment (depicted below) provides a given networked system with 1 or more <em>interfaces</em> or <em>ports</em>.  A port may represent a wired connection to another device, or may represent a wireless interface, or may represent a <em>loopback</em> <a class="footnote-reference brackets" href="#loopback" id="id1">1</a> interface.  In any case, it is through these ports that packets are sent and received.  Each port has, at minimum, a name (e.g., <code class="docutils literal notranslate"><span class="pre">en0</span></code>) and an Ethernet address.  A port may also have an IPv4 address and subnet mask associated with it.</p>
-<div class="figure align-center" style="width: 80%">
+<p>The Switchyard runtime environment (depicted below) provides a given networked system with 1 or more <em>interfaces</em> or <em>ports</em>.  A port may represent a wired connection to another device, or may represent a wireless interface, or may represent a <em>loopback</em> <a class="footnote-reference brackets" href="#loopback" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a> interface.  In any case, it is through these ports that packets are sent and received.  Each port has, at minimum, a name (e.g., <code class="docutils literal notranslate"><span class="pre">en0</span></code>) and an Ethernet address.  A port may also have an IPv4 address and subnet mask associated with it.</p>
+<figure class="align-center" style="width: 80%">
 <img alt="_images/srpyarch.png" src="_images/srpyarch.png" />
-</div>
+</figure>
 <p>The typical goal of a Switchyard-based program is to receive a packet on one port, possibly modify it, then either forward it out one or more ports or to drop the packet.  The rest of this documentation is organized around how to perform these tasks in various settings.  In particular:</p>
 <blockquote>
 <div><ul class="simple">
@@ -65,12 +60,13 @@
 <p><strong>A note to the pedantic</strong>: In this documentation we use the term <em>packet</em> in a generic sense to refer to what may more traditionally be a link layer <em>frame</em>, a network layer <em>packet</em>, a transport layer <em>segment</em>, or an application layer <em>message</em>.  Where appropriate, we use the appropriate specific term, but often resort to using <em>packet</em> in a more general sense.</p>
 <p><strong>And one more (genuinely important) note</strong>: Switchyard is Python 3-only!  You’ll get an error (or maybe even more than one error!) if you try to use Switchyard with Python 2.  Python 3.4 is required, at minimum.  An installation guide (see <a class="reference internal" href="installation.html#install"><span class="std std-ref">Installing Switchyard</span></a>) is provided in this documentation to help with getting any necessary libraries installed on your platform to make Switchyard work right.</p>
 <p class="rubric">Footnotes</p>
-<dl class="footnote brackets">
-<dt class="label" id="loopback"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
-<dd><p>The loopback interface is a <em>virtual</em> interface that connects a host to itself.  It is typically used to facilitate network communication among processes on the same host.</p>
-</dd>
-</dl>
-</div>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="loopback" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>The loopback interface is a <em>virtual</em> interface that connects a host to itself.  It is typically used to facilitate network communication among processes on the same host.</p>
+</aside>
+</aside>
+</section>
 
 
             <div class="clearer"></div>
@@ -79,12 +75,16 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="index.html"
-                        title="previous chapter">Switchyard documentation</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="writing_a_program.html"
-                        title="next chapter">Writing a Switchyard program</a></p>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="index.html"
+                          title="previous chapter">Switchyard documentation</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="writing_a_program.html"
+                          title="next chapter">Writing a Switchyard program</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -96,12 +96,12 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -113,9 +113,6 @@
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="writing_a_program.html" title="Writing a Switchyard program"
              >next</a> |</li>
         <li class="right" >
@@ -126,8 +123,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2020, Joel Sommers.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     </div>
   </body>
 </html>

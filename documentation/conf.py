@@ -198,7 +198,7 @@ latex_elements = {
 # Additional stuff for the LaTeX preamble.
 #'preamble': '',
     'preamble': '''
-\usepackage{pxfonts}
+\\usepackage{pxfonts}
 ''',
 # The paper size ('letterpaper' or 'a4paper').
 # 'papersize': 'letterpaper',
