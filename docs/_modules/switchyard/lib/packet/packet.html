@@ -1,18 +1,15 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="../../../../">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>switchyard.lib.packet.packet &#8212; Switchyard 1.0.1 documentation</title>
-    <link rel="stylesheet" href="../../../../_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
-    <script src="../../../../_static/jquery.js"></script>
-    <script src="../../../../_static/underscore.js"></script>
-    <script src="../../../../_static/doctools.js"></script>
-    <script src="../../../../_static/language_data.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinxdoc.css?v=d59dc883" />
+    <script src="../../../../_static/documentation_options.js?v=292eb321"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" /> 
   </head><body>
@@ -43,8 +40,10 @@
 <span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">log_warn</span>
 <span class="kn">from</span> <span class="nn">..exceptions</span> <span class="kn">import</span> <span class="o">*</span>
 
-<div class="viewcode-block" id="Packet"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet">[docs]</a><span class="k">class</span> <span class="nc">Packet</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="Packet">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet">[docs]</a>
+<span class="k">class</span> <span class="nc">Packet</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Base class for packet headers.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_headers&#39;</span><span class="p">,</span><span class="s1">&#39;_raw&#39;</span><span class="p">]</span>
@@ -57,16 +56,21 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_parse</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">first_header</span><span class="p">)</span>            
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Return the packed length of this packet, and all</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Return the packed length of this packet, and all</span>
 <span class="sd">        subsequent headers and payloads.&#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
 
-<div class="viewcode-block" id="Packet.size"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.size">[docs]</a>    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Return the packed length of this header&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="Packet.size">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.size">[docs]</a>
+    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Return the packed length of this header&#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">ph</span><span class="p">)</span> <span class="k">for</span> <span class="n">ph</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_headers</span><span class="p">])</span></div>
 
-<div class="viewcode-block" id="Packet.to_bytes"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.to_bytes">[docs]</a>    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="Packet.to_bytes">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.to_bytes">[docs]</a>
+    <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Returns serialized bytes object representing all headers/</span>
 <span class="sd">        payloads in this packet&#39;&#39;&#39;</span>
         <span class="n">rawlist</span> <span class="o">=</span> <span class="p">[]</span>
@@ -78,8 +82,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_raw</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rawlist</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_raw</span></div>
 
+
     <span class="k">def</span> <span class="nf">_parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">next_cls</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Parse a raw bytes object and construct the list of packet header</span>
 <span class="sd">        objects (and possible remaining bytes) that are part of this packet.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -98,14 +103,17 @@
         <span class="k">if</span> <span class="n">raw</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add_header</span><span class="p">(</span><span class="n">RawPacketContents</span><span class="p">(</span><span class="n">raw</span><span class="p">))</span>
 
-<div class="viewcode-block" id="Packet.from_bytes"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.from_bytes">[docs]</a>    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Packet.from_bytes">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.from_bytes">[docs]</a>
+    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">first_header</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Create a new packet by parsing the contents of a bytestring&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Create a new packet by parsing the contents of a bytestring&#39;&#39;&#39;</span>
         <span class="n">p</span> <span class="o">=</span> <span class="n">Packet</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">first_header</span><span class="p">)</span>        
         <span class="k">return</span> <span class="n">p</span></div>
 
+
     <span class="k">def</span> <span class="fm">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ph</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Add the packet header to the end of this packet; return</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Add the packet header to the end of this packet; return</span>
 <span class="sd">           this packet header.  Only += (iadd) is defined, since </span>
 <span class="sd">           this method is inherently mutating.&#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ph</span><span class="p">,</span> <span class="p">(</span><span class="n">PacketHeaderBase</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)):</span>
@@ -126,27 +134,38 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid operand type for +: can&#39;t add </span><span class="si">{}</span><span class="s2"> and </span><span class="si">{}</span><span class="s2"> together&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="nb">type</span><span class="p">(</span><span class="n">pobj</span><span class="p">)))</span>
 
-<div class="viewcode-block" id="Packet.headers"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.headers">[docs]</a>    <span class="k">def</span> <span class="nf">headers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="Packet.headers">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.headers">[docs]</a>
+    <span class="k">def</span> <span class="nf">headers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Return a list of packet header names in this packet.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="p">[</span> <span class="n">ph</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">ph</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_headers</span> <span class="p">]</span></div>
 
-<div class="viewcode-block" id="Packet.num_headers"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.num_headers">[docs]</a>    <span class="k">def</span> <span class="nf">num_headers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="Packet.num_headers">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.num_headers">[docs]</a>
+    <span class="k">def</span> <span class="nf">num_headers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Return the number of headers in the packet.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_headers</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Packet.prepend_header"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.prepend_header">[docs]</a>    <span class="k">def</span> <span class="nf">prepend_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ph</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="Packet.prepend_header">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.prepend_header">[docs]</a>
+    <span class="k">def</span> <span class="nf">prepend_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ph</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Insert a PacketHeader object at the beginning of this packet</span>
 <span class="sd">        (i.e., as the first header of the packet).</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_headers</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ph</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Packet.add_header"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.add_header">[docs]</a>    <span class="k">def</span> <span class="nf">add_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ph</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="Packet.add_header">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.add_header">[docs]</a>
+    <span class="k">def</span> <span class="nf">add_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ph</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Add a PacketHeaderBase derived class object, or a raw bytes object</span>
 <span class="sd">        as the next &quot;header&quot; item in this packet.  Note that &#39;header&#39;</span>
 <span class="sd">        may be a slight misnomer since the last portion of a packet is</span>
@@ -159,20 +178,29 @@
             <span class="k">return</span> <span class="bp">self</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Payload for a packet header must be an object that is a subclass of PacketHeaderBase, or a bytes object.&quot;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Packet.insert_header"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.insert_header">[docs]</a>    <span class="k">def</span> <span class="nf">insert_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">ph</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="Packet.insert_header">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.insert_header">[docs]</a>
+    <span class="k">def</span> <span class="nf">insert_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">ph</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Insert a PacketHeaderBase-derived object at index idx the list of headers.</span>
 <span class="sd">        Any headers previously in the Packet from index idx:len(ph) are shifted to</span>
 <span class="sd">        make room for the new packet.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_headers</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">ph</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Packet.add_payload"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.add_payload">[docs]</a>    <span class="k">def</span> <span class="nf">add_payload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ph</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Alias for add_header&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="Packet.add_payload">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.add_payload">[docs]</a>
+    <span class="k">def</span> <span class="nf">add_payload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ph</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Alias for add_header&#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">add_header</span><span class="p">(</span><span class="n">ph</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Packet.has_header"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.has_header">[docs]</a>    <span class="k">def</span> <span class="nf">has_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdrclass</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="Packet.has_header">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.has_header">[docs]</a>
+    <span class="k">def</span> <span class="nf">has_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdrclass</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Return True if the packet has a header of the given hdrclass, </span>
 <span class="sd">        False otherwise.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -180,8 +208,11 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_header_by_name</span><span class="p">(</span><span class="n">hdrclass</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_header</span><span class="p">(</span><span class="n">hdrclass</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
 
-<div class="viewcode-block" id="Packet.get_header_by_name"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.get_header_by_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_header_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdrname</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="Packet.get_header_by_name">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.get_header_by_name">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_header_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdrname</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Return the header object that has the given (string) header</span>
 <span class="sd">        class name.  Returns None if no such header exists.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -190,8 +221,11 @@
                 <span class="k">return</span> <span class="n">hdr</span>
         <span class="k">return</span> <span class="kc">None</span></div>
 
-<div class="viewcode-block" id="Packet.get_header"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.get_header">[docs]</a>    <span class="k">def</span> <span class="nf">get_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdrclass</span><span class="p">,</span> <span class="n">returnval</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="Packet.get_header">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.get_header">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdrclass</span><span class="p">,</span> <span class="n">returnval</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Return the first header object that is of</span>
 <span class="sd">        class hdrclass, or None if the header class isn&#39;t</span>
 <span class="sd">        found.</span>
@@ -204,8 +238,11 @@
                 <span class="k">return</span> <span class="n">hdr</span>
         <span class="k">return</span> <span class="n">returnval</span></div>
 
-<div class="viewcode-block" id="Packet.get_header_index"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.get_header_index">[docs]</a>    <span class="k">def</span> <span class="nf">get_header_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdrclass</span><span class="p">,</span> <span class="n">startidx</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="Packet.get_header_index">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.Packet.get_header_index">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_header_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdrclass</span><span class="p">,</span> <span class="n">startidx</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Return the first index of the header class hdrclass</span>
 <span class="sd">        starting at startidx (default=0), or -1 if the</span>
 <span class="sd">        header class isn&#39;t found in the list of headers.</span>
@@ -214,6 +251,7 @@
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_headers</span><span class="p">[</span><span class="n">hdridx</span><span class="p">],</span> <span class="n">hdrclass</span><span class="p">):</span>
                 <span class="k">return</span> <span class="n">hdridx</span>
         <span class="k">return</span> <span class="o">-</span><span class="mi">1</span></div>
+
 
     <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_headers</span><span class="p">)</span>
@@ -280,8 +318,11 @@
         <span class="k">return</span> <span class="s1">&#39; | &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">ph</span><span class="p">)</span> <span class="k">for</span> <span class="n">ph</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_headers</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ph</span><span class="p">,</span> <span class="n">PacketHeaderBase</span><span class="p">)])</span></div>
 
 
-<div class="viewcode-block" id="PacketHeaderBase"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.PacketHeaderBase">[docs]</a><span class="k">class</span> <span class="nc">PacketHeaderBase</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="PacketHeaderBase">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.PacketHeaderBase">[docs]</a>
+<span class="k">class</span> <span class="nc">PacketHeaderBase</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Base class for packet headers.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[]</span>
@@ -293,36 +334,48 @@
             <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attrname</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Return the packed length of this packet; calls</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Return the packed length of this packet; calls</span>
 <span class="sd">        abstract method size(), which must be overridden in</span>
 <span class="sd">        derived classes.&#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
 
-<div class="viewcode-block" id="PacketHeaderBase.size"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.PacketHeaderBase.size">[docs]</a>    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Returns the number of bytes that the header would consist of when serialized to wire format&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="PacketHeaderBase.size">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.PacketHeaderBase.size">[docs]</a>
+    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Returns the number of bytes that the header would consist of when serialized to wire format&#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">())</span></div>
 
-<div class="viewcode-block" id="PacketHeaderBase.set_next_header_class_key"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.PacketHeaderBase.set_next_header_class_key">[docs]</a>    <span class="nd">@classmethod</span>
+
+<div class="viewcode-block" id="PacketHeaderBase.set_next_header_class_key">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.PacketHeaderBase.set_next_header_class_key">[docs]</a>
+    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">set_next_header_class_key</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Indicate which attribute is used to decide the type of packet</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Indicate which attribute is used to decide the type of packet</span>
 <span class="sd">           header that comes after this one.  For example, the IPv4</span>
 <span class="sd">           protocol attribute.&#39;&#39;&#39;</span>
         <span class="bp">cls</span><span class="o">.</span><span class="n">_next_header_class_key</span> <span class="o">=</span> <span class="n">attr</span></div>
 
-<div class="viewcode-block" id="PacketHeaderBase.add_next_header_class"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.PacketHeaderBase.add_next_header_class">[docs]</a>    <span class="nd">@classmethod</span>
+
+<div class="viewcode-block" id="PacketHeaderBase.add_next_header_class">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.PacketHeaderBase.add_next_header_class">[docs]</a>
+    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">add_next_header_class</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">hdrcls</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Add a new mapping between a next header type value and a Python</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Add a new mapping between a next header type value and a Python</span>
 <span class="sd">        class that implements that header type.&#39;&#39;&#39;</span>
         <span class="bp">cls</span><span class="o">.</span><span class="n">_next_header_map</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="n">hdrcls</span></div>
 
-<div class="viewcode-block" id="PacketHeaderBase.set_next_header_map"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.PacketHeaderBase.set_next_header_map">[docs]</a>    <span class="nd">@classmethod</span>
+
+<div class="viewcode-block" id="PacketHeaderBase.set_next_header_map">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.PacketHeaderBase.set_next_header_map">[docs]</a>
+    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">set_next_header_map</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">mapdict</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;(Re)initialize a dictionary that maps a &quot;next header type&quot; attribute</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;(Re)initialize a dictionary that maps a &quot;next header type&quot; attribute</span>
 <span class="sd">        to a Python class that implements that header type.&#39;&#39;&#39;</span>
         <span class="bp">cls</span><span class="o">.</span><span class="n">_next_header_map</span> <span class="o">=</span> <span class="n">mapdict</span></div>
 
+
     <span class="k">def</span> <span class="nf">next_header_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Return class of next header, if known.&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Return class of next header, if known.&#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_next_header_class_key</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="n">key</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_next_header_class_key</span><span class="p">)</span>
@@ -332,7 +385,7 @@
         <span class="k">return</span> <span class="n">rv</span>
 
     <span class="k">def</span> <span class="nf">pre_serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">packet</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        This method is called by the Switchyard framework just before any</span>
 <span class="sd">        subsequent packet headers (i.e., headers that come *after* this one)</span>
 <span class="sd">        are serialized into a byte sequence.  The main purpose for this callback</span>
@@ -347,20 +400,26 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">pass</span>
 
-<div class="viewcode-block" id="PacketHeaderBase.to_bytes"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.PacketHeaderBase.to_bytes">[docs]</a>    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="PacketHeaderBase.to_bytes">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.PacketHeaderBase.to_bytes">[docs]</a>
+    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Return a &#39;packed&#39; byte-level representation of this packet header.&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Return a &#39;packed&#39; byte-level representation of this packet header.&#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span></div>
 
-<div class="viewcode-block" id="PacketHeaderBase.from_bytes"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.PacketHeaderBase.from_bytes">[docs]</a>    <span class="nd">@abstractmethod</span>
+
+<div class="viewcode-block" id="PacketHeaderBase.from_bytes">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.PacketHeaderBase.from_bytes">[docs]</a>
+    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Reconstruct the attributes of a header given the bytes object named raw.  The method returns any bytes that are *not* used to reconstruct a header.  An exception (typically a ValueError) is raised if there is some kind of problem deserializing the bytes object into packet header attributes.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">pass</span></div>
 
+
     <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ph</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Add two packet headers together to get a new packet object.&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Add two packet headers together to get a new packet object.&#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">ph</span><span class="p">,</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="n">PacketHeaderBase</span><span class="p">)):</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Only objects derived from PacketHeaderBase and bytes objects can be added to create a new packet.&quot;</span><span class="p">)</span>
         <span class="n">p</span> <span class="o">=</span> <span class="n">Packet</span><span class="p">()</span>
@@ -374,6 +433,7 @@
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span></div>
+
 
 
 <span class="k">class</span> <span class="nc">NullPacketHeader</span><span class="p">(</span><span class="n">PacketHeaderBase</span><span class="p">):</span>
@@ -454,12 +514,12 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../../../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -479,8 +539,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2020, Joel Sommers.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     </div>
   </body>
 </html>

@@ -1,18 +1,15 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="../../../">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>switchyard.lib.logging &#8212; Switchyard 1.0.1 documentation</title>
-    <link rel="stylesheet" href="../../../_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-    <script src="../../../_static/jquery.js"></script>
-    <script src="../../../_static/underscore.js"></script>
-    <script src="../../../_static/doctools.js"></script>
-    <script src="../../../_static/language_data.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css?v=d59dc883" />
+    <script src="../../../_static/documentation_options.js?v=292eb321"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
   </head><body>
@@ -43,7 +40,7 @@
 <span class="kn">from</span> <span class="nn">.debugging</span> <span class="kn">import</span> <span class="n">debugger</span>
 
 <span class="k">def</span> <span class="nf">setup_logging</span><span class="p">(</span><span class="n">debug</span><span class="p">,</span> <span class="n">logfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Setup logging format and log level.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
@@ -55,23 +52,35 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> </span><span class="si">%(levelname)8s</span><span class="s2"> </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="s2">&quot;%H:%M:%S %Y/%m/</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">)</span>
 
-<div class="viewcode-block" id="log_failure"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.logging.log_failure">[docs]</a><span class="k">def</span> <span class="nf">log_failure</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;Convenience function for failure message.&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="log_failure">
+<a class="viewcode-back" href="../../../reference.html#switchyard.lib.logging.log_failure">[docs]</a>
+<span class="k">def</span> <span class="nf">log_failure</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Convenience function for failure message.&#39;&#39;&#39;</span>
     <span class="k">with</span> <span class="n">red</span><span class="p">():</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="log_debug"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.logging.log_debug">[docs]</a><span class="k">def</span> <span class="nf">log_debug</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;Convenience function for debugging message.&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="log_debug">
+<a class="viewcode-back" href="../../../reference.html#switchyard.lib.logging.log_debug">[docs]</a>
+<span class="k">def</span> <span class="nf">log_debug</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Convenience function for debugging message.&#39;&#39;&#39;</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="log_warn"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.logging.log_warn">[docs]</a><span class="k">def</span> <span class="nf">log_warn</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;Convenience function for warning message.&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="log_warn">
+<a class="viewcode-back" href="../../../reference.html#switchyard.lib.logging.log_warn">[docs]</a>
+<span class="k">def</span> <span class="nf">log_warn</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Convenience function for warning message.&#39;&#39;&#39;</span>
     <span class="k">with</span> <span class="n">magenta</span><span class="p">():</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="log_info"><a class="viewcode-back" href="../../../reference.html#switchyard.lib.logging.log_info">[docs]</a><span class="k">def</span> <span class="nf">log_info</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;Convenience function for info message.&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="log_info">
+<a class="viewcode-back" href="../../../reference.html#switchyard.lib.logging.log_info">[docs]</a>
+<span class="k">def</span> <span class="nf">log_info</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Convenience function for info message.&#39;&#39;&#39;</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">))</span></div>
+
 </pre></div>
 
             <div class="clearer"></div>
@@ -84,12 +93,12 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -109,8 +118,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2020, Joel Sommers.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     </div>
   </body>
 </html>

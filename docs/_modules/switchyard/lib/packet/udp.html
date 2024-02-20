@@ -1,18 +1,15 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="../../../../">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>switchyard.lib.packet.udp &#8212; Switchyard 1.0.1 documentation</title>
-    <link rel="stylesheet" href="../../../../_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
-    <script src="../../../../_static/jquery.js"></script>
-    <script src="../../../../_static/underscore.js"></script>
-    <script src="../../../../_static/doctools.js"></script>
-    <script src="../../../../_static/language_data.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinxdoc.css?v=d59dc883" />
+    <script src="../../../../_static/documentation_options.js?v=292eb321"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" /> 
   </head><body>
@@ -50,7 +47,9 @@
 
 <span class="c1"># FIXME: checksum is broken for ip6</span>
 
-<div class="viewcode-block" id="UDP"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.UDP">[docs]</a><span class="k">class</span> <span class="nc">UDP</span><span class="p">(</span><span class="n">PacketHeaderBase</span><span class="p">):</span>
+<div class="viewcode-block" id="UDP">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.UDP">[docs]</a>
+<span class="k">class</span> <span class="nc">UDP</span><span class="p">(</span><span class="n">PacketHeaderBase</span><span class="p">):</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_src&#39;</span><span class="p">,</span><span class="s1">&#39;_dst&#39;</span><span class="p">,</span><span class="s1">&#39;_len&#39;</span><span class="p">,</span><span class="s1">&#39;_checksum&#39;</span><span class="p">]</span>
     <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s1">&#39;!HHHH&#39;</span>
     <span class="n">_MINLEN</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">_PACKFMT</span><span class="p">)</span>
@@ -67,14 +66,14 @@
         <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">UDP</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Return packed byte representation of the UDP header.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">UDP</span><span class="o">.</span><span class="n">_PACKFMT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_src</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dst</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_checksum</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Return an Ethernet object reconstructed from raw bytes, or an</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Return an Ethernet object reconstructed from raw bytes, or an</span>
 <span class="sd">           Exception if we can&#39;t resurrect the packet.&#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">UDP</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">NotEnoughDataError</span><span class="p">(</span><span class="s2">&quot;Not enough bytes (</span><span class="si">{}</span><span class="s2">) to reconstruct an UDP object&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)))</span>
@@ -129,6 +128,7 @@
         <span class="c1"># checksum calc currently assumes we&#39;re only dealing with ipv4.</span>
         <span class="c1"># will need to be modified for ipv6 support...</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_checksum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_checksum_ipv4</span><span class="p">(</span><span class="n">pkt</span><span class="o">.</span><span class="n">get_header_by_name</span><span class="p">(</span><span class="s1">&#39;IPv4&#39;</span><span class="p">),</span> <span class="n">raw</span><span class="p">)</span></div>
+
 </pre></div>
 
             <div class="clearer"></div>
@@ -141,12 +141,12 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../../../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -166,8 +166,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2020, Joel Sommers.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     </div>
   </body>
 </html>

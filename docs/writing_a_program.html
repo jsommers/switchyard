@@ -23,6 +23,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="test_execution.html" title="Running in the test environment"
              accesskey="N">next</a> |</li>
         <li class="right" >
@@ -49,7 +52,7 @@
 <section id="sending-and-receiving-packets">
 <h3>Sending and receiving packets<a class="headerlink" href="#sending-and-receiving-packets" title="Link to this heading">¶</a></h3>
 <p>As a way to describe two of the most important methods on the network object, here is a program that receives one packet, prints it out, sends it <em>back out the same interface</em>, then quits.</p>
-<p>Notice in the code below that we only need to import <code class="xref py py-mod docutils literal notranslate"><span class="pre">switchyard.lib.userlib</span></code> to get access to various Switchyard classes and functions; generally speaking, this is the <em>only</em> import you should ever need for any Switchyard program.  Although you can import individual Switchyard modules separately (for the specific module to import, see <a class="reference internal" href="reference.html#apiref"><span class="std std-ref">API Reference</span></a>), but you will probably find that importing <code class="docutils literal notranslate"><span class="pre">userlib</span></code> is much easier.</p>
+<p>Notice in the code below that we only need to import <a class="reference internal" href="reference.html#module-switchyard.lib.userlib" title="switchyard.lib.userlib"><code class="xref py py-mod docutils literal notranslate"><span class="pre">switchyard.lib.userlib</span></code></a> to get access to various Switchyard classes and functions; generally speaking, this is the <em>only</em> import you should ever need for any Switchyard program.  Although you can import individual Switchyard modules separately (for the specific module to import, see <a class="reference internal" href="reference.html#apiref"><span class="std std-ref">API Reference</span></a>), but you will probably find that importing <code class="docutils literal notranslate"><span class="pre">userlib</span></code> is much easier.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switchyard.lib.userlib</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">net</span><span class="p">):</span>
@@ -131,7 +134,7 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">ethaddr</span></code>: returns the Ethernet address associated with the interface, as a <a class="reference internal" href="reference.html#switchyard.lib.address.EthAddr" title="switchyard.lib.address.EthAddr"><code class="xref py py-class docutils literal notranslate"><span class="pre">switchyard.lib.address.EthAddr</span></code></a> instance.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ipaddrs</span></code>: returns a (frozen) set of IP addresses assigned to the interface.  Each object in the set is either a <code class="docutils literal notranslate"><span class="pre">ipaddress.IPv6Interface</span></code> or <code class="docutils literal notranslate"><span class="pre">ipaddress.IPv4Interface</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ifnum</span></code>: returns an integer index associated with the interface.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">iftype</span></code>: returns the type of the interface, if it can be inferred by Switchyard.  The return type is a value from the <code class="xref py py-class docutils literal notranslate"><span class="pre">switchyard.lib.interface.InterfaceType</span></code> enumerated type.  The type can either be <code class="docutils literal notranslate"><span class="pre">Unknown</span></code>, <code class="docutils literal notranslate"><span class="pre">Loopback</span></code>, <code class="docutils literal notranslate"><span class="pre">Wired</span></code>, or <code class="docutils literal notranslate"><span class="pre">Wireless</span></code>.  The type is automatically set when an interface is initialized.  Note that in some cases the type can be inferred, but in others it cannot (thus the potential for an <code class="docutils literal notranslate"><span class="pre">Unknown</span></code> value).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">iftype</span></code>: returns the type of the interface, if it can be inferred by Switchyard.  The return type is a value from the <a class="reference internal" href="reference.html#switchyard.lib.interface.InterfaceType" title="switchyard.lib.interface.InterfaceType"><code class="xref py py-class docutils literal notranslate"><span class="pre">switchyard.lib.interface.InterfaceType</span></code></a> enumerated type.  The type can either be <code class="docutils literal notranslate"><span class="pre">Unknown</span></code>, <code class="docutils literal notranslate"><span class="pre">Loopback</span></code>, <code class="docutils literal notranslate"><span class="pre">Wired</span></code>, or <code class="docutils literal notranslate"><span class="pre">Wireless</span></code>.  The type is automatically set when an interface is initialized.  Note that in some cases the type can be inferred, but in others it cannot (thus the potential for an <code class="docutils literal notranslate"><span class="pre">Unknown</span></code> value).</p></li>
 </ul>
 </div></blockquote>
 <p>All the above properties except <code class="docutils literal notranslate"><span class="pre">ifnum</span></code> and <code class="docutils literal notranslate"><span class="pre">iftype</span></code> are modifiable.  Changing them can be accomplished just by assigning a new value to the property.  Beware, though, that changing address values has no effect on the underlying host operating system if Switchyard is run in a live environment, so you would generally be wise to leave the addresses alone.</p>
@@ -510,6 +513,9 @@ on which it arrived.</p>
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="test_execution.html" title="Running in the test environment"
              >next</a> |</li>

@@ -1,18 +1,15 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="../../../../">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>switchyard.lib.packet.icmpv6 &#8212; Switchyard 1.0.1 documentation</title>
-    <link rel="stylesheet" href="../../../../_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
-    <script src="../../../../_static/jquery.js"></script>
-    <script src="../../../../_static/underscore.js"></script>
-    <script src="../../../../_static/doctools.js"></script>
-    <script src="../../../../_static/language_data.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinxdoc.css?v=d59dc883" />
+    <script src="../../../../_static/documentation_options.js?v=292eb321"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" /> 
   </head><body>
@@ -60,7 +57,9 @@
 <span class="sd">&#39;&#39;&#39;</span>
 
 
-<div class="viewcode-block" id="ICMPv6"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6</span><span class="p">(</span><span class="n">ICMP</span><span class="p">):</span>
+<div class="viewcode-block" id="ICMPv6">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6">[docs]</a>
+<span class="k">class</span> <span class="nc">ICMPv6</span><span class="p">(</span><span class="n">ICMP</span><span class="p">):</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;_type&#39;</span><span class="p">,</span> <span class="s1">&#39;_code&#39;</span><span class="p">,</span> <span class="s1">&#39;_icmpdata&#39;</span><span class="p">,</span> <span class="s1">&#39;_valid_types&#39;</span><span class="p">,</span> 
                  <span class="s1">&#39;_valid_codes_map&#39;</span><span class="p">,</span> <span class="s1">&#39;_classtype_from_icmptype&#39;</span><span class="p">,</span> 
                  <span class="s1">&#39;_icmptype_from_classtype&#39;</span><span class="p">,</span> <span class="s1">&#39;_checksum&#39;</span><span class="p">)</span>
@@ -128,7 +127,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">icmpcode</span> <span class="o">=</span> <span class="n">value</span></div>
 
 
-<div class="viewcode-block" id="ICMPv6Option"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6Option">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6Option</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ICMPv6Option">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6Option">[docs]</a>
+<span class="k">class</span> <span class="nc">ICMPv6Option</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_optnum&#39;</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optnum</span><span class="p">):</span>
@@ -146,6 +148,7 @@
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span></div>
+
 
 
 <span class="k">class</span> <span class="nc">_ICMPv6OptionLinkLayerAddress</span><span class="p">(</span><span class="n">ICMPv6Option</span><span class="p">):</span>
@@ -182,14 +185,20 @@
         <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__str__</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">ethaddr</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="ICMPv6OptionTargetLinkLayerAddress"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6OptionTargetLinkLayerAddress">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6OptionTargetLinkLayerAddress</span><span class="p">(</span><span class="n">_ICMPv6OptionLinkLayerAddress</span><span class="p">):</span>
+<div class="viewcode-block" id="ICMPv6OptionTargetLinkLayerAddress">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6OptionTargetLinkLayerAddress">[docs]</a>
+<span class="k">class</span> <span class="nc">ICMPv6OptionTargetLinkLayerAddress</span><span class="p">(</span><span class="n">_ICMPv6OptionLinkLayerAddress</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">ICMPv6OptionNumber</span><span class="o">.</span><span class="n">TargetLinkLayerAddress</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="ICMPv6OptionSourceLinkLayerAddress"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6OptionSourceLinkLayerAddress">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6OptionSourceLinkLayerAddress</span><span class="p">(</span><span class="n">_ICMPv6OptionLinkLayerAddress</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ICMPv6OptionSourceLinkLayerAddress">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6OptionSourceLinkLayerAddress">[docs]</a>
+<span class="k">class</span> <span class="nc">ICMPv6OptionSourceLinkLayerAddress</span><span class="p">(</span><span class="n">_ICMPv6OptionLinkLayerAddress</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">ICMPv6OptionNumber</span><span class="o">.</span><span class="n">SourceLinkLayerAddress</span><span class="p">,</span> <span class="n">address</span><span class="p">)</span></div>
+
 
 
 <span class="k">class</span> <span class="nc">ICMPv6OptionPrefixInformation</span><span class="p">(</span><span class="n">ICMPv6Option</span><span class="p">):</span>
@@ -319,7 +328,9 @@
         <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__str__</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">mtu</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="ICMPv6OptionRedirectedHeader"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6OptionRedirectedHeader">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6OptionRedirectedHeader</span><span class="p">(</span><span class="n">ICMPv6Option</span><span class="p">):</span>
+<div class="viewcode-block" id="ICMPv6OptionRedirectedHeader">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6OptionRedirectedHeader">[docs]</a>
+<span class="k">class</span> <span class="nc">ICMPv6OptionRedirectedHeader</span><span class="p">(</span><span class="n">ICMPv6Option</span><span class="p">):</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_header&#39;</span><span class="p">]</span>
     <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s1">&#39;!BB&#39;</span>
     <span class="n">_MINLEN</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">_PACKFMT</span><span class="p">)</span>
@@ -363,6 +374,7 @@
                 <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__str__</span><span class="p">(),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_header</span><span class="p">))</span></div>
 
 
+
 <span class="n">ICMPv6OptionClasses</span> <span class="o">=</span> <span class="p">{</span>
     <span class="n">ICMPv6OptionNumber</span><span class="o">.</span><span class="n">SourceLinkLayerAddress</span><span class="p">:</span>
         <span class="n">ICMPv6OptionSourceLinkLayerAddress</span><span class="p">,</span>
@@ -384,7 +396,7 @@
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="n">raw</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Takes a byte string as a parameter and returns a list of</span>
 <span class="sd">        ICMPv6Option objects.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -406,7 +418,7 @@
         <span class="k">return</span> <span class="n">icmpv6opts</span>
 
     <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Takes a list of ICMPv6Option objects and returns a packed byte string</span>
 <span class="sd">        of options, appropriately padded if necessary.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -476,7 +488,7 @@
 
 
 <span class="k">class</span> <span class="nc">ICMPv6Data</span><span class="p">(</span><span class="n">ICMPData</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Parent class for ICMPv6 informational message data types </span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -523,7 +535,9 @@
     <span class="k">pass</span>
 
 
-<div class="viewcode-block" id="ICMPv6RouterSolicitation"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6RouterSolicitation">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6RouterSolicitation</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
+<div class="viewcode-block" id="ICMPv6RouterSolicitation">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6RouterSolicitation">[docs]</a>
+<span class="k">class</span> <span class="nc">ICMPv6RouterSolicitation</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
     <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s1">&#39;!xxxx&#39;</span>
     <span class="n">_MINLEN</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">_PACKFMT</span><span class="p">)</span>
 
@@ -550,7 +564,10 @@
         <span class="k">return</span> <span class="n">s</span></div>
 
 
-<div class="viewcode-block" id="ICMPv6RouterAdvertisement"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6RouterAdvertisement">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6RouterAdvertisement</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ICMPv6RouterAdvertisement">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6RouterAdvertisement">[docs]</a>
+<span class="k">class</span> <span class="nc">ICMPv6RouterAdvertisement</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_curhoplimit&#39;</span><span class="p">,</span> <span class="s1">&#39;_m&#39;</span><span class="p">,</span> <span class="s1">&#39;_o&#39;</span><span class="p">,</span> <span class="s1">&#39;_h&#39;</span><span class="p">,</span> <span class="s1">&#39;_p&#39;</span><span class="p">,</span>
                  <span class="s1">&#39;_router_lifetime&#39;</span><span class="p">,</span> <span class="s1">&#39;_reachable_time&#39;</span><span class="p">,</span> <span class="s1">&#39;_retrans_timer&#39;</span><span class="p">]</span>
     <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s1">&#39;!BBHII&#39;</span>
@@ -671,7 +688,10 @@
         <span class="k">return</span> <span class="n">s</span></div>
 
 
-<div class="viewcode-block" id="ICMPv6NeighborSolicitation"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6NeighborSolicitation">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6NeighborSolicitation</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ICMPv6NeighborSolicitation">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6NeighborSolicitation">[docs]</a>
+<span class="k">class</span> <span class="nc">ICMPv6NeighborSolicitation</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_targetaddr&#39;</span><span class="p">]</span>
     <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s2">&quot;!xxxx16s&quot;</span>
     <span class="n">_MINLEN</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">_PACKFMT</span><span class="p">)</span>
@@ -711,7 +731,10 @@
         <span class="k">return</span> <span class="n">s</span></div>
 
 
-<div class="viewcode-block" id="ICMPv6NeighborAdvertisement"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6NeighborAdvertisement</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ICMPv6NeighborAdvertisement">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement">[docs]</a>
+<span class="k">class</span> <span class="nc">ICMPv6NeighborAdvertisement</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_R_S_O&#39;</span><span class="p">,</span> <span class="s1">&#39;_r&#39;</span><span class="p">,</span> <span class="s1">&#39;_s&#39;</span><span class="p">,</span> <span class="s1">&#39;_o&#39;</span><span class="p">,</span> <span class="s1">&#39;_targetaddr&#39;</span><span class="p">]</span>
     <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s2">&quot;!cxxx16s&quot;</span>
     <span class="n">_MINLEN</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">_PACKFMT</span><span class="p">)</span>
@@ -744,13 +767,18 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_targetaddr</span> <span class="o">=</span> <span class="n">IPv6Address</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="n">ICMPv6OptionList</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">optionbytes</span><span class="p">)</span>
 
-<div class="viewcode-block" id="ICMPv6NeighborAdvertisement.get_rso_byte"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement.get_rso_byte">[docs]</a>    <span class="k">def</span> <span class="nf">get_rso_byte</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ICMPv6NeighborAdvertisement.get_rso_byte">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement.get_rso_byte">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_rso_byte</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">rso</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_r</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span> <span class="o">|</span> \
               <span class="bp">self</span><span class="o">.</span><span class="n">_s</span> <span class="o">&lt;&lt;</span> <span class="mi">6</span> <span class="o">|</span> \
               <span class="bp">self</span><span class="o">.</span><span class="n">_o</span> <span class="o">&lt;&lt;</span> <span class="mi">5</span>
         <span class="k">return</span> <span class="nb">int</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">rso</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">byteorder</span><span class="o">=</span><span class="n">byteorder</span><span class="p">,</span> <span class="n">signed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ICMPv6NeighborAdvertisement.get_rso_str"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement.get_rso_str">[docs]</a>    <span class="k">def</span> <span class="nf">get_rso_str</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ICMPv6NeighborAdvertisement.get_rso_str">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6NeighborAdvertisement.get_rso_str">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_rso_str</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="p">:</span>
             <span class="n">s</span> <span class="o">+=</span> <span class="s1">&#39;R&#39;</span>
@@ -759,6 +787,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">o</span><span class="p">:</span>
             <span class="n">s</span> <span class="o">+=</span> <span class="s1">&#39;O&#39;</span>
         <span class="k">return</span> <span class="n">s</span></div>
+
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">targetaddr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -806,7 +835,10 @@
         <span class="k">return</span> <span class="n">s</span></div>
 
 
-<div class="viewcode-block" id="ICMPv6RedirectMessage"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6RedirectMessage">[docs]</a><span class="k">class</span> <span class="nc">ICMPv6RedirectMessage</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ICMPv6RedirectMessage">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.ICMPv6RedirectMessage">[docs]</a>
+<span class="k">class</span> <span class="nc">ICMPv6RedirectMessage</span><span class="p">(</span><span class="n">ICMPv6Data</span><span class="p">):</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_targetaddr&#39;</span><span class="p">,</span> <span class="s1">&#39;_destaddr&#39;</span><span class="p">]</span>
     <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s2">&quot;!xxxx16s16s&quot;</span>
     <span class="n">_MINLEN</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">_PACKFMT</span><span class="p">)</span>
@@ -859,6 +891,7 @@
         <span class="k">return</span> <span class="n">s</span></div>
 
 
+
 <span class="k">def</span> <span class="nf">construct_icmpv6_class_map</span><span class="p">():</span>
     <span class="n">clsmap</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">xtype</span> <span class="ow">in</span> <span class="n">ICMPv6Type</span><span class="p">:</span>
@@ -904,12 +937,12 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../../../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -929,8 +962,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2020, Joel Sommers.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     </div>
   </body>
 </html>

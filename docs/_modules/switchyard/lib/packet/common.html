@@ -1,18 +1,15 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="../../../../">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>switchyard.lib.packet.common &#8212; Switchyard 1.0.1 documentation</title>
-    <link rel="stylesheet" href="../../../../_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
-    <script src="../../../../_static/jquery.js"></script>
-    <script src="../../../../_static/underscore.js"></script>
-    <script src="../../../../_static/doctools.js"></script>
-    <script src="../../../../_static/language_data.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinxdoc.css?v=d59dc883" />
+    <script src="../../../../_static/documentation_options.js?v=292eb321"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" /> 
   </head><body>
@@ -43,7 +40,9 @@
 <span class="kn">from</span> <span class="nn">socket</span> <span class="kn">import</span> <span class="n">ntohs</span>
 
 
-<div class="viewcode-block" id="EtherType"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.common.EtherType">[docs]</a><span class="k">class</span> <span class="nc">EtherType</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+<div class="viewcode-block" id="EtherType">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.common.EtherType">[docs]</a>
+<span class="k">class</span> <span class="nc">EtherType</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">NoType</span> <span class="o">=</span> <span class="mh">0xFFFF</span>
     <span class="n">IEEE8023</span> <span class="o">=</span> <span class="mh">0x05dc</span>
     <span class="n">IP</span> <span class="o">=</span> <span class="mh">0x0800</span>
@@ -76,18 +75,24 @@
     <span class="n">PTP</span> <span class="o">=</span> <span class="mh">0x88f7</span></div>
 
 
+
 <span class="k">class</span> <span class="nc">ArpHwType</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">Ethernet</span> <span class="o">=</span> <span class="mi">1</span>
 
 
-<div class="viewcode-block" id="ArpOperation"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.common.ArpOperation">[docs]</a><span class="k">class</span> <span class="nc">ArpOperation</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+<div class="viewcode-block" id="ArpOperation">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.common.ArpOperation">[docs]</a>
+<span class="k">class</span> <span class="nc">ArpOperation</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">Request</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="n">Reply</span> <span class="o">=</span> <span class="mi">2</span>
     <span class="n">RequestReverse</span> <span class="o">=</span> <span class="mi">3</span>
     <span class="n">ReplyReverse</span> <span class="o">=</span> <span class="mi">4</span></div>
 
 
-<div class="viewcode-block" id="IPProtocol"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.common.IPProtocol">[docs]</a><span class="k">class</span> <span class="nc">IPProtocol</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+
+<div class="viewcode-block" id="IPProtocol">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.common.IPProtocol">[docs]</a>
+<span class="k">class</span> <span class="nc">IPProtocol</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">IPv6HopOption</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">ICMP</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="n">IGMP</span> <span class="o">=</span> <span class="mi">2</span>
@@ -116,6 +121,7 @@
     <span class="n">IPv6Shim6</span> <span class="o">=</span> <span class="mi">140</span></div>
 
 
+
 <span class="k">class</span> <span class="nc">IPFragmentFlag</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">NoFragments</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">DontFragment</span> <span class="o">=</span> <span class="mi">2</span>
@@ -134,7 +140,9 @@
     <span class="n">RouterAlert</span> <span class="o">=</span> <span class="mi">20</span>
 
 
-<div class="viewcode-block" id="ICMPType"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.common.ICMPType">[docs]</a><span class="k">class</span> <span class="nc">ICMPType</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+<div class="viewcode-block" id="ICMPType">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.common.ICMPType">[docs]</a>
+<span class="k">class</span> <span class="nc">ICMPType</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">EchoReply</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">DestinationUnreachable</span> <span class="o">=</span> <span class="mi">3</span>
     <span class="n">SourceQuench</span> <span class="o">=</span> <span class="mi">4</span>
@@ -150,6 +158,7 @@
     <span class="n">InformationReply</span> <span class="o">=</span> <span class="mi">16</span>
     <span class="n">AddressMaskRequest</span> <span class="o">=</span> <span class="mi">17</span>
     <span class="n">AddressMaskReply</span> <span class="o">=</span> <span class="mi">18</span></div>
+
 
 
 <span class="k">class</span> <span class="nc">ICMPCodeEchoReply</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
@@ -389,7 +398,7 @@
 
 
 <span class="k">def</span> <span class="nf">checksum</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">skip_word</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  Calculate standard internet checksum over data starting at start&#39;th byte</span>
 
 <span class="sd">  skip_word: If specified, it&#39;s the word offset of a word in data to &quot;skip&quot;</span>
@@ -433,12 +442,12 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../../../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -458,8 +467,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2020, Joel Sommers.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     </div>
   </body>
 </html>

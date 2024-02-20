@@ -1,18 +1,15 @@
-
 <!DOCTYPE html>
 
-<html>
+<html lang="en" data-content_root="../../../../">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>switchyard.lib.packet.tcp &#8212; Switchyard 1.0.1 documentation</title>
-    <link rel="stylesheet" href="../../../../_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
-    <script src="../../../../_static/jquery.js"></script>
-    <script src="../../../../_static/underscore.js"></script>
-    <script src="../../../../_static/doctools.js"></script>
-    <script src="../../../../_static/language_data.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinxdoc.css?v=d59dc883" />
+    <script src="../../../../_static/documentation_options.js?v=292eb321"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" /> 
   </head><body>
@@ -103,7 +100,9 @@
     <span class="n">CWR</span> <span class="o">=</span> <span class="mi">7</span> <span class="c1"># Congestion-window reduced RFC 3168</span>
     <span class="n">NS</span> <span class="o">=</span>  <span class="mi">8</span> <span class="c1"># ECN-nonce concealment protection RFC 3540</span>
 
-<div class="viewcode-block" id="TCP"><a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.TCP">[docs]</a><span class="k">class</span> <span class="nc">TCP</span><span class="p">(</span><span class="n">PacketHeaderBase</span><span class="p">):</span>
+<div class="viewcode-block" id="TCP">
+<a class="viewcode-back" href="../../../../reference.html#switchyard.lib.packet.TCP">[docs]</a>
+<span class="k">class</span> <span class="nc">TCP</span><span class="p">(</span><span class="n">PacketHeaderBase</span><span class="p">):</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_src&#39;</span><span class="p">,</span><span class="s1">&#39;_dst&#39;</span><span class="p">,</span><span class="s1">&#39;_seq&#39;</span><span class="p">,</span><span class="s1">&#39;_ack&#39;</span><span class="p">,</span>
         <span class="s1">&#39;_flags&#39;</span><span class="p">,</span><span class="s1">&#39;_window&#39;</span><span class="p">,</span><span class="s1">&#39;_urg&#39;</span><span class="p">,</span><span class="s1">&#39;_options&#39;</span><span class="p">,</span><span class="s1">&#39;_len&#39;</span><span class="p">,</span> <span class="s1">&#39;_checksum&#39;</span><span class="p">]</span>
     <span class="n">_PACKFMT</span> <span class="o">=</span> <span class="s1">&#39;!HHIIHHHH&#39;</span>
@@ -147,14 +146,14 @@
         <span class="k">return</span> <span class="n">header</span>
 
     <span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Return packed byte representation of the TCP header.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_checksum</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">header</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;Return an Ethernet object reconstructed from raw bytes, or an</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;Return an Ethernet object reconstructed from raw bytes, or an</span>
 <span class="sd">           Exception if we can&#39;t resurrect the packet.&#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">TCP</span><span class="o">.</span><span class="n">_MINLEN</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">NotEnoughDataError</span><span class="p">(</span><span class="s2">&quot;Not enough bytes (</span><span class="si">{}</span><span class="s2">) to reconstruct an TCP object&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)))</span>
@@ -344,6 +343,7 @@
     <span class="nd">@FIN</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">FIN</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_setflag</span><span class="p">(</span><span class="n">TCPFlags</span><span class="o">.</span><span class="n">FIN</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
+
 </pre></div>
 
             <div class="clearer"></div>
@@ -356,12 +356,12 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../../../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -381,8 +381,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2013-2020, Joel Sommers.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    &#169; Copyright 2013-2020, Joel Sommers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     </div>
   </body>
 </html>
